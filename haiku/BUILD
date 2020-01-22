@@ -12,7 +12,17 @@ exports_files(["LICENSE"])
 # TODO(tomhennigan) Change to public once haiku is more stable.
 package_group(
     name = "friends",
-    packages = ["//haiku/..."],
+    includes = ["//learning/deepmind:experimental"],
+    packages = [
+        "//learning/brain/research/sequin/...",
+        "//learning/deepmind/atlas/...",
+        "//learning/deepmind/dm_python/...",
+        "//learning/deepmind/research/jax/...",
+        "//platforms/xla/tests/...",
+        "//research/simulation/whirl/...",
+        "//haiku/...",
+        "//waymo/experimental/...",
+    ],
 )
 
 # This should be the only public build rule for Haiku, containing everything

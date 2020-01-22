@@ -1,0 +1,57 @@
+load("//haiku/_src:build_defs.bzl", "hk_py_library", "hk_py_test")
+
+package(default_visibility = ["//haiku:__subpackages__"])
+
+licenses(["notice"])
+
+exports_files(["LICENSE"])
+
+hk_py_library(
+    name = "resnet",
+    srcs = ["resnet.py"],
+    deps = [
+        "//haiku/_src:basic",
+        "//haiku/_src:batch_norm",
+        "//haiku/_src:conv",
+        "//haiku/_src:module",
+        "//haiku/_src:pool",
+        # pip: jax
+    ],
+)
+
+hk_py_test(
+    name = "resnet_test",
+    timeout = "long",
+    srcs = ["resnet_test.py"],
+    deps = [
+        ":resnet",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        "//haiku/_src:test_utils",
+        # pip: jax
+    ],
+)
+
+hk_py_library(
+    name = "mlp",
+    srcs = ["mlp.py"],
+    deps = [
+        "//haiku/_src:base",
+        "//haiku/_src:basic",
+        "//haiku/_src:module",
+        # pip: jax
+    ],
+)
+
+hk_py_test(
+    name = "mlp_test",
+    timeout = "long",
+    srcs = ["mlp_test.py"],
+    deps = [
+        ":mlp",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        "//haiku/_src:test_utils",
+        # pip: jax
+    ],
+)

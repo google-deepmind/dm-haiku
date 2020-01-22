@@ -114,7 +114,7 @@ def sgd(param, update):
 for _ in range(num_training_steps):
   images, labels = next(input_dataset)
   grads = jax.grad(loss_obj.apply)(params, images, labels)
-  params = jax.tree_map(sgd, params, grads)
+  params = jax.tree_multimap(sgd, params, grads)
 ```
 
 ## User manual

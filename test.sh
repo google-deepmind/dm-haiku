@@ -21,32 +21,24 @@ set -x
 
 virtualenv -p python3 .
 source bin/activate
-python3 --version
+python --version
+
+# Install JAX.
+python -m pip install -r requirements-jax.txt
+python -c 'import jax; print(jax.__version__)'
 
 # Run setup.py, this installs the python dependencies
-python3 setup.py install
-
-N_JOBS=$(grep -c ^processor /proc/cpuinfo)
-
-echo ""
-echo "Bazel will use ${N_JOBS} concurrent job(s)."
-echo ""
+python -m pip install .
 
 # Python test dependencies.
-python3 -m pip install -r requirements-test.txt
-python3 -m pip install -r requirements-jax.txt
-python3 -c 'import jax; print(jax.__version__)'
+python -m pip install -r requirements-test.txt
 
-# Run bazel test command. Double test timeouts to avoid flakes.
-bazel test --jobs=${N_JOBS} --test_timeout 300,450,1200,3600 \
-    --build_tests_only --test_output=errors \
-    --cache_test_results=no \
-    -- //...
+# Run tests using pytest.
+N_JOBS=$(grep -c ^processor /proc/cpuinfo)
+python -m pytest -n "${N_JOBS}" haiku
 
 # Test docs still build.
 cd docs/
 pip install -r requirements.txt
 # TODO(tomhennigan) Add `make doctest`.
 make html
-
-deactivate

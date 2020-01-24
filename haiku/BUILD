@@ -14,6 +14,7 @@ package_group(
     name = "friends",
     includes = ["//learning/deepmind:experimental"],
     packages = [
+        "//learning/brain/research/dune/...",
         "//learning/brain/research/sequin/...",
         "//learning/deepmind/atlas/...",
         "//learning/deepmind/dm_python/...",

@@ -56,6 +56,7 @@ from haiku._src.graph import GraphsTuple
 from haiku._src.layer_norm import InstanceNorm
 from haiku._src.layer_norm import LayerNorm
 from haiku._src.module import Module
+from haiku._src.module import transparent
 from haiku._src.moving_averages import EMAParamsTree
 from haiku._src.moving_averages import ExponentialMovingAverage
 from haiku._src.pool import avg_pool
@@ -141,6 +142,7 @@ __all__ = (
     "SpectralNorm",
     "static_unroll",
     "testing",
+    "transparent",
     "typing",
     "to_module",
     "transform",

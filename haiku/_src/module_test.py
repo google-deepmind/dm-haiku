@@ -23,11 +23,9 @@ from haiku._src import test_utils
 import jax
 import jax.numpy as jnp
 
-# TODO(tomhennigan) Add tests with jax.jit et al.
+
 # TODO(tomhennigan) Improve test coverage.
-
-
-class BaseTest(parameterized.TestCase):
+class ModuleTest(parameterized.TestCase):
 
   @test_utils.test_transform
   def test_module_naming_default(self):
@@ -192,6 +190,11 @@ class BaseTest(parameterized.TestCase):
     w = f.apply(params)
     self.assertEqual(w, 0)
 
+  def test_transparent(self):
+    init_fn, _ = base.transform(lambda: TransparentModule()())  # pylint: disable=unnecessary-lambda
+    params = init_fn(None)
+    self.assertEqual(params, {"scalar_module": {"w": jnp.zeros([])}})
+
 
 class CapturesModule(module.Module):
 
@@ -259,6 +262,13 @@ class CountingModule(module.Module):
       count = base.get_state("count", (), jnp.int32, jnp.zeros)
       base.set_state("count", count + 1)
     return count
+
+
+class TransparentModule(module.Module):
+
+  @module.transparent
+  def __call__(self):
+    return ScalarModule()()
 
 
 if __name__ == "__main__":

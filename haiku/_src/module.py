@@ -27,6 +27,7 @@ from haiku._src import utils
 import jax.numpy as jnp
 
 T = TypeVar("T")
+_APPLY_NAME_SCOPE = "__haiku_name_scope"
 
 
 class ModuleMetaclass(abc.ABCMeta):
@@ -120,6 +121,9 @@ def with_name_scope(method_name, unbound_method):
     A function that runs the original method but in a context where parameters
     are reused and modules can be created.
   """
+  if not getattr(unbound_method, _APPLY_NAME_SCOPE, True):
+    return unbound_method
+
   @functools.wraps(unbound_method)
   def wrapped(module, *args, **kwargs):
     """Calls the original method with a group name set before and after."""
@@ -218,6 +222,23 @@ class Module(object, metaclass=ModuleMetaclass):
           params[fq_name] = param
 
     return params
+
+
+def transparent(method: T) -> T:
+  """Decorator to wrap a method, preventing automatic variable scope wrapping.
+
+  By default, all variables and modules created in a method are scoped by the
+  module and method names. This is undesirable in some cases. Any method
+  decorated with ``transparent`` will create variables and modules in the scope
+  in which it was called.
+
+  Args:
+    method: the method to wrap.
+  Returns:
+    The method, with a flag indicating no name scope wrapping should occur.
+  """
+  setattr(method, _APPLY_NAME_SCOPE, False)
+  return method
 
 
 def unique_and_canonical_name(name: Text) -> Text:

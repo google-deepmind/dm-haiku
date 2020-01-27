@@ -16,7 +16,6 @@
 """Base Haiku module."""
 
 import abc
-import collections
 import functools
 import inspect
 import re
@@ -131,11 +130,8 @@ def with_name_scope(method_name, unbound_method):
       raise ValueError(
           "All `hk.Module`s must be initialized inside an `hk.transform`.")
 
-    module_state = base.ModuleState(module=module, method_name=method_name)
-    names = collections.Counter()
     frame = base.current_frame()
-    with frame.module_stack(module_state), \
-         frame.counter_stack(names):
+    with frame.module(base.ModuleState(module=module, method_name=method_name)):
       # hk.Module enters the module name scope for all methods.
       out = unbound_method(module, *args, **kwargs)
 
@@ -271,14 +267,19 @@ def unique_and_canonical_name(name: Text) -> Text:
     n = None
     explicit_n = False
 
-  # Finally ensure that this name is unique within the current context.
+  # Determine a unique name for this module within the current context.
   counters = frame.counter_stack.peek(-2)
   if n is not None:
-    if counters[name] > n:
-      raise ValueError(f"Module name '{name}_{n}' is not unique.")
-    counters[name] = n
+    counters[name] = max(counters[name], n + 1)
   else:
     n = counters[name]
     counters[name] += 1
+  qualified_name = f"{name}_{n}" if explicit_n or n else name
 
-  return f"{name}_{n}" if explicit_n or n > 0 else name
+  # Final sanity check that this name has not been used before.
+  used_names = frame.used_names_stack.peek(-2)
+  if qualified_name in used_names:
+    raise ValueError(f"Module name '{qualified_name}' is not unique.")
+  used_names.add(qualified_name)
+
+  return qualified_name

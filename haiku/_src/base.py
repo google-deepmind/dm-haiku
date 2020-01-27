@@ -16,8 +16,9 @@
 """Base Haiku module."""
 
 import collections
+import contextlib
 import functools
-from typing import Any, Callable, Iterator, NamedTuple, Optional, Text, Tuple, TypeVar, Union
+from typing import Any, Callable, Iterator, NamedTuple, Optional, Text, Tuple, Set, TypeVar, Union
 
 from haiku._src import analytics
 from haiku._src import data_structures
@@ -44,17 +45,31 @@ creator_stack = ThreadLocalStack()  # type: ThreadLocalStack[ParamCreator]
 
 
 class Frame(NamedTuple):
+  """A frame represents all of the per-transform values in Haiku."""
+
+  # JAX values.
   params: Union[Params, MutableParams]
   state: Optional[MutableState]
   rng_stack: Stack[Optional["PRNGSequence"]]
-  counter_stack: Stack[collections.Counter]
+
+  # Pure python values.
   module_stack: Stack[ModuleState]
+  counter_stack: Stack[collections.Counter]
+  used_names_stack: Stack[Set[Text]]
+
+  @contextlib.contextmanager
+  def module(self, module_state: ModuleState):
+    with self.module_stack(module_state), \
+         self.counter_stack(collections.Counter()), \
+         self.used_names_stack(set()):
+      yield
 
 
 def new_frame(params, state, rng: Optional["PRNGSequence"]):
-  frame = Frame(params, state, Stack(), Stack(), Stack())
+  frame = Frame(params, state, Stack(), Stack(), Stack(), Stack())
   frame.rng_stack.push(rng)
   frame.counter_stack.push(collections.Counter())
+  frame.used_names_stack.push(set())
   return frame_stack(frame)
 
 current_frame = frame_stack.peek

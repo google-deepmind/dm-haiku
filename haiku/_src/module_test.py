@@ -48,6 +48,18 @@ class ModuleTest(parameterized.TestCase):
       module_name = f"custom_name_{n}"
       self.assertEqual(EmptyModule(name=module_name).module_name, module_name)
 
+  @parameterized.parameters(1, 2, 3)
+  @test_utils.test_transform
+  def test_module_naming_explicit_reverse_numbering(self, step):
+    total = step * 10
+    for n in range(0, total, step):
+      n = total - n
+      module_name = f"custom_name_{n}"
+      self.assertEqual(EmptyModule(name=module_name).module_name, module_name)
+
+    self.assertEqual(EmptyModule(name="custom_name").module_name,
+                     f"custom_name_{total + 1}")
+
   @test_utils.test_transform
   def test_module_naming_explicit_numbering_collision(self):
     self.assertEqual(EmptyModule(name="custom_name").module_name, "custom_name")
@@ -59,15 +71,12 @@ class ModuleTest(parameterized.TestCase):
 
   @test_utils.test_transform
   def test_module_naming_explicit_numbering_out_of_order(self):
-    self.assertEqual(
-        EmptyModule(name="custom_name_1").module_name, "custom_name_1")
-    self.assertEqual(
-        EmptyModule(name="custom_name_3").module_name, "custom_name_3")
-    # Even though "custom_name_2" has not been claimed, we still reject it since
-    # the last numbered module was 3.
+    for n in (1, 3, 2, 4):
+      self.assertEqual(
+          EmptyModule(name=f"custom_name_{n}").module_name, f"custom_name_{n}")
     with self.assertRaisesRegex(
-        ValueError, "Module name 'custom_name_2' is not unique"):
-      EmptyModule(name="custom_name_2")
+        ValueError, "Module name 'custom_name_4' is not unique"):
+      EmptyModule(name="custom_name_4")
 
   @test_utils.test_transform
   def test_parameter_reuse(self):

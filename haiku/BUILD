@@ -18,10 +18,10 @@ package_group(
         "//learning/brain/research/sequin/...",
         "//learning/deepmind/atlas/...",
         "//learning/deepmind/dm_python/...",
-        "//learning/deepmind/research/jax/...",
         "//platforms/xla/tests/...",
         "//research/simulation/whirl/...",
         "//haiku/...",
+        # pip: rlax/...
         "//waymo/experimental/...",
     ],
 )

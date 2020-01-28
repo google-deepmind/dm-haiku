@@ -92,13 +92,14 @@ class Reshape(module.Module):
 
     if output_shape.count(-1) > 1:
       raise ValueError("-1 can only occur once in `output_shape`.")
+
     self._output_shape = tuple(output_shape)
     self._preserve_dims = preserve_dims
 
   def __call__(self, inputs):
-    required_dims = self._preserve_dims + 1
-    if len(inputs.shape) < required_dims:
-      raise ValueError("Input must be rank >= {}.".format(required_dims))
+    if inputs.ndim <= self._preserve_dims:
+      return inputs
+
     if -1 in self._output_shape:
       reshaped_shape = _infer_shape(self._output_shape,
                                     inputs.shape[self._preserve_dims:])
@@ -113,6 +114,18 @@ class Flatten(Reshape):
 
   By default, Flatten combines all dimensions except the first.
   Additional leading dimensions can be preserved by setting preserve_dims.
+
+  >>> x = jnp.ones([3, 2, 4])
+  >>> flat = hk.Flatten()
+  >>> flat(x).shape
+  (3, 8)
+
+  When the input to flatten has fewer than ``preserve_dims`` dimensions it is
+  returned unchanged:
+
+  >>> x = jnp.ones([3])
+  >>> flat(x).shape
+  (3,)
   """
 
   def __init__(self, preserve_dims=1, name=None):

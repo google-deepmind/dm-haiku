@@ -19,6 +19,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import base
 from haiku._src import reshape
+from haiku._src import test_utils
 import jax.numpy as jnp
 import numpy as np
 
@@ -68,6 +69,19 @@ class ReshapeTest(parameterized.TestCase):
     params = init_fn(None)
     self.assertEqual(apply_fn(params).shape, (2, 3, 20))
 
+  @test_utils.transform_and_run
+  def test_flatten_1d(self):
+    mod = reshape.Flatten()
+    x = jnp.zeros([10])
+    y = mod(x)
+    self.assertEqual(x.shape, y.shape)
+
+  @test_utils.transform_and_run
+  def test_flatten_nd(self):
+    mod = reshape.Flatten(preserve_dims=2)
+    x = jnp.zeros([2, 3])
+    y = mod(x)
+    self.assertEqual(x.shape, y.shape)
 
 if __name__ == "__main__":
   absltest.main()

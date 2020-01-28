@@ -6,26 +6,6 @@ licenses(["notice"])
 
 exports_files(["LICENSE"])
 
-# Currently Haiku is under active development, please send us a CL adding your
-# project(s) here if you would like to use it (so we're aware and try to avoid
-# breaking your usecases!).
-# TODO(tomhennigan) Change to public once haiku is more stable.
-package_group(
-    name = "friends",
-    includes = ["//learning/deepmind:experimental"],
-    packages = [
-        "//learning/brain/research/dune/...",
-        "//learning/brain/research/sequin/...",
-        "//learning/deepmind/atlas/...",
-        "//learning/deepmind/dm_python/...",
-        "//platforms/xla/tests/...",
-        "//research/simulation/whirl/...",
-        "//haiku/...",
-        # pip: rlax/...
-        "//waymo/experimental/...",
-    ],
-)
-
 # This should be the only public build rule for Haiku, containing everything
 # you need to build neural networks with JAX.
 py_library(
@@ -41,7 +21,7 @@ py_library(
         "typing.py",
     ],
     srcs_version = "PY3",
-    visibility = [":friends"],
+    visibility = ["//visibility:public"],
     deps = [
         "//haiku/_src:base",
         "//haiku/_src:basic",

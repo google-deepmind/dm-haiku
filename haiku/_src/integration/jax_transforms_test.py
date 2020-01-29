@@ -29,7 +29,6 @@ import jax.numpy as jnp
 import numpy as np
 
 ModuleFn = Callable[[], Callable[[jnp.ndarray], Any]]
-ALL_MODULES = descriptors.BATCH_MODULES + descriptors.RECURRENT_MODULES
 
 
 def module_type(module_fn: ModuleFn) -> Type[hk.Module]:
@@ -42,7 +41,7 @@ CUSTOM_ATOL = {hk.nets.ResNet50: 0.05}
 
 class JaxTransformsTest(parameterized.TestCase):
 
-  @test_utils.combined_named_parameters(ALL_MODULES)
+  @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
   def test_jit(
       self,
       module_fn: ModuleFn,
@@ -54,7 +53,11 @@ class JaxTransformsTest(parameterized.TestCase):
       x = jax.random.randint(rng, shape, 0, np.prod(shape), dtype)
     else:
       x = jax.random.uniform(rng, shape, dtype)
-    f = hk.transform(lambda x: module_fn()(x), state=True, apply_rng=True)  # pylint: disable=unnecessary-lambda
+
+    def g(x):
+      return module_fn()(x)
+
+    f = hk.transform(g, state=True, apply_rng=True)
 
     atol = CUSTOM_ATOL.get(module_type(module_fn), DEFAULT_ATOL)
     assert_allclose = functools.partial(np.testing.assert_allclose, atol=atol)
@@ -70,6 +73,33 @@ class JaxTransformsTest(parameterized.TestCase):
                       f.apply(params, state, rng, x),
                       jax.jit(f.apply)(params, state, rng, x))
 
+  @test_utils.combined_named_parameters(descriptors.OPTIONAL_BATCH_MODULES)
+  def test_vmap(
+      self,
+      module_fn: ModuleFn,
+      shape: Shape,
+      dtype: DType,
+  ):
+    batch_size, shape = shape[0], shape[1:]
+    rng = jax.random.PRNGKey(42)
+    if jnp.issubdtype(dtype, jnp.integer):
+      sample = jax.random.randint(rng, shape, 0, np.prod(shape), dtype)
+    else:
+      sample = jax.random.uniform(rng, shape, dtype)
+    batch = jnp.broadcast_to(sample, (batch_size,) + sample.shape)
+
+    def g(x):
+      return module_fn()(x)
+
+    f = hk.transform(g, state=True, apply_rng=True)
+
+    # Ensure application under vmap is the same.
+    params, state = f.init(rng, sample)
+    v_apply = jax.vmap(f.apply, in_axes=(None, None, None, 0))
+    jax.tree_multimap(
+        lambda a, b: np.testing.assert_allclose(a, b, atol=DEFAULT_ATOL),
+        f.apply(params, state, rng, batch),
+        v_apply(params, state, rng, batch))
 
 if __name__ == '__main__':
   absltest.main()

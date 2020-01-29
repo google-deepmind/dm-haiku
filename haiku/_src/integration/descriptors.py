@@ -67,13 +67,59 @@ class ModuleDescriptor(NamedTuple):
 BATCH_SIZE = 8
 
 # pylint: disable=unnecessary-lambda
+# Modules that have equivalent behaviour with or without a batch dimension.
+OPTIONAL_BATCH_MODULES = (
+    ModuleDescriptor(
+        name="Embed",
+        create=lambda: hk.Embed(vocab_size=6, embed_dim=12),
+        shape=(BATCH_SIZE,),
+        dtype=jnp.int32),
+    ModuleDescriptor(
+        name="Linear",
+        create=lambda: hk.Linear(10),
+        shape=(BATCH_SIZE, 1)),
+    ModuleDescriptor(
+        name="Sequential",
+        create=lambda: hk.Sequential([lambda x: x]),
+        shape=(BATCH_SIZE, 2, 2)),
+    ModuleDescriptor(
+        name="nets.MLP",
+        create=lambda: hk.nets.MLP([3, 4, 5]),
+        shape=(BATCH_SIZE, 3)),
+)
+
+# Modules that require input to have a batch dimension.
 BATCH_MODULES = (
     ModuleDescriptor(
         name="BatchNorm",
         create=lambda: Training(hk.BatchNorm(True, True)),
         shape=(BATCH_SIZE, 2, 2, 3)),
     ModuleDescriptor(
-        name="Bias", create=lambda: hk.Bias(), shape=(BATCH_SIZE, 3, 3, 3)),
+        name="Bias",
+        create=lambda: hk.Bias(),
+        shape=(BATCH_SIZE, 3, 3, 3)),
+    ModuleDescriptor(
+        name="Flatten",
+        create=lambda: hk.Flatten(),
+        shape=(BATCH_SIZE, 3, 3, 3)),
+    ModuleDescriptor(
+        name="InstanceNorm",
+        create=lambda: hk.InstanceNorm(True, True),
+        shape=(BATCH_SIZE, 3, 2)),
+    ModuleDescriptor(
+        name="LayerNorm",
+        create=lambda: hk.LayerNorm(1, True, True),
+        shape=(BATCH_SIZE, 3, 2)),
+    ModuleDescriptor(
+        name="SpectralNorm",
+        create=lambda: hk.SpectralNorm(),
+        shape=(BATCH_SIZE, 3, 2)),
+    ModuleDescriptor(
+        name="nets.ResNet50",
+        create=lambda: Training(hk.nets.ResNet50(1000)),
+        shape=(BATCH_SIZE, 3, 3, 2)),
+
+    # TODO(tomhennigan) Make these modules support unbatched input.
     ModuleDescriptor(
         name="Conv1D",
         create=lambda: hk.Conv1D(3, 3),
@@ -98,41 +144,6 @@ BATCH_MODULES = (
         name="Conv3DTranspose",
         create=lambda: hk.Conv3DTranspose(3, 3),
         shape=(BATCH_SIZE, 2, 2, 2, 2)),
-    ModuleDescriptor(
-        name="Embed",
-        create=lambda: hk.Embed(vocab_size=6, embed_dim=12),
-        shape=(BATCH_SIZE,),
-        dtype=jnp.int32),
-    ModuleDescriptor(
-        name="Flatten",
-        create=lambda: hk.Flatten(),
-        shape=(BATCH_SIZE, 3, 3, 3)),
-    ModuleDescriptor(
-        name="InstanceNorm",
-        create=lambda: hk.InstanceNorm(True, True),
-        shape=(BATCH_SIZE, 3, 2)),
-    ModuleDescriptor(
-        name="LayerNorm",
-        create=lambda: hk.LayerNorm(1, True, True),
-        shape=(BATCH_SIZE, 3, 2)),
-    ModuleDescriptor(
-        name="SpectralNorm",
-        create=lambda: hk.SpectralNorm(),
-        shape=(BATCH_SIZE, 3, 2)),
-    ModuleDescriptor(
-        name="Linear", create=lambda: hk.Linear(10), shape=(BATCH_SIZE, 1)),
-    ModuleDescriptor(
-        name="Sequential",
-        create=lambda: hk.Sequential([lambda x: x]),
-        shape=(BATCH_SIZE, 2, 2)),
-    ModuleDescriptor(
-        name="nets.ResNet50",
-        create=lambda: Training(hk.nets.ResNet50(1000)),
-        shape=(BATCH_SIZE, 3, 3, 2)),
-    ModuleDescriptor(
-        name="nets.MLP",
-        create=lambda: hk.nets.MLP([3, 4, 5]),
-        shape=(BATCH_SIZE, 3)),
 )
 
 
@@ -156,6 +167,7 @@ class ResetCoreAdapter(Wrapped, hk.RNNCore):
     return self.wrapped((inputs, resets), state)
 
 
+# RNN cores.
 RNN_CORES = (
     ModuleDescriptor(
         name="ResetCore",
@@ -199,10 +211,12 @@ def unroll_descriptors(descriptors, unroller=None):
   return tuple(out)
 
 
+# Modules that require time then batch input.
 RECURRENT_MODULES = (
     unroll_descriptors(RNN_CORES, hk.dynamic_unroll) +
     unroll_descriptors(RNN_CORES, hk.static_unroll))
 
+ALL_MODULES = OPTIONAL_BATCH_MODULES + BATCH_MODULES + RECURRENT_MODULES
 
 IGNORED_MODULES = {
     # Stateless or abstract.

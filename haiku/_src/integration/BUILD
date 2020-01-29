@@ -32,7 +32,7 @@ hk_py_test(
     name = "jax_transforms_test",
     timeout = "long",
     srcs = ["jax_transforms_test.py"],
-    shard_count = 10,
+    shard_count = 50,
     deps = [
         ":descriptors",
         # pip: absl/testing:absltest

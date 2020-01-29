@@ -20,8 +20,7 @@ import haiku as hk
 from haiku._src import test_utils
 from haiku._src.integration import descriptors
 
-BATCH_MODULES = descriptors.BATCH_MODULES
-RECURRENT_MODULES = descriptors.RECURRENT_MODULES
+ALL_MODULES = descriptors.ALL_MODULES
 IGNORED_MODULES = descriptors.IGNORED_MODULES
 
 
@@ -30,8 +29,7 @@ class DescriptorsTest(absltest.TestCase):
   @test_utils.test_transform(use_state=True)
   def test_coverage(self):
     all_modules = frozenset(test_utils.find_subclasses(hk, hk.Module))
-    tested_modules = {type(descriptors.unwrap(d.create()))
-                      for d in BATCH_MODULES + RECURRENT_MODULES}
+    tested_modules = {type(descriptors.unwrap(d.create())) for d in ALL_MODULES}
     self.assertEmpty(all_modules - (tested_modules | IGNORED_MODULES))
 
 

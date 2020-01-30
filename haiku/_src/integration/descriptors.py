@@ -19,6 +19,7 @@ from typing import Any, Callable, NamedTuple, Union
 
 import haiku as hk
 from haiku._src.typing import Shape, DType  # pylint: disable=g-multiple-import
+import jax
 import jax.numpy as jnp
 import numpy as np
 
@@ -46,7 +47,9 @@ class Recurrent(Wrapped):
     self.unroller = unroller
 
   def __call__(self, x: jnp.ndarray):
-    initial_state = self.wrapped.initial_state(batch_size=x.shape[0])
+    initial_state = jax.tree_map(
+        lambda v: v.astype(x.dtype),
+        self.wrapped.initial_state(batch_size=x.shape[0]))
     x = jnp.expand_dims(x, axis=0)
     return self.unroller(self.wrapped, x, initial_state)
 

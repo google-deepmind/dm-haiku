@@ -23,12 +23,11 @@ from haiku._src import module
 import jax
 import jax.nn
 import jax.numpy as jnp
-import tree
 
 
 def add_batch(nest, batch_size):
   broadcast = lambda x: jnp.broadcast_to(x, (batch_size,) + x.shape)
-  return tree.map_structure(broadcast, nest)
+  return jax.tree_map(broadcast, nest)
 
 
 def static_unroll(core, inputs, state):
@@ -224,15 +223,16 @@ class ResetCore(RNNCore):
     # ... array([[1., 0.], [1., 0.]])
     # Using a should_reset of rank R - 1 could result in one example
     # affecting another.
-    for x in tree.flatten(state):
+    for x in jax.tree_leaves(state):
       if len(x.shape) - 1 != len(should_reset.shape):
         raise ValueError("should_reset must have rank-1 of state.")
     should_reset = jnp.expand_dims(should_reset, axis=-1)
 
-    batch_size = tree.flatten(inputs)[0].shape[0]
-    initial_state = self.initial_state(batch_size)
-    state = tree.map_structure(lambda i, s: jnp.where(should_reset, i, s),
-                               initial_state, state)
+    batch_size = jax.tree_leaves(inputs)[0].shape[0]
+    initial_state = jax.tree_map(lambda v: v.astype(inputs.dtype),
+                                 self.initial_state(batch_size))
+    state = jax.tree_multimap(lambda i, s: jnp.where(should_reset, i, s),
+                              initial_state, state)
     return self._core(inputs, state)
 
   def initial_state(self, batch_size):
@@ -261,7 +261,7 @@ class _DeepRNN(RNNCore):
     concat = lambda *args: jnp.concatenate(args, axis=-1)
     for idx, layer in enumerate(self._layers):
       if self._skip_connections and idx > 0:
-        current_inputs = tree.map_structure(concat, inputs, current_inputs)
+        current_inputs = jax.tree_multimap(concat, inputs, current_inputs)
 
       if isinstance(layer, RNNCore):
         current_inputs, next_state = layer(current_inputs, state[state_idx])
@@ -272,7 +272,7 @@ class _DeepRNN(RNNCore):
         current_inputs = layer(current_inputs)
 
     if self._skip_connections:
-      output = tree.map_structure(concat, *outputs)
+      output = jax.tree_multimap(concat, *outputs)
     else:
       output = current_inputs
 

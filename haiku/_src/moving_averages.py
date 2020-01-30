@@ -57,9 +57,9 @@ class ExponentialMovingAverage(module.Module):
           "average to an initial value. Set zero_debias=False if setting "
           "warmup_length to a non-zero value.")
 
-  def _cond(self, cond, t, f):
+  def _cond(self, cond, t, f, dtype):
     """Internal, implements jax.lax.cond without control flow."""
-    c = jnp.asarray(cond).astype(jnp.float32)
+    c = jnp.asarray(cond).astype(dtype)
     return c * t + (1. - c) * f
 
   def __call__(self, value, update_stats=True):
@@ -80,11 +80,12 @@ class ExponentialMovingAverage(module.Module):
     prev_counter = base.get_state(
         "counter", shape=(), dtype=jnp.int32,
         init=initializers.Constant(-self._warmup_length))
-    prev_hidden = base.get_state("hidden", shape=value.shape, init=jnp.zeros)
+    prev_hidden = base.get_state("hidden", shape=value.shape, dtype=value.dtype,
+                                 init=jnp.zeros)
 
     decay = jnp.asarray(self._decay).astype(value.dtype)
     counter = prev_counter + 1
-    decay = self._cond(jnp.less_equal(counter, 0), 0.0, decay)
+    decay = self._cond(jnp.less_equal(counter, 0), 0.0, decay, value.dtype)
     hidden = prev_hidden * decay + value * (1 - decay)
 
     if self._zero_debias:

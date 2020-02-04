@@ -88,6 +88,17 @@ class StackTest(absltest.TestCase):
     self.assertEqual(s2.pop(), 4)
     self.assertEqual(s2.pop(), 3)
 
+  def test_clone(self):
+    s1 = Stack()
+    for i in range(5):
+      s1.push(i)
+    s2 = s1.clone()
+    assert s1 is not s2
+    self.assertEqual([s2.pop() for _ in range(len(s2))], [4, 3, 2, 1, 0])
+    self.assertEmpty(s2)
+    self.assertEqual([s1.pop() for _ in range(len(s1))], [4, 3, 2, 1, 0])
+    self.assertEmpty(s2)
+
 
 class ThreadLocalStackTest(absltest.TestCase):
 

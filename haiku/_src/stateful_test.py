@@ -77,7 +77,7 @@ class StatefulTest(absltest.TestCase):
     f = base.transform(f, state=True)
     params, state = jax.jit(f.init)(None, x)
     g, state = jax.jit(f.apply)(params, state, x)
-    self.assertEqual(g, 2 * x)
+    np.testing.assert_allclose(g, 2 * x, rtol=1e-3)
 
   def test_value_and_grad_and_jit(self):
     def f(x):
@@ -89,7 +89,7 @@ class StatefulTest(absltest.TestCase):
     params, state = jax.jit(f.init)(None, x)
     (y, g), state = jax.jit(f.apply)(params, state, x)
     np.testing.assert_allclose(y, x ** 2, rtol=1e-3)
-    self.assertEqual(g, 2 * x)
+    np.testing.assert_allclose(g, 2 * x, rtol=1e-3)
 
   @test_utils.test_transform(use_state=True)
   def test_jit(self):
@@ -178,7 +178,8 @@ class SquareModule(module.Module):
 
   def __call__(self, x):
     assert x.ndim == 0
-    y = x ** 2
+    p = base.get_parameter("p", [], jnp.int32, init=lambda *_: jnp.array(2))
+    y = x ** p
     base.set_state("y", y)
     return y
 

@@ -16,7 +16,7 @@
 """Tests for haiku._src.conformance.descriptors."""
 
 import functools
-from typing import Any, Callable, Type
+from typing import Type
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -28,7 +28,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-ModuleFn = Callable[[], Callable[[jnp.ndarray], Any]]
+ModuleFn = descriptors.ModuleFn
 
 
 def module_type(module_fn: ModuleFn) -> Type[hk.Module]:

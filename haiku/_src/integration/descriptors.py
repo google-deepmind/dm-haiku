@@ -23,6 +23,8 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
+ModuleFn = Callable[[], Callable[[jnp.ndarray], jnp.ndarray]]
+
 
 class Wrapped(hk.Module):
 
@@ -62,7 +64,7 @@ def unwrap(module):
 
 class ModuleDescriptor(NamedTuple):
   name: Any
-  create: Callable[[], Callable[[jnp.ndarray], jnp.ndarray]]
+  create: ModuleFn
   shape: Shape
   dtype: DType = jnp.float32
 

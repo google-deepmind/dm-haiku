@@ -34,3 +34,4 @@ Paddings = Union[Padding, Sequence[Padding]]
 
 # Missing JAX types.
 PRNGKey = jnp.ndarray  # pylint: disable=invalid-name
+PRNGSeed = int

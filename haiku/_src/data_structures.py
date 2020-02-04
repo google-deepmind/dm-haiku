@@ -42,6 +42,9 @@ class Stack(Generic[T]):
   def __iter__(self):
     return iter(reversed(self._storage))
 
+  def clone(self):
+    return self.map(lambda v: v)
+
   def map(self, fn: Callable[[T], U]) -> "Stack[U]":
     s = type(self)()
     for item in self._storage:

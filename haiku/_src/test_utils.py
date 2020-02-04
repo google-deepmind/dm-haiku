@@ -133,3 +133,8 @@ def combined_named_parameters(*parameters):
   combine = lambda a, b: ("_".join((a[0], b[0])),) + a[1:] + b[1:]
   return parameterized.named_parameters(
       functools.reduce(combine, r) for r in itertools.product(*parameters))
+
+
+def named_bools(name) -> Sequence[Tuple[Text, bool]]:
+  """Returns a pair of booleans suitable for use with ``named_parameters``."""
+  return (name, True), ("not_{}".format(name), False)

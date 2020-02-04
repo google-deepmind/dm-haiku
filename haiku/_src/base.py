@@ -24,7 +24,7 @@ from haiku._src import analytics
 from haiku._src import data_structures
 from haiku._src.typing import (Shape, DType, ParamName, Initializer, Params,  # pylint: disable=g-multiple-import
                                State, MutableState, MutableParams, ParamCreator,
-                               PRNGKey)
+                               PRNGKey, PRNGSeed)
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -57,6 +57,34 @@ class Frame(NamedTuple):
   counter_stack: Stack[collections.Counter]
   used_names_stack: Stack[Set[Text]]
 
+  @property
+  def params_frozen(self):
+    return isinstance(self.params, data_structures.frozendict)
+
+  @classmethod
+  def create(cls, params, state, rng: Optional["PRNGSequence"]):
+    """Creates a new frame."""
+    frame = Frame(params=params,
+                  state=state,
+                  rng_stack=Stack(),
+                  module_stack=Stack(),
+                  counter_stack=Stack(),
+                  used_names_stack=Stack())
+    frame.rng_stack.push(rng)
+    frame.counter_stack.push(collections.Counter())
+    frame.used_names_stack.push(set())
+    return frame
+
+  def evolve(self, params, state, rng):
+    rng_stack = self.rng_stack.clone()
+    rng_stack.push(rng)
+    return Frame(params=params,
+                 state=state,
+                 rng_stack=rng_stack,
+                 module_stack=self.module_stack.clone(),
+                 counter_stack=self.counter_stack.clone(),
+                 used_names_stack=self.used_names_stack.clone())
+
   @contextlib.contextmanager
   def module(self, module_state: ModuleState):
     with self.module_stack(module_state), \
@@ -64,13 +92,6 @@ class Frame(NamedTuple):
          self.used_names_stack(set()):
       yield
 
-
-def new_frame(params, state, rng: Optional["PRNGSequence"]):
-  frame = Frame(params, state, Stack(), Stack(), Stack(), Stack())
-  frame.rng_stack.push(rng)
-  frame.counter_stack.push(collections.Counter())
-  frame.used_names_stack.push(set())
-  return frame_stack(frame)
 
 current_frame = frame_stack.peek
 
@@ -133,20 +154,18 @@ def get_parameter(
   assert init is not None, "Initializer must be specified."
 
   bundle_name = current_bundle_name()
+  frame = current_frame()
 
-  fn_params = current_frame().params
-  frozen = isinstance(fn_params, frozendict)
-
-  if frozen and bundle_name not in fn_params:
+  if frame.params_frozen and bundle_name not in frame.params:
     raise ValueError(
         "Unable to retrieve parameter {!r} for module {!r}. "
         "All parameters must be created as part of `init_fn`.".format(
             name, bundle_name))
 
-  params = fn_params[bundle_name]
+  params = frame.params[bundle_name]
   param = params.get(name)
   if param is None:
-    if frozen:
+    if frame.params_frozen:
       raise ValueError(
           "Unable to retrieve parameter {!r} for module {!r}. "
           "All parameters must be created as part of `init_fn`.".format(
@@ -248,13 +267,20 @@ def mk_init_fn(f: Callable[..., Any]) -> Callable[..., Tuple[Params, State]]:
   """
   analytics.log_once("init_fn")
 
-  def init_fn(rng, *args, **kwargs):
+  def init_fn(
+      rng: Optional[Union[PRNGKey, PRNGSeed]],
+      *args,
+      **kwargs,
+  ):
     """Initializes your function collecting parameters and state."""
     params = collections.defaultdict(dict)
     state = collections.defaultdict(dict)
-    rng = PRNGSequence(rng) if rng is not None else None
 
-    with new_frame(params, state, rng):
+    frame = Frame.create(params=params,
+                         state=state,
+                         rng=(PRNGSequence(rng) if rng is not None else None))
+
+    with frame_stack(frame):
       f(*args, **kwargs)
 
     params = data_structures.to_immutable_dict(params)
@@ -277,13 +303,24 @@ def mk_apply_fn(f: Callable[..., T]) -> Callable[..., Tuple[T, State]]:
   """
   analytics.log_once("apply_fn")
 
-  def apply_fn(params, state, rng, *args, **kwargs):
+  def apply_fn(
+      params: Params,
+      state: State,
+      rng: Optional[Union[PRNGKey, PRNGSeed]],
+      *args,
+      **kwargs,
+  ):
     """Applies your function injecting parameters and state."""
+    # TODO(tomhennigan) Remove support for `None` params (used in tests).
     params = data_structures.to_immutable_dict(params)
     state = _map_state(state, lambda v: (v, v), immutable=False)
-    rng = PRNGSequence(rng) if rng is not None else None
 
-    with new_frame(params, state, rng):
+    frame = Frame.create(
+        params=params,
+        state=state,
+        rng=(PRNGSequence(rng) if rng is not None else None))
+
+    with frame_stack(frame):
       out = f(*args, **kwargs)
 
     state = _map_state(state, lambda v: v[1], immutable=True)

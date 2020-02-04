@@ -27,10 +27,7 @@ Bundle = Mapping[Text, Mapping[Text, Any]]
 
 
 def copy_structure(bundle: Bundle) -> Bundle:
-  copy = collections.defaultdict(dict)
-  for module, values in bundle.items():
-    copy[module].update(values)
-  return copy
+  return jax.tree_map(lambda x: x, bundle)
 
 
 def internal_state() -> InternalState:
@@ -54,7 +51,8 @@ def update_recursive(dst: MutableMapping[Any, Any], src: Mapping[Any, Any]):
 
 def update_internal_state(state: InternalState):
   frame = base.current_frame()
-  update_recursive(frame.params, state.params)
+  if not frame.params_frozen:
+    update_recursive(frame.params, state.params)
   update_recursive(frame.state, state.state)
   rng = state.rng
   if rng is not None:
@@ -65,7 +63,9 @@ def temporary_internal_state(state: InternalState):
   rng = state.rng
   if rng is not None:
     rng = base.PRNGSequence(rng)
-  return base.new_frame(state.params, state.state, rng)
+  frame = base.current_frame()
+  frame = frame.evolve(params=state.params, state=state.state, rng=rng)
+  return base.frame_stack(frame)
 
 
 def grad(fun, argnums=0, has_aux=False, holomorphic=False):
@@ -121,7 +121,7 @@ def grad(fun, argnums=0, has_aux=False, holomorphic=False):
   value_and_grad_fun = value_and_grad(fun, argnums=argnums, has_aux=has_aux,
                                       holomorphic=holomorphic)
 
-  def wrapper(*args, **kwargs):
+  def grad_fn(*args, **kwargs):
     value, grads = value_and_grad_fun(*args, **kwargs)
     if has_aux:
       value, aux = value
@@ -129,7 +129,7 @@ def grad(fun, argnums=0, has_aux=False, holomorphic=False):
     else:
       return grads
 
-  return wrapper
+  return grad_fn
 
 
 def value_and_grad(fun, argnums=0, has_aux=False, holomorphic=False):
@@ -175,6 +175,7 @@ def value_and_grad(fun, argnums=0, has_aux=False, holomorphic=False):
     as the corresponding arguments.
   """
 
+  @functools.wraps(fun)
   def stateful_fun(*args, **kwargs):
     with temporary_internal_state(kwargs.pop("hk_state")):
       out = fun(*args, **kwargs)
@@ -203,6 +204,7 @@ def thread_hk_state_in_kwargs(dec_fun):
   def wrapped_dec_fun(fun, *dec_args, **dec_kwargs):
     """Decorates a modified version of `fun` that passes haiku state."""
 
+    @functools.wraps(fun)
     def stateful_fun(*args, **kwargs):
       with temporary_internal_state(kwargs.pop("hk_state")):
         out = fun(*args, **kwargs)
@@ -227,6 +229,7 @@ remat = thread_hk_state_in_kwargs(jax.remat)
 
 
 def stateful_branch(branch_fun):
+  @functools.wraps(branch_fun)
   def new_branch_fun(operand):
     state, operand = operand
     with temporary_internal_state(state):

@@ -68,5 +68,39 @@ class HaikuTransformsTest(parameterized.TestCase):
                         jax.jit(f.apply)(params, state, rng, x),
                         f.apply(params, state, rng, x, jit=True))
 
+  @test_utils.combined_named_parameters(
+      # TODO(tomhennigan) Enable once grad for _scan_transpose implemented.
+      set(descriptors.ALL_MODULES) - set(descriptors.RECURRENT_MODULES))
+  def test_hk_remat(
+      self,
+      module_fn: descriptors.ModuleFn,
+      shape: Shape,
+      dtype: DType,
+  ):
+    rng = jax.random.PRNGKey(42)
+    if jnp.issubdtype(dtype, jnp.integer):
+      x = jax.random.randint(rng, shape, 0, np.prod(shape), dtype)
+    else:
+      x = jax.random.uniform(rng, shape, dtype)
+
+    def g(x, remat=False):
+      mod = module_fn()
+      if remat:
+        mod = hk.remat(mod)
+      return jnp.mean(mod(x))
+
+    f = hk.transform(g, state=True, apply_rng=True)
+
+    assert_allclose = functools.partial(np.testing.assert_allclose, atol=1e-5)
+
+    grad_jax_remat = jax.grad(jax.remat(f.apply), has_aux=True)
+    grad_hk_remat = jax.grad(functools.partial(f.apply, remat=True),
+                             has_aux=True)
+
+    params, state = f.init(rng, x)
+    jax.tree_multimap(assert_allclose,
+                      grad_jax_remat(params, state, rng, x),
+                      grad_hk_remat(params, state, rng, x))
+
 if __name__ == '__main__':
   absltest.main()

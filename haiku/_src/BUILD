@@ -139,6 +139,34 @@ hk_py_test(
 )
 
 hk_py_library(
+    name = "depthwiseconv",
+    srcs = ["depthwiseconv.py"],
+    deps = [
+        ":base",
+        ":initializers",
+        ":module",
+        ":pad",
+        ":utils",
+        # pip: jax
+        # pip: numpy
+    ],
+)
+
+hk_py_test(
+    name = "depthwiseconv_test",
+    srcs = ["depthwiseconv_test.py"],
+    deps = [
+        ":base",
+        ":depthwiseconv",
+        ":initializers",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        # pip: jax
+        # pip: numpy
+    ],
+)
+
+hk_py_library(
     name = "conv",
     srcs = ["conv.py"],
     deps = [

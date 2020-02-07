@@ -139,20 +139,28 @@ class Linear(module.Module):
     return out
 
 
-def arbitrary_leaf(args, kwargs):
-  flat_args = tree.flatten(args)
-  if flat_args:
-    return flat_args[0]
-  flat_kwargs = tree.flatten(kwargs)
-  if flat_kwargs:
-    return flat_kwargs[0]
-  else:
-    return None
+def ndim_at_least(x, num_dims):
+  if x is None:
+    return False
+  x = jnp.asarray(x)
+  return len(x.shape) >= num_dims
+
+
+def arbitrary_mergeable_leaf(min_num_dims, args, kwargs):
+  for a in tree.flatten(args):
+    if ndim_at_least(a, min_num_dims):
+      return a
+  for k in tree.flatten(kwargs):
+    if ndim_at_least(k, min_num_dims):
+      return k
+  # Couldn't find a satisfactory leaf.
+  return None
 
 
 def merge_leading_dims(x, num_dims):
+  """Merge leading dimensions."""
   # Don't merge if there aren't dimensions to merge.
-  if x is None or num_dims > len(x.shape):
+  if not ndim_at_least(x, num_dims):
     return x
 
   new_shape = (jnp.prod(x.shape[:num_dims]),) + x.shape[num_dims:]
@@ -194,11 +202,10 @@ class BatchApply(object):
     self.num_dims = num_dims
 
   def __call__(self, *args, **kwargs):
-    args = tree.map_structure(jnp.asarray, args)
-    kwargs = tree.map_structure(jnp.asarray, kwargs)
-    example = arbitrary_leaf(args, kwargs)
+    example = arbitrary_mergeable_leaf(self.num_dims, args, kwargs)
     if example is None:
-      raise ValueError("BatchApply requires at least one input.")
+      msg = "BatchApply requires at least one input with ndim >= {}."
+      raise ValueError(msg.format(self.num_dims))
     merge = lambda x: merge_leading_dims(x, self.num_dims)
     split = lambda x: split_leading_dim(x, example.shape[:self.num_dims])
     args = tree.map_structure(merge, args)

@@ -60,8 +60,8 @@ py_binary(
 )
 
 py_binary(
-    name = "impala",
-    srcs = ["impala.py"],
+    name = "impala_lite",
+    srcs = ["impala_lite.py"],
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [

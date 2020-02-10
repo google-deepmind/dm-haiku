@@ -15,6 +15,9 @@
 # ==============================================================================
 """A simple, single-process IMPALA in JAX with Haiku.
 
+This implementation is a simple, minimal implementation of IMPALA.
+For a more full-fledged implementation, see examples/impala/README.md.
+
 See: https://arxiv.org/abs/1802.01561
 """
 

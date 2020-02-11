@@ -2,33 +2,36 @@
 
 **Haiku is Sonnet for JAX.**
 
-Haiku is a simple neural network library for JAX developed by some of the
-authors of Sonnet (a neural network library for TensorFlow).
+Haiku is a simple neural network library for
+[JAX](https://github.com/google/jax) developed by some of the
+authors of [Sonnet](https://github.com/deepmind/sonnet), a neural network
+library for TensorFlow.
 
-NOTE: Haiku is currently **beta**. We have been testing Haiku with a number of
-researchers for several months and have reproduced a number of experiments at
-scale. Please feel free to use Haiku, but be sure to test any assumptions and to
-let us know if things don't look right!
+NOTE: Haiku is currently **beta**. A number of researchers have tested Haiku
+for several months and have reproduced a number of experiments at scale. Please
+feel free to use Haiku, but be sure to test any assumptions and to
+[let us know](https://github.com/deepmind/haiku/issues) if things don't look
+right!
 
 ## Overview
 
-A key design goal of Haiku is to allow an easy transition from Sonnet and
-TensorFlow to JAX, preserving the OO Sonnet programming model of using Modules
-to manage state while allowing full access to the pure functional world of JAX.
-We also want to make random numbers easier to manage safely in JAX.
+[JAX](https://github.com/google/jax) is a numerical computating library that
+combines NumPy, automatic differentiation, and first-class GPU/TPU support.
 
-We believe that building neural networks with Haiku in JAX is a fun and simple
-experience which plays well with the rest of the JAX ecosystem.
+Haiku is a simple neural network library for JAX that enables users to use
+familiar **object-oriented programming models** while allowing full access to
+JAX's pure function transformations.
 
-We achieve this by providing a module abstraction, `hk.Module`, and a simple
-function transformation, `hk.transform`, that allows you to write functions that
-make use of modules in an OO and "impure" way but turn those functions into pure
-functions that can be used with `jit`, `grad`, `pmap`, `vmap` etc.
+Haiku provides two core tools: a module abstraction, `hk.Module`, and a simple
+function transformation, `hk.transform`.
 
-Apart from new features (such as `hk.transform`), we aim to match the API of
-Sonnet 2. Modules, methods, argument names and defaults should match. Many users
-have found Sonnet to be a productive programming model in TensorFlow and we
-would like to enable the same experience in JAX.
+`hk.Module` behaves like `snt.Module`: `Module`s are Python objects that hold
+references to their own parameters, other modules, and methods that apply
+functions on user inputs.
+
+`hk.transform` turns functions that use these object-oriented, functionally
+"impure" modules into pure functions that can be used with `jax.jit`,
+`jax.grad`, `jax.pmap`, etc.
 
 ## Why Haiku?
 
@@ -37,38 +40,54 @@ Haiku?
 
 ### Haiku does not reinvent the wheel.
 
-- With Haiku we build on top of the programming model and APIs of Sonnet, a
-  neural network library with near universal adoption at DeepMind. Our APIs and
-  core abstractions are as close as reasonable to Sonnet, meaning that porting
-  code from Sonnet to Haiku is trivial.
+- Haiku builds on the programming model and APIs of Sonnet, a neural network
+  library with near universal adoption at DeepMind. It preserves Sonnet's
+  `Module`-based programming model for state management while retaining access
+  to JAX's function transformations.
+- Haiku APIs and abstractions are as close as reasonable to Sonnet. Many users
+  have found Sonnet to be a productive programming model in TensorFlow; Haiku
+  enables the same experience in JAX.
+
+### Transitioning to Haiku is easy.
+
+- By design, transitioning from TensorFlow and Sonnet to JAX and Haiku is easy.
+- Outside of new features (e.g. `hk.transform`), Haiku aims to match the API of
+  Sonnet 2. Modules, methods, argument names, and defaults, and initialization
+  schemes should match.
 
 ### Haiku has been tested by researchers at DeepMind at scale.
 
-- We have reproduced a number of large scale experiments in Haiku and JAX with
-  relative ease. Thanks to lining up parameter defaults and initial values it
-  is trivial to take code written in Sonnet and move it to Haiku.
+- DeepMind has reproduced a number of experiments in Haiku and JAX with relative
+  ease, thanks to Haiku's API similarity with Sonnet.
+- These include large-scale results in image and language processing, generative
+  models, and reinforcement learning.
+
+### Haiku is a library, not a framework.
+
+- Haiku (and Sonnet) are designed to make specific things simpler: managing
+  model parameters and other model state.
+- Haiku can be expected to compose other libraries and work well with the rest
+  of JAX.
+- Haiku otherwise is designed to get out of your way - it does not define custom
+  optimizers, checkpointing formats, or replication APIs.
 
 ### Haiku makes other aspects of JAX simpler.
 
 - Haiku offers a trivial model for working with random numbers. Within a
-  transformed function it is safe to call `hk.next_rng_key()` to get a unique
-  rng key. Functions that use random numbers must have an initial random key
-  passed in which makes these functions deterministic (and thus safe to use with
-  JAX's other program transforms).
+  transformed function, `hk.next_rng_key()` returns a unique rng key.
+- These unique keys are deterministically derived from an initial random key
+  passed into the top-level transformed function, and are thus safe to use with
+  JAX program transformations.
 
-### Haiku is a library, not a framework.
+## Quickstart
 
-- Haiku (and Sonnet) are designed to make specific things simpler (managing
-  model parameters and other model state) but otherwise are designed to get out
-  of your way. You can expect Haiku to compose with other libraries and to work
-  well with the rest of JAX.
-
-## Quick start
-
-Let's take a look at an example loss function. This looks basically the same as
-in TensorFlow with Sonnet:
+Let's take a look at an example neural network and loss function. This looks
+basically the same as in TensorFlow with Sonnet:
 
 ```python
+import haiku as hk
+import jax.numpy as jnp
+
 def loss_fn(images, labels):
   model = hk.Sequential([
       hk.Linear(1000), jax.nn.relu,
@@ -76,7 +95,7 @@ def loss_fn(images, labels):
       hk.Linear(10),
   ])
   logits = model(images)
-  labels = one_hot(labels, 10)
+  labels = hk.one_hot(labels, 10)
   return jnp.mean(softmax_cross_entropy(logits, labels))
 
 loss_obj = hk.transform(loss_fn)
@@ -117,11 +136,15 @@ for _ in range(num_training_steps):
   params = jax.tree_multimap(sgd, params, grads)
 ```
 
+For more, see our examples directory. The
+[MNIST example](https://github.com/deepmind/haiku/tree/master/examples/mnist.py)
+is a good place to start.
+
 ## User manual
 
 ### Writing your own modules
 
-In Haiku all modules are a subclass of `hk.Module`. You can implement any
+In Haiku, all modules are a subclass of `hk.Module`. You can implement any
 method you like (nothing is special-cased), but typically modules implement
 `__init__` and `__call__`.
 
@@ -143,12 +166,12 @@ class MyLinear(hk.Module):
 ```
 
 In Haiku all modules have a name. Modules can also have named parameters that
-are accessed using `hk.get_parameter(param_name, ..)`. We use this API (rather
+are accessed using `hk.get_parameter(param_name, ...)`. We use this API (rather
 than just using object properties) so that we can convert your code into a pure
 function using `hk.transform`.
 
 When using modules you need to define functions and transform them using
-`hk.transform`. This function (which can be used as a decorator if you prefer)
+`hk.transform`. This function
 wraps your function into an object that provides `init` and `apply` methods.
 These run your original function under writer/reader monads allowing us to
 collect and inject parameters, state (e.g. batch stats) and rng keys:
@@ -178,8 +201,8 @@ y = forward.apply(params, x)
 
 ### Working with non-trainable state
 
-# TODO(tomhennigan) Write me!
+TODO(tomhennigan): Write me!
 
 ### Distributed training with `jax.pmap`
 
-# TODO(tomhennigan) Write me!
+TODO(tomhennigan): Write me!

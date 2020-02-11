@@ -25,7 +25,6 @@ from jax.experimental import optix
 import jax.numpy as jnp
 import numpy as np
 import tensorflow_datasets as tfds
-import tree
 
 OptState = Any
 
@@ -106,8 +105,8 @@ def main(_):
       new_params: Params,
       epsilon: float = 0.99,
   ) -> Params:
-    return tree.map_structure(lambda p1, p2: (1 - epsilon) * p1 + epsilon * p2,
-                              avg_params, new_params)
+    return jax.tree_multimap(lambda p1, p2: (1 - epsilon) * p1 + epsilon * p2,
+                             avg_params, new_params)
 
   # Make datasets.
   train, test_eval, train_eval = get_datasets(

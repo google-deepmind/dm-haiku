@@ -16,7 +16,6 @@ py_binary(
         # pip: jax:optix
         # pip: numpy
         # pip: tensorflow_datasets
-        # pip: tree
     ],
 )
 
@@ -35,6 +34,5 @@ py_binary(
         # pip: jax:optix
         # pip: numpy
         # pip: rlax
-        # pip: tree
     ],
 )

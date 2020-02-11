@@ -20,7 +20,6 @@ import dm_env
 import haiku as hk
 import jax.nn
 import jax.numpy as jnp
-import tree
 
 NetOutput = collections.namedtuple('NetOutput', ['policy_logits', 'value'])
 
@@ -146,7 +145,7 @@ class AtariNet(hk.RNNCore):
     return self._core.initial_state(batch_size)
 
   def __call__(self, x: dm_env.TimeStep, state):
-    x = tree.map_structure(lambda t: t[None, ...], x)
+    x = jax.tree_map(lambda t: t[None, ...], x)
     return self.unroll(x, state)
 
   def unroll(self, x, state):

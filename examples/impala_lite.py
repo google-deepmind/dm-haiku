@@ -36,7 +36,6 @@ from jax.experimental import optix
 import jax.numpy as jnp
 import numpy as np
 import rlax
-import tree
 
 
 class Transition(NamedTuple):
@@ -79,7 +78,7 @@ class Agent:
       self, params, rng,
       timestep: dm_env.TimeStep) -> Tuple[jnp.DeviceArray, jnp.DeviceArray]:
     """Steps on a single observation."""
-    timestep = tree.map_structure(lambda t: jnp.expand_dims(t, 0), timestep)
+    timestep = jax.tree_map(lambda t: jnp.expand_dims(t, 0), timestep)
     logits, _ = self._net(params, timestep)
     logits = jnp.squeeze(logits, axis=0)
     action = hk.multinomial(rng, logits, num_samples=1)
@@ -101,12 +100,12 @@ class Agent:
     baseline_tp1 = baseline_with_bootstrap[1:]
 
     # Remove bootstrap timestep from non-observations.
-    _, actions, behavior_logits = tree.map_structure(lambda t: t[:-1], trajs)
+    _, actions, behavior_logits = jax.tree_map(lambda t: t[:-1], trajs)
     learner_logits = learner_logits[:-1]
 
     # Shift step_type/reward/discount back by one, so that actions match the
     # timesteps caused by the action.
-    timestep = tree.map_structure(lambda t: t[1:], trajs.timestep)
+    timestep = jax.tree_map(lambda t: t[1:], trajs.timestep)
     discount = timestep.discount * self._discount
     # The step is uninteresting if we transitioned LAST -> FIRST.
     mask = jnp.not_equal(timestep.step_type, int(dm_env.StepType.FIRST))
@@ -147,7 +146,7 @@ def preprocess_step(ts: dm_env.TimeStep) -> dm_env.TimeStep:
     ts = ts._replace(reward=0.)
   if ts.discount is None:
     ts = ts._replace(discount=1.)
-  return tree.map_structure(np.asarray, ts)
+  return jax.tree_map(np.asarray, ts)
 
 
 def run_actor(
@@ -178,7 +177,7 @@ def run_actor(
                             state.reward)
 
     # Stack and send the trajectory.
-    stacked_traj = tree.map_structure(lambda *ts: np.stack(ts), *traj)
+    stacked_traj = jax.tree_multimap(lambda *ts: np.stack(ts), *traj)
     enqueue_traj(stacked_traj)
     # Reset the trajectory, keeping the last timestep.
     traj = traj[-1:]
@@ -215,7 +214,7 @@ def main(_):
   # Initialize the optimizer state.
   sample_ts = env.reset()
   sample_ts = preprocess_step(sample_ts)
-  ts_with_batch = tree.map_structure(lambda t: np.expand_dims(t, 0), sample_ts)
+  ts_with_batch = jax.tree_map(lambda t: np.expand_dims(t, 0), sample_ts)
   params = net_init(jax.random.PRNGKey(428), ts_with_batch)
   opt_state = opt_init(params)
 
@@ -228,7 +227,7 @@ def main(_):
     batch = []
     for _ in range(batch_size):
       batch.append(q.get())
-    batch = tree.map_structure(lambda *ts: np.stack(ts, axis=1), *batch)
+    batch = jax.tree_multimap(lambda *ts: np.stack(ts, axis=1), *batch)
     return jax.device_put(batch)
 
   # Start the actors.

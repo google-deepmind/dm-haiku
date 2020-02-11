@@ -34,6 +34,7 @@ from typing import Callable, List, Optional, Text, Sequence
 from haiku._src import module
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 UpdateNodeFn = Callable[[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray],
                         jnp.ndarray]
@@ -159,19 +160,23 @@ def batch(graphs: Sequence[GraphsTuple]) -> GraphsTuple:
   Args:
     graphs: sequence of GraphsTuple which will be batched into a single graph.
   """
+  return _batch(graphs, np_=jnp)
+
+
+def _batch(graphs, np_):
   # Calculates offsets for sender and receiver arrays, caused by concatenating
   # the nodes arrays.
-  offsets = jnp.cumsum(
-      jnp.array([0] + [jnp.sum(g.n_node) for g in graphs[:-1]]))
+  offsets = np_.cumsum(
+      np_.array([0] + [np_.sum(g.n_node) for g in graphs[:-1]]))
 
   return GraphsTuple(
-      n_node=jnp.concatenate([g.n_node for g in graphs]),
-      n_edge=jnp.concatenate([g.n_edge for g in graphs]),
-      nodes=jnp.concatenate([g.nodes for g in graphs]),
-      edges=jnp.concatenate([g.edges for g in graphs if g.edges.shape[-1]]),
-      globals=jnp.concatenate([g.globals for g in graphs]),
-      senders=jnp.concatenate([g.senders + o for g, o in zip(graphs, offsets)]),
-      receivers=jnp.concatenate(
+      n_node=np_.concatenate([g.n_node for g in graphs]),
+      n_edge=np_.concatenate([g.n_edge for g in graphs]),
+      nodes=np_.concatenate([g.nodes for g in graphs]),
+      edges=np_.concatenate([g.edges for g in graphs if g.edges.shape[-1]]),
+      globals=np_.concatenate([g.globals for g in graphs]),
+      senders=np_.concatenate([g.senders + o for g, o in zip(graphs, offsets)]),
+      receivers=np_.concatenate(
           [g.receivers + o for g, o in zip(graphs, offsets)]))
 
 
@@ -206,7 +211,7 @@ def unbatch(graph: GraphsTuple) -> List[GraphsTuple]:
                               all_globals, all_senders, all_receivers)]
 
 
-def pad(graph, n_node, n_edge, n_graph=2):
+def pad(graph: GraphsTuple, n_node, n_edge, n_graph=2) -> GraphsTuple:
   """Pads the given graph to given sizes.
 
   The graph is padded by first adding a dummy graph which contains the padding
@@ -233,29 +238,29 @@ def pad(graph, n_node, n_edge, n_graph=2):
   Returns:
     The padded graph.
   """
-  pad_n_node = int(n_node - jnp.sum(graph.n_node))
-  pad_n_edge = int(n_edge - jnp.sum(graph.n_edge))
+  graph = jax.device_get(graph)
+  pad_n_node = int(n_node - np.sum(graph.n_node))
+  pad_n_edge = int(n_edge - np.sum(graph.n_edge))
   pad_n_graph = int(n_graph - graph.n_node.shape[0])
   if pad_n_node <= 0 or pad_n_edge < 0 or pad_n_graph <= 0:
     raise RuntimeError(
-        'Given graph is too large for the given padding.'
-        'difference: n_node {}, n_edge {}, n_graph {}'.format(
-            pad_n_node, pad_n_edge, pad_n_graph))
+        'Given graph is too large for the given padding. difference: '
+        f'n_node {pad_n_node}, n_edge {pad_n_edge}, n_graph {pad_n_graph}')
 
   pad_n_empty_graph = pad_n_graph - 1
 
   padding_graph = GraphsTuple(
-      n_node=jnp.concatenate([jnp.array([pad_n_node]),
-                              jnp.zeros(pad_n_empty_graph, dtype=jnp.int32)]),
-      n_edge=jnp.concatenate([jnp.array([pad_n_edge]),
-                              jnp.zeros(pad_n_empty_graph, dtype=jnp.int32)]),
-      nodes=jnp.zeros((pad_n_node,) + graph.nodes.shape[1:]),
-      edges=jnp.zeros((pad_n_edge,) + graph.edges.shape[1:]),
-      globals=jnp.zeros((pad_n_graph,) + graph.globals.shape[1:]),
-      senders=jnp.zeros(pad_n_edge, dtype=jnp.int32),
-      receivers=jnp.zeros(pad_n_edge, dtype=jnp.int32),
+      n_node=np.concatenate([np.array([pad_n_node]),
+                             np.zeros(pad_n_empty_graph, dtype=np.int32)]),
+      n_edge=np.concatenate([np.array([pad_n_edge]),
+                             np.zeros(pad_n_empty_graph, dtype=np.int32)]),
+      nodes=np.zeros((pad_n_node,) + graph.nodes.shape[1:]),
+      edges=np.zeros((pad_n_edge,) + graph.edges.shape[1:]),
+      globals=np.zeros((pad_n_graph,) + graph.globals.shape[1:]),
+      senders=np.zeros(pad_n_edge, dtype=np.int32),
+      receivers=np.zeros(pad_n_edge, dtype=np.int32),
   )
-  return batch([graph, padding_graph])
+  return _batch([graph, padding_graph], np_=np)
 
 
 def get_number_of_padding_graphs(padded_graph):

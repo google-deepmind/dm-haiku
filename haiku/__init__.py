@@ -50,9 +50,6 @@ from haiku._src.conv import Conv3D
 from haiku._src.conv import Conv3DTranspose
 from haiku._src.embed import Embed
 from haiku._src.embed import EmbedLookupStyle
-from haiku._src.graph import batch as batch_graph
-from haiku._src.graph import GraphNetwork
-from haiku._src.graph import GraphsTuple
 from haiku._src.layer_norm import InstanceNorm
 from haiku._src.layer_norm import LayerNorm
 from haiku._src.module import Module
@@ -101,8 +98,6 @@ __all__ = (
     "EmbedLookupStyle",
     "ExponentialMovingAverage",
     "Flatten",
-    "GraphNetwork",
-    "GraphsTuple",
     "GRU",
     "TransformedPair",
     "InstanceNorm",

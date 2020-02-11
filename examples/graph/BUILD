@@ -5,8 +5,8 @@ licenses(["notice"])
 exports_files(["LICENSE"])
 
 py_binary(
-    name = "mnist",
-    srcs = ["mnist.py"],
+    name = "sat",
+    srcs = ["sat.py"],
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [
@@ -15,26 +15,31 @@ py_binary(
         # pip: jax
         # pip: jax:optix
         # pip: numpy
-        # pip: tensorflow_datasets
-        # pip: tree
     ],
 )
 
 py_binary(
-    name = "impala_lite",
-    srcs = ["impala_lite.py"],
+    name = "zacharys_karate_club",
+    srcs = ["zacharys_karate_club.py"],
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [
         # pip: absl:app
-        # pip: absl/logging
-        # pip: bsuite/experiments/catch
-        # pip: dm_env
         "//haiku",
         # pip: jax
         # pip: jax:optix
+    ],
+)
+
+py_binary(
+    name = "game_of_life",
+    srcs = ["game_of_life.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        # pip: absl:app
+        "//haiku",
+        # pip: jax
         # pip: numpy
-        # pip: rlax
-        # pip: tree
     ],
 )

@@ -54,6 +54,7 @@ import haiku as hk
 import jax
 from jax.experimental import optix
 import jax.numpy as jnp
+import numpy as np
 
 
 Problem = collections.namedtuple("Problem", ("graph", "labels", "mask"))
@@ -93,15 +94,15 @@ def get_2sat_problem(min_n_literals: int, max_n_literals: int) -> Problem:
       edges.append(1 if literal_node1 < n_literals_true else 0)
       edges.append(1 if literal_node2 < n_literals_true else 0)
 
-  graph = hk.GraphsTuple(
-      n_node=jnp.asarray([n_node]),
-      n_edge=jnp.asarray([2 * n_constraints]),
+  graph = hk.graph.GraphsTuple(
+      n_node=np.asarray([n_node]),
+      n_edge=np.asarray([2 * n_constraints]),
       # One-hot encoding for nodes and edges.
-      nodes=jnp.eye(2)[nodes],
-      edges=jnp.eye(2)[edges],
-      globals=jnp.zeros((1, 0)),
-      senders=jnp.asarray(senders),
-      receivers=jnp.repeat(jnp.arange(n_constraints) + n_literals, 2))
+      nodes=np.eye(2)[nodes],
+      edges=np.eye(2)[edges],
+      globals=np.zeros((1, 0)),
+      senders=np.asarray(senders),
+      receivers=np.repeat(np.arange(n_constraints) + n_literals, 2))
 
   # In order to jit compile our code, we have to pad the nodes and edges of
   # the GraphsTuple to a static shape.
@@ -111,17 +112,17 @@ def get_2sat_problem(min_n_literals: int, max_n_literals: int) -> Problem:
   graph = hk.graph.pad(graph, max_nodes, max_edges)
 
   # The ground truth solution for the 2-sat problem.
-  labels = (jnp.arange(max_nodes) < n_literals_true).astype(jnp.int32)
-  labels = jnp.eye(2)[labels]
+  labels = (np.arange(max_nodes) < n_literals_true).astype(np.int32)
+  labels = np.eye(2)[labels]
 
   # For the loss calculation we create a mask for the nodes, which masks the
   # the constraint nodes and the padding nodes.
-  mask = (jnp.arange(max_nodes) < n_literals).astype(jnp.int32)
+  mask = (np.arange(max_nodes) < n_literals).astype(np.int32)
   return Problem(graph=graph, labels=labels, mask=mask)
 
 
 def network_definition(
-    graph: hk.GraphsTuple,
+    graph: hk.graph.GraphsTuple,
     num_message_passing_steps: int = 5) -> jnp.DeviceArray:
   """Defines a graph neural network.
 
@@ -147,7 +148,7 @@ def network_definition(
       edges=edge_encoder(graph.edges))
 
   for _ in range(num_message_passing_steps):
-    gn = hk.GraphNetwork(
+    gn = hk.graph.GraphNetwork(
         update_edge_fn=update_fn,
         update_node_fn=update_fn,
         update_globals_fn=lambda n, e, g: g)

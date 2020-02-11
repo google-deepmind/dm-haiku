@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Implementation of Conway's game of live using graphnets."""
+"""Implementation of Conway's game of life using hk.graph."""
 
 import time
 
@@ -36,7 +36,7 @@ def conway_mlp(x):
   return y
 
 
-def conway_graph(size):
+def conway_graph(size) -> hk.graph.GraphsTuple:
   """Returns a graph representing the game field of conway's game of life."""
   # Creates nodes: each node represents a cell in the game.
   n_node = size**2
@@ -59,18 +59,18 @@ def conway_graph(size):
   nodes[2, 0] = 1.0
   nodes[2 + size, 0] = 1.0
   nodes[1 + 2 * size, 0] = 1.0
-  return hk.GraphsTuple(n_node=jnp.array([n_node]),
-                        n_edge=jnp.array([n_edge]),
-                        nodes=jnp.asarray(nodes),
-                        edges=edges,
-                        globals=jnp.array([[1.0]]),
-                        senders=senders,
-                        receivers=receivers)
+  return hk.graph.GraphsTuple(n_node=jnp.array([n_node]),
+                              n_edge=jnp.array([n_edge]),
+                              nodes=jnp.asarray(nodes),
+                              edges=edges,
+                              globals=jnp.array([[1.0]]),
+                              senders=senders,
+                              receivers=receivers)
 
 
-def display_graph(graph):
+def display_graph(graph: hk.graph.GraphsTuple):
   """Prints the nodes of the graph representing Conway's game of life."""
-  size = int(jnp.sqrt(jnp.sum(graph.n_node)))
+  size = int(np.sqrt(np.sum(graph.n_node)))
 
   def _display_node(node):
     if node == 1.0:
@@ -78,8 +78,9 @@ def display_graph(graph):
     else:
       return ' '
 
+  nodes = graph.nodes.copy()
   output = '\n'.join(
-      ''.join(_display_node(graph.nodes[i * size + j][0])
+      ''.join(_display_node(nodes[i * size + j][0])
               for j in range(size))
       for i in range(size))
   print('-' * size + '\n' + output)
@@ -87,23 +88,21 @@ def display_graph(graph):
 
 def main(_):
 
-  def net_fn():
+  def net_fn(graph: hk.graph.GraphsTuple):
     unf = lambda n, e_s, e_r, g: conway_mlp(jnp.concatenate([n, e_r], axis=-1))
-    return hk.GraphNetwork(
+    net = hk.graph.GraphNetwork(
         update_edge_fn=lambda e, n_s, n_r, g: n_s,
         update_node_fn=unf,
         update_globals_fn=lambda n, e, g: g)
+    return net(graph)
 
   net = hk.transform(net_fn)
-  params = net.init(jax.random.PRNGKey(42))
 
-  size = 20
-  cg = conway_graph(size)
+  cg = conway_graph(size=20)
+  params = net.init(jax.random.PRNGKey(42), cg)
   for _ in range(100):
-    # Sleep is not really necessary, majority of the time is spent in the
-    # graphnet call.
     time.sleep(0.05)
-    cg = net.apply(params)(cg)
+    cg = jax.jit(net.apply)(params, cg)
     display_graph(cg)
 
 if __name__ == '__main__':

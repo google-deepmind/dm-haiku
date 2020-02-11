@@ -31,7 +31,7 @@ from jax.experimental import optix
 import jax.numpy as jnp
 
 
-def get_zacharys_karate_club() -> hk.GraphsTuple:
+def get_zacharys_karate_club() -> hk.graph.GraphsTuple:
   """Returns GraphsTuple representing Zachary's karate club."""
   social_graph = [
       (1, 0), (2, 0), (2, 1), (3, 0), (3, 1), (3, 2),
@@ -51,7 +51,7 @@ def get_zacharys_karate_club() -> hk.GraphsTuple:
   social_graph += [(edge[1], edge[0]) for edge in social_graph]
   n_club_members = 34
 
-  return hk.GraphsTuple(
+  return hk.graph.GraphsTuple(
       n_node=jnp.asarray([n_club_members]),
       n_edge=jnp.asarray([len(social_graph)]),
       # One-hot encoding for nodes.
@@ -68,7 +68,7 @@ def get_ground_truth_assignments_for_zacharys_karate_club() -> jnp.DeviceArray:
                     0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
 
 
-def network_definition(graph: hk.GraphsTuple) -> jnp.DeviceArray:
+def network_definition(graph: hk.graph.GraphsTuple) -> jnp.DeviceArray:
   """Defines a graph neural network.
 
   Args:
@@ -77,13 +77,13 @@ def network_definition(graph: hk.GraphsTuple) -> jnp.DeviceArray:
   Returns:
     processed nodes.
   """
-  gn = hk.GraphNetwork(
+  gn = hk.graph.GraphNetwork(
       update_edge_fn=lambda e, s, r, g: s,
       update_node_fn=lambda n, o, i, g: jax.nn.relu(hk.Linear(5)(i)),
       update_globals_fn=lambda n, e, g: g)
   graph = gn(graph)
 
-  gn = hk.GraphNetwork(
+  gn = hk.graph.GraphNetwork(
       update_edge_fn=lambda e, s, r, g: s,
       update_node_fn=lambda n, o, i, g: hk.Linear(2)(i),
       update_globals_fn=lambda n, e, g: g)

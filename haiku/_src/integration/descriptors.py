@@ -149,6 +149,10 @@ BATCH_MODULES = (
         name="Conv3DTranspose",
         create=lambda: hk.Conv3DTranspose(3, 3),
         shape=(BATCH_SIZE, 2, 2, 2, 2)),
+    ModuleDescriptor(
+        name="DepthwiseConv2D",
+        create=lambda: hk.DepthwiseConv2D(1, 3),
+        shape=(BATCH_SIZE, 2, 2, 2)),
 )
 
 

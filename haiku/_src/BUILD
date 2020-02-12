@@ -18,7 +18,6 @@ hk_py_library(
         ":analytics",
         ":data_structures",
         ":typing",
-        ":utils",
         # pip: jax
         # pip: numpy
     ],
@@ -44,7 +43,6 @@ hk_py_library(
         ":module",
         ":utils",
         # pip: jax
-        # pip: numpy
     ],
 )
 
@@ -67,10 +65,8 @@ hk_py_library(
     srcs = ["module.py"],
     deps = [
         ":base",
-        ":data_structures",
         ":utils",
         # pip: jax
-        # pip: numpy
     ],
 )
 
@@ -139,13 +135,12 @@ hk_py_test(
 )
 
 hk_py_library(
-    name = "depthwiseconv",
-    srcs = ["depthwiseconv.py"],
+    name = "depthwise_conv",
+    srcs = ["depthwise_conv.py"],
     deps = [
         ":base",
         ":initializers",
         ":module",
-        ":pad",
         ":utils",
         # pip: jax
         # pip: numpy
@@ -153,11 +148,11 @@ hk_py_library(
 )
 
 hk_py_test(
-    name = "depthwiseconv_test",
-    srcs = ["depthwiseconv_test.py"],
+    name = "depthwise_conv_test",
+    srcs = ["depthwise_conv_test.py"],
     deps = [
         ":base",
-        ":depthwiseconv",
+        ":depthwise_conv",
         ":initializers",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
@@ -284,9 +279,6 @@ hk_py_test(
 hk_py_library(
     name = "utils",
     srcs = ["utils.py"],
-    deps = [
-        # pip: jax
-    ],
 )
 
 hk_py_test(
@@ -386,7 +378,6 @@ hk_py_library(
         ":initializers",
         ":module",
         # pip: jax
-        # pip: tree
     ],
 )
 
@@ -464,7 +455,6 @@ hk_py_library(
         ":basic",
         ":initializers",
         ":module",
-        # pip: enum
         # pip: jax
     ],
 )

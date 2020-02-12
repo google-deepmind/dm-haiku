@@ -47,6 +47,7 @@ from haiku._src.conv import Conv2D
 from haiku._src.conv import Conv2DTranspose
 from haiku._src.conv import Conv3D
 from haiku._src.conv import Conv3DTranspose
+from haiku._src.depthwise_conv import DepthwiseConv2D
 from haiku._src.embed import Embed
 from haiku._src.embed import EmbedLookupStyle
 from haiku._src.layer_norm import InstanceNorm
@@ -92,6 +93,7 @@ __all__ = (
     "Conv3D",
     "Conv3DTranspose",
     "DeepRNN",
+    "DepthwiseConv2D",
     "EMAParamsTree",
     "Embed",
     "EmbedLookupStyle",

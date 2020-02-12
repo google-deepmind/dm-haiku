@@ -13,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Tests for haiku._src.depthwiseconv."""
+"""Tests for haiku._src.depthwise_conv."""
 
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import base
-from haiku._src import depthwiseconv
+from haiku._src import depthwise_conv
 from haiku._src import initializers
 from jax import random
 import jax.numpy as jnp
@@ -44,11 +44,11 @@ class DepthwiseConv2DTest(parameterized.TestCase):
       data[0, :, :, 1] += 1
       data[0, :, :, 2] += 2
       data = jnp.array(data)
-      net = depthwiseconv.DepthwiseConv2D(
+      net = depthwise_conv.DepthwiseConv2D(
           channel_multiplier=1,
           kernel_shape=3,
           stride=1,
-          padding="Valid",
+          padding="VALID",
           with_bias=with_bias,
           data_format="channels_last",
           **create_constant_initializers(1.0, 1.0, with_bias))
@@ -76,11 +76,11 @@ class DepthwiseConv2DTest(parameterized.TestCase):
       data[0, :, :, 1] += 1
       data[0, :, :, 2] += 2
       data = jnp.array(data)
-      net = depthwiseconv.DepthwiseConv2D(
+      net = depthwise_conv.DepthwiseConv2D(
           channel_multiplier=1,
           kernel_shape=3,
           stride=1,
-          padding="Same",
+          padding="SAME",
           with_bias=with_bias,
           data_format="channels_last",
           **create_constant_initializers(1.0, 0.0, with_bias))
@@ -97,11 +97,11 @@ class DepthwiseConv2DTest(parameterized.TestCase):
       data[0, :, :, 1] += 1
       data[0, :, :, 2] += 2
       data = jnp.array(data)
-      net = depthwiseconv.DepthwiseConv2D(
+      net = depthwise_conv.DepthwiseConv2D(
           channel_multiplier=3,
           kernel_shape=3,
           stride=1,
-          padding="Valid",
+          padding="VALID",
           with_bias=with_bias,
           data_format="channels_last",
           **create_constant_initializers(1.0, 0.0, with_bias))
@@ -118,11 +118,11 @@ class DepthwiseConv2DTest(parameterized.TestCase):
       data[0, 1, :, :] += 1
       data[0, 2, :, :] += 2
       data = jnp.array(data)
-      net = depthwiseconv.DepthwiseConv2D(
+      net = depthwise_conv.DepthwiseConv2D(
           channel_multiplier=1,
           kernel_shape=3,
           stride=1,
-          padding="Valid",
+          padding="VALID",
           with_bias=with_bias,
           data_format="channels_first",
           **create_constant_initializers(1.0, 1.0, with_bias))
@@ -147,11 +147,11 @@ class DepthwiseConv2DTest(parameterized.TestCase):
       data[0, 1, :, :] += 1
       data[0, 2, :, :] += 2
       data = jnp.array(data)
-      net = depthwiseconv.DepthwiseConv2D(
+      net = depthwise_conv.DepthwiseConv2D(
           channel_multiplier=9,
           kernel_shape=3,
           stride=1,
-          padding="Valid",
+          padding="VALID",
           with_bias=with_bias,
           data_format="channels_first",
           **create_constant_initializers(1.0, 0.0, with_bias))

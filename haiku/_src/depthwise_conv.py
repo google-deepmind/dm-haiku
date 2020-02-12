@@ -45,11 +45,11 @@ class DepthwiseConv2D(module.Module):
                channel_multiplier,
                kernel_shape,
                stride=1,
-               padding="VALID",
+               padding="SAME",
                with_bias=True,
                w_init=None,
                b_init=None,
-               data_format="channels_last",
+               data_format="NHWC",
                name=None):
     """Construct a 2D Depthwise Convolution.
 

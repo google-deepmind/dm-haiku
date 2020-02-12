@@ -13,7 +13,6 @@ py_library(
     srcs = [
         "__init__.py",
         "data_structures.py",
-        "graph.py",
         "initializers.py",
         "nets.py",
         "pad.py",
@@ -30,7 +29,6 @@ py_library(
         "//haiku/_src:conv",
         "//haiku/_src:data_structures",
         "//haiku/_src:embed",
-        "//haiku/_src:graph",
         "//haiku/_src:initializers",
         "//haiku/_src:layer_norm",
         "//haiku/_src:module",

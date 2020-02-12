@@ -16,7 +16,6 @@
 """Haiku is a neural network library for JAX."""
 
 from haiku import data_structures
-from haiku import graph
 from haiku import initializers
 from haiku import nets
 from haiku import pad
@@ -122,7 +121,6 @@ __all__ = (
     "get_parameter",
     "get_state",
     "grad",
-    "graph",
     "initializers",
     "jit",
     "max_pool",

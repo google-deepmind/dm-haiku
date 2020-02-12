@@ -230,7 +230,6 @@ IGNORED_MODULES = {
     hk.Reshape,
     hk.AvgPool,
     hk.MaxPool,
-    hk.graph.GraphNetwork,
 
     # Non-standard.
     hk.EMAParamsTree,

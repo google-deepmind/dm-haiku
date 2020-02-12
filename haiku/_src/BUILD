@@ -259,28 +259,6 @@ hk_py_test(
 )
 
 hk_py_library(
-    name = "graph",
-    srcs = ["graph.py"],
-    deps = [
-        ":module",
-        # pip: jax
-        # pip: numpy
-    ],
-)
-
-hk_py_test(
-    name = "graph_test",
-    srcs = ["graph_test.py"],
-    deps = [
-        ":base",
-        ":graph",
-        # pip: absl/testing:absltest
-        # pip: jax
-        # pip: numpy
-    ],
-)
-
-hk_py_library(
     name = "data_structures",
     srcs = ["data_structures.py"],
     deps = [

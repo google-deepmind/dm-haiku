@@ -39,7 +39,7 @@ class Embed(module.Module):
                embedding_matrix=None,
                w_init=None,
                lookup_style=EmbedLookupStyle.ARRAY_INDEX.name,
-               name="embed"):
+               name=None):
     """Constructs an Embed module.
 
     Args:
@@ -47,9 +47,8 @@ class Embed(module.Module):
         provided, an existing vocabulary matrix from which vocab_size can be
         inferred must be provided as `existing_vocab`.
       embed_dim: int or None. Number of dimensions to assign to each embedding.
-        If not specified, a sensible default is chosen based on `vocab_size`. If
-        an existing vocabulary matrix initializes the module, this should not be
-        provided as it will be inferred.
+        If an existing vocabulary matrix initializes the module, this should not
+        be provided as it will be inferred.
       embedding_matrix: A matrix-like object equivalent in size to
         [vocab_size, embed_dim]. If given, it is used as the initial value for
         the embedding matrix and neither vocab_size or embed_dim need be given.

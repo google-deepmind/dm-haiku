@@ -175,10 +175,10 @@ def get_parameter(
     param = create_parameter(fq_name, shape, dtype, init)
     params[name] = param  # pytype: disable=unsupported-operands
 
-  # TODO(tomhennigan) Check "compatible" not equal shape.
   assert param.shape == tuple(shape), (
       "{!r} with shape {!r} does not match shape={!r} dtype={!r}".format(
           param, param.shape, shape, dtype))
+
   return param
 
 

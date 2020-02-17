@@ -43,7 +43,7 @@ def unpack_from_dict(src, prefix):
 # TODO(tycai): Allow state=False as well.
 # TODO(tycai): Make sure transformed functions have better names.
 class LiftingModule(module.Module):
-  """Lifts the given init function to function in the current Haiku namespace.
+  """Lifts the given init function to a function in the current Haiku namespace.
 
   During init, the returned callable will run the given `init_fn`, and include
   the resulting params/state in the outer transform's dictionaries.

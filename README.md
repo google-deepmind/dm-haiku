@@ -106,7 +106,10 @@ us to run the function and collect initial values for parameters:
 
 ```python
 rng = jax.random.PRNGKey(42)
-images, labels = next(input_dataset)  # Example input.
+# Haiku needs example inputs to compute the function and collect initial
+# parameter values. For most models you can pass any dummy data since
+# initialization only depends on input shape/dtype.
+images, labels = next(input_dataset)
 params = loss_obj.init(rng, images, labels)
 ```
 
@@ -118,7 +121,8 @@ loss = loss_obj.apply(params, images, labels)
 ```
 
 This is useful since we can now take gradients of the loss with respect to the
-parameters:
+parameters (by default `jax.grad` takes the gradient wrt the first positional
+argument):
 
 ```python
 grads = jax.grad(loss_obj.apply)(params, images, labels)
@@ -174,7 +178,7 @@ When using modules you need to define functions and transform them using
 `hk.transform`. This function
 wraps your function into an object that provides `init` and `apply` methods.
 These run your original function under writer/reader monads allowing us to
-collect and inject parameters, state (e.g. batch stats) and rng keys:
+collect and inject parameters, state (e.g. batch norm statistics) and rng keys:
 
 ```python
 def forward_fn(x):

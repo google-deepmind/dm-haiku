@@ -24,7 +24,7 @@ See: https://arxiv.org/abs/1802.01561
 import functools
 import queue
 import threading
-from typing import Any, NamedTuple, Tuple
+from typing import Any, Callable, NamedTuple, Tuple
 
 from absl import app
 from absl import logging
@@ -36,6 +36,8 @@ from jax.experimental import optix
 import jax.numpy as jnp
 import numpy as np
 import rlax
+
+OptState = Any
 
 
 class Transition(NamedTuple):
@@ -53,12 +55,12 @@ class SimpleNet(hk.Module):
 
   def __call__(
       self,
-      timestep: dm_env.TimeStep) -> Tuple[jnp.DeviceArray, jnp.DeviceArray]:
+      timestep: dm_env.TimeStep,
+  ) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """Process a batch of observations."""
-    torso = hk.Sequential(
-        [hk.Flatten(),
-         hk.Linear(128), jax.nn.relu,
-         hk.Linear(64), jax.nn.relu])
+    torso = hk.Sequential([hk.Flatten(),
+                           hk.Linear(128), jax.nn.relu,
+                           hk.Linear(64), jax.nn.relu])
     hidden = torso(timestep.observation)
     policy_logits = hk.Linear(self._num_actions)(hidden)
     baseline = hk.Linear(1)(hidden)
@@ -75,8 +77,11 @@ class Agent:
 
   @functools.partial(jax.jit, static_argnums=0)
   def step(
-      self, params, rng,
-      timestep: dm_env.TimeStep) -> Tuple[jnp.DeviceArray, jnp.DeviceArray]:
+      self,
+      params: hk.Params,
+      rng: jnp.ndarray,
+      timestep: dm_env.TimeStep,
+  ) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """Steps on a single observation."""
     timestep = jax.tree_map(lambda t: jnp.expand_dims(t, 0), timestep)
     logits, _ = self._net(params, timestep)
@@ -85,7 +90,7 @@ class Agent:
     action = jnp.squeeze(action, axis=-1)
     return action, logits
 
-  def loss(self, params, trajs) -> jnp.DeviceArray:
+  def loss(self, params: hk.Params, trajs: Transition) -> jnp.ndarray:
     """Computes a loss of trajs wrt params."""
     # Re-run the agent over the trajectories.
     # Due to https://github.com/google/jax/issues/1459, we use hk.BatchApply
@@ -151,9 +156,9 @@ def preprocess_step(ts: dm_env.TimeStep) -> dm_env.TimeStep:
 
 def run_actor(
     agent: Agent,
-    rng_key,
-    get_params,
-    enqueue_traj,
+    rng_key: jnp.ndarray,
+    get_params: Callable[[], hk.Params],
+    enqueue_traj: Callable[[Transition], None],
     unroll_len: int,
     num_trajectories: int,
 ):
@@ -191,7 +196,12 @@ class Learner:
     self._opt_update = opt_update
 
   @functools.partial(jax.jit, static_argnums=0)
-  def update(self, params, opt_state, trajs):
+  def update(
+      self,
+      params: hk.Params,
+      opt_state: OptState,
+      trajs: Transition,
+  ) -> Tuple[hk.Params, OptState]:
     g = jax.grad(self._agent.loss)(params, trajs)
     updates, new_opt_state = self._opt_update(g, opt_state)
     return optix.apply_updates(params, updates), new_opt_state
@@ -203,20 +213,18 @@ def main(_):
   env = catch.Catch()
   num_actions = env.action_spec().num_values
   net = hk.transform(lambda ts: SimpleNet(num_actions)(ts))  # pylint: disable=unnecessary-lambda
-  # jit init, which we call at the top level. apply doesn't need a jit.
-  net_init = jax.jit(net.init)
 
   # Construct the agent and learner.
   agent = Agent(net.apply)
-  opt_init, opt_update = optix.rmsprop(1e-1, decay=0.99, eps=0.1)
-  learner = Learner(agent, opt_update)
+  opt = optix.rmsprop(1e-1, decay=0.99, eps=0.1)
+  learner = Learner(agent, opt.update)
 
   # Initialize the optimizer state.
   sample_ts = env.reset()
   sample_ts = preprocess_step(sample_ts)
   ts_with_batch = jax.tree_map(lambda t: np.expand_dims(t, 0), sample_ts)
-  params = net_init(jax.random.PRNGKey(428), ts_with_batch)
-  opt_state = opt_init(params)
+  params = jax.jit(net.init)(jax.random.PRNGKey(428), ts_with_batch)
+  opt_state = opt.init(params)
 
   # Create accessor and queueing functions.
   current_params = lambda: params
@@ -245,7 +253,6 @@ def main(_):
   for i in range(num_steps):
     traj = dequeue()
     params, opt_state = learner.update(params, opt_state, traj)
-
 
 if __name__ == '__main__':
   app.run(main)

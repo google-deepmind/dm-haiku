@@ -112,7 +112,6 @@ class LSTM(RNNCore):
       raise ValueError("LSTM input must be rank-1 or rank-2.")
     prev_h, prev_c = state
     x_and_h = jnp.concatenate([inputs, prev_h], axis=-1)
-    # TODO(tycai): Consider splitting this into two linears for readability.
     gated = basic.Linear(4 * self.hidden_size)(x_and_h)
     # i = input, g = cell_gate, f = forget_gate, o = output_gate
     i, g, f, o = jnp.split(gated, indices_or_sections=4, axis=-1)

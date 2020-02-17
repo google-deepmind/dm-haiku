@@ -5,6 +5,31 @@ Base
 
 .. currentmodule:: haiku
 
+transform
+~~~~~~~~~
+
+.. autofunction:: transform
+
+.. autofunction:: get_parameter
+
+.. autofunction:: get_state
+
+.. autofunction:: set_state
+
+.. autofunction:: custom_creator
+
+.. autofunction:: transparent
+
+Random Number Generators
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: PRNGSequence
+   :members:
+
+.. autofunction:: next_rng_key
+
+.. autofunction:: with_rng
+
 Module
 ~~~~~~
 
@@ -24,6 +49,27 @@ Bias
 ~~~~
 
 .. autoclass:: Bias
+   :members:
+
+Pooling modules
+---------------
+
+.. currentmodule:: haiku
+
+Average Pool
+~~~~~~~~~~~~
+
+.. autofunction:: avg_pool
+
+.. autoclass:: AvgPool
+   :members:
+
+Max Pool
+~~~~~~~~
+
+.. autofunction:: max_pool
+
+.. autoclass:: MaxPool
    :members:
 
 Convolutional modules
@@ -67,6 +113,12 @@ Conv3DTranspose
 .. autoclass:: Conv3DTranspose
    :members:
 
+DepthwiseConv2D
+~~~~~~~~~~~~~~~
+
+.. autoclass:: DepthwiseConv2D
+   :members:
+
 Normalization modules
 ---------------------
 
@@ -106,12 +158,29 @@ dynamic_unroll
 
 .. autofunction:: dynamic_unroll
 
+static_unroll
+~~~~~~~~~~~~~~
+
+.. autofunction:: static_unroll
+
 VanillaRNN
 ~~~~~~~~~~
 
 .. autoclass:: VanillaRNN
    :members:
    :special-members:
+
+LSTM
+~~~~
+
+.. autoclass:: LSTM
+   :members:
+
+GRU
+~~~~
+
+.. autoclass:: GRU
+   :members:
 
 DeepRNN
 ~~~~~~~
@@ -121,10 +190,10 @@ DeepRNN
 
 .. autofunction:: deep_rnn_with_skip_connections
 
-LSTM
-~~~~
+ResetCore
+~~~~~~~~~
 
-.. autoclass:: LSTM
+.. autoclass:: ResetCore
    :members:
 
 Batch

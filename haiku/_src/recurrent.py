@@ -310,12 +310,12 @@ def deep_rnn_with_skip_connections(layers, name=None):
 
   The output of the `DeepRNN` is the concatenation of the outputs of all cores.
 
-  ```
-      outputs0, ... = layers[0](inputs, ...)
-      outputs1, ... = layers[1](tf.concat([inputs, outputs0], axis=-1], ...)
-      outputs2, ... = layers[2](tf.concat([inputs, outputs1], axis=-1], ...)
-      ...
-  ```
+  .. code-block:: python
+
+     outputs0, ... = layers[0](inputs, ...)
+     outputs1, ... = layers[1](tf.concat([inputs, outputs0], axis=-1], ...)
+     outputs2, ... = layers[2](tf.concat([inputs, outputs1], axis=-1], ...)
+     ...
 
   Args:
     layers: List of `RNNCore`s.

@@ -18,13 +18,13 @@
 import collections
 import contextlib
 import functools
-from typing import Any, Callable, Iterator, NamedTuple, Optional, Text, Tuple, Set, TypeVar, Union
+from typing import (Any, Callable, Iterator, MutableMapping, NamedTuple,
+                    Optional, Text, Tuple, Set, TypeVar, Union)
 
 from haiku._src import analytics
 from haiku._src import data_structures
 from haiku._src.typing import (Shape, DType, ParamName, Initializer, Params,  # pylint: disable=g-multiple-import
-                               State, MutableState, MutableParams, ParamCreator,
-                               PRNGKey, PRNGSeed)
+                               State, ParamCreator, PRNGKey, PRNGSeed)
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -38,6 +38,10 @@ T = TypeVar("T")
 
 ModuleState = namedtuple("ModuleState", ("module", "method_name"))
 TransformedPair = namedtuple("TransformedPair", ("init", "apply"))
+StatePair = namedtuple("StatePair", ("initial", "current"))
+MutableParams = MutableMapping[Text, MutableMapping[ParamName, jnp.ndarray]]
+MutableState = MutableMapping[Text, MutableMapping[Text, StatePair]]
+
 
 # TODO(tomhennigan) Should creator_stack be part of frame?
 frame_stack = ThreadLocalStack()  # type: ThreadLocalStack["Frame"]
@@ -284,7 +288,7 @@ def mk_init_fn(f: Callable[..., Any]) -> Callable[..., Tuple[Params, State]]:
       f(*args, **kwargs)
 
     params = data_structures.to_immutable_dict(params)
-    state = _map_state(state, lambda v: v[0])
+    state = _extract_state(state, initial=True)
     return params, state
 
   return init_fn
@@ -313,7 +317,8 @@ def mk_apply_fn(f: Callable[..., T]) -> Callable[..., Tuple[T, State]]:
     """Applies your function injecting parameters and state."""
     # TODO(tomhennigan) Remove support for `None` params (used in tests).
     params = data_structures.to_immutable_dict(params)
-    state = _map_state(state, lambda v: (v, v), immutable=False)
+    state = {m: {k: StatePair(v, v) for k, v in p.items()}
+             for m, p in state.items()}
 
     frame = Frame.create(
         params=params,
@@ -323,7 +328,7 @@ def mk_apply_fn(f: Callable[..., T]) -> Callable[..., Tuple[T, State]]:
     with frame_stack(frame):
       out = f(*args, **kwargs)
 
-    state = _map_state(state, lambda v: v[1], immutable=True)
+    state = _extract_state(state, initial=False)
     return out, state
 
   return apply_fn
@@ -505,10 +510,10 @@ def next_rng_key() -> PRNGKey:
   return next(rng_seq)
 
 
-def _map_state(state, f, immutable=True):
-  state = {m: {k: f(v) for k, v in p.items()} for m, p in state.items()}
-  if immutable:
-    state = data_structures.to_immutable_dict(state)
+def _extract_state(state: MutableState, *, initial) -> State:
+  state = {m: {k: (v.initial if initial else v.current) for k, v in p.items()}
+           for m, p in state.items()}
+  state = data_structures.to_immutable_dict(state)
   return state
 
 
@@ -519,7 +524,8 @@ def get_state(name: ParamName,
   """Gets the current value for state with an optional initial value."""
   assert_transformed("get_state")
   state = current_frame().state[current_bundle_name()]
-  if name not in state:
+  value = state.get(name, None)
+  if value is None:
     if init is None:
       raise ValueError(
           "No value for {!r} in {!r}, perhaps set an init function?".format(
@@ -529,11 +535,9 @@ def get_state(name: ParamName,
           "Must provide shape and dtype to initialize {!r} in {!r}.".format(
               name, current_bundle_name()))
 
-    initial = current = init(shape, dtype)
-    state[name] = (initial, current)
-  else:
-    initial, current = state[name]
-  return current
+    initial = init(shape, dtype)
+    value = state[name] = StatePair(initial, initial)
+  return value.current
 
 
 def set_state(name: ParamName, value):
@@ -545,7 +549,7 @@ def set_state(name: ParamName, value):
     current = value
   else:
     initial = current = value
-  state[name] = (initial, current)
+  state[name] = StatePair(initial, current)
 
 
 def with_rng(key: PRNGKey):

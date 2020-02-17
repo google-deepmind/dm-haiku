@@ -15,7 +15,7 @@
 # ==============================================================================
 """Haiku types."""
 
-from typing import Any, Callable, Mapping, MutableMapping, Text, Sequence, Union
+from typing import Any, Callable, Mapping, Text, Sequence, Union
 import jax.numpy as jnp
 
 Shape = Sequence[int]
@@ -24,8 +24,6 @@ ParamName = Text
 Initializer = Callable[[Shape, DType], jnp.ndarray]
 Params = Mapping[Text, Mapping[ParamName, jnp.ndarray]]
 State = Mapping[Text, Mapping[Text, jnp.ndarray]]
-MutableParams = MutableMapping[Text, MutableMapping[ParamName, jnp.ndarray]]
-MutableState = MutableMapping[Text, MutableMapping[Text, jnp.ndarray]]
 NextCreator = Callable[[ParamName, Shape, DType, Initializer], jnp.ndarray]
 ParamCreator = Callable[[NextCreator, ParamName, Shape, DType, Initializer],
                         jnp.ndarray]

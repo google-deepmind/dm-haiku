@@ -10,6 +10,8 @@ py_binary(
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [
+        # link: gpu_support
+        # link: tpu_support
         # pip: absl:app
         "//haiku",
         # pip: jax
@@ -25,6 +27,8 @@ py_binary(
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [
+        # link: gpu_support
+        # link: tpu_support
         # pip: absl:app
         # pip: absl/logging
         # pip: bsuite/experiments/catch

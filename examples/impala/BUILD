@@ -15,6 +15,8 @@ py_binary(
         ":haiku_nets",
         ":learner",
         ":util",
+        # link: gpu_support
+        # link: tpu_support
         # pip: absl:app
         # pip: bsuite/experiments/catch
         # pip: jax

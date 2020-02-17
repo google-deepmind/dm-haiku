@@ -50,7 +50,7 @@ class Actor:
 
     self._episode_return = 0.
 
-  def unroll(self, rng_key, frame_count: int, params: hk.typing.Params,
+  def unroll(self, rng_key, frame_count: int, params: hk.Params,
              unroll_length: int) -> util.Transition:
     """Run unroll_length agent/environment steps, returning the trajectory."""
     timestep = self._timestep
@@ -92,7 +92,7 @@ class Actor:
     self._traj = self._traj[-1:]
     return trajectory
 
-  def unroll_and_push(self, frame_count: int, params: hk.typing.Params):
+  def unroll_and_push(self, frame_count: int, params: hk.Params):
     """Run one unroll and send trajectory to learner."""
     params = jax.device_put(params)
     self._rng_key, subkey = jax.random.split(self._rng_key)

@@ -19,7 +19,6 @@ from typing import Any, Tuple
 
 from absl import app
 import haiku as hk
-from haiku.typing import Params
 import jax
 from jax.experimental import optix
 import jax.numpy as jnp
@@ -65,7 +64,7 @@ def main(_):
   # Training loss (cross-entropy).
   @jax.jit
   def loss(
-      params: Params,
+      params: hk.Params,
       inputs: np.ndarray,
       targets: np.ndarray,
   ) -> jnp.DeviceArray:
@@ -76,7 +75,7 @@ def main(_):
   # Evaluation metric (classification accuracy).
   @jax.jit
   def accuracy(
-      params: Params,
+      params: hk.Params,
       inputs: np.ndarray,
       targets: np.ndarray,
   ) -> jnp.DeviceArray:
@@ -85,11 +84,11 @@ def main(_):
 
   @jax.jit
   def update(
-      params: Params,
+      params: hk.Params,
       opt_state: OptState,
       inputs: np.ndarray,
       targets: np.ndarray,
-  ) -> Tuple[Params, OptState]:
+  ) -> Tuple[hk.Params, OptState]:
     """Learning rule (stochastic gradient descent)."""
     _, gradient = jax.value_and_grad(loss)(params, inputs, targets)
     updates, opt_state = opt_update(gradient, opt_state)
@@ -101,10 +100,10 @@ def main(_):
   # For more, see: https://doi.org/10.1137/0330046
   @jax.jit
   def ema_update(
-      avg_params: Params,
-      new_params: Params,
+      avg_params: hk.Params,
+      new_params: hk.Params,
       epsilon: float = 0.99,
-  ) -> Params:
+  ) -> hk.Params:
     return jax.tree_multimap(lambda p1, p2: (1 - epsilon) * p1 + epsilon * p2,
                              avg_params, new_params)
 

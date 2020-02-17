@@ -86,7 +86,9 @@ class Learner:
     self._logger = logger
 
   def _loss(
-      self, theta: hk.typing.Params, trajectories: util.Transition
+      self,
+      theta: hk.Params,
+      trajectories: util.Transition,
   ) -> Tuple[jnp.ndarray, Dict[Text, jnp.ndarray]]:
     """Compute vtrace-based actor-critic loss."""
     initial_state = jax.tree_map(lambda t: t[0], trajectories.agent_state)
@@ -157,7 +159,7 @@ class Learner:
     """Enqueue trajectory."""
     self._host_q.put(traj)
 
-  def params_for_actor(self) -> Tuple[int, hk.typing.Params]:
+  def params_for_actor(self) -> Tuple[int, hk.Params]:
     return self._params_for_actor
 
   def host_to_device_worker(self):

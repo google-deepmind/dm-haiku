@@ -78,6 +78,8 @@ from haiku._src.stateful import grad
 from haiku._src.stateful import jit
 from haiku._src.stateful import remat
 from haiku._src.stateful import value_and_grad
+from haiku._src.typing import Params
+from haiku._src.typing import State
 
 __version__ = "0.0.1a0"
 
@@ -107,11 +109,13 @@ __all__ = (
     "Linear",
     "MaxPool",
     "Module",
+    "Params",
     "PRNGSequence",
     "RNNCore",
     "ResetCore",
     "Reshape",
     "Sequential",
+    "State",
     "avg_pool",
     "cond",
     "custom_creator",

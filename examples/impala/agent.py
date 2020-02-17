@@ -73,9 +73,13 @@ class Agent:
     return self._initial_state_apply_fn(None, batch_size)
 
   @functools.partial(jax.jit, static_argnums=(0,))
-  def step(self, rng_key, params: hk.typing.Params,
-           timestep: dm_env.TimeStep,
-           state: Nest) -> Tuple[AgentOutput, Nest]:
+  def step(
+      self,
+      rng_key,
+      params: hk.Params,
+      timestep: dm_env.TimeStep,
+      state: Nest,
+  ) -> Tuple[AgentOutput, Nest]:
     """For a given single-step, unbatched timestep, output the chosen action."""
     # Pad timestep, state to be [T, B, ...] and [B, ...] respectively.
     timestep = jax.tree_map(lambda t: t[None, None, ...], timestep)
@@ -90,8 +94,12 @@ class Agent:
     action = jnp.squeeze(action, axis=-1)
     return AgentOutput(net_out.policy_logits, net_out.value, action), next_state
 
-  def unroll(self, params: hk.typing.Params, trajectory: dm_env.TimeStep,
-             state: Nest) -> AgentOutput:
+  def unroll(
+      self,
+      params: hk.Params,
+      trajectory: dm_env.TimeStep,
+      state: Nest,
+  ) -> AgentOutput:
     """Unroll the agent along trajectory."""
     net_out, _ = self._apply_fn(params, trajectory, state)
     return AgentOutput(net_out.policy_logits, net_out.value, action=[])

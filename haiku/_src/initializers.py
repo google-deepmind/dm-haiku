@@ -155,6 +155,7 @@ class VarianceScaling(Initializer):
     if self._distribution == 'truncated_normal':
       stddev = np.sqrt(scale)
       # Adjust stddev for truncation.
+      # Constant from scipy.stats.truncnorm.std(a=-2, b=2, loc=0., scale=1.)
       distribution_stddev = np.asarray(.87962566103423978, dtype=dtype)
       stddev = stddev / distribution_stddev
       return TruncatedNormal(stddev=stddev)(shape, dtype)

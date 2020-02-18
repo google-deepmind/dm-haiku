@@ -4,8 +4,9 @@
 | [**Why Haiku?**](#why-haiku)
 | [**Quickstart**](#quickstart)
 | [**Installation**](#installation)
+| [**Examples**](https://github.com/deepmind/haiku/tree/master/examples/)
 | [**User manual**](#user-manual)
-| [**Reference documentation**](#reference-documentation)
+| [**Documentation**](#documentation)
 | [**Citing Haiku**](#citing-haiku)
 
 ## What is Haiku?
@@ -285,7 +286,7 @@ for _ in range(10):
 For a more complete look at distributed Haiku training, take a look at our
 [ResNet-50 on ImageNet example](https://github.com/deepmind/haiku/tree/master/examples/imagenet/).
 
-## Reference documentation
+## Documentation
 
 TODO(tycai): Add link to RTD once it's being hosted.
 

@@ -1,26 +1,25 @@
-# Haiku
+# Haiku: [Sonnet](https://github.com/deepmind/sonnet) for [JAX](https://github.com/google/jax)
 
-**Haiku is Sonnet for JAX.**
+[**Overview**](#overview)
+| [**Why Haiku?**](#why-haiku)
+| [**Quickstart**](#quickstart)
+| [**Installation**](#installation)
+| [**User manual**](#user-manual)
+| [**Reference documentation**](#reference-documentation)
+| [**Citing Haiku**](#citing-haiku)
+
+## What is Haiku?
 
 Haiku is a simple neural network library for
 [JAX](https://github.com/google/jax) developed by some of the
 authors of [Sonnet](https://github.com/deepmind/sonnet), a neural network
-library for TensorFlow.
+library for [TensorFlow](https://github.com/tensorflow/tensorflow).
 
 NOTE: Haiku is currently **alpha**. A number of researchers have tested Haiku
 for several months and have reproduced a number of experiments at scale. Please
 feel free to use Haiku, but be sure to test any assumptions and to
 [let us know](https://github.com/deepmind/haiku/issues) if things don't look
 right!
-
-### Contents
-* [Overview](#overview)
-* [Why Haiku?](#why-haiku)
-* [Quickstart](#quickstart)
-* [Installation](#installation)
-* [User manual](#user-manual)
-* [Reference documentation](#reference-documentation)
-* [Citing Haiku](#citing-haiku)
 
 ## Overview
 
@@ -146,7 +145,9 @@ for _ in range(num_training_steps):
   params = jax.tree_multimap(sgd, params, grads)
 ```
 
-For more, see our examples directory. The
+For more, see our
+[examples directory](https://github.com/deepmind/haiku/tree/master/examples/).
+The
 [MNIST example](https://github.com/deepmind/haiku/tree/master/examples/mnist.py)
 is a good place to start.
 
@@ -303,4 +304,5 @@ To cite this repository:
 ```
 
 In this bibtex entry, the version number is intended to be from
-haiku/__init__.py, and the year corresponds to the project's open-source release.
+[haiku/__init__.py](https://github.com/deepmind/haiku/blob/master/haiku/__init__.py),
+and the year corresponds to the project's open-source release.

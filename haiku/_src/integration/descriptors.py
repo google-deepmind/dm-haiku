@@ -123,6 +123,14 @@ BATCH_MODULES = (
         name="nets.ResNet50",
         create=lambda: Training(hk.nets.ResNet50(1000)),
         shape=(BATCH_SIZE, 3, 3, 2)),
+    # pylint: disable=g-long-lambda
+    ModuleDescriptor(
+        name="nets.MobileNetV1",
+        create=lambda: Training(hk.nets.MobileNetV1(num_classes=1000,
+                                                    strides=(1, 1, 1),
+                                                    channels=(16, 32, 64))),
+        shape=(BATCH_SIZE, 64, 64, 2)),
+    # pylint: enable=g-long-lambda
 
     # TODO(tomhennigan) Make these modules support unbatched input.
     ModuleDescriptor(

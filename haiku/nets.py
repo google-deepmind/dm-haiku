@@ -1,5 +1,5 @@
 # Lint as: python3
-# Copyright 2019 DeepMind Technologies Limited. All Rights Reserved.
+# Copyright 2020 DeepMind Technologies Limited. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,9 +16,11 @@
 """Haiku is a neural network library for JAX."""
 
 from haiku._src.nets.mlp import MLP
+from haiku._src.nets.mobilenetv1 import MobileNetV1
 from haiku._src.nets.resnet import ResNet50
 
 __all__ = (
     "ResNet50",
     "MLP",
+    "MobileNetV1"
 )

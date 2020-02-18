@@ -55,3 +55,31 @@ hk_py_test(
         # pip: jax
     ],
 )
+
+hk_py_library(
+    name = "mobilenetv1",
+    srcs = ["mobilenetv1.py"],
+    deps = [
+        "//haiku/_src:basic",
+        "//haiku/_src:batch_norm",
+        "//haiku/_src:conv",
+        "//haiku/_src:depthwise_conv",
+        "//haiku/_src:module",
+        "//haiku/_src:pool",
+        "//haiku/_src:reshape",
+        # pip: jax
+    ],
+)
+
+hk_py_test(
+    name = "mobilenetv1_test",
+    timeout = "long",
+    srcs = ["mobilenetv1_test.py"],
+    deps = [
+        ":mobilenetv1",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        "//haiku/_src:test_utils",
+        # pip: jax
+    ],
+)

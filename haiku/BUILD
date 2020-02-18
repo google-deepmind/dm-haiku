@@ -42,6 +42,7 @@ py_library(
         "//haiku/_src:test_utils",
         "//haiku/_src:typing",
         "//haiku/_src/nets:mlp",
+        "//haiku/_src/nets:mobilenetv1",
         "//haiku/_src/nets:resnet",
     ],
 )

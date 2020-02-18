@@ -269,8 +269,6 @@ def mk_init_fn(f: Callable[..., Any]) -> Callable[..., Tuple[Params, State]]:
   Returns:
     A function that given args/kwargs returns the initial state for f.
   """
-  analytics.log_once("init_fn")
-
   def init_fn(
       rng: Optional[Union[PRNGKey, PRNGSeed]],
       *args,
@@ -305,8 +303,6 @@ def mk_apply_fn(f: Callable[..., T]) -> Callable[..., Tuple[T, State]]:
   Returns:
     A function that accepts parameters/state as input and computes f(*a, **k).
   """
-  analytics.log_once("apply_fn")
-
   def apply_fn(
       params: Params,
       state: State,

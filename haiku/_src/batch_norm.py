@@ -40,6 +40,10 @@ class BatchNorm(module.Module):
     - Externally generated `scale`/`offset`, such as for conditional
       normalization, in which case `create_*` should be set to `False` and
       then the values fed in at call time.
+
+  NOTE: `jax.vmap(hk.transform(BatchNorm))` will update summary statistics and
+  normalize values on a per-batch basis; we currently do *not* support
+  normalizing across a batch axis introduced by vmap.
   """
 
   def __init__(self,
@@ -119,7 +123,6 @@ class BatchNorm(module.Module):
     Returns:
       The array, normalized across all but the last dimension.
     """
-    # TODO(tycai): Warn upon use inside vmap() - or do the right thing.
     rank = inputs.ndim
     if self._channel_index < 0:
       channel_index = self._channel_index + rank

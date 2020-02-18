@@ -86,6 +86,7 @@ class Sequential(module.Module):
     self.layers = layers
 
   def __call__(self, inputs, *args, **kwargs):
+    """Connects all layers. *args and **kwargs are passed to the first layer."""
     outputs = inputs
     for i, layer in enumerate(self.layers):
       if i == 0:

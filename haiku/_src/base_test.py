@@ -24,7 +24,6 @@ from haiku._src import test_utils
 import jax
 import jax.numpy as jnp
 
-# TODO(tomhennigan) Add tests with jax.jit et al.
 # TODO(tomhennigan) Improve test coverage.
 
 

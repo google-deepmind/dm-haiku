@@ -99,7 +99,6 @@ class LSTMTest(absltest.TestCase):
 
 class ResetCoreTest(parameterized.TestCase):
 
-  # TODO(tycai): Split this test up.
   @parameterized.parameters(recurrent.dynamic_unroll, recurrent.static_unroll)
   def test_resetting(self, unroll):
     def net(seqs, should_reset):

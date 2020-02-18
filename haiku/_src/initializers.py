@@ -112,8 +112,6 @@ class RandomUniform(Initializer):
                               self.maxval)
 
 
-# TODO(ibab,tomhennigan): Make this more flexible to match Sonnet's variance
-# scaling initializer.
 class VarianceScaling(Initializer):
   """Variance scaling initializer.
 
@@ -185,8 +183,7 @@ class UniformScaling(Initializer):
 
   def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
     input_size = np.product(shape[:-1])
-    # TODO(tomhennigan) Should this use np.
-    max_val = jnp.sqrt(3 / input_size) * self._scale
+    max_val = np.sqrt(3 / input_size) * self._scale
     return RandomUniform(-max_val, max_val)(shape, dtype)
 
 

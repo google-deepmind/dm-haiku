@@ -20,7 +20,6 @@ from haiku import initializers
 from haiku import nets
 from haiku import pad
 from haiku import testing
-from haiku import typing
 from haiku._src.base import custom_creator
 from haiku._src.base import get_parameter
 from haiku._src.base import get_state
@@ -142,7 +141,6 @@ __all__ = (
     "static_unroll",
     "testing",
     "transparent",
-    "typing",
     "to_module",
     "transform",
     "value_and_grad",

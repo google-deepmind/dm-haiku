@@ -17,7 +17,6 @@ py_library(
         "nets.py",
         "pad.py",
         "testing.py",
-        "typing.py",
     ],
     srcs_version = "PY3",
     visibility = ["//visibility:public"],

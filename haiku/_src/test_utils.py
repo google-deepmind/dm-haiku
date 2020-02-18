@@ -43,7 +43,7 @@ def transform_and_run(f=None, seed: int = 42, run_apply: bool = True):
   ...   return x
 
   >>> rng = jax.random.PRNGKey(42)
-  >>> f = hk.transform(f, state=True, apply_rng=True)
+  >>> f = hk.transform_with_state(f)
   >>> params, state = f.init(rng)
   >>> _ = f.apply(params, state, rng)
 
@@ -64,7 +64,7 @@ def transform_and_run(f=None, seed: int = 42, run_apply: bool = True):
   def wrapper(*a, **k):
     """Runs init and apply of f."""
     rng = random.PRNGKey(seed) if seed is not None else None
-    transformed = base.transform(lambda: f(*a, **k), state=True, apply_rng=True)
+    transformed = base.transform_with_state(lambda: f(*a, **k))
     params, state = transformed.init(rng)
     if run_apply:
       transformed.apply(params, state, rng)

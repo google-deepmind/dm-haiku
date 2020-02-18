@@ -20,6 +20,7 @@ import contextlib
 import functools
 from typing import (Any, Callable, Iterator, MutableMapping, NamedTuple,
                     Optional, Text, Tuple, Set, TypeVar, Union)
+import warnings
 
 from haiku._src import analytics
 from haiku._src import data_structures
@@ -37,11 +38,25 @@ ThreadLocalStack = data_structures.ThreadLocalStack
 T = TypeVar("T")
 
 ModuleState = namedtuple("ModuleState", ("module", "method_name"))
-TransformedPair = namedtuple("TransformedPair", ("init", "apply"))
 StatePair = namedtuple("StatePair", ("initial", "current"))
 MutableParams = MutableMapping[Text, MutableMapping[ParamName, jnp.ndarray]]
 MutableState = MutableMapping[Text, MutableMapping[Text, StatePair]]
 
+# TODO(tomhennigan) Add types to attributes once state/apply_rng are removed.
+Transformed = namedtuple("Transformed", ("init", "apply"))
+
+
+class TransformedWithState(NamedTuple):
+  """Holds a pair of pure functions."""
+
+  # TODO(tomhennigan): Use protocols to describe *args when we are 3.8+.
+  # https://www.python.org/dev/peps/pep-0544/#callback-protocols
+
+  # Args: [Optional[PRNGKey], ...]
+  init: Callable[..., Tuple[Params, State]]
+
+  # Args: [Params, State, Optional[PRNGKey], ...]
+  apply: Callable[..., Tuple[Any, State]]
 
 # TODO(tomhennigan) Should creator_stack be part of frame?
 frame_stack = ThreadLocalStack()  # type: ThreadLocalStack["Frame"]
@@ -330,14 +345,17 @@ def mk_apply_fn(f: Callable[..., T]) -> Callable[..., Tuple[T, State]]:
   return apply_fn
 
 
-def without_state(f: TransformedPair) -> TransformedPair:
+# TODO(tomhennigan) Should be TransformedWithState -> Transformed.
+def without_state(
+    f: Union[Transformed, TransformedWithState],
+) -> Transformed:
   """Wraps a transformed tuple and ignores state in/out.
 
   >>> def f(x):
   ...   mod = hk.Linear(10)
   ...   return mod(x)
 
-  >>> f = hk.without_state(hk.transform(f, apply_rng=True, state=True))
+  >>> f = hk.without_state(hk.transform_with_state(f))
 
   >>> rng = jax.random.PRNGKey(42)
   >>> x = jnp.zeros([1, 1])
@@ -365,22 +383,25 @@ def without_state(f: TransformedPair) -> TransformedPair:
       raise ValueError("Function wrapped with `hk.without_state` used state.")
     return out
 
-  return TransformedPair(init=init_fn, apply=apply_fn)
+  return Transformed(init=init_fn, apply=apply_fn)
 
 
-def without_apply_rng(f: TransformedPair) -> TransformedPair:
+def without_apply_rng(
+    f: Union[Transformed, TransformedWithState],
+) -> Transformed:
 
   def apply_fn(params, state, *args, **kwargs):
     return f.apply(params, state, None, *args, **kwargs)
 
-  return TransformedPair(init=f.init, apply=apply_fn)
+  return Transformed(init=f.init, apply=apply_fn)
 
 
+# TODO(tomhennigan) Remove apply_rng and state.
 def transform(
     f,
     apply_rng=False,
     state=False,
-) -> TransformedPair:
+) -> Transformed:
   """Transforms a function using Haiku modules into a pair of pure functions.
 
   The first thing to do is to define a `Module`. A module encapsulates some
@@ -428,9 +449,44 @@ def transform(
   >>> f.apply(new_params, 2)
   DeviceArray(9., dtype=float32)
 
-  It is possible for the transformed function to maintain internal state (e.g.
-  for a module like `BatchNorm` that may want to maintain a moving average) see
-  :func:`get_state`, :func:`set_state`:
+  If your transformed function needs to maintain internal state (e.g. moving
+  averages in batch norm) then see :func:`transform_with_state`.
+
+  Args:
+    f: A function closing over `Module` instances.
+    apply_rng: Whether `apply` should accept `rng` as an argument.
+    state: *Deprecated:* use `hk.transform_with_state`.
+
+  Returns:
+    A named tuple with `init` and `apply` pure functions.
+  """
+  analytics.log_once("transform")
+
+  if state:
+    warnings.warn(
+        "Prefer using hk.transform_with_state(f) vs. passing state=True.",
+        DeprecationWarning)
+
+  if apply_rng:
+    warnings.warn("Apply_rng will soon be removed and defaulted to True",
+                  DeprecationWarning)
+
+  pair = transform_with_state(f)  # type: Transformed
+  if not apply_rng:
+    pair = without_apply_rng(pair)
+  if not state:
+    pair = without_state(pair)
+  return pair
+
+
+def transform_with_state(f) -> TransformedWithState:
+  """Transforms a function using Haiku modules into a pair of pure functions.
+
+  See :func:`transform` for general details on Haiku transformations.
+
+  This function is equivalent to :func:`transform`, however it allows you to
+  maintain and update internal state (e.g. moving averages in batch norm) via
+  :func:`get_state` and :func:`set_state`.
 
   >>> def f():
   ...   counter = hk.get_state("counter", shape=[], dtype=jnp.int32,
@@ -438,30 +494,22 @@ def transform(
   ...   hk.set_state("counter", counter + 1)
   ...   return counter
 
-  >>> f = hk.transform(f, state=True)
+  >>> f = hk.transform_with_state(f)
 
   >>> params, state = f.init(None)
   >>> for _ in range(10):
-  ...   counter, state = f.apply(params, state)
+  ...   counter, state = f.apply(params, state, None)
   >>> counter
   DeviceArray(9, dtype=int32)
 
   Args:
     f: A function closing over `Module` instances.
-    apply_rng: Whether `apply` should accept `rng` as an argument.
-    state: Whether the resulting functions should accept state as input and
-      and output.
 
   Returns:
-    A named tuple with `init` and `apply` properties. object if `f` is not None.
+    A named tuple with `init` and `apply` properties.
   """
-  analytics.log_once("transform")
-  pair = TransformedPair(mk_init_fn(f), mk_apply_fn(f))
-  if not apply_rng:
-    pair = without_apply_rng(pair)
-  if not state:
-    pair = without_state(pair)
-  return pair
+  analytics.log_once("transform_with_state")
+  return TransformedWithState(mk_init_fn(f), mk_apply_fn(f))
 
 
 class PRNGSequence(Iterator[PRNGKey]):

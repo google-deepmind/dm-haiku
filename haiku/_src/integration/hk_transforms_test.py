@@ -51,7 +51,7 @@ class HaikuTransformsTest(parameterized.TestCase):
         mod = hk.jit(mod)
       return mod(x)
 
-    f = hk.transform(g, state=True, apply_rng=True)
+    f = hk.transform_with_state(g)
 
     assert_allclose = functools.partial(np.testing.assert_allclose, atol=1e-5)
 
@@ -89,7 +89,7 @@ class HaikuTransformsTest(parameterized.TestCase):
         mod = hk.remat(mod)
       return jnp.mean(mod(x))
 
-    f = hk.transform(g, state=True, apply_rng=True)
+    f = hk.transform_with_state(g)
 
     assert_allclose = functools.partial(np.testing.assert_allclose, atol=1e-5)
 

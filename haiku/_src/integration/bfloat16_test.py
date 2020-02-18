@@ -46,7 +46,7 @@ class Bfloat16Test(parameterized.TestCase):
       mod = module_fn()
       return mod(x)
 
-    init_fn, apply_fn = hk.transform(g, apply_rng=True, state=True)
+    init_fn, apply_fn = hk.transform_with_state(g)
 
     # Create state in f32 to start.
     # NOTE: We need to do this since some initializers (e.g. random.uniform) do

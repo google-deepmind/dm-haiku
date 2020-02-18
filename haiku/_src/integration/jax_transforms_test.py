@@ -57,7 +57,7 @@ class JaxTransformsTest(parameterized.TestCase):
     def g(x):
       return module_fn()(x)
 
-    f = hk.transform(g, state=True, apply_rng=True)
+    f = hk.transform_with_state(g)
 
     atol = CUSTOM_ATOL.get(module_type(module_fn), DEFAULT_ATOL)
     assert_allclose = functools.partial(np.testing.assert_allclose, atol=atol)
@@ -91,7 +91,7 @@ class JaxTransformsTest(parameterized.TestCase):
     def g(x):
       return module_fn()(x)
 
-    f = hk.transform(g, state=True, apply_rng=True)
+    f = hk.transform_with_state(g)
 
     # Ensure application under vmap is the same.
     params, state = f.init(rng, sample)

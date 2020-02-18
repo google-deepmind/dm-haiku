@@ -152,41 +152,36 @@ class BaseTest(parameterized.TestCase):
 
     self.assertEqual(log, ["a", "b", "c"])
 
-  @parameterized.parameters(True, False)
-  def test_rng_arg(self, rng):
-    init_fn, apply_fn = base.transform(
-        lambda: None, apply_rng=rng, state=True)
+  def test_argspec(self):
+    init_fn, apply_fn = base.transform_with_state(lambda: None)
     init_fn_spec = inspect.getfullargspec(init_fn)
     apply_fn_spec = inspect.getfullargspec(apply_fn)
 
     self.assertEqual(init_fn_spec.args, ["rng"])
-    rng_args = ["rng"] if rng else []
-    self.assertEqual(apply_fn_spec.args, ["params", "state"] + rng_args)
+    self.assertEqual(apply_fn_spec.args, ["params", "state", "rng"])
 
   def test_get_state_no_init_raises(self):
-    init_fn, apply_fn = base.transform(lambda: base.get_state("i"), state=True)
+    init_fn, apply_fn = base.transform_with_state(lambda: base.get_state("i"))
     with self.assertRaisesRegex(ValueError, "set an init function"):
       init_fn(None)
     state = params = {"~": {}}
     with self.assertRaisesRegex(ValueError, "set an init function"):
-      apply_fn(params, state)
+      apply_fn(params, state, None)
 
   def test_get_state_no_shape_raises(self):
-    init_fn, apply_fn = base.transform(
-        lambda: base.get_state("i", init=jnp.zeros),
-        state=True,
-        apply_rng=False)
+    init_fn, apply_fn = base.transform_with_state(
+        lambda: base.get_state("i", init=jnp.zeros))
     with self.assertRaisesRegex(ValueError, "provide shape and dtype"):
       init_fn(None)
     state = params = {"~": {}}
     with self.assertRaisesRegex(ValueError, "provide shape and dtype"):
-      apply_fn(params, state)
+      apply_fn(params, state, None)
 
   def test_get_state_no_init(self):
-    _, apply_fn = base.transform(lambda: base.get_state("i"), state=True)
+    _, apply_fn = base.transform_with_state(lambda: base.get_state("i"))
     for i in range(10):
       state_in = {"~": {"i": i}}
-      _, state_out = apply_fn({}, state_in)
+      _, state_out = apply_fn({}, state_in, None)
       self.assertEqual(state_in, state_out)
 
   def test_set_then_get(self):
@@ -194,13 +189,13 @@ class BaseTest(parameterized.TestCase):
       base.set_state("i", 1)
       return base.get_state("i")
 
-    init_fn, apply_fn = base.transform(net, state=True)
+    init_fn, apply_fn = base.transform_with_state(net)
     params, state = init_fn(None)
     self.assertEqual(state, {"~": {"i": 1}})
 
     for i in range(10):
       state_in = {"~": {"i": i}}
-      y, state_out = apply_fn(params, state_in)
+      y, state_out = apply_fn(params, state_in, None)
       self.assertEqual(y, 1)
       self.assertEqual(state_out, {"~": {"i": 1}})
 
@@ -211,10 +206,10 @@ class BaseTest(parameterized.TestCase):
         base.set_state("count", count + 1)
       return count
 
-    init_fn, apply_fn = base.transform(f, state=True)
+    init_fn, apply_fn = base.transform_with_state(f)
     params, state = init_fn(None)
     self.assertEqual(state, {"~": {"count": 0}})
-    _, state = apply_fn(params, state)
+    _, state = apply_fn(params, state, None)
     self.assertEqual(state, {"~": {"count": 10}})
 
   def test_without_state(self):
@@ -222,8 +217,7 @@ class BaseTest(parameterized.TestCase):
       w = base.get_parameter("w", [], init=jnp.zeros)
       return w
 
-    init_fn, apply_fn = base.without_state(
-        base.transform(f, apply_rng=True, state=True))
+    init_fn, apply_fn = base.without_state(base.transform_with_state(f))
     params = init_fn(None)
     out = apply_fn(params, None)
     self.assertEqual(out, 0)
@@ -235,8 +229,7 @@ class BaseTest(parameterized.TestCase):
         base.set_state("count", count + 1)
       return count
 
-    init_fn, _ = base.without_state(
-        base.transform(f, apply_rng=True, state=True))
+    init_fn, _ = base.without_state(base.transform_with_state(f))
 
     with self.assertRaisesRegex(ValueError, "without_state.*used state"):
       init_fn(None)

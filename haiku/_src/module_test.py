@@ -146,22 +146,22 @@ class ModuleTest(parameterized.TestCase):
     self.assertEmpty(log)
 
   def test_stateful_module(self):
-    init_fn, apply_fn = base.transform(lambda: CountingModule()(), state=True)  # pylint: disable=unnecessary-lambda
+    init_fn, apply_fn = base.transform_with_state(lambda: CountingModule()())  # pylint: disable=unnecessary-lambda
     params, state = init_fn(None)
     self.assertEqual(state, {"counting_module": {"count": 0}})
-    _, state = apply_fn(params, state)
+    _, state = apply_fn(params, state, None)
     self.assertEqual(state, {"counting_module": {"count": 10}})
 
   def test_without_state(self):
     init_fn, apply_fn = base.without_state(
-        base.transform(lambda: ScalarModule()(), apply_rng=True, state=True))  # pylint: disable=unnecessary-lambda
+        base.transform_with_state(lambda: ScalarModule()()))  # pylint: disable=unnecessary-lambda
     params = init_fn(None)
     out = apply_fn(params, None)
     self.assertEqual(out, 0)
 
   def test_without_state_raises_if_state_used(self):
     init_fn, _ = base.without_state(
-        base.transform(lambda: CountingModule()(), apply_rng=True, state=True))  # pylint: disable=unnecessary-lambda
+        base.transform_with_state(lambda: CountingModule()()))  # pylint: disable=unnecessary-lambda
     with self.assertRaisesRegex(ValueError, "without_state.*used state"):
       init_fn(None)
 

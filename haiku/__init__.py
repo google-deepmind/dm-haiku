@@ -27,7 +27,9 @@ from haiku._src.base import next_rng_key
 from haiku._src.base import PRNGSequence
 from haiku._src.base import set_state
 from haiku._src.base import transform
-from haiku._src.base import TransformedPair
+from haiku._src.base import transform_with_state
+from haiku._src.base import Transformed
+from haiku._src.base import TransformedWithState
 from haiku._src.base import with_rng
 from haiku._src.base import without_state
 from haiku._src.basic import BatchApply
@@ -80,6 +82,8 @@ from haiku._src.stateful import value_and_grad
 from haiku._src.typing import Params
 from haiku._src.typing import State
 
+TransformedPair = Transformed  # TODO(tomhennigan) Remove deprecated alias.
+
 __version__ = "0.0.1a0"
 
 __all__ = (
@@ -101,6 +105,8 @@ __all__ = (
     "ExponentialMovingAverage",
     "Flatten",
     "GRU",
+    "Transformed",
+    "TransformedWithState",
     "TransformedPair",
     "InstanceNorm",
     "LSTM",
@@ -143,6 +149,7 @@ __all__ = (
     "transparent",
     "to_module",
     "transform",
+    "transform_with_state",
     "value_and_grad",
     "VanillaRNN",
     "with_rng",

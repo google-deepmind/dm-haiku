@@ -51,7 +51,7 @@ class LiftingModule(module.Module):
   and state from the outer transform's dictionaries.
 
   Must be called inside hk.transform, and be passed the `init` member of a
-  `hk.TransformedPair`.
+  `hk.Transformed`.
 
   Currently, the given `init_fn` must not use state.
   """
@@ -60,7 +60,7 @@ class LiftingModule(module.Module):
     """Initializes the LiftingModule.
 
     Args:
-      init_fn: The init_fn from a hk.TransformedPair. Requires state=True.
+      init_fn: The init_fn from a hk.Transformed. Requires state=True.
       name: Module name.
     """
     if name is None:

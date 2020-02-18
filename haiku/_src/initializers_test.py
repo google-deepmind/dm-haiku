@@ -26,7 +26,7 @@ import numpy as np
 class InitializersTest(parameterized.TestCase):
 
   @parameterized.parameters(np.float32, jnp.float32)
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_initializers(self, dtype):
     # This just makes sure we can call the initializers in accordance to the
     # API and get the right shapes and dtypes out.

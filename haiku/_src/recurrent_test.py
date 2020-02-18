@@ -85,7 +85,7 @@ class RecurrentTest(parameterized.TestCase):
 
 class LSTMTest(absltest.TestCase):
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_lstm_raises(self):
     core = recurrent.LSTM(4)
     with self.assertRaisesRegex(ValueError, "rank-1 or rank-2"):
@@ -259,7 +259,7 @@ class DeepRNNTest(parameterized.TestCase):
     self.assertEqual(result.shape, (batch_size, 8))
     # Previous tests test the correctness of state handling.
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_skip_validation(self):
     with self.assertRaisesRegex(ValueError, "skip_connections requires"):
       recurrent.deep_rnn_with_skip_connections([jax.nn.relu])

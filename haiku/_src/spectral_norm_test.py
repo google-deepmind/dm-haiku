@@ -28,19 +28,19 @@ import numpy as np
 
 class SpectralNormTest(absltest.TestCase):
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_scalar(self):
     sn = spectral_norm.SpectralNorm()
     with self.assertRaisesRegex(ValueError, "not well defined"):
       sn(1.0)
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_vector(self):
     sn = spectral_norm.SpectralNorm()
     with self.assertRaisesRegex(ValueError, "not well defined"):
       sn(jnp.ones(shape=[5]))
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_3d_tensor(self):
     sn = spectral_norm.SpectralNorm()
     input_3d = (4.0 * jnp.eye(8, 8))[None, :, :]
@@ -48,7 +48,7 @@ class SpectralNormTest(absltest.TestCase):
     with self.assertRaisesRegex(ValueError, "Input is 3D but"):
       sn(input_3d, error_on_non_matrix=True)
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_matrix(self):
     sn = spectral_norm.SpectralNorm()
     # We can easily calculate the first singular value for this matrix.
@@ -56,7 +56,7 @@ class SpectralNormTest(absltest.TestCase):
     sn(input_)
     np.testing.assert_allclose(sn.sigma, 4.0, atol=1e-3)
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_matrix_multiple_steps(self):
     sn = spectral_norm.SpectralNorm(n_steps=3)
     # We can easily calculate the first singular value for this matrix.
@@ -64,7 +64,7 @@ class SpectralNormTest(absltest.TestCase):
     sn(input_)
     np.testing.assert_allclose(sn.sigma, 4.0, atol=1e-3)
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_matrix_no_stats(self):
     sn = spectral_norm.SpectralNorm()
     # We can easily calculate the first singular value for this matrix.

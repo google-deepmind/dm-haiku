@@ -25,7 +25,7 @@ import jax.numpy as jnp
 class MobileNetV1Test(parameterized.TestCase):
 
   @parameterized.parameters(True, False)
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_simple(self, use_bn):
     image = jnp.ones([2, 224, 224, 3])
     model = mobilenetv1.MobileNetV1(
@@ -39,7 +39,7 @@ class MobileNetV1Test(parameterized.TestCase):
     self.assertIsNotNone(logits)
     self.assertEqual(logits.shape, (2, 100))
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_error_incorrect_args_stride_list(self):
     stride_list = (1, 2, 2, 2, 1, 2)
     channel_list = (64, 128, 128, 256, 256, 512, 512, 512, 512,

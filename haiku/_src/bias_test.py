@@ -25,13 +25,13 @@ import numpy as np
 
 class BiasTest(absltest.TestCase):
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_output_shape(self):
     mod = bias.Bias(output_size=(2 * 2,))
     with self.assertRaisesRegex(ValueError, "Input shape must be [(]-1, 4[)]"):
       mod(jnp.ones([2, 2, 2]))
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_output_size_valid(self):
     mod = bias.Bias(output_size=(2 * 2,))
     mod(jnp.ones([2, 2 * 2]))
@@ -43,7 +43,7 @@ class BiasTest(absltest.TestCase):
     params = base.transform(f).init(None)
     self.assertEmpty(params["bias"]["b"].shape)
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_bias_dims_custom(self):
     b, d1, d2, d3 = range(1, 5)
     def f():
@@ -57,7 +57,7 @@ class BiasTest(absltest.TestCase):
     self.assertEqual(params["bias"]["b"].shape, (d1, 1, d3))
     self.assertEqual(out.shape, (b, d1, d2, d3))
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_bias_dims_negative_out_of_order(self):
     def f():
       mod = bias.Bias(bias_dims=[-1, -2])
@@ -66,33 +66,33 @@ class BiasTest(absltest.TestCase):
     params = base.transform(f).init(None)
     self.assertEqual(params["bias"]["b"].shape, (2, 3))
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_bias_dims_invalid(self):
     mod = bias.Bias(bias_dims=[1, 5])
     with self.assertRaisesRegex(ValueError,
                                 "5 .* out of range for input of rank 3"):
       mod(jnp.ones([1, 2, 3]))
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_b_init_defaults_to_zeros(self):
     mod = bias.Bias()
     x = jnp.ones([1, 1])
     y = mod(x)
     np.testing.assert_allclose(y, x)
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_b_init_custom(self):
     mod = bias.Bias(b_init=jnp.ones)
     x = jnp.ones([1, 1])
     y = mod(x)
     np.testing.assert_allclose(y, x + 1)
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_name(self):
     mod = bias.Bias(name="foo")
     self.assertEqual(mod.name, "foo")
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_multiplier(self):
     mod = bias.Bias(b_init=jnp.ones)
     y = mod(jnp.ones([1, 1]), multiplier=-1)

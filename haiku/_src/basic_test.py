@@ -44,7 +44,7 @@ class BasicTest(parameterized.TestCase):
     out = basic.multinomial(random.PRNGKey(428), jnp.ones([3, 4]), num_samples)
     self.assertEqual(out.shape, (3, num_samples))
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_sequential_params(self):
     seq = basic.Sequential([
         basic.Sequential([basic.Linear(2), basic.Linear(2)]),

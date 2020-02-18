@@ -25,7 +25,7 @@ import jax.numpy as jnp
 class ResnetTest(parameterized.TestCase):
 
   @parameterized.parameters(True, False)
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_simple(self, resnet_v2):
     image = jnp.ones([2, 64, 64, 3])
     model = resnet.ResNet([1, 1, 1, 1], 10, resnet_v2=resnet_v2)
@@ -35,7 +35,7 @@ class ResnetTest(parameterized.TestCase):
     self.assertEqual(logits.shape, (2, 10))
 
   @parameterized.parameters(3, 5)
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_error_incorrect_args_block_list(self, list_length):
     block_list = [i for i in range(list_length)]
     with self.assertRaisesRegex(
@@ -44,7 +44,7 @@ class ResnetTest(parameterized.TestCase):
       resnet.ResNet(block_list, 10, {"decay_rate": 0.9, "eps": 1e-5})
 
   @parameterized.parameters(3, 5)
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_error_incorrect_args_channel_list(self, list_length):
     channel_list = [i for i in range(list_length)]
     with self.assertRaisesRegex(

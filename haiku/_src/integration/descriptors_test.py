@@ -26,7 +26,7 @@ IGNORED_MODULES = descriptors.IGNORED_MODULES
 
 class DescriptorsTest(absltest.TestCase):
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_coverage(self):
     all_modules = frozenset(test_utils.find_subclasses(hk, hk.Module))
     tested_modules = {type(descriptors.unwrap(d.create())) for d in ALL_MODULES}

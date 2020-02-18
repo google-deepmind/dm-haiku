@@ -29,7 +29,7 @@ import tree
 
 class MovingAveragesTest(absltest.TestCase):
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_zero_decay(self):
     ema = moving_averages.ExponentialMovingAverage(0.)
     random_input = jax.random.uniform(jax.random.PRNGKey(428), shape=(2, 3, 4))
@@ -38,7 +38,7 @@ class MovingAveragesTest(absltest.TestCase):
     np.testing.assert_allclose(random_input[0], ema(random_input[0]))
     np.testing.assert_allclose(random_input[1], ema(random_input[1]))
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_warmup(self):
     ema = moving_averages.ExponentialMovingAverage(
         0.5, warmup_length=2, zero_debias=False)
@@ -53,13 +53,13 @@ class MovingAveragesTest(absltest.TestCase):
     np.testing.assert_allclose(
         (random_input[0] + random_input[1]) / 2, ema(random_input[1]))
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_call(self):
     ema = moving_averages.ExponentialMovingAverage(0.5)
     self.assertAlmostEqual(ema(3.), 3.)
     self.assertAlmostEqual(ema(6.), 5.)
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_fast_slow_decay(self):
     ema_fast = moving_averages.ExponentialMovingAverage(0.2)
     ema_slow = moving_averages.ExponentialMovingAverage(0.8)
@@ -67,7 +67,7 @@ class MovingAveragesTest(absltest.TestCase):
     # Expect fast decay to increase more quickly than slow.
     self.assertGreater(ema_fast(2.), ema_slow(2.))
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_fast_slow_decay_without_update(self):
     ema_fast = moving_averages.ExponentialMovingAverage(0.5)
     ema_slow = moving_averages.ExponentialMovingAverage(0.8)

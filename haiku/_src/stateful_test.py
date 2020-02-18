@@ -28,20 +28,20 @@ import numpy as np
 
 class StatefulTest(absltest.TestCase):
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_grad(self):
     x = jnp.array(3.)
     g = stateful.grad(SquareModule())(x)
     np.testing.assert_allclose(g, 2 * x, rtol=1e-4)
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_value_and_grad(self):
     x = jnp.array(2.)
     y, g = stateful.value_and_grad(SquareModule())(x)
     self.assertEqual(y, x ** 2)
     np.testing.assert_allclose(g, 2 * x, rtol=1e-4)
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_grad_aux(self):
     o = object()
 
@@ -54,7 +54,7 @@ class StatefulTest(absltest.TestCase):
     np.testing.assert_allclose(g, 2 * x, rtol=1e-4)
     self.assertIs(aux, o)
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_value_and_grad_aux(self):
     o = object()
 
@@ -91,14 +91,14 @@ class StatefulTest(absltest.TestCase):
     np.testing.assert_allclose(y, x ** 2, rtol=1e-3)
     np.testing.assert_allclose(g, 2 * x, rtol=1e-3)
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_jit(self):
     mod = SquareModule()
     x = jnp.array(2)
     y = stateful.jit(mod)(x)
     self.assertEqual(y, x ** 2)
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_remat(self):
     forward, backward = [], []
     callback = _callback_prim(lambda: forward.append(None),

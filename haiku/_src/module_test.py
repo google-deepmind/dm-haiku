@@ -27,14 +27,14 @@ import jax.numpy as jnp
 # TODO(tomhennigan) Improve test coverage.
 class ModuleTest(parameterized.TestCase):
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_module_naming_default(self):
     mod1 = EmptyModule()
     mod2 = EmptyModule()
     self.assertEqual(mod1.module_name, "empty_module")
     self.assertEqual(mod2.module_name, "empty_module_1")
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_module_naming_custom(self):
     mod1 = EmptyModule(name="custom_name")
     mod2 = EmptyModule(name="custom_name")
@@ -42,14 +42,14 @@ class ModuleTest(parameterized.TestCase):
     self.assertEqual(mod2.module_name, "custom_name_1")
 
   @parameterized.parameters(1, 2, 3)
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_module_naming_explicit_numbering(self, step):
     for n in range(0, step * 10, step):
       module_name = f"custom_name_{n}"
       self.assertEqual(EmptyModule(name=module_name).module_name, module_name)
 
   @parameterized.parameters(1, 2, 3)
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_module_naming_explicit_reverse_numbering(self, step):
     total = step * 10
     for n in range(0, total, step):
@@ -60,7 +60,7 @@ class ModuleTest(parameterized.TestCase):
     self.assertEqual(EmptyModule(name="custom_name").module_name,
                      f"custom_name_{total + 1}")
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_module_naming_explicit_numbering_collision(self):
     self.assertEqual(EmptyModule(name="custom_name").module_name, "custom_name")
     self.assertEqual(EmptyModule(name="custom_name").module_name,
@@ -69,7 +69,7 @@ class ModuleTest(parameterized.TestCase):
         ValueError, "Module name 'custom_name_1' is not unique"):
       EmptyModule(name="custom_name_1")
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_module_naming_explicit_numbering_out_of_order(self):
     for n in (1, 3, 2, 4):
       self.assertEqual(
@@ -78,14 +78,14 @@ class ModuleTest(parameterized.TestCase):
         ValueError, "Module name 'custom_name_4' is not unique"):
       EmptyModule(name="custom_name_4")
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_parameter_reuse(self):
     mod = ScalarModule()
     w1 = mod()
     w2 = mod()
     self.assertIs(w1, w2)
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_multiple_forward_methods(self):
     mod = MultipleForwardMethods(name="outer")
     mod()
@@ -94,7 +94,7 @@ class ModuleTest(parameterized.TestCase):
     self.assertEqual(mod.encode_mod.module_name, "outer/~encode/scalar_module")
     self.assertEqual(mod.decode_mod.module_name, "outer/~decode/scalar_module")
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_nesting(self):
     mod = ParentModule()
     self.assertEqual(mod.module_name, "parent_module")
@@ -165,7 +165,7 @@ class ModuleTest(parameterized.TestCase):
     with self.assertRaisesRegex(ValueError, "without_state.*used state"):
       init_fn(None)
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_params_dict(self):
     mods = [ScalarModule() for _ in range(5)]
     for i, mod in enumerate(mods):
@@ -175,13 +175,13 @@ class ModuleTest(parameterized.TestCase):
       else:
         self.assertEqual(mod.params_dict(), {"scalar_module/w": w})
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_params_dict_captured(self):
     mod = CapturesModule(ScalarModule())
     w = mod()
     self.assertEqual(mod.params_dict(), {"scalar_module/w": w})
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_params_dict_captured_lambda(self):
     mod = CapturesModule(lambda: ScalarModule()())  # pylint: disable=unnecessary-lambda
     w = mod()

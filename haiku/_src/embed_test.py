@@ -44,7 +44,7 @@ class EmbedTest(parameterized.TestCase):
   @parameterized.parameters(
       itertools.product(["ARRAY_INDEX", "ONE_HOT"],
                         [_1D_IDS, _2D_IDS, _3D_IDS]))
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_lookup(self, lookup_style, inp_ids):
     emb = embed.Embed(embedding_matrix=_EMBEDDING_MATRIX,
                       lookup_style=lookup_style)
@@ -56,17 +56,17 @@ class EmbedTest(parameterized.TestCase):
         list(jnp.asarray(_EMBEDDING_MATRIX)[jnp.asarray(inp_ids)].shape))
 
   @parameterized.parameters("ARRAY_INDEX", "ONE_HOT")
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_default_creation(self, lookup_style):
     emb = embed.Embed(vocab_size=6, embed_dim=12, lookup_style=lookup_style)
     self.assertEqual(emb(_1D_IDS).shape, (2, 12))
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_no_creation_args(self):
     with self.assertRaisesRegex(ValueError, "must be supplied either with an"):
       embed.Embed()
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_inconsistent_creation_args(self):
     with self.assertRaisesRegex(ValueError, "supplied but the `vocab_size`"):
       embed.Embed(embedding_matrix=_EMBEDDING_MATRIX, vocab_size=4)

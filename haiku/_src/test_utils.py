@@ -19,7 +19,7 @@ import functools
 import inspect
 import itertools
 import types
-from typing import Generator, Sequence, Text, Tuple, TypeVar
+from typing import Generator, Optional, Sequence, Text, Tuple, TypeVar
 
 from absl.testing import parameterized
 from haiku._src import base
@@ -28,13 +28,7 @@ from jax import random
 T = TypeVar("T")
 
 
-def test_transform(f=None, seed=42, use_state=True, run_apply=True):
-  # TODO(tomhennigan) Update callers to use transform_and_run.
-  del use_state
-  return transform_and_run(f=f, seed=seed, run_apply=run_apply)
-
-
-def transform_and_run(f=None, seed: int = 42, run_apply: bool = True):
+def transform_and_run(f=None, seed: Optional[int] = 42, run_apply: bool = True):
   """Transforms the given function and runs init then (optionally) apply.
 
   Equivalent to:
@@ -42,10 +36,11 @@ def transform_and_run(f=None, seed: int = 42, run_apply: bool = True):
   >>> def f(x):
   ...   return x
 
+  >>> x = jnp.ones([])
   >>> rng = jax.random.PRNGKey(42)
   >>> f = hk.transform_with_state(f)
-  >>> params, state = f.init(rng)
-  >>> _ = f.apply(params, state, rng)
+  >>> params, state = f.init(rng, x)
+  >>> _ = f.apply(params, state, rng, x)
 
   See :func:`transform` for more details.
 
@@ -58,7 +53,7 @@ def transform_and_run(f=None, seed: int = 42, run_apply: bool = True):
     A function that transforms f and runs `init` and optionally `apply`.
   """
   if f is None:
-    return functools.partial(test_transform, seed=seed, run_apply=run_apply)
+    return functools.partial(transform_and_run, seed=seed, run_apply=run_apply)
 
   @functools.wraps(f)
   def wrapper(*a, **k):

@@ -29,7 +29,7 @@ import jax.numpy as jnp
 
 class BaseTest(parameterized.TestCase):
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_parameter_reuse(self):
     w1 = base.get_parameter("w", [], init=jnp.zeros)
     w2 = base.get_parameter("w", [], init=jnp.zeros)
@@ -44,7 +44,7 @@ class BaseTest(parameterized.TestCase):
     params = init_fn(None)
     self.assertEqual(params, {"~": {"w": jnp.zeros([])}})
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_naked_get_parameter(self):
     w1 = base.get_parameter("w", [], init=jnp.zeros)
     w2 = base.get_parameter("w", [], init=jnp.zeros)
@@ -75,13 +75,13 @@ class BaseTest(parameterized.TestCase):
                                 "must be used as part of an `hk.transform`"):
       base.next_rng_key()
 
-  @test_utils.test_transform
+  @test_utils.transform_and_run
   def test_rng(self):
     a = base.next_rng_key()
     b = base.next_rng_key()
     self.assertIsNot(a, b)
 
-  @test_utils.test_transform(seed=None)
+  @test_utils.transform_and_run(seed=None)
   def test_no_rng(self):
     with self.assertRaisesRegex(ValueError, "must pass a non-None PRNGKey"):
       base.next_rng_key()

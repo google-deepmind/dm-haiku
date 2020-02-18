@@ -15,7 +15,7 @@
 # ==============================================================================
 """Stateful shims for JAX functions."""
 
-from haiku._src.test_utils import test_transform as transform_and_run
+from haiku._src.test_utils import transform_and_run
 
 __all__ = (
     "transform_and_run",

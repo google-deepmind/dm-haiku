@@ -24,7 +24,7 @@ import numpy as np
 
 class BatchNormTest(absltest.TestCase):
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_basic(self):
     data = jnp.arange(2 * 3 * 4, dtype=jnp.float32).reshape([2, 3, 4])
 
@@ -36,7 +36,7 @@ class BatchNormTest(absltest.TestCase):
     # Running through again in test mode produces same output.
     np.testing.assert_allclose(norm(data, is_training=False), result, rtol=2e-2)
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_simple_training(self):
     layer = batch_norm.BatchNorm(
         create_scale=False,
@@ -49,7 +49,7 @@ class BatchNormTest(absltest.TestCase):
     result = layer(inputs, True, scale=scale, offset=offset)
     np.testing.assert_equal(result, np.full(inputs.shape, 2.0))
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_simple_training_nchw(self):
     layer = batch_norm.BatchNorm(
         create_scale=False,
@@ -63,7 +63,7 @@ class BatchNormTest(absltest.TestCase):
     result = layer(inputs, True, scale=scale, offset=offset)
     np.testing.assert_equal(result, np.full(inputs.shape, 2.0))
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_simple_training_normalized_axes(self):
     layer = batch_norm.BatchNorm(
         create_scale=False,
@@ -79,7 +79,7 @@ class BatchNormTest(absltest.TestCase):
     # axis separately leads to a fully normalized = equal array.
     np.testing.assert_equal(result, np.zeros(inputs.shape))
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_no_scale_and_offset(self):
     layer = batch_norm.BatchNorm(
         create_scale=False,
@@ -89,7 +89,7 @@ class BatchNormTest(absltest.TestCase):
     result = layer(inputs, True)
     np.testing.assert_equal(result, np.zeros_like(inputs))
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_no_scale_and_init_provided(self):
     with self.assertRaisesRegex(
         ValueError, "Cannot set `scale_init` if `create_scale=False`"):
@@ -98,7 +98,7 @@ class BatchNormTest(absltest.TestCase):
           create_offset=True,
           scale_init=jnp.ones)
 
-  @test_utils.test_transform(use_state=True)
+  @test_utils.transform_and_run
   def test_no_offset_beta_init_provided(self):
     with self.assertRaisesRegex(
         ValueError, "Cannot set `offset_init` if `create_offset=False`"):

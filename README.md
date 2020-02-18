@@ -7,11 +7,20 @@ Haiku is a simple neural network library for
 authors of [Sonnet](https://github.com/deepmind/sonnet), a neural network
 library for TensorFlow.
 
-NOTE: Haiku is currently **beta**. A number of researchers have tested Haiku
+NOTE: Haiku is currently **alpha**. A number of researchers have tested Haiku
 for several months and have reproduced a number of experiments at scale. Please
 feel free to use Haiku, but be sure to test any assumptions and to
 [let us know](https://github.com/deepmind/haiku/issues) if things don't look
 right!
+
+### Contents
+* [Overview](#overview)
+* [Why Haiku?](#why-haiku)
+* [Quickstart](#quickstart)
+* [Installation](#installation)
+* [User manual](#user-manual)
+* [Reference documentation](#reference-documentation)
+* [Citing Haiku](#citing-haiku)
 
 ## Overview
 
@@ -25,9 +34,8 @@ JAX's pure function transformations.
 Haiku provides two core tools: a module abstraction, `hk.Module`, and a simple
 function transformation, `hk.transform`.
 
-`hk.Module` behaves like `snt.Module`: `Module`s are Python objects that hold
-references to their own parameters, other modules, and methods that apply
-functions on user inputs.
+`hk.Module`s are Python objects that hold references to their own parameters,
+other modules, and methods that apply functions on user inputs.
 
 `hk.transform` turns functions that use these object-oriented, functionally
 "impure" modules into pure functions that can be used with `jax.jit`,
@@ -37,6 +45,21 @@ functions on user inputs.
 
 There are a number of neural network libraries for JAX. Why should you choose
 Haiku?
+
+### Haiku has been tested by researchers at DeepMind at scale.
+
+- DeepMind has reproduced a number of experiments in Haiku and JAX with relative
+  ease. These include large-scale results in image and language processing,
+  generative models, and reinforcement learning.
+
+### Haiku is a library, not a framework.
+
+- Haiku is designed to make specific things simpler: managing model parameters
+  and other model state.
+- Haiku can be expected to compose other libraries and work well with the rest
+  of JAX.
+- Haiku otherwise is designed to get out of your way - it does not define custom
+  optimizers, checkpointing formats, or replication APIs.
 
 ### Haiku does not reinvent the wheel.
 
@@ -55,22 +78,6 @@ Haiku?
   Sonnet 2. Modules, methods, argument names, and defaults, and initialization
   schemes should match.
 
-### Haiku has been tested by researchers at DeepMind at scale.
-
-- DeepMind has reproduced a number of experiments in Haiku and JAX with relative
-  ease, thanks to Haiku's API similarity with Sonnet.
-- These include large-scale results in image and language processing, generative
-  models, and reinforcement learning.
-
-### Haiku is a library, not a framework.
-
-- Haiku (and Sonnet) are designed to make specific things simpler: managing
-  model parameters and other model state.
-- Haiku can be expected to compose other libraries and work well with the rest
-  of JAX.
-- Haiku otherwise is designed to get out of your way - it does not define custom
-  optimizers, checkpointing formats, or replication APIs.
-
 ### Haiku makes other aspects of JAX simpler.
 
 - Haiku offers a trivial model for working with random numbers. Within a
@@ -81,8 +88,7 @@ Haiku?
 
 ## Quickstart
 
-Let's take a look at an example neural network and loss function. This looks
-basically the same as in TensorFlow with Sonnet:
+Let's take a look at an example neural network and loss function.
 
 ```python
 import haiku as hk
@@ -144,6 +150,22 @@ For more, see our examples directory. The
 [MNIST example](https://github.com/deepmind/haiku/tree/master/examples/mnist.py)
 is a good place to start.
 
+## Installation
+
+Haiku is written in pure Python, but depends on C++ code via JAX.
+
+Because JAX installation is different depending on your CUDA version, Haiku does
+not list JAX as a dependency in `requirements.txt`.
+
+First, follow [these instructions](https://github.com/google/jax#installation)
+to install JAX with the relevant accelerator support.
+
+Then, install Haiku from pip:
+
+```bash
+$ pip install git+https://github.com/deepmind/haiku
+```
+
 ## User manual
 
 ### Writing your own modules
@@ -169,7 +191,7 @@ class MyLinear(hk.Module):
     return jnp.dot(x, w) + b
 ```
 
-In Haiku all modules have a name. Modules can also have named parameters that
+All modules have a name. Modules can also have named parameters that
 are accessed using `hk.get_parameter(param_name, ...)`. We use this API (rather
 than just using object properties) so that we can convert your code into a pure
 function using `hk.transform`.
@@ -209,4 +231,76 @@ TODO(tomhennigan): Write me!
 
 ### Distributed training with `jax.pmap`
 
-TODO(tomhennigan): Write me!
+Haiku is compatible with `jax.pmap`. For more details on SPMD programming with
+`jax.pmap`,
+[look here](https://jax.readthedocs.io/en/latest/jax.html#parallelization-pmap).
+
+One common use of `jax.pmap` with Haiku is for data-parallel training on many
+accelerators, potentially across multiple hosts. With Haiku, that might look like this:
+
+```python
+def loss_fn(inputs, labels):
+  logits = hk.nets.MLP([8, 4, 2])(x)
+  return jnp.mean(softmax_cross_entropy(logits, labels))
+
+loss_obj = hk.transform(loss_fn)
+
+# Initialize the model on a single device.
+rng = jax.random.PRNGKey(428)
+sample_image, sample_label = next(input_dataset)
+params = loss_obj.init(rng, sample_image, sample_label)
+
+# Replicate params onto all devices.
+num_devices = jax.local_device_count()
+params = jax.tree_util.tree_map(lambda x: np.stack([x] * num_devices), params)
+
+def make_superbatch():
+  """Constructs a superbatch, i.e. one batch of data per device."""
+  # Get N batches, then split into list-of-images and list-of-labels.
+  superbatch = [next(input_dataset) for _ in range(num_devices)]
+  superbatch_images, superbatch_labels = zip(*superbatch)
+  # Stack the superbatches to be one array with a leading dimension, rather than
+  # a python list. This is what `jax.pmap` expects as input.
+  superbatch_images = np.stack(superbatch_images)
+  superbatch_labels = np.stack(superbatch_labels)
+  return superbatch_images, superbatch_labels
+
+def update(params, inputs, labels, axis_name='i'):
+  """Updates params based on performance on inputs and labels."""
+  grads = jax.grad(loss_obj.apply)(params, inputs, labels)
+  # Take the mean of the gradients across all data-parallel replicas.
+  grads = jax.lax.pmean(grads, axis_name)
+  # Update parameters using SGD or Adam or ...
+  new_params = my_update_rule(params, grads)
+  return new_params
+
+# Run several training updates.
+for _ in range(10):
+  superbatch_images, superbatch_labels = make_superbatch()
+  params = jax.pmap(update, axis_name='i')(params, superbatch_images,
+                                           superbatch_labels)
+```
+
+For a more complete look at distributed Haiku training, take a look at our
+[ResNet-50 on ImageNet example](https://github.com/deepmind/haiku/tree/master/examples/imagenet/).
+
+## Reference documentation
+
+TODO(tycai): Add link to RTD once it's being hosted.
+
+## Citing Haiku
+
+To cite this repository:
+
+```
+@software{haiku2020github,
+  author = {Tom Hennigan and Trevor Cai and Tamara Norman and Igor Babuschkin},
+  title = {{H}aiku: {S}onnet for {JAX}},
+  url = {http://github.com/deepmind/haiku},
+  version = {0.0.1a0},
+  year = {2020},
+}
+```
+
+In this bibtex entry, the version number is intended to be from
+haiku/__init__.py, and the year corresponds to the project's open-source release.

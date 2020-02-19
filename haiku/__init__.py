@@ -82,8 +82,6 @@ from haiku._src.stateful import value_and_grad
 from haiku._src.typing import Params
 from haiku._src.typing import State
 
-TransformedPair = Transformed  # TODO(tomhennigan) Remove deprecated alias.
-
 __version__ = "0.0.1a0"
 
 __all__ = (
@@ -107,7 +105,6 @@ __all__ = (
     "GRU",
     "Transformed",
     "TransformedWithState",
-    "TransformedPair",
     "InstanceNorm",
     "LSTM",
     "LayerNorm",

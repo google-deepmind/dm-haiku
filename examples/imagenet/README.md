@@ -7,6 +7,10 @@ https://arxiv.org/abs/1911.04252v2) but it is a useful example of a well
 configured ResNet50 training script that reliably achieves 76.2-76.4% top-1 at
 batch size 1024.
 
+NOTE: The experiments below were run on Google's internal infrastructure. You
+may want to carefully tune the data pipeline (e.g. the private threadpool size)
+when running large scale training on different platforms (e.g. Google Cloud).
+
 Batch size | Configuration               | Train Time | Top-1
 ---------- | --------------------------- | ---------- | -----
 256        | 8 NVidia V100 (16GB) GPUs   | 1016m      | 76.7%

@@ -75,7 +75,7 @@ Haiku?
 
 - By design, transitioning from TensorFlow and Sonnet to JAX and Haiku is easy.
 - Outside of new features (e.g. `hk.transform`), Haiku aims to match the API of
-  Sonnet 2. Modules, methods, argument names, and defaults, and initialization
+  Sonnet 2. Modules, methods, argument names, defaults, and initialization
   schemes should match.
 
 ### Haiku makes other aspects of JAX simpler.
@@ -231,7 +231,7 @@ y = forward.apply(params, x)
 
 TODO(tomhennigan): Write me!
 
-### Distributed training with `jax.pmap`
+### Distributed training with jax.pmap
 
 Haiku is compatible with `jax.pmap`. For more details on SPMD programming with
 `jax.pmap`,

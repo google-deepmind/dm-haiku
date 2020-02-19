@@ -26,6 +26,7 @@ import numpy as np
 import tensorflow_datasets as tfds
 
 OptState = Any
+NUM_DIGITS = 10  # MNIST.
 
 
 def net_fn(x: np.ndarray) -> jnp.DeviceArray:
@@ -37,7 +38,7 @@ def net_fn(x: np.ndarray) -> jnp.DeviceArray:
       jax.nn.relu,
       hk.Linear(100),
       jax.nn.relu,
-      hk.Linear(10),
+      hk.Linear(NUM_DIGITS),
       jax.nn.log_softmax,
   ])
 
@@ -69,8 +70,9 @@ def main(_):
       targets: np.ndarray,
   ) -> jnp.DeviceArray:
     assert targets.dtype == np.int32
+    batch_size = inputs.shape[0]
     log_probs = net.apply(params, inputs)
-    return -jnp.mean(hk.one_hot(targets, 10) * log_probs)
+    return -jnp.sum(hk.one_hot(targets, NUM_DIGITS) * log_probs) / batch_size
 
   # Evaluation metric (classification accuracy).
   @jax.jit
@@ -111,10 +113,8 @@ def main(_):
   train, test_eval, train_eval = get_datasets(
       train_batch_size=32, eval_batch_size=1000)
 
-  # Initialize network and optimiser.
-  rng = hk.PRNGSequence(42)
-  # Draw an input to get shapes.
-  params = avg_params = net.init(next(rng), next(train)[0])
+  # Initialize network and optimiser; note we draw an input to get shapes.
+  params = avg_params = net.init(jax.random.PRNGKey(42), next(train)[0])
   opt_state = opt_init(params)
 
   # Train/eval loop.

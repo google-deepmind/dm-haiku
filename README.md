@@ -231,7 +231,7 @@ y = forward.apply(params, x)
 
 TODO(tomhennigan): Write me!
 
-### Distributed training with jax.pmap
+### Distributed training with jax.pmap
 
 Haiku is compatible with `jax.pmap`. For more details on SPMD programming with
 `jax.pmap`,

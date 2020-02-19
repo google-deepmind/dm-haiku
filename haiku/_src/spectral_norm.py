@@ -76,7 +76,7 @@ class SpectralNorm(module.Module):
 
     Args:
       value: The array-like object for which you would like to perform an
-        exponential decay on.
+        spectral normalization on.
       update_stats: A boolean defaulting to True. Regardless of this arg, this
         function will return the normalized input. When
         `update_stats` is True, the internal state of this object will also be

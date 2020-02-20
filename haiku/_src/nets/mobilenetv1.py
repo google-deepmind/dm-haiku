@@ -67,12 +67,12 @@ class MobileNetV1Block(module.Module):
 
     net = inputs
     net = dwc_layer(net)
-    if self._with_bias:
+    if self._use_bn:
       net = batch_norm.BatchNorm(create_scale=True,
                                  create_offset=True)(net, is_training)
     net = jax.nn.relu(net)
     net = pwc_layer(net)
-    if self._with_bias:
+    if self._use_bn:
       net = batch_norm.BatchNorm(create_scale=True,
                                  create_offset=True)(net, is_training)
     net = jax.nn.relu(net)
@@ -120,7 +120,7 @@ class MobileNetV1(module.Module):
                                padding="VALID",
                                with_bias=self._with_bias)
     net = initial_conv(inputs)
-    if self._with_bias:
+    if self._use_bn:
       net = batch_norm.BatchNorm(create_scale=True,
                                  create_offset=True)(net, is_training)
       net = jax.nn.relu(net)

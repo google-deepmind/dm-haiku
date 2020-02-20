@@ -94,27 +94,32 @@ Let's take a look at an example neural network and loss function.
 import haiku as hk
 import jax.numpy as jnp
 
+def softmax_cross_entropy(logits, labels):
+  one_hot = hk.one_hot(labels, logits.shape[-1])
+  return jnp.sum(jax.nn.softmax(logits) * one_hot, axis=-1)
+
 def loss_fn(images, labels):
   model = hk.Sequential([
-      hk.Linear(1000), jax.nn.relu,
-      hk.Linear(100), jax.nn.relu,
+      hk.Linear(1000),
+      jax.nn.relu,
+      hk.Linear(100),
+      jax.nn.relu,
       hk.Linear(10),
   ])
   logits = model(images)
-  labels = hk.one_hot(labels, 10)
   return jnp.mean(softmax_cross_entropy(logits, labels))
 
 loss_obj = hk.transform(loss_fn)
 ```
 
-`hk.transform` allows us to turn this function into a pair of pure functions.
-All JAX transformations (e.g. `jax.grad`) require you to pass in a pure
-function for correct behaviour. Haiku makes it easy to write them.
+`hk.transform` allows us to turn this function into a pair of pure functions:
+`init` and `apply`. All JAX transformations (e.g. `jax.grad`) require you to pass
+in a pure function for correct behaviour. Haiku makes it easy to write them.
 
 The `init` function returned by `hk.transform` allows you to **collect** the
 initial value of any parameters in the network. Haiku does this by running your
-function, keeping track of anything returns from `hk.get_parameter` and
-returning those values to you:
+function, keeping track of any parameters requested through `hk.get_parameter`
+and returning them to you:
 
 ```python
 # Initial parameter values are typically random. In JAX you need a key in order
@@ -122,17 +127,17 @@ returning those values to you:
 rng = jax.random.PRNGKey(42)
 
 # `init` runs your function, as such we need an example input. Typically you can
-# pass "dummy" inputs (e.g. ones of the same shape/dtype) since initialization
+# pass "dummy" inputs (e.g. ones of the same shape and dtype) since initialization
 # is not usually data dependent.
 images, labels = next(input_dataset)
 
-# The result of `init` is a tree of all the parameters in your network. You can
-# pass this into `apply`.
+# The result of `init` is a nested data structure of all the parameters in your
+# network. You can pass this into `apply`.
 params = loss_obj.init(rng, images, labels)
 ```
 
 The `params` object is designed for you to inspect and manipulate. It is a
-mapping of module name to module parameters, where module parameter is a mapping
+mapping of module name to module parameters, where a module parameter is a mapping
 of parameter name to parameter value. For example:
 
 ```
@@ -163,13 +168,16 @@ Finally, we put this all together into a simple training loop:
 
 ```python
 def sgd(param, update):
-  return param - update * 0.01
+  return param - 0.01 * update
 
-for _ in range(num_training_steps):
-  images, labels = next(input_dataset)
+for images, labels in input_dataset:
   grads = jax.grad(loss_obj.apply)(params, images, labels)
   params = jax.tree_multimap(sgd, params, grads)
 ```
+
+Here we used `jax.tree_multimap` to apply the `sgd` function across all matching
+entries in `params` and `grads`. The result has the same structure as the previous
+`params` and can again be used with `apply`.
 
 For more, see our
 [examples directory](https://github.com/deepmind/haiku/tree/master/examples/).
@@ -218,10 +226,12 @@ class MyLinear(hk.Module):
     return jnp.dot(x, w) + b
 ```
 
-All modules have a name. Modules can also have named parameters that
-are accessed using `hk.get_parameter(param_name, ...)`. We use this API (rather
-than just using object properties) so that we can convert your code into a pure
-function using `hk.transform`.
+All modules have a name. When no `name` argument is passed to the module, its
+name is inferred from the name of the Python class (for example `MyLinear`
+becomes `my_linear`). Modules can have named parameters that are accessed
+using `hk.get_parameter(param_name, ...)`. We use this API (rather than just
+using object properties) so that we can convert your code into a pure function
+using `hk.transform`.
 
 When using modules you need to define functions and transform them into a pair
 of pure functions using `hk.transform`. See our [quickstart](#quickstart) for
@@ -238,15 +248,15 @@ forward = hk.transform(forward_fn)
 x = jnp.ones([1, 1])
 
 # When we run `forward.init`, Haiku will run `forward(x)` and collect initial
-# parameter values. By default Haiku requires you pass a RNG key to `init`,
-# since parameters are typically initialized randomly:
+# parameter values. Haiku requires you pass a RNG key to `init`, since parameters
+# are typically initialized randomly:
 key = hk.PRNGSequence(42)
 params = forward.init(next(key), x)
 
 # When we run `forward.apply`, Haiku will run `forward(x)` and inject parameter
-# values from what you pass in. We do not require an RNG key by default since
-# models are deterministic. You can (of course!) change this using
-# `hk.transform(f, apply_rng=True)` if you prefer:
+# values from the `params` that are passed as the first argument. We do not require
+# an RNG key by default since models are deterministic. You can (of course!) change
+# this using `hk.transform(f, apply_rng=True)` if you prefer:
 y = forward.apply(params, x)
 ```
 

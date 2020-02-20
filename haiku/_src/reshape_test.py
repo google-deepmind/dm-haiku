@@ -87,10 +87,6 @@ class ReshapeTest(parameterized.TestCase):
     with self.assertRaises(ValueError):
       reshape.Flatten(preserve_dims=-1)
 
-  def test_flatten_invalid_shape(self):
-    with self.assertRaises(ValueError):
-      reshape.Flatten(name='1bad-name')
-
 
 if __name__ == "__main__":
   absltest.main()

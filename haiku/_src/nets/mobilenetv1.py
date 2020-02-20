@@ -123,13 +123,11 @@ class MobileNetV1(module.Module):
     if self._use_bn:
       net = batch_norm.BatchNorm(create_scale=True,
                                  create_offset=True)(net, is_training)
-      net = jax.nn.relu(net)
-    else:
-      net = jax.nn.relu(net)
+    net = jax.nn.relu(net)
     for i in range(len(self._strides)):
       net = MobileNetV1Block(self._channels[i],
                              self._strides[i],
-                             self._with_bias)(net, is_training)
+                             self._use_bn)(net, is_training)
     net = jnp.mean(net, axis=(1, 2))
     net = reshape.Flatten()(net)
     net = basic.Linear(self._num_classes, name="logits")(net)

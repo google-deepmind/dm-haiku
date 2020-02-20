@@ -33,8 +33,14 @@ python -m pip install .
 # Python test dependencies.
 python -m pip install -r requirements-test.txt
 
+# CPU count on macos or linux
+if [ "$(uname)" == "Darwin" ]; then
+  N_JOBS=$(sysctl -n hw.logicalcpu)
+else
+  N_JOBS=$(grep -c ^processor /proc/cpuinfo)
+fi
+
 # Run tests using pytest.
-N_JOBS=$(grep -c ^processor /proc/cpuinfo)
 python -m pytest -n "${N_JOBS}" haiku
 
 # Test docs still build.

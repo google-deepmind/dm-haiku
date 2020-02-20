@@ -56,8 +56,8 @@ Haiku?
 
 - Haiku is designed to make specific things simpler: managing model parameters
   and other model state.
-- Haiku can be expected to compose other libraries and work well with the rest
-  of JAX.
+- Haiku can be expected to compose with other libraries and work well with the
+  rest of JAX.
 - Haiku otherwise is designed to get out of your way - it does not define custom
   optimizers, checkpointing formats, or replication APIs.
 

@@ -53,6 +53,7 @@ class MovingAveragesTest(absltest.TestCase):
     np.testing.assert_allclose(
         (random_input[0] + random_input[1]) / 2, ema(random_input[1]))
 
+  @test_utils.transform_and_run
   def test_invalid_warmup_length(self):
     with self.assertRaises(ValueError):
       moving_averages.ExponentialMovingAverage(

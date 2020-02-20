@@ -83,6 +83,7 @@ class ReshapeTest(parameterized.TestCase):
     y = mod(x)
     self.assertEqual(x.shape, y.shape)
 
+  @test_utils.transform_and_run
   def test_flatten_invalid_preserve_dims(self):
     with self.assertRaises(ValueError):
       reshape.Flatten(preserve_dims=-1)

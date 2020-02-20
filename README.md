@@ -6,7 +6,7 @@
 | [**Installation**](#installation)
 | [**Examples**](https://github.com/deepmind/haiku/tree/master/examples/)
 | [**User manual**](#user-manual)
-| [**Documentation**](#documentation)
+| [**Documentation**](https://dm-haiku.readthedocs.io/)
 | [**Citing Haiku**](#citing-haiku)
 
 ## What is Haiku?
@@ -24,7 +24,7 @@ right!
 
 ## Overview
 
-[JAX](https://github.com/google/jax) is a numerical computating library that
+[JAX](https://github.com/google/jax) is a numerical computing library that
 combines NumPy, automatic differentiation, and first-class GPU/TPU support.
 
 Haiku is a simple neural network library for JAX that enables users to use
@@ -107,34 +107,59 @@ def loss_fn(images, labels):
 loss_obj = hk.transform(loss_fn)
 ```
 
-`hk.transform` allows us to look at this function in two ways. First, it allows
-us to run the function and collect initial values for parameters:
+`hk.transform` allows us to turn this function into a pair of pure functions.
+All JAX transformations (e.g. `jax.grad`) require you to pass in a pure
+function for correct behaviour. Haiku makes it easy to write them.
+
+The `init` function returned by `hk.transform` allows you to **collect** the
+initial value of any parameters in the network. Haiku does this by running your
+function, keeping track of anything returns from `hk.get_parameter` and
+returning those values to you:
 
 ```python
+# Initial parameter values are typically random. In JAX you need a key in order
+# to generate random numbers and so Haiku requires you to pass one in.
 rng = jax.random.PRNGKey(42)
-# Haiku needs example inputs to compute the function and collect initial
-# parameter values. For most models you can pass any dummy data since
-# initialization only depends on input shape/dtype.
+
+# `init` runs your function, as such we need an example input. Typically you can
+# pass "dummy" inputs (e.g. ones of the same shape/dtype) since initialization
+# is not usually data dependent.
 images, labels = next(input_dataset)
+
+# The result of `init` is a tree of all the parameters in your network. You can
+# pass this into `apply`.
 params = loss_obj.init(rng, images, labels)
 ```
 
-Second, it allows us to run the function and compute the output, but explicitly
-passing in parameter values:
+The `params` object is designed for you to inspect and manipulate. It is a
+mapping of module name to module parameters, where module parameter is a mapping
+of parameter name to parameter value. For example:
+
+```
+{'linear': {'b': ndarray(..., shape=(1000,), dtype=float32),
+            'w': ndarray(..., shape=(28, 1000), dtype=float32)},
+ 'linear_1': {'b': ndarray(..., shape=(100,), dtype=float32),
+              'w': ndarray(..., shape=(1000, 100), dtype=float32)},
+ 'linear_2': {'b': ndarray(..., shape=(10,), dtype=float32),
+              'w': ndarray(..., shape=(100, 10), dtype=float32)}}
+```
+
+The `apply` function allows you to **inject** parameter values into your
+function. Whenever `hk.get_parameter` is called the value returned will come
+from the `params` you provide as input to `apply`:
 
 ```python
 loss = loss_obj.apply(params, images, labels)
 ```
 
-This is useful since we can now take gradients of the loss with respect to the
-parameters (by default `jax.grad` takes the gradient wrt the first positional
-argument):
+Since `apply` is a pure function we can pass it to `jax.grad` (or any of JAX's
+other transforms):
 
 ```python
 grads = jax.grad(loss_obj.apply)(params, images, labels)
 ```
 
-Which allows us to write a simple SGD training loop:
+Finally, we put this all together into a simple training loop:
 
 ```python
 def sgd(param, update):
@@ -162,7 +187,7 @@ not list JAX as a dependency in `requirements.txt`.
 First, follow [these instructions](https://github.com/google/jax#installation)
 to install JAX with the relevant accelerator support.
 
-Then, install Haiku from pip:
+Then, install Haiku using pip:
 
 ```bash
 $ pip install git+https://github.com/deepmind/haiku
@@ -198,11 +223,9 @@ are accessed using `hk.get_parameter(param_name, ...)`. We use this API (rather
 than just using object properties) so that we can convert your code into a pure
 function using `hk.transform`.
 
-When using modules you need to define functions and transform them using
-`hk.transform`. This function
-wraps your function into an object that provides `init` and `apply` methods.
-These run your original function under writer/reader monads allowing us to
-collect and inject parameters, state (e.g. batch norm statistics) and rng keys:
+When using modules you need to define functions and transform them into a pair
+of pure functions using `hk.transform`. See our [quickstart](#quickstart) for
+more details about the functions returned from `transform`:
 
 ```python
 def forward_fn(x):
@@ -229,16 +252,47 @@ y = forward.apply(params, x)
 
 ### Working with non-trainable state
 
-TODO(tomhennigan): Write me!
+Some models may want to maintain some internal, mutable state. For example, in
+batch normalization a moving average of values encountered during training is
+maintained.
 
-### Distributed training with jax.pmap
+In Haiku we provide a simple API for maintaining mutable state that is
+associated with modules: `hk.set_state` and `hk.get_state`. When using these
+functions you need to transform your function using `hk.transform_with_state`
+since the signature of the returned pair of functions is different:
 
-Haiku is compatible with `jax.pmap`. For more details on SPMD programming with
+```python
+def forward(x, is_training):
+  net = hk.nets.ResNet50(1000)
+  return net(x, is_training)
+
+forward = hk.transform_with_state(forward)
+
+# The `init` function now returns parameters **and** state. State contains
+# anything that was created using `hk.set_state`. The structure is the same as
+# params (e.g. it is a per-module mapping of named values).
+params, state = forward.init(rng, x, is_training=True)
+
+# The apply function now takes both params **and** state. Additionally it will
+# return updated values for state. In the resnet example this will be the
+# updated values for moving averages used in the batch norm layers.
+logits, state = forward.apply(params, state, rng, x, is_training=True)
+```
+
+If you forget to use `hk.transform_with_state` don't worry, we will print a
+clear error pointing you to `hk.transform_with_state` rather than silently
+dropping your state.
+
+### Distributed training with `jax.pmap`
+
+The pure functions returned from `hk.transform` (or `hk.transform_with_state`)
+are fully compatible with `jax.pmap`. For more details on SPMD programming with
 `jax.pmap`,
 [look here](https://jax.readthedocs.io/en/latest/jax.html#parallelization-pmap).
 
 One common use of `jax.pmap` with Haiku is for data-parallel training on many
-accelerators, potentially across multiple hosts. With Haiku, that might look like this:
+accelerators, potentially across multiple hosts. With Haiku, that might look
+like this:
 
 ```python
 def loss_fn(inputs, labels):
@@ -285,10 +339,6 @@ for _ in range(10):
 
 For a more complete look at distributed Haiku training, take a look at our
 [ResNet-50 on ImageNet example](https://github.com/deepmind/haiku/tree/master/examples/imagenet/).
-
-## Documentation
-
-TODO(tycai): Add link to RTD once it's being hosted.
 
 ## Citing Haiku
 

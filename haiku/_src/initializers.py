@@ -113,11 +113,36 @@ class RandomUniform(Initializer):
 
 
 class VarianceScaling(Initializer):
-  """Variance scaling initializer.
+  """Initializer which adapts its scale to the shape of the initialized array.
 
-  Initializes by sampling from a truncated normal distribution, but with the
-  variance scaled by the inverse square root of the number of input units,
-  multiplied by the scale.
+  The initializer first computes the scaling factor ``s = scale / n``, where n
+  is:
+
+    - Number of input units in the weight tensor, if ``mode = fan_in``.
+    - Number of output units, if ``mode = fan_out``.
+    - Average of the numbers of input and output units, if ``mode = fan_avg``.
+
+  Then, with ``distribution="truncated_normal" or "normal"``,
+  samples are drawn from a distribution with a mean of zero and a standard
+  deviation (after truncation, if used) ``stddev = sqrt(s)``.
+
+  With ``distribution=uniform``, samples are drawn from a uniform distribution
+  within ``[-limit, limit]``, with ``limit = sqrt(3 * s)``.
+
+  The variance scaling initializer can be configured to generate other standard
+  initializers using the scale, mode and distribution arguments. Here are some
+  example configurations:
+
+  ==============  ==============================================================
+  Name            Parameters
+  ==============  ==============================================================
+  glorot_uniform  scale=1.0, mode=``fan_avg``, distribution=``uniform``
+  glorot_normal   scale=1.0, mode=``fan_avg``, distribution=``truncated_normal``
+  lecun_uniform   scale=1.0, mode=``fan_in``,  distribution=``uniform``
+  lecun_normal    scale=1.0, mode=``fan_in``,  distribution=``truncated_normal``
+  he_uniform      scale=2.0, mode=``fan_in``,  distribution=``uniform``
+  he_normal       scale=2.0, mode=``fan_in``,  distribution=``truncated_normal``
+  ==============  ==============================================================
   """
 
   def __init__(self, scale=1.0, mode='fan_in', distribution='truncated_normal'):

@@ -4,7 +4,7 @@
 | [**Why Haiku?**](#why-haiku)
 | [**Quickstart**](#quickstart)
 | [**Installation**](#installation)
-| [**Examples**](https://github.com/deepmind/haiku/tree/master/examples/)
+| [**Examples**](https://github.com/deepmind/dm-haiku/tree/master/examples/)
 | [**User manual**](#user-manual)
 | [**Documentation**](https://dm-haiku.readthedocs.io/)
 | [**Citing Haiku**](#citing-haiku)
@@ -16,10 +16,13 @@ Haiku is a simple neural network library for
 authors of [Sonnet](https://github.com/deepmind/sonnet), a neural network
 library for [TensorFlow](https://github.com/tensorflow/tensorflow).
 
+**Disambiguation:** if you are looking for Haiku the operating system then
+please see https://haiku-os.org/.
+
 NOTE: Haiku is currently **alpha**. A number of researchers have tested Haiku
 for several months and have reproduced a number of experiments at scale. Please
 feel free to use Haiku, but be sure to test any assumptions and to
-[let us know](https://github.com/deepmind/haiku/issues) if things don't look
+[let us know](https://github.com/deepmind/dm-haiku/issues) if things don't look
 right!
 
 ## Overview
@@ -180,9 +183,9 @@ entries in `params` and `grads`. The result has the same structure as the previo
 `params` and can again be used with `apply`.
 
 For more, see our
-[examples directory](https://github.com/deepmind/haiku/tree/master/examples/).
+[examples directory](https://github.com/deepmind/dm-haiku/tree/master/examples/).
 The
-[MNIST example](https://github.com/deepmind/haiku/tree/master/examples/mnist.py)
+[MNIST example](https://github.com/deepmind/dm-haiku/tree/master/examples/mnist.py)
 is a good place to start.
 
 ## Installation
@@ -198,7 +201,7 @@ to install JAX with the relevant accelerator support.
 Then, install Haiku using pip:
 
 ```bash
-$ pip install git+https://github.com/deepmind/haiku
+$ pip install git+https://github.com/deepmind/dm-haiku
 ```
 
 ## User manual
@@ -348,7 +351,7 @@ for _ in range(10):
 ```
 
 For a more complete look at distributed Haiku training, take a look at our
-[ResNet-50 on ImageNet example](https://github.com/deepmind/haiku/tree/master/examples/imagenet/).
+[ResNet-50 on ImageNet example](https://github.com/deepmind/dm-haiku/tree/master/examples/imagenet/).
 
 ## Citing Haiku
 
@@ -358,12 +361,12 @@ To cite this repository:
 @software{haiku2020github,
   author = {Tom Hennigan and Trevor Cai and Tamara Norman and Igor Babuschkin},
   title = {{H}aiku: {S}onnet for {JAX}},
-  url = {http://github.com/deepmind/haiku},
+  url = {http://github.com/deepmind/dm-haiku},
   version = {0.0.1a0},
   year = {2020},
 }
 ```
 
 In this bibtex entry, the version number is intended to be from
-[haiku/__init__.py](https://github.com/deepmind/haiku/blob/master/haiku/__init__.py),
+[`haiku/__init__.py`](https://github.com/deepmind/dm-haiku/blob/master/haiku/__init__.py),
 and the year corresponds to the project's open-source release.

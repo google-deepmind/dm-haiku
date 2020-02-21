@@ -152,6 +152,6 @@ def linkcode_resolve(domain, info):
     return None
 
   # TODO(slebedev): support tags after we release an initial version.
-  return 'https://github.com/deepmind/haiku/blob/master/haiku/%s#L%d#L%d' % (
+  return 'https://github.com/deepmind/dm-haiku/blob/master/haiku/%s#L%d#L%d' % (
       os.path.relpath(filename, start=os.path.dirname(
           hk.__file__)), lineno, lineno + len(source) - 1)

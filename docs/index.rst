@@ -1,4 +1,4 @@
-:github_url: https://github.com/deepmind/haiku/tree/master/docs
+:github_url: https://github.com/deepmind/dm-haiku/tree/master/docs
 
 Haiku Documentation
 ===================
@@ -31,7 +31,7 @@ installing JAX.
 
 Install Haiku by running::
 
-    $ pip install git+https://github.com/deepmind/haiku
+    $ pip install git+https://github.com/deepmind/dm-haiku
 
 .. toctree::
    :caption: Guides
@@ -48,14 +48,14 @@ Install Haiku by running::
 Contribute
 ----------
 
-- Issue tracker: https://github.com/deepmind/haiku/issues
-- Source code: https://github.com/deepmind/haiku/tree/master
+- Issue tracker: https://github.com/deepmind/dm-haiku/issues
+- Source code: https://github.com/deepmind/dm-haiku/tree/master
 
 Support
 -------
 
 If you are having issues, please let us know by filing an issue on our
-`issue tracker <https://github.com/deepmind/haiku/issues>`_.
+`issue tracker <https://github.com/deepmind/dm-haiku/issues>`_.
 
 License
 -------

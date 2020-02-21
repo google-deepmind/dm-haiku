@@ -44,7 +44,7 @@ EXTRA_PACKAGES = {
 setup(
     name='dm-haiku',
     version=_VERSION,
-    url='https://github.com/deepmind/haiku',
+    url='https://github.com/deepmind/dm-haiku',
     license='Apache 2.0',
     author='DeepMind',
     description='Haiku is a library for building neural networks in JAX.',

@@ -20,10 +20,13 @@ This example serves to demonstrate:
   - An example minimal training loop around it.
 
 We have not tuned the hyperparameters for LM1B at all.
+
+Note: Run with --alsologtostderr to see outputs.
 """
 
 import functools
 import time
+from typing import Any, Mapping
 
 from absl import app
 from absl import flags
@@ -52,9 +55,12 @@ LOG_EVERY = 50
 MAX_STEPS = 10**6
 
 
-def build_forward_fn(vocab_size, d_model, num_heads, num_layers, dropout_rate):
+def build_forward_fn(vocab_size: int, d_model: int, num_heads: int,
+                     num_layers: int, dropout_rate: float):
   """Create the model's forward pass."""
-  def forward_fn(data, is_training=True):
+
+  def forward_fn(data: Mapping[str, jnp.ndarray],
+                 is_training: bool = True) -> jnp.ndarray:
     """Forward pass."""
     tokens = data['obs']
     input_mask = jnp.greater(tokens, 0)
@@ -79,7 +85,12 @@ def build_forward_fn(vocab_size, d_model, num_heads, num_layers, dropout_rate):
   return forward_fn
 
 
-def lm_loss_fn(forward_fn, vocab_size, params, rng, data, is_training=True):
+def lm_loss_fn(forward_fn,
+               vocab_size: int,
+               params,
+               rng,
+               data: Mapping[str, jnp.ndarray],
+               is_training: bool = True) -> jnp.ndarray:
   """Compute the loss on data wrt params."""
   logits = forward_fn(params, rng, data, is_training)
   targets = hk.one_hot(data['target'], vocab_size)
@@ -118,7 +129,7 @@ class Updater:
     return out
 
   @functools.partial(jax.jit, static_argnums=0)
-  def update(self, state, data):
+  def update(self, state: Mapping[str, Any], data: Mapping[str, jnp.ndarray]):
     """Updates the state using some data and returns metrics."""
     rng, new_rng = jax.random.split(state['rng'])
     params = state['params']
@@ -127,13 +138,17 @@ class Updater:
     updates, opt_state = self._opt.update(g, state['opt_state'])
     params = optix.apply_updates(params, updates)
 
-    new_state = dict(
-        step=state['step'] + 1,
-        rng=new_rng,
-        opt_state=opt_state,
-        params=params,
-    )
-    metrics = dict(step=state['step'], loss=loss)
+    new_state = {
+        'step': state['step'] + 1,
+        'rng': new_rng,
+        'opt_state': opt_state,
+        'params': params,
+    }
+
+    metrics = {
+        'step': state['step'],
+        'loss': loss,
+    }
     return new_state, metrics
 
 
@@ -170,8 +185,8 @@ def main(_):
     if step % LOG_EVERY == 0:
       steps_per_sec = LOG_EVERY / (time.time() - prev_time)
       prev_time = time.time()
-      logging.info('Output [STEP=%d]: steps_per_sec=%.2f\t%s', step,
-                   steps_per_sec, metrics)
+      metrics.update({'steps_per_sec': steps_per_sec})
+      logging.info({k: float(v) for k, v in metrics.items()})
 
 
 if __name__ == '__main__':

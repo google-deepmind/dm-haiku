@@ -14,24 +14,19 @@
 # limitations under the License.
 # ==============================================================================
 """Transformer datasets."""
-import collections
+
+from typing import NamedTuple
 
 import tensorflow.compat.v2 as tf
 import tensorflow_datasets as tfds
 
-Dataset = collections.namedtuple('Dataset', ['records', 'vocab_size'])
+
+class LanguageDataset(NamedTuple):
+  records: tf.data.Dataset
+  vocab_size: int
 
 
-# TODO(tycai): Do a split-to-crop instead so we don't throw away data.
-def _crop_or_pad(value, size, pad_token):
-  """Either crop or pad value to be of size size."""
-  val_size = tf.size(value)
-  pad = lambda: tf.pad(  # pylint: disable=g-long-lambda
-      value, [[0, size - val_size]], 'CONSTANT', constant_values=pad_token)
-  return tf.cond(val_size < size, pad, lambda: value[:size])
-
-
-def load(batch_size: int, sequence_length: int):
+def load(batch_size: int, sequence_length: int) -> LanguageDataset:
   """Load LM1B dataset, returning it and vocab_size."""
   ds, ds_info = tfds.load(
       'lm1b/subwords32k',
@@ -50,4 +45,15 @@ def load(batch_size: int, sequence_length: int):
   ds = ds.batch(batch_size, drop_remainder=True)
   ds = ds.prefetch(tf.data.experimental.AUTOTUNE)
   ds = tfds.as_numpy(ds)
-  return Dataset(ds, ds_info.features['text'].encoder.vocab_size)
+  return LanguageDataset(ds, ds_info.features['text'].encoder.vocab_size)
+
+
+# TODO(tycai): Do a split-to-crop instead so we don't throw away data.
+def _crop_or_pad(value, size, pad_token):
+  """Either crop or pad value to be of size size."""
+  val_size = tf.size(value)
+  pad = lambda: tf.pad(  # pylint: disable=g-long-lambda
+      value, [[0, size - val_size]],
+      'CONSTANT',
+      constant_values=pad_token)
+  return tf.cond(val_size < size, pad, lambda: value[:size])

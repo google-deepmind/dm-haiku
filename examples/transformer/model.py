@@ -23,35 +23,35 @@ import jax.numpy as jnp
 import numpy as np
 
 
-def layer_norm(x):
-  """Apply a unique LayerNorm to x with default settings."""
-  return hk.LayerNorm(axis=-1, create_scale=True, create_offset=True)(x)
-
-
 class Attention(hk.Module):
   """A general multi-headed attention module."""
 
-  def __init__(self, num_heads, init_scale, name=None):
-    super(Attention, self).__init__(name=name)
+  def __init__(self,
+               num_heads: int,
+               init_scale: float,
+               name: Optional[str] = None):
+    super().__init__(name=name)
     self._num_heads = num_heads
     self._init_scale = init_scale
 
   @hk.transparent
-  def _multihead_linear(self, inputs, head_dim):
+  def _multihead_linear(self, inputs: jnp.ndarray, head_dim: int):
     """Runs a multi-headed linear over inputs, using the given per-head size."""
-    batch_size, timesteps = inputs.shape[:2]
+    batch_size, sequence_length = inputs.shape[:2]
     initializer = hk.initializers.VarianceScaling(self._init_scale)
     out = hk.Linear(head_dim * self._num_heads, w_init=initializer)(inputs)
-    return jnp.reshape(out, (batch_size, timesteps, self._num_heads, head_dim))
+    shape = (batch_size, sequence_length, self._num_heads, head_dim)
+    return jnp.reshape(out, shape)
 
   def __call__(self, x: jnp.ndarray, y: jnp.ndarray,
-               mask: Optional[jnp.ndarray]):
+               mask: Optional[jnp.ndarray]) -> jnp.ndarray:
     """Multihead attention over y with queries from x.
 
     Args:
       x: Shape [B, q_timesteps, H1].
       y: Shape [B, kv_timesteps, H2].
       mask: Attention mask to apply. [{1,B}, 1, {1,q_timesteps}, kv_timesteps].
+
     Returns:
       Output of the attention with shape [batch, timesteps, hiddens]
     """
@@ -78,25 +78,29 @@ class Attention(hk.Module):
 class CausalSelfAttention(Attention):
   """Self attention with a causal mask applied."""
 
-  def __call__(self, x, mask: Optional[jnp.ndarray]):
+  def __call__(self, x: jnp.ndarray,
+               mask: Optional[jnp.ndarray]) -> jnp.ndarray:
     seq_len = x.shape[1]
     causal_mask = np.tril(np.ones((seq_len, seq_len)))
     if mask is not None:
       mask *= causal_mask
     else:
       mask = causal_mask
-    return super(CausalSelfAttention, self).__call__(x, x, mask)
+    return super().__call__(x, x, mask)
 
 
 class DenseBlock(hk.Module):
   """A 2-layer MLP which widens then narrows the input."""
 
-  def __init__(self, init_scale, widening_factor=4, name=None):
-    super(DenseBlock, self).__init__(name=name)
+  def __init__(self,
+               init_scale: float,
+               widening_factor: int = 4,
+               name: Optional[str] = None):
+    super().__init__(name=name)
     self._init_scale = init_scale
     self._widening_factor = widening_factor
 
-  def __call__(self, x):
+  def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
     hiddens = x.shape[-1]
     initializer = hk.initializers.VarianceScaling(self._init_scale)
     x = hk.Linear(self._widening_factor * hiddens, w_init=initializer)(x)
@@ -108,24 +112,26 @@ class Transformer(hk.Module):
   """A transformer stack."""
 
   def __init__(self, num_heads: int, num_layers: int, dropout_rate, name=None):
-    super(Transformer, self).__init__(name=name)
+    super().__init__(name=name)
     self._num_layers = num_layers
     self._num_heads = num_heads
     self._dropout_rate = dropout_rate
 
-  def __call__(self, h, mask: Optional[jnp.ndarray], is_training: bool):
+  def __call__(self, h: jnp.ndarray, mask: Optional[jnp.ndarray],
+               is_training: bool) -> jnp.ndarray:
     """Connects the transformer.
 
     Args:
       h: Inputs, [B, T, H].
       mask: Padding mask, [B, T].
       is_training: Whether we're training or not.
+
     Returns:
       Array of shape [B, T, H].
     """
 
     init_scale = 2. / np.sqrt(self._num_layers)
-    dropout_rate = self._dropout_rate if is_training else 0.0
+    dropout_rate = self._dropout_rate if is_training else 0.
     if mask is not None:
       mask = mask[:, None, None, :]
 
@@ -139,3 +145,8 @@ class Transformer(hk.Module):
       h = layer_norm(h + h_dense)
 
     return h
+
+
+def layer_norm(x: jnp.ndarray) -> jnp.ndarray:
+  """Apply a unique LayerNorm to x with default settings."""
+  return hk.LayerNorm(axis=-1, create_scale=True, create_offset=True)(x)

@@ -47,6 +47,7 @@ class InitializersTest(parameterized.TestCase):
         initializers.UniformScaling(),
         initializers.UniformScaling(2.0),
         initializers.TruncatedNormal(),
+        initializers.Orthogonal(),
 
         # Users are supposed to be able to use these.
         jnp.zeros,
@@ -60,6 +61,46 @@ class InitializersTest(parameterized.TestCase):
       generated = init(shape, dtype)
       self.assertEqual(generated.shape, shape)
       self.assertEqual(generated.dtype, dtype)
+
+  @test_utils.transform_and_run
+  def test_invalid_variance_scale(self):
+
+    with self.assertRaises(ValueError):
+      initializers.VarianceScaling(scale=-1.0)
+
+    with self.assertRaises(ValueError):
+      initializers.VarianceScaling(mode="foo")
+
+    with self.assertRaises(ValueError):
+      initializers.VarianceScaling(distribution="bar")
+
+  @test_utils.transform_and_run
+  def test_compute_fans(self):
+    fan_in_out1 = initializers._compute_fans([])
+    self.assertEqual(fan_in_out1, (1, 1))
+    fan_in_out2 = initializers._compute_fans([2])
+    self.assertEqual(fan_in_out2, (2, 2))
+    fan_in_out3 = initializers._compute_fans([3, 4])
+    self.assertEqual(fan_in_out3, (3, 4))
+    fan_in_out4 = initializers._compute_fans([1, 2, 3, 4])
+    self.assertEqual(fan_in_out4, (6, 8))
+
+  @parameterized.parameters(np.float32, jnp.float32)
+  @test_utils.transform_and_run
+  def test_orthogonal_invalid_shape(self, dtype):
+    init = initializers.Orthogonal()
+    shape = (20, )
+    with self.assertRaises(ValueError):
+      init(shape, dtype)
+
+  @parameterized.parameters(np.float32, jnp.float32)
+  @test_utils.transform_and_run
+  def test_orthogonal_orthogonal(self, dtype):
+    init = initializers.Orthogonal()
+    shape = (42, 20)
+    generated = init(shape, dtype)
+    self.assertEqual(generated.shape, shape)
+    self.assertEqual(generated.dtype, dtype)
 
 if __name__ == "__main__":
   absltest.main()

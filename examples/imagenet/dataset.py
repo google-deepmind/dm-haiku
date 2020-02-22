@@ -158,12 +158,6 @@ def _distorted_bounding_box_crop(
   return image
 
 
-def _at_least_3_are_equal(a: tf.Tensor, b: tf.Tensor) -> tf.Tensor:
-  """At least 3 of `a` and `b` `Tensors` are equal."""
-  match = tf.cast(tf.equal(a, b), tf.int32)
-  return tf.reduce_sum(match) >= 3
-
-
 def _decode_and_random_crop(image_bytes: tf.Tensor) -> tf.Tensor:
   """Make a random crop of 224."""
   jpeg_shape = tf.image.extract_jpeg_shape(image_bytes)
@@ -176,9 +170,9 @@ def _decode_and_random_crop(image_bytes: tf.Tensor) -> tf.Tensor:
       aspect_ratio_range=(3 / 4, 4 / 3),
       area_range=(0.08, 1.0),
       max_attempts=10)
-  image = tf.cond(
-      _at_least_3_are_equal(jpeg_shape, tf.shape(image)),
-      lambda: _decode_and_center_crop(image_bytes, jpeg_shape), lambda: image)
+  if tf.reduce_all(tf.equal(jpeg_shape, tf.shape(image))):
+    # If the random crop failed fall back to center crop.
+    image = _decode_and_center_crop(image_bytes, jpeg_shape)
   return image
 
 

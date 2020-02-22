@@ -22,7 +22,7 @@ from haiku._src.initializers import RandomUniform
 from haiku._src.initializers import TruncatedNormal
 from haiku._src.initializers import UniformScaling
 from haiku._src.initializers import VarianceScaling
-from haiku._src.typing import Initializer
+from haiku._src.typings import Initializer
 
 
 __all__ = (

@@ -24,8 +24,8 @@ import warnings
 
 from haiku._src import analytics
 from haiku._src import data_structures
-from haiku._src.typing import (Shape, DType, ParamName, Initializer, Params,  # pylint: disable=g-multiple-import
-                               State, ParamCreator, PRNGKey, PRNGSeed)
+from haiku._src.typings import (Shape, DType, ParamName, Initializer, Params,  # pylint: disable=g-multiple-import
+                                State, ParamCreator, PRNGKey, PRNGSeed)
 import jax
 import jax.numpy as jnp
 import numpy as np

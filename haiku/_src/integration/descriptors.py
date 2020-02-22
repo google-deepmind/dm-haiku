@@ -18,7 +18,7 @@
 from typing import Any, Callable, NamedTuple, Union
 
 import haiku as hk
-from haiku._src.typing import Shape, DType  # pylint: disable=g-multiple-import
+from haiku._src.typings import Shape, DType  # pylint: disable=g-multiple-import
 import jax
 import jax.numpy as jnp
 import numpy as np

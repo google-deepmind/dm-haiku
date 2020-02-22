@@ -15,6 +15,8 @@
 # ==============================================================================
 """Tests for haiku._src.nets.resnet."""
 
+from __future__ import absolute_import
+
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import test_utils

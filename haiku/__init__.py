@@ -15,6 +15,8 @@
 # ==============================================================================
 """Haiku is a neural network library for JAX."""
 
+from __future__ import absolute_import
+
 from haiku import data_structures
 from haiku import initializers
 from haiku import nets
@@ -79,8 +81,8 @@ from haiku._src.stateful import grad
 from haiku._src.stateful import jit
 from haiku._src.stateful import remat
 from haiku._src.stateful import value_and_grad
-from haiku._src.typing import Params
-from haiku._src.typing import State
+from haiku._src.typings import Params
+from haiku._src.typings import State
 
 __version__ = "0.0.1a0"
 

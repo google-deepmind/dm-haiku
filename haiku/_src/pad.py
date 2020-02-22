@@ -18,7 +18,7 @@
 from typing import Sequence, Union
 
 from haiku._src import utils
-from haiku._src.typing import Paddings
+from haiku._src.typings import Paddings
 
 
 def valid(effective_kernel_size: int):  # pylint: disable=unused-argument

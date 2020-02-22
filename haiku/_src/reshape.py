@@ -16,7 +16,7 @@
 """Reshaping Haiku modules."""
 
 from haiku._src import module
-from haiku._src.typing import Shape
+from haiku._src.typings import Shape
 import jax.numpy as jnp
 import numpy as np
 

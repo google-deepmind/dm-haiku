@@ -13,15 +13,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Public Haiku data structures."""
+"""Haiku types."""
 
 from __future__ import absolute_import
 
-from haiku._src.data_structures import to_immutable_dict
-from haiku._src.data_structures import to_mutable_dict
+from typing import Any, Callable, Mapping, Text, Sequence, Union
+import jax.numpy as jnp
 
+Shape = Sequence[int]
+DType = Any
+ParamName = Text
+Initializer = Callable[[Shape, DType], jnp.ndarray]
+Params = Mapping[Text, Mapping[ParamName, jnp.ndarray]]
+State = Mapping[Text, Mapping[Text, jnp.ndarray]]
+NextCreator = Callable[[ParamName, Shape, DType, Initializer], jnp.ndarray]
+ParamCreator = Callable[[NextCreator, ParamName, Shape, DType, Initializer],
+                        jnp.ndarray]
+Padding = Callable[[int], Sequence[int]]
+Paddings = Union[Padding, Sequence[Padding]]
 
-__all__ = (
-    "to_mutable_dict",
-    "to_immutable_dict",
-)
+# Missing JAX types.
+PRNGKey = jnp.ndarray  # pylint: disable=invalid-name
+PRNGSeed = int

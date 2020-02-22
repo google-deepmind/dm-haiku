@@ -22,7 +22,7 @@ from absl.testing import parameterized
 import haiku as hk
 from haiku._src import test_utils
 from haiku._src.integration import descriptors
-from haiku._src.typing import DType, Shape  # pylint: disable=g-multiple-import
+from haiku._src.typings import DType, Shape  # pylint: disable=g-multiple-import
 import jax
 import jax.numpy as jnp
 import numpy as np

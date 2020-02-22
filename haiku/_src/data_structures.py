@@ -15,6 +15,8 @@
 # ==============================================================================
 """Data structures used by Haiku."""
 
+from __future__ import absolute_import
+
 import collections
 import contextlib
 import pprint

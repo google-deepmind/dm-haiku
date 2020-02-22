@@ -16,7 +16,7 @@
 """Haiku initializers."""
 
 from haiku._src import base
-from haiku._src.typing import Initializer, Shape, DType  # pylint: disable=g-multiple-import
+from haiku._src.typings import Initializer, Shape, DType  # pylint: disable=g-multiple-import
 import jax
 from jax import lax
 import jax.numpy as jnp

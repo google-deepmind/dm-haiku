@@ -15,8 +15,6 @@
 # ==============================================================================
 """Haiku is a neural network library for JAX."""
 
-from __future__ import absolute_import
-
 from haiku import data_structures
 from haiku import initializers
 from haiku import nets

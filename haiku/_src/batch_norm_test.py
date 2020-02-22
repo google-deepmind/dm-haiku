@@ -15,8 +15,6 @@
 # ==============================================================================
 """Tests for haiku._src.batch_norm."""
 
-from __future__ import absolute_import
-
 from absl.testing import absltest
 from haiku._src import batch_norm
 from haiku._src import test_utils

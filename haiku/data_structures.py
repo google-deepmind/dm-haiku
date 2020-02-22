@@ -15,8 +15,6 @@
 # ==============================================================================
 """Public Haiku data structures."""
 
-from __future__ import absolute_import
-
 from haiku._src.data_structures import to_immutable_dict
 from haiku._src.data_structures import to_mutable_dict
 

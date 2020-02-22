@@ -15,8 +15,6 @@
 # ==============================================================================
 """Haiku types."""
 
-from __future__ import absolute_import
-
 from typing import Any, Callable, Mapping, Text, Sequence, Union
 import jax.numpy as jnp
 

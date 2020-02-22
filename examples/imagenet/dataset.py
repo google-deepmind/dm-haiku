@@ -34,28 +34,14 @@ class Split(enum.Enum):
 
   @classmethod
   def from_string(cls, name: Text) -> 'Split':
-    name = name.upper()
-    if name == 'TRAIN':
-      return Split.TRAIN
-    elif name == 'TRAIN_AND_VALID':
-      return Split.TRAIN_AND_VALID
-    elif name in ('VALID', 'VALIDATION'):
-      return Split.VALID
-    else:
-      assert name == 'TEST'
-      return Split.TEST
+    return {'TRAIN': Split.TRAIN, 'TRAIN_AND_VALID': Split.TRAIN_AND_VALID,
+            'VALID': Split.VALID, 'VALIDATION': Split.VALID,
+            'TEST': Split.TEST}[name.upper()]
 
   @property
   def num_examples(self):
-    if self == Split.TRAIN_AND_VALID:
-      return 1281167
-    elif self == Split.TRAIN:
-      return 1271167
-    elif self == Split.VALID:
-      return 10000
-    else:
-      assert self == Split.TEST
-      return 50000
+    return {Split.TRAIN_AND_VALID: 1281167, Split.TRAIN: 1271167,
+            Split.VALID: 10000, Split.TEST: 50000}[self]
 
 
 def load(
@@ -127,11 +113,13 @@ def _preprocess_image(
     image = tf.image.random_flip_left_right(image)
   else:
     image = _decode_and_center_crop(image_bytes)
-  image = tf.reshape(image, [224, 224, 3])
   image = tf.image.convert_image_dtype(image, dtype=dtype)
   image = _normalize_image(image,
                            mean=(0.485, 0.456, 0.406),
                            stddev=(0.229, 0.224, 0.225))
+  # TODO(tomhennigan) Update to TF2 symbol and test for equivalence.
+  image = tf.compat.v1.image.resize_bicubic([image], [224, 224])[0]
+  image = tf.reshape(image, [224, 224, 3])
   return image
 
 
@@ -175,9 +163,6 @@ def _at_least_3_are_equal(a: tf.Tensor, b: tf.Tensor) -> tf.Tensor:
   match = tf.cast(tf.equal(a, b), tf.int32)
   return tf.reduce_sum(match) >= 3
 
-# TODO(tomhennigan) Update to TF2 symbol and test for equivalence.
-_resize_bicubic = tf.compat.v1.image.resize_bicubic
-
 
 def _decode_and_random_crop(image_bytes: tf.Tensor) -> tf.Tensor:
   """Make a random crop of 224."""
@@ -191,9 +176,9 @@ def _decode_and_random_crop(image_bytes: tf.Tensor) -> tf.Tensor:
       aspect_ratio_range=(3 / 4, 4 / 3),
       area_range=(0.08, 1.0),
       max_attempts=10)
-  image = tf.cond(_at_least_3_are_equal(jpeg_shape, tf.shape(image)),
-                  lambda: _decode_and_center_crop(image_bytes, jpeg_shape),
-                  lambda: _resize_bicubic([image], [224, 224])[0])
+  image = tf.cond(
+      _at_least_3_are_equal(jpeg_shape, tf.shape(image)),
+      lambda: _decode_and_center_crop(image_bytes, jpeg_shape), lambda: image)
   return image
 
 
@@ -216,5 +201,4 @@ def _decode_and_center_crop(
   crop_window = tf.stack([offset_height, offset_width,
                           padded_center_crop_size, padded_center_crop_size])
   image = tf.image.decode_and_crop_jpeg(image_bytes, crop_window, channels=3)
-  image = _resize_bicubic([image], [224, 224])[0]
   return image

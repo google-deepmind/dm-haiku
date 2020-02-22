@@ -52,7 +52,7 @@ def _l2_normalize(tensor, axis=None, eps=1e-12):
 
 
 class SpectralNorm(module.Module):
-  """Normalizes an input by it's first singular value.
+  """Normalizes an input by its first singular value.
 
   This module uses power iteration to calculate this value based on the
   input and an internal hidden state.

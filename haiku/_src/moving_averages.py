@@ -128,7 +128,7 @@ class EMAParamsTree(module.Module):
   an init_fn as normal, but are creating a second transformed function which
   expects a tree of parameters as input. This function is then called with
   the current parameters as input, which then returns an identical tree with
-  every parameter replaced with it's exponentially decaued average. This
+  every parameter replaced with its exponentially decayed average. This
   ema_params object can then be passed into the `network_fn` as usual, and will
   cause it to run with EMA weights.
   """

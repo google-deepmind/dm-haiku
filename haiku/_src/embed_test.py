@@ -84,19 +84,18 @@ class EmbedTest(parameterized.TestCase):
       emb([1.0, 2.0])
 
   @parameterized.parameters(
-    itertools.product(["FOO"],
-                      [_1D_IDS, _2D_IDS, _3D_IDS]))
+    itertools.product([_1D_IDS, _2D_IDS, _3D_IDS]))
   @test_utils.transform_and_run
-  def test_embed_invalid_lookup(self, lookup_style, inp_ids):
+  def test_embed_invalid_lookup(self, inp_ids):
+    lookup_style = "FOO"
     emb = embed.Embed(embedding_matrix=_EMBEDDING_MATRIX,
                       lookup_style=lookup_style)
     with self.assertRaisesRegex(ValueError, f"{lookup_style} is not a valid enum in EmbedLookupStyle."):
       emb(inp_ids)
 
-  @parameterized.parameters(
-    itertools.product(["ONE_HOT"]))
   @test_utils.transform_and_run
-  def test_embed_property_check(self, lookup_style):
+  def test_embed_property_check(self):
+    lookup_style = "ONE_HOT"
     emb = embed.Embed(embedding_matrix=_EMBEDDING_MATRIX,
                       lookup_style=lookup_style)
 

@@ -65,13 +65,13 @@ class InitializersTest(parameterized.TestCase):
   @test_utils.transform_and_run
   def test_invalid_variance_scale(self):
 
-    with self.assertRaises(ValueError):
+    with self.assertRaisesRegex(ValueError, "scale.*must be a positive float"):
       initializers.VarianceScaling(scale=-1.0)
 
-    with self.assertRaises(ValueError):
+    with self.assertRaisesRegex(ValueError, "Invalid `mode` argument*"):
       initializers.VarianceScaling(mode="foo")
 
-    with self.assertRaises(ValueError):
+    with self.assertRaisesRegex(ValueError, "Invalid `distribution` argument*"):
       initializers.VarianceScaling(distribution="bar")
 
   @test_utils.transform_and_run
@@ -90,7 +90,9 @@ class InitializersTest(parameterized.TestCase):
   def test_orthogonal_invalid_shape(self, dtype):
     init = initializers.Orthogonal()
     shape = (20, )
-    with self.assertRaises(ValueError):
+    with self.assertRaisesRegex(ValueError,
+                                "Orthogonal initializer "
+                                "requires at least a 2D shape."):
       init(shape, dtype)
 
   @parameterized.parameters(np.float32, jnp.float32)

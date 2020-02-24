@@ -9,6 +9,8 @@
 | [**Documentation**](https://dm-haiku.readthedocs.io/)
 | [**Citing Haiku**](#citing-haiku)
 
+![pytest](https://github.com/deepmind/dm-haiku/workflows/pytest/badge.svg)
+
 ## What is Haiku?
 
 Haiku is a simple neural network library for

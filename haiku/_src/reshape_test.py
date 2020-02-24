@@ -85,7 +85,8 @@ class ReshapeTest(parameterized.TestCase):
 
   @test_utils.transform_and_run
   def test_flatten_invalid_preserve_dims(self):
-    with self.assertRaises(ValueError):
+    with self.assertRaisesRegex(ValueError,
+                                "Argument preserve_dims should be >= 1."):
       reshape.Flatten(preserve_dims=-1)
 
 

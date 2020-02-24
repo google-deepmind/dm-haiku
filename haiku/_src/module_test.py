@@ -78,9 +78,10 @@ class ModuleTest(parameterized.TestCase):
         ValueError, "Module name 'custom_name_4' is not unique"):
       EmptyModule(name="custom_name_4")
 
+  @test_utils.transform_and_run
   def test_flatten_invalid_name(self):
-    with self.assertRaises(ValueError):
-      EmptyModule(name='1bad-name')
+    with self.assertRaisesRegexp(ValueError, "\s*is not a valid module name\s*"):
+      EmptyModule(name="1bad-name")
 
   @test_utils.transform_and_run
   def test_parameter_reuse(self):

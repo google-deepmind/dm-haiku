@@ -31,6 +31,7 @@ from haiku._src.base import transform_with_state
 from haiku._src.base import Transformed
 from haiku._src.base import TransformedWithState
 from haiku._src.base import with_rng
+from haiku._src.base import without_apply_rng
 from haiku._src.base import without_state
 from haiku._src.basic import BatchApply
 from haiku._src.basic import dropout
@@ -150,6 +151,7 @@ __all__ = (
     "value_and_grad",
     "VanillaRNN",
     "with_rng",
+    "without_apply_rng",
     "without_state",
 )
 

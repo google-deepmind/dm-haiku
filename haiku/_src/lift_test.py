@@ -41,7 +41,7 @@ class LiftTest(absltest.TestCase):
     def outer_fn(x):
       assert x.ndim == 2
       x = Bias()(x)
-      inner = base.transform(inner_fn, state=True)
+      inner = base.without_apply_rng(base.transform_with_state(inner_fn))
       inner_p, inner_s = lift.lift(inner.init)(base.next_rng_key(), x[0])
       vmap_inner = jax.vmap(inner.apply, in_axes=(None, None, 0))
       return vmap_inner(inner_p, inner_s, x)[0]

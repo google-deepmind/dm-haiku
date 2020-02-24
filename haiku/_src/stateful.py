@@ -85,7 +85,7 @@ def grad(fun, argnums=0, has_aux=False, holomorphic=False):
   ...   g = hk.grad(m)(x)
   ...   return g
 
-  >>> f = hk.transform(f, state=True)
+  >>> f = hk.transform_with_state(f)
   >>> x = jnp.array(2.)
   >>> params, state = jax.jit(f.init)(None, x)
   >>> state["my_module"]["last"]
@@ -149,7 +149,7 @@ def value_and_grad(fun, argnums=0, has_aux=False, holomorphic=False):
   ...   y, g = hk.value_and_grad(m)(x)
   ...   return y, g
 
-  >>> f = hk.transform(f, state=True)
+  >>> f = hk.transform_with_state(f)
   >>> x = jnp.array(2.)
   >>> _ = jax.jit(f.init)(None, x)
 

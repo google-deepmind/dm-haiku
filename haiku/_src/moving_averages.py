@@ -111,18 +111,17 @@ class EMAParamsTree(module.Module):
   within a function, this class is meant to be applied to the entire tree of
   parameters for a function.
 
-  An example usage might be the following:
+  Given a set of parameters for some network:
 
-  ```
-    params = hk.transform(network_fn).init(jax.random.PRNGKey(428))
+  >>> network_fn = lambda x: hk.Linear(10)(x)
+  >>> x = jnp.ones([1, 1])
+  >>> params = hk.transform(network_fn).init(jax.random.PRNGKey(428), x)
 
-    def g(x):
-      return moving_averages.EMAParamsTree(0.2)(x)
+  You might use the EMAParamsTree like follows:
 
-    ema_fn = hk.transform(g, state=True)
-    _, params_state = ema_fn.init(None, params)
-    ema_params, params_state = ema_fn.apply(None, params_state, params)
-  ```
+  >>> ema_fn = hk.transform_with_state(lambda x: hk.EMAParamsTree(0.2)(x))
+  >>> _, ema_state = ema_fn.init(None, params)
+  >>> ema_params, ema_state = ema_fn.apply(None, ema_state, None, params)
 
   Here, we are transforming a Haiku function and constructing its parameters via
   an init_fn as normal, but are creating a second transformed function which

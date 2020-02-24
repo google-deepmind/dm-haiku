@@ -87,7 +87,7 @@ class SNParamsTreeTest(absltest.TestCase):
 
     def g(x):
       return spectral_norm.SNParamsTree(ignore_regex=".*b", name=sn_name)(x)
-    init_fn, _ = base.transform(g, state=True)
+    init_fn, _ = base.transform_with_state(g)
     _, params_state = init_fn(random.PRNGKey(428), params)
 
     expected_sn_states = [

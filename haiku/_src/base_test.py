@@ -231,7 +231,7 @@ class BaseTest(parameterized.TestCase):
 
     init_fn, _ = base.without_state(base.transform_with_state(f))
 
-    with self.assertRaisesRegex(ValueError, "without_state.*used state"):
+    with self.assertRaisesRegex(ValueError, "use.*transform_with_state"):
       init_fn(None)
 
   def test_inline_use(self):

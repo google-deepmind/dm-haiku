@@ -62,7 +62,7 @@ def _forward(
   return net(batch['images'], is_training=is_training)
 
 # Transform our forwards function into a pair of pure functions.
-forward = hk.transform(_forward, state=True)
+forward = hk.transform_with_state(_forward)
 
 
 def lr_schedule(step: jnp.ndarray) -> jnp.ndarray:
@@ -165,7 +165,8 @@ def eval_batch(
     batch: dataset.Batch,
 ) -> jnp.ndarray:
   """Evaluates a batch."""
-  logits, _ = forward.apply(params, state, batch, is_training=False)
+  rng = None
+  logits, _ = forward.apply(params, state, rng, batch, is_training=False)
   predicted_label = jnp.argmax(logits, axis=-1)
   correct = jnp.sum(jnp.equal(predicted_label, batch['labels']))
   return correct.astype(jnp.float32)

@@ -84,7 +84,7 @@ class MovingAveragesTest(absltest.TestCase):
       return moving_averages.ExponentialMovingAverage(0.5)(x)
 
     inp_value = 1.0
-    init_fn, apply_fn = base.transform(f, state=True)
+    init_fn, apply_fn = base.without_apply_rng(base.transform_with_state(f))
     _, params_state = init_fn(None, inp_value)
 
     # The output should never change as long as the input doesn't.
@@ -109,7 +109,7 @@ class EMAParamsTreeTest(absltest.TestCase):
 
     def g(x):
       return moving_averages.EMAParamsTree(0.2, name=ema_name)(x)
-    init_fn, _ = base.transform(g, state=True)
+    init_fn, _ = base.transform_with_state(g)
     _, params_state = init_fn(None, params)
 
     expected_ema_states = [
@@ -125,7 +125,7 @@ class EMAParamsTreeTest(absltest.TestCase):
 
     def g(x):
       return moving_averages.EMAParamsTree(0.2)(x)
-    init_fn, apply_fn = base.transform(g, state=True)
+    init_fn, apply_fn = base.without_apply_rng(base.transform_with_state(g))
     _, params_state = init_fn(None, params)
     params, params_state = apply_fn(None, params_state, params)
     # Let's modify our params.
@@ -148,7 +148,7 @@ class EMAParamsTreeTest(absltest.TestCase):
 
     def g(x):
       return moving_averages.EMAParamsTree(0.2, ignore_regex=".*w")(x)
-    init_fn, apply_fn = base.transform(g, state=True)
+    init_fn, apply_fn = base.without_apply_rng(base.transform_with_state(g))
     _, params_state = init_fn(None, params)
     params, params_state = apply_fn(None, params_state, params)
     # Let's modify our params.
@@ -170,7 +170,7 @@ class EMAParamsTreeTest(absltest.TestCase):
     def g(x):
       """This should never update internal stats."""
       return moving_averages.EMAParamsTree(0.2)(x, update_stats=False)
-    init_fn, apply_fn_g = base.transform(g, state=True)
+    init_fn, apply_fn_g = base.without_apply_rng(base.transform_with_state(g))
     _, params_state = init_fn(None, params)
 
     # Let's modify our params.
@@ -186,7 +186,7 @@ class EMAParamsTreeTest(absltest.TestCase):
     def h(x):
       """This will behave like normal."""
       return moving_averages.EMAParamsTree(0.2)(x, update_stats=True)
-    init_fn, apply_fn_h = base.transform(h, state=True)
+    init_fn, apply_fn_h = base.without_apply_rng(base.transform_with_state(h))
     _, params_state = init_fn(None, params)
     params, params_state = apply_fn_h(None, params_state, params)
 

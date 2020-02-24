@@ -345,10 +345,7 @@ def mk_apply_fn(f: Callable[..., T]) -> Callable[..., Tuple[T, State]]:
   return apply_fn
 
 
-# TODO(tomhennigan) Should be TransformedWithState -> Transformed.
-def without_state(
-    f: Union[Transformed, TransformedWithState],
-) -> Transformed:
+def without_state(f: TransformedWithState) -> Transformed:
   """Wraps a transformed tuple and ignores state in/out.
 
   >>> def f(x):
@@ -356,6 +353,7 @@ def without_state(
   ...   return mod(x)
 
   >>> f = hk.without_state(hk.transform_with_state(f))
+  >>> # NOTE: This is equivalent to `f = hk.transform(f, apply_rng=True)`.
 
   >>> rng = jax.random.PRNGKey(42)
   >>> x = jnp.zeros([1, 1])
@@ -374,34 +372,42 @@ def without_state(
   def init_fn(*args, **kwargs):
     params, state = f.init(*args, **kwargs)
     if state:
-      raise ValueError("Function wrapped with `hk.without_state` used state.")
+      raise ValueError("If your transformed function uses `hk.{get,set}_state` "
+                       "then use `hk.transform_with_state`.")
     return params
 
   def apply_fn(params, *args, **kwargs):
     out, state = f.apply(params, {}, *args, **kwargs)
     if state:
-      raise ValueError("Function wrapped with `hk.without_state` used state.")
+      raise ValueError("If your transformed function uses `hk.{get,set}_state` "
+                       "then use `hk.transform_with_state`.")
     return out
 
   return Transformed(init=init_fn, apply=apply_fn)
 
 
-def without_apply_rng(
-    f: Union[Transformed, TransformedWithState],
-) -> Transformed:
-
-  def apply_fn(params, state, *args, **kwargs):
-    return f.apply(params, state, None, *args, **kwargs)
-
-  return Transformed(init=f.init, apply=apply_fn)
+TransformedT = TypeVar("TransformedT", Transformed, TransformedWithState)
 
 
-# TODO(tomhennigan) Remove apply_rng and state.
-def transform(
-    f,
-    apply_rng=False,
-    state=False,
-) -> Transformed:
+def without_apply_rng(f: TransformedT) -> TransformedT:
+  """Removes the rng argument from the apply function."""
+  if isinstance(f, TransformedWithState):
+    def apply_fn(params, state, *args, **kwargs):
+      return f.apply(params, state, None, *args, **kwargs)
+    return TransformedWithState(init=f.init, apply=apply_fn)
+
+  elif isinstance(f, Transformed):
+    def apply_fn(params, *args, **kwargs):
+      return f.apply(params, None, *args, **kwargs)
+    return Transformed(init=f.init, apply=apply_fn)
+
+  else:
+    raise ValueError("Must be called with the reuslt of `hk.transformed` or "
+                     f"`hk.transformed_with_state`, actual {type(f)}")
+
+
+# TODO(tomhennigan) Remove apply_rng.
+def transform(f, *, apply_rng=False) -> Transformed:
   """Transforms a function using Haiku modules into a pair of pure functions.
 
   The first thing to do is to define a `Module`. A module encapsulates some
@@ -455,28 +461,20 @@ def transform(
   Args:
     f: A function closing over `Module` instances.
     apply_rng: Whether `apply` should accept `rng` as an argument.
-    state: *Deprecated:* use `hk.transform_with_state`.
 
   Returns:
     A named tuple with `init` and `apply` pure functions.
   """
   analytics.log_once("transform")
 
-  if state:
-    warnings.warn(
-        "Prefer using hk.transform_with_state(f) vs. passing state=True.",
-        DeprecationWarning)
-
   if apply_rng:
     warnings.warn("Apply_rng will soon be removed and defaulted to True",
                   DeprecationWarning)
 
-  pair = transform_with_state(f)  # type: Transformed
+  pair = transform_with_state(f)
   if not apply_rng:
     pair = without_apply_rng(pair)
-  if not state:
-    pair = without_state(pair)
-  return pair
+  return without_state(pair)
 
 
 def transform_with_state(f) -> TransformedWithState:

@@ -32,8 +32,8 @@ ModuleFn = descriptors.ModuleFn
 
 
 def module_type(module_fn: ModuleFn) -> Type[hk.Module]:
-  f = hk.transform(lambda: type(descriptors.unwrap(module_fn())), state=True)
-  return f.apply(*f.init(jax.random.PRNGKey(42)))[0]
+  f = hk.transform_with_state(lambda: type(descriptors.unwrap(module_fn())))
+  return f.apply(*f.init(jax.random.PRNGKey(42)), None)[0]
 
 DEFAULT_ATOL = 1e-5
 CUSTOM_ATOL = {hk.nets.ResNet50: 0.05, hk.nets.MobileNetV1: 0.05}

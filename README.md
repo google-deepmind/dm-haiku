@@ -206,8 +206,11 @@ Then, install Haiku using pip:
 $ pip install git+https://github.com/deepmind/dm-haiku
 ```
 
-In order to run the RL `examples/` you will also need to install
-[bsuite](https://github.com/deepmind/bsuite).
+Our examples rely on additional libraries (e.g. [bsuite](https://github.com/deepmind/bsuite)). You can install the full set of additional requirements using pip:
+
+```bash
+$ pip install -r examples/requirements.txt
+```
 
 ## User manual
 

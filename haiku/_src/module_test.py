@@ -79,6 +79,11 @@ class ModuleTest(parameterized.TestCase):
       EmptyModule(name="custom_name_4")
 
   @test_utils.transform_and_run
+  def test_flatten_invalid_name(self):
+    with self.assertRaisesRegex(ValueError, "is not a valid module name"):
+      EmptyModule(name="1bad-name")
+
+  @test_utils.transform_and_run
   def test_parameter_reuse(self):
     mod = ScalarModule()
     w1 = mod()

@@ -163,6 +163,51 @@ class ConvTest(parameterized.TestCase):
     self.assertEqual(out.shape, expected_output_shape)
     self.assertEqual(reached[0], n*2)
 
+  def test_invalid_input_shape(self):
+    n = 1
+    input_shape = [2, 4] + [16]*n
+
+    def f():
+      data = jnp.zeros(input_shape * 2)
+      net = conv.ConvND(n, output_channels=3, kernel_shape=3,
+                        data_format="channels_first")
+      return net(data)
+    with self.assertRaisesRegexp(ValueError, "Input to ConvND "
+                                             "needs to have rank 3, "
+                                             "but input has shape *"):
+      init_fn, apply_fn = base.transform(f)
+      apply_fn(init_fn(random.PRNGKey(428)))
+
+  def test_invalid_mask_shape(self):
+    n = 1
+    input_shape = [2, 4] + [16]*n
+
+    def f():
+      data = jnp.zeros(input_shape)
+      net = conv.ConvND(n, output_channels=3, kernel_shape=3,
+                        data_format="channels_first", mask=jnp.ones([1, 5, 1]))
+      return net(data)
+    with self.assertRaisesRegexp(ValueError, "Mask needs to have "
+                                             "the same shape as weights. "
+                                             "Shapes are: *"):
+      init_fn, apply_fn = base.transform(f)
+      apply_fn(init_fn(random.PRNGKey(428)))
+
+  def test_valid_mask_shape(self):
+    n = 2
+    input_shape = [2, 4] + [16]*n
+
+    def f():
+      data = jnp.zeros(input_shape)
+      net = conv.ConvND(n, output_channels=3, kernel_shape=3,
+                        data_format="channels_first",
+                        mask=jnp.ones([3, 3, 4, 3]))
+      return net(data)
+    init_fn, apply_fn = base.transform(f)
+    out = apply_fn(init_fn(random.PRNGKey(428)))
+    expected_output_shape = (2, 3) + (16,)*n
+    self.assertEqual(out.shape, expected_output_shape)
+
 
 class Conv1DTest(parameterized.TestCase):
 
@@ -340,6 +385,26 @@ class Conv3DTest(parameterized.TestCase):
     out = np.squeeze(out, axis=(0, 4))
     np.testing.assert_equal(out, expected_out)
 
+  def test_invalid_input_shape(self):
+    with_bias = True
+
+    def f():
+      data = jnp.ones([1, 5, 5, 5, 1, 9, 9])
+      net = conv.Conv3D(
+          output_channels=1,
+          kernel_shape=3,
+          stride=1,
+          padding="VALID",
+          with_bias=with_bias,
+          **create_constant_initializers(1.0, 1.0, with_bias))
+      return net(data)
+
+    with self.assertRaisesRegexp(ValueError, "Input to ConvND "
+                                             "needs to have rank 5, "
+                                             "but input has shape *"):
+      init_fn, apply_fn = base.transform(f)
+      apply_fn(init_fn(random.PRNGKey(428)))
+
 
 class ConvTransposeTest(parameterized.TestCase):
 
@@ -406,6 +471,53 @@ class ConvTransposeTest(parameterized.TestCase):
     init_fn, apply_fn = base.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     expected_output_shape = (2, 3) + (16,)*n
+    self.assertEqual(out.shape, expected_output_shape)
+
+  def test_invalid_input_shape(self):
+    n = 1
+    def f():
+      input_shape = [2, 4] + [16]*n
+      data = jnp.zeros(input_shape*2)
+      net = conv.ConvNDTranspose(
+          n, output_channels=3, kernel_shape=3, data_format="channels_first")
+      return net(data)
+
+    with self.assertRaisesRegexp(ValueError, "Input to ConvND "
+                                             "needs to have rank *"):
+      init_fn, apply_fn = base.transform(f)
+      apply_fn(init_fn(random.PRNGKey(428)))
+
+  def test_invalid_input_mask(self):
+    n = 2
+    def f():
+      input_shape = [2, 4] + [16]*n
+      data = jnp.zeros(input_shape)
+      net = conv.ConvNDTranspose(
+          n, output_channels=3, kernel_shape=3,
+          data_format="channels_first",
+          mask=jnp.zeros([1,2,3]))
+      return net(data)
+
+    with self.assertRaisesRegexp(ValueError, "Mask needs to have "
+                                             "the same shape as weights. "
+                                             "Shapes are: *"):
+      init_fn, apply_fn = base.transform(f)
+      apply_fn(init_fn(random.PRNGKey(428)))
+
+  def test_valid_input_mask(self):
+    n = 2
+    def f():
+      input_shape = [2, 4] + [16]*n
+      data = jnp.zeros(input_shape)
+      net = conv.ConvNDTranspose(
+          n, output_channels=3, kernel_shape=3,
+          data_format="channels_first",
+          mask=jnp.zeros([3, 3, 4, 3]))
+      return net(data)
+
+    init_fn, apply_fn = base.transform(f)
+    out = apply_fn(init_fn(random.PRNGKey(428)))
+    expected_output_shape = (2, 3, 16, 16)
     self.assertEqual(out.shape, expected_output_shape)
 
 

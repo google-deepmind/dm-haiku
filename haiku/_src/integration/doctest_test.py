@@ -85,7 +85,7 @@ class DoctestTest(parameterized.TestCase):
         test_names.append(name)
         module.__test__[name] = value
 
-      init_fn, _ = hk.transform(run_test)
+      init_fn, _ = hk.transform_with_state(run_test)
       rng = jax.random.PRNGKey(42)
       init_fn(rng)
 

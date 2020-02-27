@@ -41,15 +41,32 @@ StatePair = namedtuple("StatePair", ("initial", "current"))
 MutableParams = MutableMapping[Text, MutableMapping[ParamName, jnp.ndarray]]
 MutableState = MutableMapping[Text, MutableMapping[Text, StatePair]]
 
-# TODO(tomhennigan) Add types to attributes once state/apply_rng are removed.
-Transformed = namedtuple("Transformed", ("init", "apply"))
+# TODO(tomhennigan): Use protocols to describe *args when we are 3.8+.
+# https://www.python.org/dev/peps/pep-0544/#callback-protocols
+
+
+class Transformed(NamedTuple):
+  """Holds a pair of pure functions.
+
+  Attributes:
+    init: A pure function: ``params = init(rng, *a, **k)``
+    apply: A pure function: ``out = apply(params, rng, *a, **k)``
+  """
+
+  # Args: [Optional[PRNGKey], ...]
+  init: Callable[..., Params]
+
+  # Args: [Params, Optional[PRNGKey], ...]
+  apply: Callable[..., Any]
 
 
 class TransformedWithState(NamedTuple):
-  """Holds a pair of pure functions."""
+  """Holds a pair of pure functions.
 
-  # TODO(tomhennigan): Use protocols to describe *args when we are 3.8+.
-  # https://www.python.org/dev/peps/pep-0544/#callback-protocols
+  Attributes:
+    init: A pure function: ``params, state = init(rng, *a, **k)``
+    apply: A pure function: ``out, state = apply(params, state, rng, *a, **k)``
+  """
 
   # Args: [Optional[PRNGKey], ...]
   init: Callable[..., Tuple[Params, State]]
@@ -151,8 +168,8 @@ def get_parameter(
   >>> hk.get_parameter("w", [], init=jnp.ones)
   DeviceArray(1., dtype=float32)
 
-  Parameters within the same `hk.transform` and/or `hk.Module` with the same
-  name have the same value:
+  Parameters within the same :func:`transform` and/or :class:`Module` with the
+  same name have the same value:
 
   >>> w1 = hk.get_parameter("w", [], init=jnp.zeros)
   >>> w2 = hk.get_parameter("w", [], init=jnp.zeros)
@@ -177,7 +194,7 @@ def get_parameter(
   if frame.params_frozen and bundle_name not in frame.params:
     raise ValueError(
         "Unable to retrieve parameter {!r} for module {!r}. "
-        "All parameters must be created as part of `init_fn`.".format(
+        "All parameters must be created as part of `init`.".format(
             name, bundle_name))
 
   params = frame.params[bundle_name]
@@ -186,7 +203,7 @@ def get_parameter(
     if frame.params_frozen:
       raise ValueError(
           "Unable to retrieve parameter {!r} for module {!r}. "
-          "All parameters must be created as part of `init_fn`.".format(
+          "All parameters must be created as part of `init`.".format(
               name, bundle_name))
 
     fq_name = bundle_name + "/" + name
@@ -248,7 +265,7 @@ def create_parameter(
 def custom_creator(creator: ParamCreator):
   """Registers a custom parameter creator.
 
-  When new parameters are created via `hk.get_parameter` we first run custom
+  When new parameters are created via :func:`get_parameter` we first run custom
   creators passing user defined values through. For example:
 
   >>> def zeros_creator(next_creator, name, shape, dtype, init):
@@ -268,7 +285,7 @@ def custom_creator(creator: ParamCreator):
   return creator_stack(creator)
 
 
-def mk_init_fn(f: Callable[..., Any]) -> Callable[..., Tuple[Params, State]]:
+def make_init_fn(f: Callable[..., Any]) -> Callable[..., Tuple[Params, State]]:
   """Rewrites `f` to return initial values for parameters and state.
 
   See :func:`transform` for more details.
@@ -309,7 +326,7 @@ def mk_init_fn(f: Callable[..., Any]) -> Callable[..., Tuple[Params, State]]:
   return init_fn
 
 
-def mk_apply_fn(f: Callable[..., T]) -> Callable[..., Tuple[T, State]]:
+def make_apply_fn(f: Callable[..., T]) -> Callable[..., Tuple[T, State]]:
   """Rewrites `f` to accept parameters, state and rng as input.
 
   See :func:`transform` for more details.
@@ -418,6 +435,16 @@ def without_apply_rng(f: TransformedT) -> TransformedT:
 def transform(f, *, apply_rng=False) -> Transformed:
   """Transforms a function using Haiku modules into a pair of pure functions.
 
+  For a function ``out = f(*a, **k)`` this function returns a pair of two pure
+  functions that call ``f(*a, **k)`` explicitly collecting and injecting
+  parameter values::
+
+      params = init(rng, *a, **k)
+      out = apply(params, rng, *a, **k)
+
+  Note that the ``rng`` argument is typically not required for `apply` and
+  passing ``None`` is accpeted.
+
   The first thing to do is to define a `Module`. A module encapsulates some
   parameters and a computation on those parameters:
 
@@ -427,9 +454,9 @@ def transform(f, *, apply_rng=False) -> Transformed:
   ...     return x + w
 
   Next, define some function that creates and applies modules. We use
-  `hk.transform` to transform that function into a pair of functions that allow
-  us to lift all the parameters out of the function (`f.init`) and apply the
-  function with a given set of parameters (`f.apply`):
+  :func:`transform` to transform that function into a pair of functions that
+  allow us to lift all the parameters out of the function (``f.init``) and
+  apply the function with a given set of parameters (``f.apply``):
 
   >>> def f(x):
   ...   a = MyModule()
@@ -438,8 +465,7 @@ def transform(f, *, apply_rng=False) -> Transformed:
 
   >>> f = hk.transform(f)
 
-  To get the initial state of the module call the `init_fn` with an example
-  input:
+  To get the initial state of the module call ``init`` with an example input:
 
   >>> params = f.init(None, 1)
   >>> params
@@ -449,13 +475,13 @@ def transform(f, *, apply_rng=False) -> Transformed:
   })
 
   You can then apply the function with the given parameters by calling
-  `f.apply`:
+  ``apply``:
 
   >>> f.apply(params, 1)
   DeviceArray(2., dtype=float32)
 
   It is expected that your program will at some point produce updated parameters
-  and you will want to re-apply `f.apply`. You can do this by calling `f.apply`
+  and you will want to re-apply ``apply``. You can do this by calling ``apply``
   with different parameters:
 
   >>> new_params = {"my_module": {"w": jnp.array(2.)},
@@ -467,11 +493,11 @@ def transform(f, *, apply_rng=False) -> Transformed:
   averages in batch norm) then see :func:`transform_with_state`.
 
   Args:
-    f: A function closing over `Module` instances.
-    apply_rng: Whether `apply` should accept `rng` as an argument.
+    f: A function closing over :class:`Module` instances.
+    apply_rng: Whether ``apply`` should accept `rng` as an argument.
 
   Returns:
-    A named tuple with `init` and `apply` pure functions.
+    A :class:`Transformed` tuple with ``init`` and ``apply`` pure functions.
   """
   analytics.log_once("transform")
 
@@ -489,6 +515,16 @@ def transform_with_state(f) -> TransformedWithState:
   """Transforms a function using Haiku modules into a pair of pure functions.
 
   See :func:`transform` for general details on Haiku transformations.
+
+  For a function ``out = f(*a, **k)`` this function returns a pair of two pure
+  functions that call ``f(*a, **k)`` explicitly collecting and injecting
+  parameter values and state::
+
+      params, state = init(rng, *a, **k)
+      out, state = apply(params, state, rng, *a, **k)
+
+  Note that the ``rng`` argument is typically not required for `apply` and
+  passing ``None`` is accpeted.
 
   This function is equivalent to :func:`transform`, however it allows you to
   maintain and update internal state (e.g. moving averages in batch norm) via
@@ -509,13 +545,13 @@ def transform_with_state(f) -> TransformedWithState:
   DeviceArray(9, dtype=int32)
 
   Args:
-    f: A function closing over `Module` instances.
+    f: A function closing over :class:`Module` instances.
 
   Returns:
-    A named tuple with `init` and `apply` properties.
+    A :class:`TransformedWithState` tuple with `init` and `apply` properties.
   """
   analytics.log_once("transform_with_state")
-  return TransformedWithState(mk_init_fn(f), mk_apply_fn(f))
+  return TransformedWithState(make_init_fn(f), make_apply_fn(f))
 
 
 def assert_is_prng_key(key: jnp.ndarray):
@@ -585,7 +621,40 @@ def get_state(name: ParamName,
               shape: Optional[Shape] = None,
               dtype: Optional[DType] = jnp.float32,
               init: Optional[Initializer] = None) -> jnp.ndarray:
-  """Gets the current value for state with an optional initial value."""
+  """Gets the current value for state with an optional initializer.
+
+  "State" can be used to represent mutable state in your network. The most
+  common usage of state is to represent the moving averages used in batch
+  normalization (see :class:`ExponentialMovingAverage`). If your network uses
+  "state" then you are required to use :func:`transform_with_state` and pass
+  state into and out of the apply function.
+
+  >>> hk.get_state("counter", [], init=jnp.zeros)
+  DeviceArray(0., dtype=float32)
+
+  If the value for the given state is already defined (e.g. using
+  :func:`set_state`) then you can call with just the name:
+
+  >>> hk.get_state("counter")
+  DeviceArray(0., dtype=float32)
+
+  MOTE: state within the same :func:`transform` and/or :class:`Module` with the
+  same name have the same value:
+
+  >>> c1 = hk.get_state("counter")
+  >>> c2 = hk.get_state("counter")
+  >>> assert c1 is c2
+
+  Args:
+    name: A name for the state.
+    shape: The shape of the state.
+    dtype: The dtype of the state.
+    init: A callable of shape, dtype to generate an initial value for the
+      state.
+
+  Returns:
+    A jnp.ndarray with the state of the given shape.
+  """
   assert_transformed("get_state")
   state = current_frame().state[current_bundle_name()]
   value = state.get(name, None)
@@ -605,7 +674,31 @@ def get_state(name: ParamName,
 
 
 def set_state(name: ParamName, value):
-  """Sets the current value for state."""
+  """Sets the current value for some state.
+
+  See :func:`get_state`.
+
+  "State" can be used to represent mutable state in your network. The most
+  common usage of state is to represent the moving averages used in batch
+  normalization (see :class:`ExponentialMovingAverage`). If your network uses
+  "state" then you are required to use :func:`transform_with_state` and pass
+  state into and out of the apply function.
+
+  >>> hk.set_state("counter", jnp.zeros([]))
+  >>> hk.get_state("counter")
+  DeviceArray(0., dtype=float32)
+
+  NOTE: state within the same :func:`transform` and/or :class:`Module` with the
+  same name have the same value:
+
+  >>> w1 = hk.get_state("counter")
+  >>> w2 = hk.get_state("counter")
+  >>> assert w1 is w2
+
+  Args:
+    name: A name for the state.
+    value: A value to set.
+  """
   assert_transformed("set_state")
   state = current_frame().state[current_bundle_name()]
   if name in state:
@@ -617,11 +710,11 @@ def set_state(name: ParamName, value):
 
 
 def with_rng(key: PRNGKey):
-  """Provides a new sequence for `hk.next_rng_key` to draw from.
+  """Provides a new sequence for :func:`next_rng_key` to draw from.
 
-  When `hk.next_rng_key` is called, it draws a new key from the PRNGSequence
-  defined by the input key to the transformed function. This context manager
-  overrides the sequence for the duration of the scope.
+  When :func:`next_rng_key` is called, it draws a new key from the
+  ``PRNGSequence`` defined by the input key to the transformed function. This
+  context manager overrides the sequence for the duration of the scope.
 
   >>> with hk.with_rng(jax.random.PRNGKey(428)):
   ...   s = jax.random.uniform(hk.next_rng_key(), ())

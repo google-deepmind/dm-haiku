@@ -5,10 +5,24 @@ Base
 
 .. currentmodule:: haiku
 
-transform
-~~~~~~~~~
+Transforming Functions
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. autofunction:: transform
+
+.. autoclass:: Transformed
+
+.. autofunction:: transform_with_state
+
+.. autoclass:: TransformedWithState
+
+.. autofunction:: without_apply_rng
+
+Parameters and State
+~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: Module
+   :members:
 
 .. autofunction:: get_parameter
 
@@ -29,12 +43,6 @@ Random Number Generators
 .. autofunction:: next_rng_key
 
 .. autofunction:: with_rng
-
-Module
-~~~~~~
-
-.. autoclass:: Module
-   :members:
 
 Linear modules
 --------------

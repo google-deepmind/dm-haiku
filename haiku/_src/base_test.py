@@ -67,7 +67,7 @@ class BaseTest(parameterized.TestCase):
         lambda: base.get_parameter("w", [], init=jnp.zeros))
 
     with self.assertRaisesRegex(
-        ValueError, "parameters must be created as part of `init_fn`"):
+        ValueError, "parameters must be created as part of `init`"):
       apply_fn(params)
 
   def test_rng_no_transform(self):

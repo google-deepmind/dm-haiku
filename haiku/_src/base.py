@@ -475,7 +475,7 @@ def transform(f, *, apply_rng=False) -> Transformed:
   """
   analytics.log_once("transform")
 
-  if apply_rng:
+  if not apply_rng:
     warnings.warn("Apply_rng will soon be removed and defaulted to True",
                   DeprecationWarning)
 

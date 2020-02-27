@@ -557,7 +557,8 @@ def transform_with_state(f) -> TransformedWithState:
 def assert_is_prng_key(key: jnp.ndarray):
   """Asserts that the given input looks like a `jax.random.PRNGKey`."""
   if not hasattr(key, "shape") or not hasattr(key, "dtype"):
-    raise ValueError("{key} is not a JAX PRNGKey.")
+    raise ValueError("The provided key is not a JAX PRNGKey but a "
+                     f"{type(key)}:\n{key}")
   elif key.shape != (2,) or key.dtype != jnp.uint32:
     # Keys are expected to be uint32 vectors of length 2.
     # c.f. https://jax.rtfd.io/en/latest/jax.random.html#jax.random.PRNGKey

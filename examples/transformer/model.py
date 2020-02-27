@@ -135,18 +135,25 @@ class Transformer(hk.Module):
     if mask is not None:
       mask = mask[:, None, None, :]
 
-    h = layer_norm(h)
-    for _ in range(self._num_layers):
-      h_attn = CausalSelfAttention(self._num_heads, init_scale)(h, mask)
+    # Note: names chosen to approximately match those used in the GPT-2 code;
+    # see https://github.com/openai/gpt-2/blob/master/src/model.py.
+    for i in range(self._num_layers):
+      h_attn = CausalSelfAttention(self._num_heads,
+                                   init_scale,
+                                   name=f'h{i}_attn')(h, mask)
       h_attn = hk.dropout(hk.next_rng_key(), dropout_rate, h_attn)
-      h = layer_norm(h + h_attn)
-      h_dense = DenseBlock(init_scale)(h)
+      h = layer_norm(h + h_attn, name=f'h{i}_ln_1')
+      h_dense = DenseBlock(init_scale, name=f'h{i}_mlp')(h)
       h_dense = hk.dropout(hk.next_rng_key(), dropout_rate, h_dense)
-      h = layer_norm(h + h_dense)
+      h = layer_norm(h + h_dense, name=f'h{i}_ln_2')
+    h = layer_norm(h, name='ln_f')
 
     return h
 
 
-def layer_norm(x: jnp.ndarray) -> jnp.ndarray:
+def layer_norm(x: jnp.ndarray, name: Optional[str] = None) -> jnp.ndarray:
   """Apply a unique LayerNorm to x with default settings."""
-  return hk.LayerNorm(axis=-1, create_scale=True, create_offset=True)(x)
+  return hk.LayerNorm(axis=-1,
+                      create_scale=True,
+                      create_offset=True,
+                      name=name)(x)

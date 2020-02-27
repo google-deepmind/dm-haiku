@@ -86,6 +86,33 @@ class BaseTest(parameterized.TestCase):
     with self.assertRaisesRegex(ValueError, "must pass a non-None PRNGKey"):
       base.next_rng_key()
 
+  def test_invalid_rng(self):
+    f = base.transform(lambda: None, apply_rng=True)
+    with self.assertRaisesRegex(
+        ValueError, "Init must be called with an RNG as the first argument"):
+      f.init("nonsense")
+    with self.assertRaisesRegex(
+        ValueError, "Apply must be called with an RNG as the second argument"):
+      f.apply({}, "nonsense")
+
+  def test_invalid_rng_state(self):
+    f = base.transform_with_state(lambda: None)
+    with self.assertRaisesRegex(
+        ValueError, "Init must be called with an RNG as the first argument"):
+      f.init("nonsense")
+    with self.assertRaisesRegex(
+        ValueError, "Apply must be called with an RNG as the third argument"):
+      f.apply({}, {"x": {}}, "nonsense")
+
+  @parameterized.parameters(lambda f: base.transform(f, apply_rng=True),
+                            base.transform_with_state)
+  def test_invalid_rng_none_ignored(self, transform_fn):
+    f = transform_fn(lambda: None)
+    args = f.init(None)
+    if not isinstance(args, tuple):
+      args = (args,)
+    f.apply(*args, None)
+
   def test_init_custom_creator(self):
     def zeros_creator(next_creator, name, shape, dtype, init):
       self.assertEqual(name, "~/w")
@@ -282,6 +309,15 @@ class BaseTest(parameterized.TestCase):
     raw_v2 = jax.random.normal(temp_key, [])
     self.assertEqual(raw_v1, seq_v1)
     self.assertEqual(raw_v2, seq_v2)
+
+  def test_prng_sequence_invalid_input(self):
+    with self.assertRaisesRegex(ValueError, "not a JAX PRNGKey"):
+      base.PRNGSequence("nonsense")
+
+  def test_prng_sequence_wrong_shape(self):
+    with self.assertRaisesRegex(ValueError,
+                                "key did not have expected shape and/or dtype"):
+      base.PRNGSequence(jax.random.split(jax.random.PRNGKey(42), 2))
 
   @parameterized.parameters(42, 28)
   def test_with_rng(self, seed):

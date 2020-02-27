@@ -28,7 +28,6 @@ from haiku._src.typing import (Shape, DType, ParamName, Initializer, Params,  # 
                                State, ParamCreator, PRNGKey, PRNGSeed)
 import jax
 import jax.numpy as jnp
-import numpy as np
 
 namedtuple = collections.namedtuple
 frozendict = data_structures.frozendict
@@ -292,12 +291,15 @@ def mk_init_fn(f: Callable[..., Any]) -> Callable[..., Tuple[Params, State]]:
     """Initializes your function collecting parameters and state."""
     params = collections.defaultdict(dict)
     state = collections.defaultdict(dict)
+    if rng is not None:
+      try:
+        rng = PRNGSequence(rng)
+      except Exception as e:
+        raise ValueError(
+            "Init must be called with an RNG as the first argument, the "
+            "required signature is: `init(rng, *a, **k)`") from e
 
-    frame = Frame.create(params=params,
-                         state=state,
-                         rng=(PRNGSequence(rng) if rng is not None else None))
-
-    with frame_stack(frame):
+    with frame_stack(Frame.create(params=params, state=state, rng=rng)):
       f(*args, **kwargs)
 
     params = data_structures.to_immutable_dict(params)
@@ -330,13 +332,19 @@ def mk_apply_fn(f: Callable[..., T]) -> Callable[..., Tuple[T, State]]:
     params = data_structures.to_immutable_dict(params)
     state = {m: {k: StatePair(v, v) for k, v in p.items()}
              for m, p in state.items()}
+    if rng is not None:
+      try:
+        rng = PRNGSequence(rng)
+      except Exception as e:
+        if state:
+          position, signature = "third", "apply(params, state, rng, *a, **k)"
+        else:
+          position, signature = "second", "apply(params, rng, *a, **k)"
+        raise ValueError(
+            f"Apply must be called with an RNG as the {position} argument, "
+            f"the required signature is: `{signature}`") from e
 
-    frame = Frame.create(
-        params=params,
-        state=state,
-        rng=(PRNGSequence(rng) if rng is not None else None))
-
-    with frame_stack(frame):
+    with frame_stack(Frame.create(params=params, state=state, rng=rng)):
       out = f(*args, **kwargs)
 
     state = _extract_state(state, initial=False)
@@ -510,6 +518,19 @@ def transform_with_state(f) -> TransformedWithState:
   return TransformedWithState(mk_init_fn(f), mk_apply_fn(f))
 
 
+def assert_is_prng_key(key: jnp.ndarray):
+  """Asserts that the given input looks like a `jax.random.PRNGKey`."""
+  if not hasattr(key, "shape") or not hasattr(key, "dtype"):
+    raise ValueError("{key} is not a JAX PRNGKey.")
+  elif key.shape != (2,) or key.dtype != jnp.uint32:
+    # Keys are expected to be uint32 vectors of length 2.
+    # c.f. https://jax.rtfd.io/en/latest/jax.random.html#jax.random.PRNGKey
+    raise ValueError(
+        "Provided key did not have expected shape and/or dtype "
+        f"expected=(shape=(2,), dtype=uint32) "
+        f"actual=(shape={key.shape}, dtype={key.dtype})")
+
+
 class PRNGSequence(Iterator[PRNGKey]):
   """Iterator of PRNGKeys.
 
@@ -520,9 +541,10 @@ class PRNGSequence(Iterator[PRNGKey]):
   """
 
   def __init__(self, key_or_seed: Union[PRNGKey, int]):
-    if np.isscalar(key_or_seed):
+    if isinstance(key_or_seed, int):
       key = jax.random.PRNGKey(key_or_seed)
     else:
+      assert_is_prng_key(key_or_seed)
       key = key_or_seed
     self._key = key
 

@@ -124,10 +124,9 @@ class BatchNorm(module.Module):
       The array, normalized across all but the last dimension.
     """
     rank = inputs.ndim
+    channel_index = self._channel_index
     if self._channel_index < 0:
-      channel_index = self._channel_index + rank
-    else:
-      channel_index = self._channel_index
+      channel_index += rank
 
     if self._axis:
       axis = self._axis

@@ -35,7 +35,9 @@ class Attention(hk.Module):
     self._init_scale = init_scale
 
   @hk.transparent
-  def _multihead_linear(self, inputs: jnp.ndarray, head_dim: int):
+  def _multihead_linear(self,
+                        inputs: jnp.ndarray,
+                        head_dim: int) -> jnp.ndarray:
     """Runs a multi-headed linear over inputs, using the given per-head size."""
     batch_size, sequence_length = inputs.shape[:2]
     initializer = hk.initializers.VarianceScaling(self._init_scale)
@@ -43,7 +45,9 @@ class Attention(hk.Module):
     shape = (batch_size, sequence_length, self._num_heads, head_dim)
     return jnp.reshape(out, shape)
 
-  def __call__(self, x: jnp.ndarray, y: jnp.ndarray,
+  def __call__(self,
+               x: jnp.ndarray,
+               y: jnp.ndarray,
                mask: Optional[jnp.ndarray]) -> jnp.ndarray:
     """Multihead attention over y with queries from x.
 
@@ -78,7 +82,8 @@ class Attention(hk.Module):
 class CausalSelfAttention(Attention):
   """Self attention with a causal mask applied."""
 
-  def __call__(self, x: jnp.ndarray,
+  def __call__(self,
+               x: jnp.ndarray,
                mask: Optional[jnp.ndarray]) -> jnp.ndarray:
     seq_len = x.shape[1]
     causal_mask = np.tril(np.ones((seq_len, seq_len)))
@@ -111,13 +116,19 @@ class DenseBlock(hk.Module):
 class Transformer(hk.Module):
   """A transformer stack."""
 
-  def __init__(self, num_heads: int, num_layers: int, dropout_rate, name=None):
+  def __init__(self,
+               num_heads: int,
+               num_layers: int,
+               dropout_rate: float,
+               name: Optional[str] = None):
     super().__init__(name=name)
     self._num_layers = num_layers
     self._num_heads = num_heads
     self._dropout_rate = dropout_rate
 
-  def __call__(self, h: jnp.ndarray, mask: Optional[jnp.ndarray],
+  def __call__(self,
+               h: jnp.ndarray,
+               mask: Optional[jnp.ndarray],
                is_training: bool) -> jnp.ndarray:
     """Connects the transformer.
 
@@ -138,14 +149,16 @@ class Transformer(hk.Module):
     # Note: names chosen to approximately match those used in the GPT-2 code;
     # see https://github.com/openai/gpt-2/blob/master/src/model.py.
     for i in range(self._num_layers):
+      h_norm = layer_norm(h, name=f'h{i}_ln_1')
       h_attn = CausalSelfAttention(self._num_heads,
                                    init_scale,
-                                   name=f'h{i}_attn')(h, mask)
+                                   name=f'h{i}_attn')(h_norm, mask)
       h_attn = hk.dropout(hk.next_rng_key(), dropout_rate, h_attn)
-      h = layer_norm(h + h_attn, name=f'h{i}_ln_1')
-      h_dense = DenseBlock(init_scale, name=f'h{i}_mlp')(h)
+      h = h + h_attn
+      h_norm = layer_norm(h, name=f'h{i}_ln_2')
+      h_dense = DenseBlock(init_scale, name=f'h{i}_mlp')(h_norm)
       h_dense = hk.dropout(hk.next_rng_key(), dropout_rate, h_dense)
-      h = layer_norm(h + h_dense, name=f'h{i}_ln_2')
+      h = h + h_dense
     h = layer_norm(h, name='ln_f')
 
     return h

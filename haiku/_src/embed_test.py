@@ -78,18 +78,22 @@ class EmbedTest(parameterized.TestCase):
     lookup_style = "ARRAY_INDEX"
     emb = embed.Embed(embedding_matrix=_EMBEDDING_MATRIX,
                       lookup_style=lookup_style)
-    with self.assertRaisesRegex(ValueError, "hk.Embed's __call__ method must take "
-                                            "an array of integer dtype but was called with an array of float32"):
+    with self.assertRaisesRegex(ValueError, "hk.Embed's __call__ "
+                                            "method must take "
+                                            "an array of integer dtype "
+                                            "but was called with "
+                                            "an array of float32"):
       emb([1.0, 2.0])
 
-  @parameterized.parameters(
-    itertools.product([_1D_IDS, _2D_IDS, _3D_IDS]))
+  @parameterized.parameters(itertools.product([_1D_IDS, _2D_IDS, _3D_IDS]))
   @test_utils.transform_and_run
   def test_embed_invalid_lookup(self, inp_ids):
     lookup_style = "FOO"
     emb = embed.Embed(embedding_matrix=_EMBEDDING_MATRIX,
                       lookup_style=lookup_style)
-    with self.assertRaisesRegex(ValueError, f"{lookup_style} is not a valid enum in EmbedLookupStyle."):
+    with self.assertRaisesRegex(ValueError,
+                                f"{lookup_style} is not a valid enum "
+                                f"in EmbedLookupStyle."):
       emb(inp_ids)
 
   @test_utils.transform_and_run
@@ -100,11 +104,10 @@ class EmbedTest(parameterized.TestCase):
 
     self.assertEqual(emb.vocab_size, 3)
     self.assertEqual(emb.embed_dim, 4)
-    np.testing.assert_allclose(
-      emb.embeddings,
-      jnp.asarray([[0., 0., 0., 0.],
-                   [0.5, 0.5, 0.5, 0.5],
-                   [0.1, 0.2, 0.3, 0.4]]))
+    np.testing.assert_allclose(emb.embeddings,
+                               jnp.asarray([[0., 0., 0., 0.],
+                                            [0.5, 0.5, 0.5, 0.5],
+                                            [0.1, 0.2, 0.3, 0.4]]))
 
 if __name__ == "__main__":
   absltest.main()

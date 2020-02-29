@@ -186,10 +186,7 @@ def value_and_grad(fun, argnums=0, has_aux=False, holomorphic=False):
     kwargs["hk_state"] = internal_state()
     (value, (aux, hk_state)), grads = grad_fun(*args, **kwargs)
     update_internal_state(hk_state)
-    if has_aux:
-      return (value, aux), grads
-    else:
-      return value, grads
+    return (value, aux) if has_aux else value, grads
 
   return wrapper
 

@@ -89,7 +89,7 @@ class InitializersTest(parameterized.TestCase):
   @test_utils.transform_and_run
   def test_orthogonal_invalid_shape(self, dtype):
     init = initializers.Orthogonal()
-    shape = (20, )
+    shape = (20,)
     with self.assertRaisesRegex(ValueError,
                                 "Orthogonal initializer "
                                 "requires at least a 2D shape."):

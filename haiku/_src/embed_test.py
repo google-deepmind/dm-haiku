@@ -73,10 +73,9 @@ class EmbedTest(parameterized.TestCase):
     with self.assertRaisesRegex(ValueError, "supplied but the `embed_dim`"):
       embed.Embed(embedding_matrix=_EMBEDDING_MATRIX, embed_dim=5)
 
-  @parameterized.parameters(
-    itertools.product(["ARRAY_INDEX", "ONE_HOT"]))
   @test_utils.transform_and_run
-  def test_embed_dtype_check(self, lookup_style):
+  def test_embed_dtype_check(self):
+    lookup_style = "ARRAY_INDEX"
     emb = embed.Embed(embedding_matrix=_EMBEDDING_MATRIX,
                       lookup_style=lookup_style)
     with self.assertRaisesRegex(ValueError, "hk.Embed's __call__ method must take "

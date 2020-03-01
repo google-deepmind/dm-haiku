@@ -34,12 +34,22 @@ class StatefulTest(absltest.TestCase):
     g = stateful.grad(SquareModule())(x)
     np.testing.assert_allclose(g, 2 * x, rtol=1e-4)
 
+  def test_grad_no_transform(self):
+    x = jnp.array(3.)
+    with self.assertRaises(ValueError, msg='Use jax.grad() instead'):
+      stateful.grad(lambda x: x**2)(x)
+
   @test_utils.transform_and_run
   def test_value_and_grad(self):
     x = jnp.array(2.)
     y, g = stateful.value_and_grad(SquareModule())(x)
     self.assertEqual(y, x ** 2)
     np.testing.assert_allclose(g, 2 * x, rtol=1e-4)
+
+  def test_value_and_grad_no_transform(self):
+    x = jnp.array(3.)
+    with self.assertRaises(ValueError, msg='Use jax.grad() instead'):
+      stateful.value_and_grad(lambda x: x**2)(x)
 
   @test_utils.transform_and_run
   def test_grad_aux(self):
@@ -98,6 +108,11 @@ class StatefulTest(absltest.TestCase):
     y = stateful.jit(mod)(x)
     self.assertEqual(y, x ** 2)
 
+  def test_jit_no_transform(self):
+    x = jnp.array(2)
+    with self.assertRaises(ValueError, msg='Use jax.jit() instead'):
+      stateful.jit(lambda x: x**2)(x)
+
   @test_utils.transform_and_run
   def test_remat(self):
     forward, backward = [], []
@@ -133,6 +148,11 @@ class StatefulTest(absltest.TestCase):
     self.assertGreater(num_forward_remat, num_forward_no_remat)
     self.assertEqual(num_backward_remat, num_backward_no_remat)
 
+  def test_remat_no_transform(self):
+    x = jnp.array(3.)
+    with self.assertRaises(ValueError, msg='Use jax.remat() instead'):
+      stateful.remat(lambda x: x**2)(x)
+
   def test_cond(self):
     def f(x):
       mod = SquareModule()
@@ -144,6 +164,11 @@ class StatefulTest(absltest.TestCase):
       out, state = f.apply(params, state, None, x)
       self.assertEqual(state, {"square_module": {"y": y}})
       self.assertEqual(out, y)
+
+  def test_cond_no_transform(self):
+    x = jnp.array(3.)
+    with self.assertRaises(ValueError, msg='Use jax.cond() instead'):
+      stateful.cond(x == 2, x, lambda x: x**2, x, lambda x: (x + 1)**2)
 
 
 def _callback_prim(forward, backward):
@@ -182,6 +207,7 @@ class SquareModule(module.Module):
     y = x ** p
     base.set_state("y", y)
     return y
+
 
 if __name__ == "__main__":
   absltest.main()

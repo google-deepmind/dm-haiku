@@ -174,6 +174,9 @@ def value_and_grad(fun, argnums=0, has_aux=False, holomorphic=False):
     integers, the gradient is a tuple of values with the same shapes and types
     as the corresponding arguments.
   """
+  if not base.inside_transform():
+    raise ValueError("hk.grad() should not be used outside of hk.transform(). "
+                     "Use jax.grad() instead.")
 
   @functools.wraps(fun)
   def stateful_fun(*args, **kwargs):
@@ -203,6 +206,11 @@ def thread_hk_state_in_kwargs(dec_fun):
 
   def wrapped_dec_fun(fun, *dec_args, **dec_kwargs):
     """Decorates a modified version of `fun` that passes haiku state."""
+
+    if not base.inside_transform():
+      raise ValueError(
+          "hk.{0}() should not be used outside of hk.transform. "
+          "Use jax.{0}() instead.".format(dec_fun.__name__))
 
     @functools.wraps(fun)
     def stateful_fun(*args, **kwargs):
@@ -240,6 +248,9 @@ def stateful_branch(branch_fun):
 
 def cond(pred, true_operand, true_fun, false_operand, false_fun):
   """Equivalent to `jax.lax.cond` but with Haiku state threaded in and out."""
+  if not base.inside_transform():
+    raise ValueError("hk.cond() should not be used outside of hk.transform(). "
+                     "Use jax.cond() instead.")
   state = internal_state()
   out, state = jax.lax.cond(pred,
                             true_operand=(state, true_operand),

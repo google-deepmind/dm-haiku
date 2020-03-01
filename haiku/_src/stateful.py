@@ -123,7 +123,7 @@ def grad(fun, argnums=0, has_aux=False, holomorphic=False):
 
   def grad_fn(*args, **kwargs):
     (_, aux), grads = value_and_grad_fun(*args, **kwargs)
-    return (grads, aux if hax_aux else grads)
+    return (grads, aux) if has_aux else grads
 
   return grad_fn
 

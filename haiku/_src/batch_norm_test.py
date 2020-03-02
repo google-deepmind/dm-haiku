@@ -28,7 +28,7 @@ class BatchNormTest(absltest.TestCase):
   def test_basic(self):
     data = jnp.arange(2 * 3 * 4, dtype=jnp.float32).reshape([2, 3, 4])
 
-    norm = batch_norm.BatchNorm(True, True)
+    norm = batch_norm.BatchNorm(True, True, 0.9)
     result = norm(data, is_training=True)
     result_0_replicated = jnp.broadcast_to(result[:, :, :1], result.shape)
     # Input data is symmetrical variance per-channel.
@@ -39,8 +39,7 @@ class BatchNormTest(absltest.TestCase):
   @test_utils.transform_and_run
   def test_simple_training(self):
     layer = batch_norm.BatchNorm(
-        create_scale=False,
-        create_offset=False)
+        create_scale=False, create_offset=False, decay_rate=0.9)
 
     inputs = np.ones([2, 3, 3, 5])
     scale = np.full((5,), 0.5)
@@ -54,6 +53,7 @@ class BatchNormTest(absltest.TestCase):
     layer = batch_norm.BatchNorm(
         create_scale=False,
         create_offset=False,
+        decay_rate=0.9,
         data_format="NCHW")
 
     inputs = np.ones([2, 5, 3, 3])
@@ -68,6 +68,7 @@ class BatchNormTest(absltest.TestCase):
     layer = batch_norm.BatchNorm(
         create_scale=False,
         create_offset=False,
+        decay_rate=0.9,
         axis=[0, 2, 3])  # Not the second axis.
 
     # This differs only in the second axis.
@@ -82,8 +83,7 @@ class BatchNormTest(absltest.TestCase):
   @test_utils.transform_and_run
   def test_no_scale_and_offset(self):
     layer = batch_norm.BatchNorm(
-        create_scale=False,
-        create_offset=False)
+        create_scale=False, create_offset=False, decay_rate=0.9)
 
     inputs = jnp.ones([2, 5, 3, 3, 3])
     result = layer(inputs, True)
@@ -96,6 +96,7 @@ class BatchNormTest(absltest.TestCase):
       batch_norm.BatchNorm(
           create_scale=False,
           create_offset=True,
+          decay_rate=0.9,
           scale_init=jnp.ones)
 
   @test_utils.transform_and_run
@@ -105,6 +106,7 @@ class BatchNormTest(absltest.TestCase):
       batch_norm.BatchNorm(
           create_scale=True,
           create_offset=False,
+          decay_rate=0.9,
           offset_init=jnp.zeros)
 
 if __name__ == "__main__":

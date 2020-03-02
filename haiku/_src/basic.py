@@ -94,7 +94,7 @@ class Sequential(module.Module):
       ...   def __init__(self, name=None):
       ...     super().__init__(name=name)
       ...     self.conv2d = hk.Conv2D(32, 4, 2)
-      ...     self.bn = hk.BatchNorm()
+      ...     self.bn = hk.BatchNorm(True, True, 0.9)
       ...
       ...   def __call__(self, inputs, is_training):
       ...     outputs = self.conv2d(inputs)

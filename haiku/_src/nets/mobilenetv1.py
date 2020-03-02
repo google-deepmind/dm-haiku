@@ -68,13 +68,15 @@ class MobileNetV1Block(module.Module):
     net = inputs
     net = dwc_layer(net)
     if self._use_bn:
-      net = batch_norm.BatchNorm(create_scale=True,
-                                 create_offset=True)(net, is_training)
+      bn = batch_norm.BatchNorm(
+          create_scale=True, create_offset=True, decay_rate=0.999)
+      net = bn(net, is_training)
     net = jax.nn.relu(net)
     net = pwc_layer(net)
     if self._use_bn:
-      net = batch_norm.BatchNorm(create_scale=True,
-                                 create_offset=True)(net, is_training)
+      bn = batch_norm.BatchNorm(
+          create_scale=True, create_offset=True, decay_rate=0.999)
+      net = bn(net, is_training)
     net = jax.nn.relu(net)
     return net
 
@@ -121,8 +123,9 @@ class MobileNetV1(module.Module):
                                with_bias=self._with_bias)
     net = initial_conv(inputs)
     if self._use_bn:
-      net = batch_norm.BatchNorm(create_scale=True,
-                                 create_offset=True)(net, is_training)
+      bn = batch_norm.BatchNorm(
+          create_scale=True, create_offset=True, decay_rate=0.999)
+      net = bn(net, is_training)
     net = jax.nn.relu(net)
     for i in range(len(self._strides)):
       net = MobileNetV1Block(self._channels[i],
@@ -132,5 +135,3 @@ class MobileNetV1(module.Module):
     net = reshape.Flatten()(net)
     net = basic.Linear(self._num_classes, name="logits")(net)
     return net
-
-

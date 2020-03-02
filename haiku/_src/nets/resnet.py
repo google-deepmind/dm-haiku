@@ -41,7 +41,11 @@ class BottleNeckBlockV1(module.Module):
     self._use_projection = use_projection
     self._bn_config = bn_config
 
-    batchnorm_args = {"create_scale": True, "create_offset": True}
+    batchnorm_args = {
+        "create_scale": True,
+        "create_offset": True,
+        "decay_rate": 0.999,
+    }
     batchnorm_args.update(bn_config)
 
     if self._use_projection:

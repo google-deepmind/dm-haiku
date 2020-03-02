@@ -49,7 +49,7 @@ class BatchNorm(module.Module):
   def __init__(self,
                create_scale,
                create_offset,
-               decay_rate=0.999,
+               decay_rate,
                eps=1e-5,
                scale_init=None,
                offset_init=None,

@@ -97,7 +97,7 @@ OPTIONAL_BATCH_MODULES = (
 BATCH_MODULES = (
     ModuleDescriptor(
         name="BatchNorm",
-        create=lambda: Training(hk.BatchNorm(True, True)),
+        create=lambda: Training(hk.BatchNorm(True, True, 0.9)),
         shape=(BATCH_SIZE, 2, 2, 3)),
     ModuleDescriptor(
         name="Bias",

@@ -154,7 +154,7 @@ class ConvND(module.Module):
         bias_shape = (self._output_channels,)
       else:
         bias_shape = (self._output_channels,) + (1,)*self._num_spatial_dims
-      b = base.get_parameter("b", bias_shape, init=self._b_init)
+      b = base.get_parameter("b", bias_shape, inputs.dtype, init=self._b_init)
       result = result + b
     return result
 

@@ -25,19 +25,19 @@ import jax
 import jax.numpy as jnp
 
 
-class Bfloat16Test(parameterized.TestCase):
-
-  @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
-  def test_bfloat16(
+class DTypeTestCase(parameterized.TestCase):
+  def assert_dtype(
       self,
+      test_dtype: DType,
       module_fn: descriptors.ModuleFn,
       shape: Shape,
-      dtype: DType,
+      input_dtype: DType,
   ):
+    """ Checks that modules accepting float32 input_dtype output test_dtype. """
     if jax.local_devices()[0].platform != 'tpu':
       self.skipTest('bfloat16 only supported on TPU')
 
-    if dtype != jnp.float32:
+    if input_dtype != jnp.float32:
       self.skipTest('Skipping module without float32 input')
 
     rng = jax.random.PRNGKey(42)
@@ -54,23 +54,35 @@ class Bfloat16Test(parameterized.TestCase):
     x = jax.random.uniform(rng, shape)
     params, state = init_fn(rng, x)
 
-    # Cast f32 to bf16.
-    f32_to_bf16 = (
-        lambda v: v.astype(jnp.bfloat16) if v.dtype == jnp.float32 else v)
-    params, state = jax.tree_map(f32_to_bf16, (params, state))
+    # Cast f32 to test_dtype.
+    f32_to_test_dtype = (
+        lambda v: v.astype(test_dtype) if v.dtype == jnp.float32 else v)
+    params, state = jax.tree_map(f32_to_test_dtype, (params, state))
 
-    # bf16 in should result in bf16 out.
-    x = x.astype(jnp.bfloat16)
+    # test_dtype in should result in test_dtype out.
+    x = x.astype(test_dtype)
 
     for _ in range(2):
       y, state = apply_fn(params, state, rng, x)
 
-      def assert_bf16(v):
+      def assert_dtype(v):
         if v.dtype != jnp.int32:
-          self.assertEqual(v.dtype, jnp.bfloat16)
+          self.assertEqual(v.dtype, test_dtype)
 
-      jax.tree_map(assert_bf16, y)
-      jax.tree_map(assert_bf16, state)
+      jax.tree_map(assert_dtype, y)
+      jax.tree_map(assert_dtype, state)
+
+
+class Bfloat16Test(DTypeTestCase):
+  @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
+  def test_bfloat16(
+      self,
+      module_fn: descriptors.ModuleFn,
+      shape: Shape,
+      dtype: DType,
+  ):
+    self.assert_dtype(jnp.bfloat16, module_fn, shape, dtype)
+
 
 if __name__ == '__main__':
   absltest.main()

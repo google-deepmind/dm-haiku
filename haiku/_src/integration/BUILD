@@ -90,3 +90,13 @@ hk_py_test(
         # pip: jax
     ],
 )
+
+hk_py_test(
+    name = "float64_test",
+    srcs = ["float64_test.py"],
+    gpu = False,
+    shard_count = 50,
+    deps = [
+        ":bfloat16_test",
+    ],
+)

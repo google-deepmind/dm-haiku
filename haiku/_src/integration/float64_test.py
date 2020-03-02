@@ -14,15 +14,14 @@
 # limitations under the License.
 # ==============================================================================
 """Tests for haiku._src.conformance.float64_test."""
+# This is put into a separate file since it requires enabling
+# float64 right after loading of jax.
 
 from absl.testing import absltest
-from absl.testing import parameterized
-import haiku as hk
 from haiku._src import test_utils
 from haiku._src.integration import descriptors
 from haiku._src.integration.bfloat16_test import DTypeTestCase
 from haiku._src.typing import DType, Shape  # pylint: disable=g-multiple-import
-import jax
 from jax.config import config
 import jax.numpy as jnp
 config.update("jax_enable_x64", True)

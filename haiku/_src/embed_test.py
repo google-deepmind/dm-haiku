@@ -73,6 +73,38 @@ class EmbedTest(parameterized.TestCase):
     with self.assertRaisesRegex(ValueError, "supplied but the `embed_dim`"):
       embed.Embed(embedding_matrix=_EMBEDDING_MATRIX, embed_dim=5)
 
+  @test_utils.transform_and_run
+  def test_embed_dtype_check(self):
+    emb = embed.Embed(
+        embedding_matrix=_EMBEDDING_MATRIX, lookup_style="ARRAY_INDEX")
+    with self.assertRaisesRegex(
+        ValueError,
+        "hk.Embed's __call__ method must take an array of integer dtype but "
+        "was called with an array of float32"):
+      emb([1.0, 2.0])
+
+  @test_utils.transform_and_run
+  def test_embed_invalid_lookup(self):
+    lookup_style = "FOO"
+    emb = embed.Embed(embedding_matrix=_EMBEDDING_MATRIX, lookup_style="FOO")
+    with self.assertRaisesRegex(
+        ValueError, f"{lookup_style} is not a valid enum "
+        f"in EmbedLookupStyle."):
+      emb(_1D_IDS)
+
+  @test_utils.transform_and_run
+  def test_embed_property_check(self):
+    lookup_style = "ONE_HOT"
+    emb = embed.Embed(
+        embedding_matrix=_EMBEDDING_MATRIX, lookup_style=lookup_style)
+
+    self.assertEqual(emb.vocab_size, 3)
+    self.assertEqual(emb.embed_dim, 4)
+    np.testing.assert_allclose(
+        emb.embeddings,
+        jnp.asarray([[0., 0., 0., 0.], [0.5, 0.5, 0.5, 0.5],
+                     [0.1, 0.2, 0.3, 0.4]]))
+
 
 if __name__ == "__main__":
   absltest.main()

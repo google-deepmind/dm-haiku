@@ -95,8 +95,12 @@ hk_py_test(
     name = "float64_test",
     srcs = ["float64_test.py"],
     gpu = False,
+    tpu = False,
     shard_count = 50,
     deps = [
         ":bfloat16_test",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        # pip: jax
     ],
 )

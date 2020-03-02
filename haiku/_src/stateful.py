@@ -122,8 +122,12 @@ def grad(fun, argnums=0, has_aux=False, holomorphic=False):
                                       holomorphic=holomorphic)
 
   def grad_fn(*args, **kwargs):
-    (_, aux), grads = value_and_grad_fun(*args, **kwargs)
-    return (grads, aux) if has_aux else grads
+    value, grads = value_and_grad_fun(*args, **kwargs)
+    if has_aux:
+      value, aux = value
+      return grads, aux
+    else:
+      return grads
 
   return grad_fn
 

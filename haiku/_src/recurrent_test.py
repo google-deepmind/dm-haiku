@@ -97,6 +97,15 @@ class LSTMTest(absltest.TestCase):
       core(jnp.zeros([1, 1, 1]), expanded_state)
 
 
+class GRUTest(absltest.TestCase):
+
+  @test_utils.transform_and_run
+  def test_gru_raises(self):
+    core = recurrent.GRU(4)
+    with self.assertRaisesRegex(ValueError, "rank-1 or rank-2"):
+      core(jnp.zeros([]), core.initial_state(None))
+
+
 class ResetCoreTest(parameterized.TestCase):
 
   @parameterized.parameters(recurrent.dynamic_unroll, recurrent.static_unroll)
@@ -179,6 +188,15 @@ class ResetCoreTest(parameterized.TestCase):
         core_outs[0, 0], reset_outs[1, 0], rtol=1e-6, atol=1e-6)
     for cs, rs in zip(core_states, reset_states):
       np.testing.assert_allclose(cs[0, 0], rs[1, 0], rtol=1e-6, atol=1e-6)
+
+  @test_utils.transform_and_run
+  def test_invalid_input(self):
+    core = recurrent.LSTM(hidden_size=4)
+    reset_core = recurrent.ResetCore(core)
+    with self.assertRaisesRegex(ValueError,
+                                "should_reset must have rank-1 of state."):
+      reset_core((jnp.array([1, 2, 3]), jnp.array([2, 3, 4])),
+                 jnp.array([2, 3, 4]))
 
 
 class DeepRNNTest(parameterized.TestCase):

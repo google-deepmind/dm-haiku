@@ -246,6 +246,7 @@ hk_py_test(
     srcs = ["pool_test.py"],
     deps = [
         ":pool",
+        ":test_utils",
         # pip: absl/testing:absltest
         # pip: jax
         # pip: numpy

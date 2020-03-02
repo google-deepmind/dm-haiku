@@ -18,6 +18,7 @@
 from absl.testing import absltest
 
 from haiku._src import pool
+from haiku._src import test_utils
 import jax.numpy as jnp
 import numpy as np
 
@@ -62,6 +63,19 @@ class MaxPoolTest(absltest.TestCase):
 
     np.testing.assert_equal(result.shape, x.shape)
 
+  @test_utils.transform_and_run
+  def test_max_pool_same_padding_class(self):
+    x = np.arange(6, dtype=jnp.float32)
+    x = np.broadcast_to(x, (2, 3, 6))
+
+    window_shape = [1, 3, 3]
+    strides = [1, 1, 1]
+    max_pool = pool.MaxPool(
+        window_shape=window_shape, strides=strides, padding="SAME")
+    result = max_pool(x)
+
+    np.testing.assert_equal(result.shape, x.shape)
+
 
 class AvgPoolTest(absltest.TestCase):
 
@@ -100,8 +114,22 @@ class AvgPoolTest(absltest.TestCase):
 
     window_shape = [1, 3, 3]
     strides = [1, 1, 1]
-    result = pool.max_pool(
+    result = pool.avg_pool(
         x, window_shape=window_shape, strides=strides, padding="SAME")
+
+    np.testing.assert_equal(result.shape, x.shape)
+    # Since x is constant, its avg value should be itself.
+    np.testing.assert_equal(result, x)
+
+  @test_utils.transform_and_run
+  def test_avg_pool_same_padding_class(self):
+    x = np.ones((2, 3, 6))
+
+    window_shape = [1, 3, 3]
+    strides = [1, 1, 1]
+    avg_pool = pool.AvgPool(
+        window_shape=window_shape, strides=strides, padding="SAME")
+    result = avg_pool(x)
 
     np.testing.assert_equal(result.shape, x.shape)
     # Since x is constant, its avg value should be itself.

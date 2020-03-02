@@ -191,7 +191,6 @@ class ResetCoreTest(parameterized.TestCase):
 
   @test_utils.transform_and_run
   def test_invalid_input(self):
-
     core = recurrent.LSTM(hidden_size=4)
     reset_core = recurrent.ResetCore(core)
     with self.assertRaisesRegexp(ValueError,

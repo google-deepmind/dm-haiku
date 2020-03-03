@@ -15,15 +15,16 @@
 # ==============================================================================
 """Tests for haiku._src.conv."""
 
+from jax import random
+import jax.numpy as jnp
+import numpy as np
 from absl.testing import absltest
 from absl.testing import parameterized
+
 from haiku._src import base
 from haiku._src import conv
 from haiku._src import initializers
 from haiku._src import test_utils
-from jax import random
-import jax.numpy as jnp
-import numpy as np
 
 
 def create_constant_initializers(w, b, with_bias):
@@ -486,7 +487,7 @@ class ConvTransposeTest(parameterized.TestCase):
       net = conv.ConvNDTranspose(
           n, output_channels=3, kernel_shape=3,
           data_format="channels_first",
-          mask=jnp.zeros([1,2,3]))
+          mask=jnp.zeros([1, 2, 3]))
       net(data)
 
   @test_utils.transform_and_run

@@ -75,16 +75,45 @@ hk_py_test(
     ],
 )
 
+hk_py_library(
+    name = "common",
+    srcs = ["common.py"],
+    deps = [
+        ":descriptors",
+        # pip: absl/testing:parameterized
+        "//haiku",
+        "//haiku/_src:test_utils",
+        "//haiku/_src:typing",
+        # pip: jax
+    ],
+)
+
 hk_py_test(
     name = "bfloat16_test",
     srcs = ["bfloat16_test.py"],
     gpu = False,
     shard_count = 50,
     deps = [
+        ":common",
         ":descriptors",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
-        "//haiku",
+        "//haiku/_src:test_utils",
+        "//haiku/_src:typing",
+        # pip: jax
+    ],
+)
+
+hk_py_test(
+    name = "float64_test",
+    srcs = ["float64_test.py"],
+    shard_count = 50,
+    tpu = False,
+    deps = [
+        ":common",
+        ":descriptors",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
         "//haiku/_src:test_utils",
         "//haiku/_src:typing",
         # pip: jax

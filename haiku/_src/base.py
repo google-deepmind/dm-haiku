@@ -443,7 +443,7 @@ def transform(f, *, apply_rng=False) -> Transformed:
       out = apply(params, rng, *a, **k)
 
   Note that the ``rng`` argument is typically not required for `apply` and
-  passing ``None`` is accpeted.
+  passing ``None`` is accepted.
 
   The first thing to do is to define a `Module`. A module encapsulates some
   parameters and a computation on those parameters:

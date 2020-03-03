@@ -20,6 +20,7 @@ from absl.testing import parameterized
 from haiku._src import base
 from haiku._src import conv
 from haiku._src import initializers
+from haiku._src import test_utils
 from jax import random
 import jax.numpy as jnp
 import numpy as np
@@ -163,35 +164,31 @@ class ConvTest(parameterized.TestCase):
     self.assertEqual(out.shape, expected_output_shape)
     self.assertEqual(reached[0], n*2)
 
+  @test_utils.transform_and_run
   def test_invalid_input_shape(self):
     n = 1
     input_shape = [2, 4] + [16]*n
 
-    def f():
-      data = jnp.zeros(input_shape * 2)
-      net = conv.ConvND(n, output_channels=3, kernel_shape=3,
-                        data_format="channels_first")
-      return net(data)
     with self.assertRaisesRegexp(ValueError, "Input to ConvND "
                                              "needs to have rank 3, "
                                              "but input has shape *"):
-      init_fn, apply_fn = base.transform(f)
-      apply_fn(init_fn(random.PRNGKey(428)))
+      data = jnp.zeros(input_shape * 2)
+      net = conv.ConvND(n, output_channels=3, kernel_shape=3,
+                        data_format="channels_first")
+      net(data)
 
+  @test_utils.transform_and_run
   def test_invalid_mask_shape(self):
     n = 1
     input_shape = [2, 4] + [16]*n
 
-    def f():
-      data = jnp.zeros(input_shape)
-      net = conv.ConvND(n, output_channels=3, kernel_shape=3,
-                        data_format="channels_first", mask=jnp.ones([1, 5, 1]))
-      return net(data)
     with self.assertRaisesRegexp(ValueError, "Mask needs to have "
                                              "the same shape as weights. "
                                              "Shapes are: *"):
-      init_fn, apply_fn = base.transform(f)
-      apply_fn(init_fn(random.PRNGKey(428)))
+      data = jnp.zeros(input_shape)
+      net = conv.ConvND(n, output_channels=3, kernel_shape=3,
+                        data_format="channels_first", mask=jnp.ones([1, 5, 1]))
+      net(data)
 
   def test_valid_mask_shape(self):
     n = 2

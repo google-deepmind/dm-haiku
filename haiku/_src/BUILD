@@ -375,6 +375,7 @@ hk_py_library(
     deps = [
         ":base",
         ":basic",
+        ":conv",
         ":initializers",
         ":module",
         # pip: jax

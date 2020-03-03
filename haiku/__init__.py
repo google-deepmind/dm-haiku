@@ -62,6 +62,9 @@ from haiku._src.pool import avg_pool
 from haiku._src.pool import AvgPool
 from haiku._src.pool import max_pool
 from haiku._src.pool import MaxPool
+from haiku._src.recurrent import Conv1DLSTM
+from haiku._src.recurrent import Conv2DLSTM
+from haiku._src.recurrent import Conv3DLSTM
 from haiku._src.recurrent import deep_rnn_with_skip_connections
 from haiku._src.recurrent import DeepRNN
 from haiku._src.recurrent import dynamic_unroll
@@ -108,6 +111,9 @@ __all__ = (
     "TransformedWithState",
     "InstanceNorm",
     "LSTM",
+    "Conv1DLSTM",
+    "Conv2DLSTM",
+    "Conv3DLSTM",
     "LayerNorm",
     "Linear",
     "MaxPool",

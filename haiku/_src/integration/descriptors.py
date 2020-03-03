@@ -199,6 +199,18 @@ RNN_CORES = (
         create=lambda: hk.LSTM(1),
         shape=(BATCH_SIZE, 128)),
     ModuleDescriptor(
+        name="Conv1DLSTM",
+        create=lambda: hk.Conv1DLSTM([2], 3, 3),
+        shape=(BATCH_SIZE, 2, 2)),
+    ModuleDescriptor(
+        name="Conv2DLSTM",
+        create=lambda: hk.Conv2DLSTM([2, 2], 3, 3),
+        shape=(BATCH_SIZE, 2, 2, 2)),
+    ModuleDescriptor(
+        name="Conv3DLSTM",
+        create=lambda: hk.Conv3DLSTM([2, 2, 2], 3, 3),
+        shape=(BATCH_SIZE, 2, 2, 2, 2)),
+    ModuleDescriptor(
         name="VanillaRNN",
         create=lambda: hk.VanillaRNN(8),
         shape=(BATCH_SIZE, 128)),

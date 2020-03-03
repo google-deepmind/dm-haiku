@@ -14,7 +14,6 @@
 # limitations under the License.
 # ==============================================================================
 """Tests for haiku._src.recurrent."""
-
 import itertools as it
 
 from absl.testing import absltest
@@ -24,6 +23,7 @@ from haiku._src import basic
 from haiku._src import recurrent
 from haiku._src import test_utils
 import jax
+from jax import random
 import jax.nn
 import jax.numpy as jnp
 import numpy as np
@@ -95,6 +95,34 @@ class LSTMTest(absltest.TestCase):
       expanded_state = tree.map_structure(lambda x: jnp.expand_dims(x, 0),
                                           core.initial_state(1))
       core(jnp.zeros([1, 1, 1]), expanded_state)
+
+
+class ConvLSTMTest(parameterized.TestCase):
+
+  @parameterized.parameters(1, 2, 3)
+  def test_connect_conv_same(self, n):
+    batch_size = 2
+    input_shape = [16]*n
+    input_shape_ = [batch_size] + input_shape + [4]
+    state_shape_ = [batch_size] + input_shape + [3]
+
+    data_ = jnp.zeros(input_shape_)
+    state_init_ = (jnp.zeros(state_shape_), jnp.zeros(state_shape_))
+
+    def f(data, state_init):
+      net = recurrent.ConvNDLSTM(n, input_shape=input_shape, output_channels=3,
+                                 kernel_shape=3)
+      return net(data, state_init)
+
+    init_fn, apply_fn = base.transform(f)
+    params = init_fn(random.PRNGKey(42), data_, state_init_)
+
+    out, state = apply_fn(params, data_, state_init_)
+
+    expected_output_shape = (batch_size,) + tuple(input_shape) + (3,)
+    self.assertEqual(out.shape, expected_output_shape)
+    self.assertEqual(state[0].shape, expected_output_shape)
+    self.assertEqual(state[1].shape, expected_output_shape)
 
 
 class GRUTest(absltest.TestCase):

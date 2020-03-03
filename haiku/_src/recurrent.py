@@ -18,6 +18,7 @@
 import abc
 from haiku._src import base
 from haiku._src import basic
+from haiku._src import conv
 from haiku._src import initializers
 from haiku._src import module
 import jax
@@ -125,6 +126,102 @@ class LSTM(RNNCore):
     if batch_size is not None:
       state = add_batch(state, batch_size)
     return state
+
+
+class ConvNDLSTM(RNNCore):
+  """ConvNDLSTM  https://arxiv.org/abs/1506.04214."""
+
+  def __init__(self,
+               num_spatial_dims,
+               input_shape,
+               output_channels,
+               kernel_shape,
+               name=None):
+    super(ConvNDLSTM, self).__init__(name=name)
+    self._num_spatial_dims = num_spatial_dims
+    self.input_shape = input_shape
+    self.output_channels = output_channels
+    self.kernel_shape = kernel_shape
+
+  def __call__(self, inputs, state):
+    prev_h, prev_c = state
+
+    gates = conv.ConvND(
+        num_spatial_dims=self._num_spatial_dims,
+        output_channels=4*self.output_channels,
+        kernel_shape=self.kernel_shape,
+        name="input_to_hidden")(
+            inputs)
+    gates += conv.ConvND(
+        num_spatial_dims=self._num_spatial_dims,
+        output_channels=4*self.output_channels,
+        kernel_shape=self.kernel_shape,
+        name="hidden_to_hidden")(
+            prev_h)
+    i, g, f, o = jnp.split(gates, indices_or_sections=4, axis=-1)
+
+    f = jax.nn.sigmoid(f + 1)
+    c = f * prev_c + jax.nn.sigmoid(i) * jnp.tanh(g)
+    h = jax.nn.sigmoid(o) * jnp.tanh(c)
+    return h, (h, c)
+
+  def initial_state(self, batch_size):
+    state = (jnp.zeros(list(self.input_shape) + [self.output_channels]),
+             jnp.zeros(list(self.input_shape) + [self.output_channels]))
+    if batch_size is not None:
+      state = add_batch(state, batch_size)
+    return state
+
+
+class Conv1DLSTM(ConvNDLSTM):
+  """Conv1D module."""
+
+  def __init__(self,
+               input_shape,
+               output_channels,
+               kernel_shape,
+               name=None):
+    """Initializes a Conv1DLSTM module."""
+    super(Conv1DLSTM, self).__init__(
+        num_spatial_dims=1,
+        input_shape=input_shape,
+        output_channels=output_channels,
+        kernel_shape=kernel_shape,
+        name=name)
+
+
+class Conv2DLSTM(ConvNDLSTM):
+  """Conv1D module."""
+
+  def __init__(self,
+               input_shape,
+               output_channels,
+               kernel_shape,
+               name=None):
+    """Initializes a Conv1DLSTM module."""
+    super(Conv2DLSTM, self).__init__(
+        num_spatial_dims=2,
+        input_shape=input_shape,
+        output_channels=output_channels,
+        kernel_shape=kernel_shape,
+        name=name)
+
+
+class Conv3DLSTM(ConvNDLSTM):
+  """Conv1D module."""
+
+  def __init__(self,
+               input_shape,
+               output_channels,
+               kernel_shape,
+               name=None):
+    """Initializes a Conv1DLSTM module."""
+    super(Conv3DLSTM, self).__init__(
+        num_spatial_dims=3,
+        input_shape=input_shape,
+        output_channels=output_channels,
+        kernel_shape=kernel_shape,
+        name=name)
 
 
 class GRU(RNNCore):

@@ -110,7 +110,7 @@ def loss_fn(
     batch: dataset.Batch,
 ) -> Tuple[jnp.ndarray, Tuple[jnp.ndarray, hk.State]]:
   """Computes a regularized loss for the given batch."""
-  logits, state = forward.apply(params, state, batch, is_training=True)
+  logits, state = forward.apply(params, state, None, batch, is_training=True)
   labels = hk.one_hot(batch['labels'], 1000)
   cat_loss = jnp.mean(softmax_cross_entropy(logits=logits, labels=labels))
   l2_params = [p for ((mod_name, _), p) in tree.flatten_with_path(params)
@@ -165,8 +165,7 @@ def eval_batch(
     batch: dataset.Batch,
 ) -> jnp.ndarray:
   """Evaluates a batch."""
-  rng = None
-  logits, _ = forward.apply(params, state, rng, batch, is_training=False)
+  logits, _ = forward.apply(params, state, None, batch, is_training=False)
   predicted_label = jnp.argmax(logits, axis=-1)
   correct = jnp.sum(jnp.equal(predicted_label, batch['labels']))
   return correct.astype(jnp.float32)

@@ -325,8 +325,8 @@ class ResetCore(RNNCore):
     should_reset = jnp.expand_dims(should_reset, axis=-1)
 
     batch_size = jax.tree_leaves(inputs)[0].shape[0]
-    initial_state = jax.tree_map(lambda v: v.astype(inputs.dtype),
-                                 self.initial_state(batch_size))
+    initial_state = jax.tree_multimap(lambda s, i: i.astype(s.dtype),
+                                      state, self.initial_state(batch_size))
     state = jax.tree_multimap(lambda i, s: jnp.where(should_reset, i, s),
                               initial_state, state)
     return self._core(inputs, state)

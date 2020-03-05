@@ -24,7 +24,6 @@ from jax.experimental import optix
 import jax.numpy as jnp
 import numpy as np
 import tensorflow_datasets as tfds
-import tree
 
 OptState = Any
 NUM_DIGITS = 10  # MNIST.
@@ -75,11 +74,11 @@ def main(_):
     batch_size = inputs.shape[0]
     log_probs = net.apply(params, inputs)
 
-    def l2_loss(params):
-      return 0.5 * sum(jnp.sum(jnp.square(p)) for p in tree.flatten(params))
+    l2_loss = 0.5 * sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(params))
+    softmax_xent = -jnp.sum(hk.one_hot(targets, NUM_DIGITS) * log_probs)
+    softmax_xent = softmax_xent / batch_size
 
-    return -jnp.sum(hk.one_hot(targets, NUM_DIGITS) *
-                    log_probs) / batch_size + 1e-4 * l2_loss(params)
+    return softmax_xent + 1e-4 * l2_loss
 
   # Evaluation metric (classification accuracy).
   @jax.jit
@@ -132,9 +131,8 @@ def main(_):
       train_accuracy = accuracy(avg_params, inputs, targets)
       inputs, targets = next(test_eval)
       test_accuracy = accuracy(avg_params, inputs, targets)
-      print(
-          f"[Step {step}] Train / Test accuracy: {train_accuracy:.3f} / {test_accuracy:.3f}."
-      )
+      print(f"[Step {step}] Train / Test accuracy: {train_accuracy:.3f} / "
+            f"{test_accuracy:.3f}.")
 
     # Do SGD on a batch of training examples.
     inputs, targets = next(train)

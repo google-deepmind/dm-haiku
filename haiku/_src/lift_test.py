@@ -41,10 +41,10 @@ class LiftTest(absltest.TestCase):
     def outer_fn(x):
       assert x.ndim == 2
       x = Bias()(x)
-      inner = base.without_apply_rng(base.transform_with_state(inner_fn))
-      inner_p, inner_s = lift.lift(inner.init)(base.next_rng_key(), x[0])
-      vmap_inner = jax.vmap(inner.apply, in_axes=(None, None, 0))
-      return vmap_inner(inner_p, inner_s, x)[0]
+      inner = base.transform(inner_fn)
+      inner_p = lift.lift(inner.init)(base.next_rng_key(), x[0])
+      vmap_inner = jax.vmap(inner.apply, in_axes=(None, 0))
+      return vmap_inner(inner_p, x)
 
     key = jax.random.PRNGKey(428)
     init_key, apply_key = jax.random.split(key)
@@ -54,8 +54,7 @@ class LiftTest(absltest.TestCase):
     outer_params = outer.init(init_key, data)
     self.assertEqual(outer_params, {
         "bias": {"b": np.ones(())},
-        "lifted_init_fn": {"sentinel": np.zeros(())},
-        "lifted_init_fn/bias": {"b": np.ones(())},
+        "lifted/bias": {"b": np.ones(())},
     })
 
     out = outer.apply(outer_params, apply_key, data)

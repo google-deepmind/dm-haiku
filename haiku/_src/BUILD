@@ -195,7 +195,6 @@ hk_py_library(
         ":base",
         ":data_structures",
         ":module",
-        # pip: jax
     ],
 )
 

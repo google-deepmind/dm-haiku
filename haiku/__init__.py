@@ -54,6 +54,7 @@ from haiku._src.embed import Embed
 from haiku._src.embed import EmbedLookupStyle
 from haiku._src.layer_norm import InstanceNorm
 from haiku._src.layer_norm import LayerNorm
+from haiku._src.lift import lift
 from haiku._src.module import Module
 from haiku._src.module import transparent
 from haiku._src.moving_averages import EMAParamsTree
@@ -138,6 +139,7 @@ __all__ = (
     "grad",
     "initializers",
     "jit",
+    "lift",
     "max_pool",
     "multinomial",
     "nets",

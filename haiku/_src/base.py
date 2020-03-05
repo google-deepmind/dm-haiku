@@ -157,6 +157,14 @@ def assert_transformed(public_symbol_name):
             public_symbol_name))
 
 
+def in_apply():
+  """Returns true at apply time, false at init time."""
+  if not frame_stack:
+    raise ValueError(
+        "`base.in_apply` must be used as part of an `hk.transform`")
+  return current_frame().params_frozen
+
+
 def get_parameter(
     name: ParamName,
     shape: Shape,

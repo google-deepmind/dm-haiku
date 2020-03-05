@@ -31,6 +31,7 @@ py_library(
         "//haiku/_src:embed",
         "//haiku/_src:initializers",
         "//haiku/_src:layer_norm",
+        "//haiku/_src:lift",
         "//haiku/_src:module",
         "//haiku/_src:moving_averages",
         "//haiku/_src:pad",

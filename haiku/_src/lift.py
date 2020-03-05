@@ -18,9 +18,6 @@
 from haiku._src import base
 from haiku._src import data_structures
 from haiku._src import module
-import jax.numpy as jnp
-
-_SENTINEL_NAME = "sentinel"
 
 
 def pack_into_dict(src, dst, prefix):
@@ -40,49 +37,46 @@ def unpack_from_dict(src, prefix):
   return data_structures.to_immutable_dict(result)
 
 
-# TODO(tycai): Allow state=False as well.
+# TODO(tycai): Accept state=True.
 # TODO(tycai): Make sure transformed functions have better names.
 class LiftingModule(module.Module):
   """Lifts the given init function to a function in the current Haiku namespace.
 
   During init, the returned callable will run the given `init_fn`, and include
-  the resulting params/state in the outer transform's dictionaries.
+  the resulting params in the outer transform's dictionaries.
   During apply, the returned callable will instead pull the relevant parameters
-  and state from the outer transform's dictionaries.
+  from the outer transform's dictionaries.
 
   Must be called inside hk.transform, and be passed the `init` member of a
   `hk.Transformed`.
 
-  Currently, the given `init_fn` must not use state.
+  The user must ensure that the given `init` does not accidentally catch modules
+  from an outer `hk.transform` via functional closure.
+
+  This is highly experimental and may be changed or removed at any time.
   """
 
-  def __init__(self, init_fn, name=None):
+  def __init__(self, init_fn, name="lifted"):
     """Initializes the LiftingModule.
 
     Args:
-      init_fn: The init_fn from a hk.Transformed. Requires state=True.
+      init_fn: The init_fn from a hk.Transformed. Must not be stateful.
       name: Module name.
     """
-    if name is None:
-      name = f"lifted_{init_fn.__name__}"
-    super(LiftingModule, self).__init__(name=name)
+    super().__init__(name=name)
     self._init_fn = init_fn
 
   def __call__(self, *args, **kwargs):
     frame = base.current_frame()
     bundle_name = self.module_name
-    if _SENTINEL_NAME in frame.params[bundle_name]:
+    if base.in_apply():
       prefix = bundle_name + "/"
       lifted_params = unpack_from_dict(frame.params, prefix)
-      lifted_state = unpack_from_dict(frame.state, prefix)
-      return lifted_params, lifted_state
-    else:
-      # Ensure sentinel is set for apply.
-      base.get_parameter(_SENTINEL_NAME, (), init=jnp.zeros)
+      return lifted_params
+    else:  # Inside init.
       # Lift parameters into this transform's params_dict.
-      params, state = self._init_fn(*args, **kwargs)
+      params = self._init_fn(*args, **kwargs)
       pack_into_dict(params, frame.params, bundle_name)
-      pack_into_dict(state, frame.state, bundle_name)
-      return params, state
+      return params
 
 lift = LiftingModule  # pylint: disable=invalid-name

@@ -131,6 +131,10 @@ class Frame(NamedTuple):
 current_frame = frame_stack.peek
 
 
+def inside_transform():
+  return bool(frame_stack)
+
+
 def safe_get_module_name(module) -> Text:
   # TODO(tomhennigan) Module specific code should be part of `module.py`.
   if not hasattr(module, "module_name"):

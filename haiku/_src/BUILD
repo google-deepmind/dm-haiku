@@ -181,6 +181,7 @@ hk_py_test(
         ":base",
         ":conv",
         ":initializers",
+        ":test_utils",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax

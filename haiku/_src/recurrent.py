@@ -84,7 +84,7 @@ class VanillaRNN(RNNCore):
   """Vanilla RNN."""
 
   def __init__(self, hidden_size, name=None):
-    super(VanillaRNN, self).__init__(name=name)
+    super().__init__(name=name)
     self.hidden_size = hidden_size
 
   def __call__(self, inputs, state):
@@ -102,10 +102,15 @@ class VanillaRNN(RNNCore):
 
 
 class LSTM(RNNCore):
-  """LSTM."""
+  """LSTM.
+
+  Following https://dl.acm.org/doi/10.5555/3045118.304536, we add a constant
+  bias of 1 to the forget gate in order to reduce the scale of forgetting in
+  the beginning of the training.
+  """
 
   def __init__(self, hidden_size, name=None):
-    super(LSTM, self).__init__(name=name)
+    super().__init__(name=name)
     self.hidden_size = hidden_size
 
   def __call__(self, inputs, state):
@@ -129,7 +134,14 @@ class LSTM(RNNCore):
 
 
 class ConvNDLSTM(RNNCore):
-  """ConvNDLSTM  https://arxiv.org/abs/1506.04214."""
+  """N-D convolutional LSTM.
+
+  The implementation is based on https://arxiv.org/abs/1506.04214.
+
+  Following https://dl.acm.org/doi/10.5555/3045118.304536, we add a constant
+  bias of 1 to the forget gate in order to reduce the scale of forgetting in
+  the beginning of the training.
+  """
 
   def __init__(self,
                num_spatial_dims,
@@ -137,7 +149,7 @@ class ConvNDLSTM(RNNCore):
                output_channels,
                kernel_shape,
                name=None):
-    super(ConvNDLSTM, self).__init__(name=name)
+    super().__init__(name=name)
     self._num_spatial_dims = num_spatial_dims
     self.input_shape = input_shape
     self.output_channels = output_channels
@@ -176,13 +188,9 @@ class ConvNDLSTM(RNNCore):
 class Conv1DLSTM(ConvNDLSTM):
   """Conv1D module."""
 
-  def __init__(self,
-               input_shape,
-               output_channels,
-               kernel_shape,
-               name=None):
-    """Initializes a Conv1DLSTM module."""
-    super(Conv1DLSTM, self).__init__(
+  def __init__(self, input_shape, output_channels, kernel_shape, name=None):
+    """Initializes a Conv1DLSTM module. See superclass for documentation."""
+    super().__init__(
         num_spatial_dims=1,
         input_shape=input_shape,
         output_channels=output_channels,
@@ -191,15 +199,11 @@ class Conv1DLSTM(ConvNDLSTM):
 
 
 class Conv2DLSTM(ConvNDLSTM):
-  """Conv1D module."""
+  """Conv2D module."""
 
-  def __init__(self,
-               input_shape,
-               output_channels,
-               kernel_shape,
-               name=None):
-    """Initializes a Conv1DLSTM module."""
-    super(Conv2DLSTM, self).__init__(
+  def __init__(self, input_shape, output_channels, kernel_shape, name=None):
+    """Initializes a Conv2DLSTM module. See superclass for documentation."""
+    super().__init__(
         num_spatial_dims=2,
         input_shape=input_shape,
         output_channels=output_channels,
@@ -208,15 +212,11 @@ class Conv2DLSTM(ConvNDLSTM):
 
 
 class Conv3DLSTM(ConvNDLSTM):
-  """Conv1D module."""
+  """Conv3D module."""
 
-  def __init__(self,
-               input_shape,
-               output_channels,
-               kernel_shape,
-               name=None):
-    """Initializes a Conv1DLSTM module."""
-    super(Conv3DLSTM, self).__init__(
+  def __init__(self, input_shape, output_channels, kernel_shape, name=None):
+    """Initializes a Conv3DLSTM module. See superclass for documentation."""
+    super().__init__(
         num_spatial_dims=3,
         input_shape=input_shape,
         output_channels=output_channels,
@@ -254,7 +254,7 @@ class GRU(RNNCore):
                w_h_init: base.Initializer = None,
                b_init: base.Initializer = None,
                name=None):
-    super(GRU, self).__init__(name=name)
+    super().__init__(name=name)
     self.hidden_size = hidden_size
     self._w_i_init = w_i_init or initializers.VarianceScaling()
     self._w_h_init = w_h_init or initializers.VarianceScaling()
@@ -309,7 +309,7 @@ class ResetCore(RNNCore):
   """
 
   def __init__(self, core, name=None):
-    super(ResetCore, self).__init__(name=name)
+    super().__init__(name=name)
     self._core = core
 
   def __call__(self, inputs, state):
@@ -339,7 +339,7 @@ class _DeepRNN(RNNCore):
   """Underlying implementation of DeepRNN with skip connections."""
 
   def __init__(self, layers, skip_connections, name=None):
-    super(_DeepRNN, self).__init__(name=name)
+    super().__init__(name=name)
     self._layers = layers
     self._skip_connections = skip_connections
 
@@ -395,7 +395,7 @@ class DeepRNN(_DeepRNN):
   """
 
   def __init__(self, layers, name=None):
-    super(DeepRNN, self).__init__(layers, skip_connections=False, name=name)
+    super().__init__(layers, skip_connections=False, name=name)
 
 
 def deep_rnn_with_skip_connections(layers, name=None):

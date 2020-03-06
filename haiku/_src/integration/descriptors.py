@@ -15,7 +15,7 @@
 # ==============================================================================
 """Module descriptors programatically describe how to use modules."""
 
-from typing import Any, Callable, NamedTuple, Union
+from typing import Any, Callable, NamedTuple
 
 import haiku as hk
 from haiku._src.typing import Shape, DType  # pylint: disable=g-multiple-import
@@ -42,10 +42,8 @@ class Training(Wrapped):
 class Recurrent(Wrapped):
   """Unrolls a recurrent module."""
 
-  def __init__(self,
-               module: Union[hk.RNNCore],
-               unroller=None):
-    super(Recurrent, self).__init__(module)
+  def __init__(self, module: hk.RNNCore, unroller=None):
+    super().__init__(module)
     self.unroller = unroller
 
   def __call__(self, x: jnp.ndarray):
@@ -184,7 +182,7 @@ class ResetCoreAdapter(Wrapped, hk.RNNCore):
     return self.wrapped((inputs, resets), state)
 
 
-# RNN cores.
+# RNN cores. For shape, use the shape of a single example.
 RNN_CORES = (
     ModuleDescriptor(
         name="ResetCore",
@@ -224,14 +222,11 @@ def recurrent_factory(
   return lambda: Recurrent(create_core(), unroller)
 
 
-def unroll_descriptors(descriptors, unroller=None):
+def unroll_descriptors(descriptors, unroller):
   """Returns `Recurrent` wrapped descriptors with the given unroller applied."""
   out = []
   for name, create, shape, dtype in descriptors:
-    if unroller is None:
-      name = "Recurrent({})".format(name)
-    else:
-      name = "Recurrent({}, {})".format(name, unroller.__name__)
+    name = "Recurrent({}, {})".format(name, unroller.__name__)
     out.append(
         ModuleDescriptor(name=name,
                          create=recurrent_factory(create, unroller),

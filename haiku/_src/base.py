@@ -331,6 +331,8 @@ def make_init_fn(f: Callable[..., Any]) -> Callable[..., Tuple[Params, State]]:
     state = _extract_state(state, initial=True)
     return params, state
 
+  # EXPERIMENTAL: Expose the original function as a private attribute.
+  init_fn._original_fn = f  # pylint: disable=protected-access
   return init_fn
 
 
@@ -375,6 +377,8 @@ def make_apply_fn(f: Callable[..., T]) -> Callable[..., Tuple[T, State]]:
     state = _extract_state(state, initial=False)
     return out, state
 
+  # EXPERIMENTAL: Expose the original function as a private attribute.
+  apply_fn._original_fn = f  # pylint: disable=protected-access
   return apply_fn
 
 

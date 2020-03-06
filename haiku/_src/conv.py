@@ -396,8 +396,9 @@ class ConvNDTranspose(module.Module):
       A rank-N+2 array with shape [N, spatial_dims, output_channels].
     """
     if len(inputs.shape) != self._num_spatial_dims + 2:
-      raise ValueError("Input to ConvND needs to have rank {}".format(
-          self._num_spatial_dims + 2))
+      raise ValueError("Input to ConvND needs to have rank {}, but input "
+                       "has shape {}.".format(
+                           self._num_spatial_dims + 2, inputs.shape))
     weight_shape = self._kernel_shape + (inputs.shape[self._channel_index],
                                          self._output_channels)
 

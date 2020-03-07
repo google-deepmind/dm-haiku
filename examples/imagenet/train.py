@@ -17,7 +17,7 @@
 
 import contextlib
 import functools
-from typing import Iterable, Mapping, Text, Tuple
+from typing import Iterable, Mapping, Tuple
 
 from absl import app
 from absl import flags
@@ -48,7 +48,7 @@ FLAGS = flags.FLAGS
 
 # Types.
 OptState = Tuple[optix.TraceState, optix.ScaleByScheduleState, optix.ScaleState]
-Scalars = Mapping[Text, jnp.ndarray]
+Scalars = Mapping[str, jnp.ndarray]
 
 
 def _forward(
@@ -108,7 +108,7 @@ def loss_fn(
     params: hk.Params,
     state: hk.State,
     batch: dataset.Batch,
-) -> Tuple[jnp.ndarray, Tuple[jnp.ndarray, hk.State]]:
+) -> Tuple[jnp.ndarray, hk.State]:
   """Computes a regularized loss for the given batch."""
   logits, state = forward.apply(params, state, None, batch, is_training=True)
   labels = hk.one_hot(batch['labels'], 1000)
@@ -181,7 +181,8 @@ def evaluate(
   # from the first device (since we do not pmap evaluation at the moment).
   params, state = jax.tree_map(lambda x: x[0], (params, state))
   test_dataset = dataset.load(split, batch_dims=[FLAGS.eval_batch_size])
-  correct = total = 0
+  correct = jnp.array(0)
+  total = 0
   for batch in test_dataset:
     correct += eval_batch(params, state, next(test_dataset))
     total += batch['images'].shape[0]
@@ -189,7 +190,7 @@ def evaluate(
 
 
 @contextlib.contextmanager
-def time_activity(activity_name: Text):
+def time_activity(activity_name: str):
   logging.info(f'[Timing] {activity_name} start.')
   yield
   logging.info(f'[Timing] {activity_name} finished.')

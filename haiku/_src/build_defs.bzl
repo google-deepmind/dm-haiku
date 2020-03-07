@@ -1,4 +1,4 @@
-"""Haiku specific build rules."""
+"""Haiku-specific build rules."""
 
 def hk_py_library(name, **kwargs):
     """Proxy for py_library.
@@ -11,6 +11,18 @@ def hk_py_library(name, **kwargs):
         **kwargs: keyword args passed straight to py_library.
     """
     native.py_library(name = name, **kwargs)
+
+def hk_py_binary(name, **kwargs):
+    """Proxy for py_binary.
+
+    Internally we override this to enable type checking via PyType (more
+    information at https://github.com/google/pytype).
+
+    Args:
+        name: binary name.
+        **kwargs: keyword args passed straight to py_binary.
+    """
+    native.py_binary(name = name, **kwargs)
 
 def hk_py_test(
         name,

@@ -1,10 +1,12 @@
+load("//haiku/_src:build_defs.bzl", "hk_py_binary", "hk_py_library")
+
 package(default_visibility = ["//visibility:private"])
 
 licenses(["notice"])
 
 exports_files(["LICENSE"])
 
-py_binary(
+hk_py_binary(
     name = "train",
     srcs = ["train.py"],
     python_version = "PY3",
@@ -15,19 +17,19 @@ py_binary(
         # link: gpu_support
         # link: tpu_support
         # pip: absl:app
+        # pip: absl/flags
         # pip: absl/logging
         "//haiku",
         # pip: jax
         # pip: jax:optix
         # pip: numpy
-        # pip: tqdm
+        # pip: tree
     ],
 )
 
-py_library(
+hk_py_library(
     name = "dataset",
     srcs = ["dataset.py"],
-    srcs_version = "PY3",
     deps = [
         # pip: numpy
         # pip: tensorflow

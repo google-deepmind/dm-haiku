@@ -19,6 +19,7 @@ import functools
 import itertools
 import threading
 from typing import Dict, Tuple, Text
+import warnings
 
 import dm_env
 import haiku as hk
@@ -63,7 +64,10 @@ class Learner:
       max_abs_reward: float = 0,
       logger=None,
   ):
-    assert jax.device_count() == 1
+    if jax.device_count() > 1:
+      warnings.warn('Note: the impala example will only take advantage of a '
+                    'single accelerator.')
+
     self._agent = agent
     self._opt = opt
     self._batch_size = batch_size

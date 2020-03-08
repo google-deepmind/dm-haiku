@@ -9,13 +9,8 @@ exports_files(["LICENSE"])
 hk_py_binary(
     name = "train",
     srcs = ["train.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":dataset",
-        # link: tpu_device
-        # link: gpu_support
-        # link: tpu_support
         # pip: absl:app
         # pip: absl/flags
         # pip: absl/logging

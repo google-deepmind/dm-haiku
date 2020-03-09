@@ -23,6 +23,7 @@ from haiku import testing
 from haiku._src.base import custom_creator
 from haiku._src.base import get_parameter
 from haiku._src.base import get_state
+from haiku._src.base import maybe_next_rng_key
 from haiku._src.base import next_rng_key
 from haiku._src.base import PRNGSequence
 from haiku._src.base import set_state
@@ -144,6 +145,7 @@ __all__ = (
     "jit",
     "lift",
     "max_pool",
+    "maybe_next_rng_key",
     "multinomial",
     "nets",
     "next_rng_key",

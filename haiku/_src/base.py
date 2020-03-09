@@ -627,6 +627,13 @@ def next_rng_key() -> PRNGKey:
   return next(rng_seq)
 
 
+def maybe_next_rng_key() -> Optional[PRNGKey]:
+  """`next_rng_key()` if random numbers are available, otherwise `None`."""
+  assert_transformed("maybe_next_rng_key")
+  rng_seq = current_frame().rng_stack.peek()
+  return None if rng_seq is None else next(rng_seq)
+
+
 def _extract_state(state: MutableState, *, initial) -> State:
   state = {m: {k: (v.initial if initial else v.current) for k, v in p.items()}
            for m, p in state.items()}

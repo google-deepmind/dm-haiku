@@ -113,6 +113,35 @@ class BaseTest(parameterized.TestCase):
       args = (args,)
     f.apply(*args, None)
 
+  def test_maybe_rng_no_transform(self):
+    with self.assertRaisesRegex(ValueError,
+                                "must be used as part of an `hk.transform`"):
+      base.maybe_next_rng_key()
+
+  @test_utils.transform_and_run(seed=None)
+  def test_maybe_no_rng(self):
+    self.assertIsNone(base.maybe_next_rng_key())
+
+  def test_maybe_rng_vs_not(self):
+    """If we have an rng, then next_rng_key() == maybe_next_rng_key()."""
+    rngs = []
+    maybes = []
+
+    @test_utils.transform_and_run
+    def three():
+      for _ in range(3):
+        rngs.append(base.next_rng_key())
+
+    @test_utils.transform_and_run
+    def maybe_three():
+      for _ in range(3):
+        maybes.append(base.maybe_next_rng_key())
+
+    three()
+    maybe_three()
+    self.assertLen(rngs, 6)
+    self.assertTrue(jnp.all(jnp.array(rngs) == jnp.array(maybes)))
+
   def test_init_custom_creator(self):
     def zeros_creator(next_creator, name, shape, dtype, init):
       self.assertEqual(name, "~/w")

@@ -104,14 +104,12 @@ def softmax_cross_entropy(logits, labels):
   return -jnp.sum(jax.nn.log_softmax(logits) * one_hot, axis=-1)
 
 def loss_fn(images, labels):
-  model = hk.Sequential([
-      hk.Linear(1000),
-      jax.nn.relu,
-      hk.Linear(100),
-      jax.nn.relu,
+  mlp = hk.Sequential([
+      hk.Linear(300), jax.nn.relu,
+      hk.Linear(100), jax.nn.relu,
       hk.Linear(10),
   ])
-  logits = model(images)
+  logits = mlp(images)
   return jnp.mean(softmax_cross_entropy(logits, labels))
 
 loss_obj = hk.transform(loss_fn)

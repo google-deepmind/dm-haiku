@@ -13,7 +13,7 @@ abstractions for machine learning research.
     import jax.numpy as jnp
 
     def forward(x):
-      mlp = hk.nets.MLP([1000, 100, 10])
+      mlp = hk.nets.MLP([300, 100, 10])
       return mlp(x)
 
     forward = hk.transform(forward)

@@ -15,7 +15,7 @@
 # ==============================================================================
 """MNIST classifier example."""
 
-from typing import Any, Tuple
+from typing import Any, Generator, Mapping, Tuple
 
 from absl import app
 import haiku as hk
@@ -26,80 +26,68 @@ import numpy as np
 import tensorflow_datasets as tfds
 
 OptState = Any
-NUM_DIGITS = 10  # MNIST.
+Batch = Mapping[str, np.ndarray]
 
 
-def net_fn(x: np.ndarray) -> jnp.DeviceArray:
+def net_fn(batch: Batch) -> jnp.ndarray:
   """Standard LeNet-300-100 MLP network."""
+  x = batch["image"].astype(jnp.float32) / 255.
   mlp = hk.Sequential([
-      lambda x: x.astype(jnp.float32) / 255.,
       hk.Flatten(),
-      hk.Linear(300),
-      jax.nn.relu,
-      hk.Linear(100),
-      jax.nn.relu,
-      hk.Linear(NUM_DIGITS),
-      jax.nn.log_softmax,
+      hk.Linear(300), jax.nn.relu,
+      hk.Linear(100), jax.nn.relu,
+      hk.Linear(10),
   ])
-
   return mlp(x)
 
 
-def get_datasets(train_batch_size: int, eval_batch_size: int):
-  """Creates MNIST datasets as iterators of NumPy arrays."""
-  ds = lambda s: tfds.load("mnist:3.*.*", split=s, as_supervised=True).cache()
-
-  train_ds = ds(tfds.Split.TRAIN).repeat().shuffle(1000).batch(train_batch_size)
-  train_eval_ds = ds(tfds.Split.TRAIN).repeat().batch(eval_batch_size)
-  test_eval_ds = ds(tfds.Split.TEST).repeat().batch(eval_batch_size)
-
-  return [tfds.as_numpy(d) for d in (train_ds, test_eval_ds, train_eval_ds)]
+def load_dataset(
+    split: str,
+    *,
+    is_training: bool,
+    batch_size: int,
+) -> Generator[Batch, None, None]:
+  """Loads the dataset as a generator of batches."""
+  ds = tfds.load("mnist:3.*.*", split=split).cache().repeat()
+  if is_training:
+    ds = ds.shuffle(10 * batch_size, seed=0)
+  ds = ds.batch(batch_size)
+  return tfds.as_numpy(ds)
 
 
 def main(_):
-
   # Make the network and optimiser.
   net = hk.transform(net_fn)
-  opt_init, opt_update = optix.adam(1e-3)
+  opt = optix.adam(1e-3)
 
   # Training loss (cross-entropy).
   @jax.jit
-  def loss(
-      params: hk.Params,
-      inputs: np.ndarray,
-      targets: np.ndarray,
-  ) -> jnp.DeviceArray:
+  def loss(params: hk.Params, batch: Batch) -> jnp.ndarray:
     """Compute the loss of the network, including L2."""
-    assert targets.dtype == np.int32
-    batch_size = inputs.shape[0]
-    log_probs = net.apply(params, inputs)
+    logits = net.apply(params, batch)
+    labels = hk.one_hot(batch["label"], 10)
 
     l2_loss = 0.5 * sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(params))
-    softmax_xent = -jnp.sum(hk.one_hot(targets, NUM_DIGITS) * log_probs)
-    softmax_xent = softmax_xent / batch_size
+    softmax_xent = -jnp.sum(labels * jax.nn.log_softmax(logits))
+    softmax_xent /= labels.shape[0]
 
     return softmax_xent + 1e-4 * l2_loss
 
   # Evaluation metric (classification accuracy).
   @jax.jit
-  def accuracy(
-      params: hk.Params,
-      inputs: np.ndarray,
-      targets: np.ndarray,
-  ) -> jnp.DeviceArray:
-    predictions = net.apply(params, inputs)
-    return jnp.mean(jnp.argmax(predictions, axis=-1) == targets)
+  def accuracy(params: hk.Params, batch: Batch) -> jnp.ndarray:
+    predictions = net.apply(params, batch)
+    return jnp.mean(jnp.argmax(predictions, axis=-1) == batch["label"])
 
   @jax.jit
   def update(
       params: hk.Params,
       opt_state: OptState,
-      inputs: np.ndarray,
-      targets: np.ndarray,
+      batch: Batch,
   ) -> Tuple[hk.Params, OptState]:
     """Learning rule (stochastic gradient descent)."""
-    _, gradient = jax.value_and_grad(loss)(params, inputs, targets)
-    updates, opt_state = opt_update(gradient, opt_state)
+    grads = jax.grad(loss)(params, batch)
+    updates, opt_state = opt.update(grads, opt_state)
     new_params = optix.apply_updates(params, updates)
     return new_params, opt_state
 
@@ -116,29 +104,26 @@ def main(_):
                              avg_params, new_params)
 
   # Make datasets.
-  train, test_eval, train_eval = get_datasets(
-      train_batch_size=100, eval_batch_size=1000)
+  train = load_dataset("train", is_training=True, batch_size=100)
+  train_eval = load_dataset("train", is_training=False, batch_size=10000)
+  test_eval = load_dataset("test", is_training=False, batch_size=10000)
 
   # Initialize network and optimiser; note we draw an input to get shapes.
-  params = avg_params = net.init(jax.random.PRNGKey(42), next(train)[0])
-  opt_state = opt_init(params)
+  params = avg_params = net.init(jax.random.PRNGKey(42), next(train))
+  opt_state = opt.init(params)
 
   # Train/eval loop.
   for step in range(10001):
     if step % 1000 == 0:
       # Periodically evaluate classification accuracy on train & test sets.
-      inputs, targets = next(train_eval)
-      train_accuracy = accuracy(avg_params, inputs, targets)
-      inputs, targets = next(test_eval)
-      test_accuracy = accuracy(avg_params, inputs, targets)
-      print(f"[Step {step}] Train / Test accuracy: {train_accuracy:.3f} / "
-            f"{test_accuracy:.3f}.")
+      train_accuracy = accuracy(avg_params, next(train_eval))
+      test_accuracy = accuracy(avg_params, next(test_eval))
+      print(f"[Step {step}] Train / Test accuracy: "
+            f"{train_accuracy:.3f} / {test_accuracy:.3f}.")
 
     # Do SGD on a batch of training examples.
-    inputs, targets = next(train)
-    params, opt_state = update(params, opt_state, inputs, targets)
+    params, opt_state = update(params, opt_state, next(train))
     avg_params = ema_update(avg_params, params)
-
 
 if __name__ == "__main__":
   app.run(main)

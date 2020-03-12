@@ -178,6 +178,11 @@ class FrozenDictTest(parameterized.TestCase):
     self.assertEqual(before, after)
     self.assertEqual(after, {"a": {"b": 1, "c": 2}})
 
+  def test_keys(self):
+    d = frozendict({"key1": "value", "key2": "value2"})
+    self.assertEqual(str(d.keys()), "KeysOnlyKeysView(['key1', 'key2'])")
+    self.assertEqual(repr(d.keys()), "KeysOnlyKeysView(['key1', 'key2'])")
+
 
 class FlatMappingTest(parameterized.TestCase):
 

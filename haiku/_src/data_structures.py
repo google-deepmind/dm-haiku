@@ -76,6 +76,19 @@ class ThreadLocalStack(Stack[T], threading.local):
   """Thread-local stack."""
 
 
+class KeysOnlyKeysView(collections.abc.KeysView):
+  """KeysView that does not print values when repr'ing."""
+
+  def __init__(self, mapping):
+    super().__init__(mapping)  # pytype: disable=wrong-arg-count
+    self._mapping = mapping
+
+  def __repr__(self):
+    return f"{type(self).__name__}({list(self._mapping)!r})"
+
+  __str__ = __repr__
+
+
 # TODO(tomhennigan) Use types.MappingProxyType when we are Python 3 only.
 # TODO(lenamartens) Deprecate type
 class frozendict(Mapping[K, V]):  # pylint: disable=invalid-name
@@ -86,6 +99,9 @@ class frozendict(Mapping[K, V]):  # pylint: disable=invalid-name
     self._keys = tuple(sorted(self._storage))
     # Dict values aren't necessarily hashable so we just use the keys.
     self._hash = hash(self._keys)
+
+  def keys(self):
+    return KeysOnlyKeysView(self)
 
   def __iter__(self):
     return iter(self._keys)

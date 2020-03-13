@@ -119,3 +119,18 @@ hk_py_test(
         # pip: jax
     ],
 )
+
+hk_py_test(
+    name = "to_dot_test",
+    srcs = ["to_dot_test.py"],
+    shard_count = 50,
+    deps = [
+        ":descriptors",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        "//haiku",
+        "//haiku/_src:test_utils",
+        "//haiku/_src:typing",
+        # pip: jax
+    ],
+)

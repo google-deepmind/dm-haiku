@@ -64,6 +64,7 @@ hk_py_library(
     srcs = ["module.py"],
     deps = [
         ":base",
+        ":data_structures",
         ":utils",
         # pip: jax
     ],
@@ -157,6 +158,31 @@ hk_py_test(
         # pip: absl/testing:parameterized
         # pip: jax
         # pip: numpy
+    ],
+)
+
+hk_py_library(
+    name = "dot",
+    srcs = ["dot.py"],
+    deps = [
+        ":data_structures",
+        ":module",
+        # pip: jax
+        # pip: tree
+    ],
+)
+
+hk_py_test(
+    name = "dot_test",
+    srcs = ["dot_test.py"],
+    deps = [
+        ":dot",
+        ":module",
+        ":test_utils",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        # pip: jax
+        # pip: tree
     ],
 )
 

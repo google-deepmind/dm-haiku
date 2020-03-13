@@ -28,6 +28,7 @@ py_library(
         "//haiku/_src:conv",
         "//haiku/_src:data_structures",
         "//haiku/_src:depthwise_conv",
+        "//haiku/_src:dot",
         "//haiku/_src:embed",
         "//haiku/_src:initializers",
         "//haiku/_src:layer_norm",

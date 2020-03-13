@@ -15,6 +15,7 @@
 # ==============================================================================
 """Tests for haiku._src.module."""
 
+import contextlib
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import base
@@ -208,6 +209,48 @@ class ModuleTest(parameterized.TestCase):
     init_fn, _ = base.transform(lambda: TransparentModule()())  # pylint: disable=unnecessary-lambda
     params = init_fn(None)
     self.assertEqual(params, {"scalar_module": {"w": jnp.zeros([])}})
+
+  @test_utils.transform_and_run
+  def test_method_hook(self):
+    events = []
+    @contextlib.contextmanager
+    def method_hook(mod, method_name):
+      events.append(("enter", method_name, getattr(mod, "module_name", None)))
+      yield
+      events.append(("exit", method_name, mod.module_name))
+
+    # Test __init__.
+    with module.hook_methods(method_hook):
+      m = EmptyModule()
+      self.assertIsNotNone(m)
+      self.assertEqual(events, [("enter", "__init__", None),
+                                ("exit", "__init__", "empty_module")])
+
+    # Test __call__.
+    del events[:]
+    m = CapturesModule(ScalarModule())
+    with module.hook_methods(method_hook):
+      m()
+    self.assertEqual(events, [("enter", "__call__", "captures_module"),
+                              ("enter", "__call__", "scalar_module"),
+                              ("exit", "__call__", "scalar_module"),
+                              ("exit", "__call__", "captures_module")])
+
+  @test_utils.transform_and_run
+  def test_callback_runs_after_submodules_updated(self):
+    params = []
+    @contextlib.contextmanager
+    def method_hook(mod, method_name):
+      yield
+      if method_name != "params_dict":
+        params.append((mod.module_name, method_name, tuple(mod.params_dict())))
+
+    m = CapturesModule(ScalarModule())
+    with module.hook_methods(method_hook):
+      m()
+    self.assertEqual(params,
+                     [("scalar_module", "__call__", ("scalar_module/w",)),
+                      ("captures_module", "__call__", ("scalar_module/w",))])
 
 
 class CapturesModule(module.Module):

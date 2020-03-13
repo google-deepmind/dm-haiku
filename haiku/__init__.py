@@ -51,6 +51,7 @@ from haiku._src.conv import Conv2DTranspose
 from haiku._src.conv import Conv3D
 from haiku._src.conv import Conv3DTranspose
 from haiku._src.depthwise_conv import DepthwiseConv2D
+from haiku._src.dot import to_dot
 from haiku._src.embed import Embed
 from haiku._src.embed import EmbedLookupStyle
 from haiku._src.layer_norm import InstanceNorm
@@ -155,6 +156,7 @@ __all__ = (
     "set_state",
     "static_unroll",
     "testing",
+    "to_dot",
     "to_module",
     "transform",
     "transform_with_state",

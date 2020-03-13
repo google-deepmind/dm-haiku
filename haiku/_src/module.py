@@ -16,15 +16,19 @@
 """Base Haiku module."""
 
 import abc
+import contextlib
 import functools
 import inspect
 import re
-from typing import Any, Dict, Mapping, Optional, Text, Tuple, Type, TypeVar
+from typing import (Any, Callable, ContextManager, Dict, Mapping, Optional,
+                    Text, Tuple, Type, TypeVar)
 
 from haiku._src import base
+from haiku._src import data_structures
 from haiku._src import utils
 import jax.numpy as jnp
 
+ThreadLocalStack = data_structures.ThreadLocalStack
 T = TypeVar("T")
 _APPLY_NAME_SCOPE = "__haiku_name_scope"
 
@@ -131,17 +135,18 @@ def with_name_scope(method_name, unbound_method):
           "All `hk.Module`s must be initialized inside an `hk.transform`.")
 
     frame = base.current_frame()
-    with frame.module(base.ModuleState(module=module, method_name=method_name)):
+    state = base.ModuleState(module=module, method_name=method_name)
+    with frame.module(state), _module_method_call(module, method_name):
       # hk.Module enters the module name scope for all methods.
       out = unbound_method(module, *args, **kwargs)
 
-    # Notify parent modules about our existence.
-    module_name = getattr(module, "module_name", None)
-    if module_name is not None:
-      for module_state in frame.module_stack:
-        module_state.module._submodules.add(module_name)  # pylint: disable=protected-access
-
+      # Notify parent modules about our existence.
+      module_name = getattr(module, "module_name", None)
+      if module_name is not None:
+        for module_state in frame.module_stack:
+          module_state.module._submodules.add(module_name)  # pylint: disable=protected-access
     return out
+
   return wrapped
 
 
@@ -283,3 +288,20 @@ def unique_and_canonical_name(name: Text) -> Text:
   used_names.add(qualified_name)
 
   return qualified_name
+
+MethodHook = Callable[[Module, str], ContextManager[None]]
+method_hook_stack = ThreadLocalStack()  # type: ThreadLocalStack[MethodHook]
+
+
+def hook_methods(method_hook: MethodHook) -> ContextManager[None]:
+  """Context manager that registers a given module method_hook."""
+  return method_hook_stack(method_hook)
+
+
+@contextlib.contextmanager
+def _module_method_call(module: Module, method_name: str):
+  """Context manager that wraps a method being called on a module."""
+  with contextlib.ExitStack() as stack:
+    for method_hook in method_hook_stack:
+      stack.enter_context(method_hook(module, method_name))
+    yield

@@ -24,6 +24,7 @@ from haiku._src import module
 import jax
 import jax.nn
 import jax.numpy as jnp
+import numpy as np
 import tree
 
 
@@ -152,7 +153,7 @@ class Linear(module.Module):
       raise ValueError("Input must not be scalar.")
 
     self.input_size = inputs.shape[-1]
-    default_stddev = 1. / jnp.sqrt(self.input_size)
+    default_stddev = 1. / np.sqrt(self.input_size)
     w_init = self.w_init or initializers.TruncatedNormal(stddev=default_stddev)
 
     w = base.get_parameter("w", [self.input_size, self.output_size],

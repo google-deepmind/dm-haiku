@@ -91,6 +91,7 @@ hk_py_library(
         ":initializers",
         ":module",
         # pip: jax
+        # pip: numpy
         # pip: tree
     ],
 )

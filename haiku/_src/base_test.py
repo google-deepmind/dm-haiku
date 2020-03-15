@@ -370,6 +370,24 @@ class BaseTest(parameterized.TestCase):
     self.assertNotEqual(without_decorator_out, expected_output)
     self.assertEqual(with_decorator_out, expected_output)
 
+  def test_new_context(self):
+    with base.new_context() as ctx:
+      pass
+    self.assertEmpty(ctx.collect_params())
+    self.assertEmpty(ctx.collect_initial_state())
+    self.assertEmpty(ctx.collect_state())
+
+  def test_context_copies_input(self):
+    before = {"~": {"w": jnp.array(1.)}}
+    with base.new_context(params=before, state=before) as ctx:
+      base.get_parameter("w", [], init=jnp.ones)
+      base.set_state("w", jnp.array(2.))
+    self.assertEqual(ctx.collect_params(), {"~": {"w": jnp.array(1.)}})
+    self.assertIsNot(ctx.collect_initial_state(), before)
+    self.assertEqual(ctx.collect_initial_state(), before)
+    self.assertEqual(ctx.collect_state(), {"~": {"w": jnp.array(2.)}})
+    self.assertEqual(before, {"~": {"w": jnp.array(1.)}})
+
 
 class ObjectWithTransform(object):
 

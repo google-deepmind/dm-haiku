@@ -252,6 +252,36 @@ class ModuleTest(parameterized.TestCase):
                      [("scalar_module", "__call__", ("scalar_module/w",)),
                       ("captures_module", "__call__", ("scalar_module/w",))])
 
+  def test_context_reuse_same_instance(self):
+    params = {"parent_module/~/child_module": {"w": jnp.array(2.)},
+              "parent_module/~/child_module_1": {"w": jnp.array(3.)},
+              "parent_module_1/~/child_module": {"w": jnp.array(4.)},
+              "parent_module_1/~/child_module_1": {"w": jnp.array(5.)}}
+
+    with base.new_context(params=params) as ctx:
+      mod1 = ParentModule()
+      mod2 = ParentModule()
+      self.assertEqual(mod1.module_name, "parent_module")
+      self.assertEqual(mod2.module_name, "parent_module_1")
+      for parent, (c1, c2) in ((mod1, (2., 3.)), (mod2, (4., 5.))):
+        self.assertEqual(parent.child1(), c1)
+        self.assertEqual(parent.child2(), c2)
+
+    with ctx:
+      for parent, (c1, c2) in ((mod1, (2., 3.)), (mod2, (4., 5.))):
+        self.assertEqual(parent.child1(), c1)
+        self.assertEqual(parent.child2(), c2)
+
+    # Creating a new context should not be a problem.
+    with base.new_context(params=ctx.collect_params()) as ctx:
+      mod1 = ParentModule()
+      mod2 = ParentModule()
+      self.assertEqual(mod1.module_name, "parent_module")
+      self.assertEqual(mod2.module_name, "parent_module_1")
+      for parent, (c1, c2) in ((mod1, (2., 3.)), (mod2, (4., 5.))):
+        self.assertEqual(parent.child1(), c1)
+        self.assertEqual(parent.child2(), c2)
+
 
 class CapturesModule(module.Module):
 

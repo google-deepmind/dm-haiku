@@ -131,6 +131,97 @@ class Frame(NamedTuple):
 current_frame = frame_stack.peek
 
 
+class HaikuContext(object):
+  """Collects and injects values for computations."""
+
+  __slots__ = ("__params", "__state", "__rng",
+               "__expected_stack", "__names", "__counter")
+
+  def __init__(
+      self,
+      params: Union[Params, MutableParams],
+      state: Union[State, MutableState],
+      rng: Optional["PRNGSequence"],
+  ):
+    # NOTE: Using __ vs. _ since these are "really" private (as in using these
+    # properties directly could result in broken behaviour).
+    self.__params = params
+    self.__state = state
+    self.__rng = rng
+    self.__expected_stack = ThreadLocalStack()
+    self.__names = set()
+    self.__counter = collections.Counter()
+
+  def collect_params(self) -> Params:
+    return data_structures.to_immutable_dict(self.__params)
+
+  def collect_initial_state(self) -> State:
+    return _extract_state(self.__state, initial=True)
+
+  def collect_state(self) -> State:
+    return _extract_state(self.__state, initial=False)
+
+  def __enter__(self):
+    frame = Frame.create(
+        params=self.__params, state=self.__state, rng=self.__rng)
+    frame.used_names_stack.push(self.__names)
+    frame.counter_stack.push(self.__counter)
+    self.__expected_stack.push(frame)
+    frame_stack.push(frame)
+    return self
+
+  def __exit__(self, exc_type, exc_val, exc_tb):
+    actual = frame_stack.pop()
+    expected = self.__expected_stack.pop()
+    assert actual is expected
+
+
+def new_context(
+    *,
+    params: Optional[Params] = None,
+    state: Optional[State] = None,
+    rng: Optional[Union[PRNGKey, PRNGSeed]] = None,
+) -> HaikuContext:
+  """Collects the results of hk.{get,set}_{parameter,state} calls.
+
+  >>> with new_context(rng=jax.random.PRNGKey(42)) as ctx:
+  ...   mod = hk.nets.MLP([300, 100, 10])
+  ...   y1 = mod(jnp.ones([1, 1]))
+
+  >>> assert len(jax.tree_leaves(ctx.collect_params())) == 6
+
+  >>> with ctx:
+  ...   y2 = mod(jnp.ones([1, 1]))
+
+  The same module instance in the same context will produce the same value:
+
+  >>> assert (y1 == y2).all()
+
+  Args:
+    params: Optional parameter values to inject.
+    state: Optional state values to inject.
+    rng: Optional rng to inject.
+
+  Returns:
+    Context manager which closes over mutable Haiku internal state.
+  """
+  if params is None:
+    params = collections.defaultdict(dict)
+  else:
+    params = data_structures.to_immutable_dict(params)
+
+  if state is None:
+    state = collections.defaultdict(dict)
+  else:
+    state = {m: {k: StatePair(v, v) for k, v in p.items()}
+             for m, p in state.items()}
+
+  if rng is not None and not isinstance(rng, PRNGSequence):
+    rng = PRNGSequence(rng)
+
+  return HaikuContext(params, state, rng)
+
+
 def inside_transform():
   return bool(frame_stack)
 
@@ -318,8 +409,6 @@ def make_init_fn(f: Callable[..., Any]) -> Callable[..., Tuple[Params, State]]:
       **kwargs,
   ):
     """Initializes your function collecting parameters and state."""
-    params = collections.defaultdict(dict)
-    state = collections.defaultdict(dict)
     if rng is not None:
       try:
         rng = PRNGSequence(rng)
@@ -328,12 +417,10 @@ def make_init_fn(f: Callable[..., Any]) -> Callable[..., Tuple[Params, State]]:
             "Init must be called with an RNG as the first argument, the "
             "required signature is: `init(rng, *a, **k)`") from e
 
-    with frame_stack(Frame.create(params=params, state=state, rng=rng)):
+    with new_context(rng=rng) as ctx:
       f(*args, **kwargs)
 
-    params = data_structures.to_immutable_dict(params)
-    state = _extract_state(state, initial=True)
-    return params, state
+    return ctx.collect_params(), ctx.collect_initial_state()
 
   # EXPERIMENTAL: Expose the original function as a private attribute.
   init_fn._original_fn = f  # pylint: disable=protected-access
@@ -360,9 +447,6 @@ def make_apply_fn(f: Callable[..., T]) -> Callable[..., Tuple[T, State]]:
   ):
     """Applies your function injecting parameters and state."""
     # TODO(tomhennigan) Remove support for `None` params (used in tests).
-    params = data_structures.to_immutable_dict(params)
-    state = {m: {k: StatePair(v, v) for k, v in p.items()}
-             for m, p in state.items()}
     if rng is not None:
       try:
         rng = PRNGSequence(rng)
@@ -375,11 +459,10 @@ def make_apply_fn(f: Callable[..., T]) -> Callable[..., Tuple[T, State]]:
             f"Apply must be called with an RNG as the {position} argument, "
             f"the required signature is: `{signature}`") from e
 
-    with frame_stack(Frame.create(params=params, state=state, rng=rng)):
+    with new_context(params=params, state=state, rng=rng) as ctx:
       out = f(*args, **kwargs)
 
-    state = _extract_state(state, initial=False)
-    return out, state
+    return out, ctx.collect_state()
 
   # EXPERIMENTAL: Expose the original function as a private attribute.
   apply_fn._original_fn = f  # pylint: disable=protected-access

@@ -17,9 +17,15 @@
 
 from haiku._src.data_structures import to_immutable_dict
 from haiku._src.data_structures import to_mutable_dict
+from haiku._src.filtering import filter  # pylint: disable=redefined-builtin
+from haiku._src.filtering import merge
+from haiku._src.filtering import partition
 
 
 __all__ = (
+    "filter",
+    "merge",
+    "partition",
     "to_mutable_dict",
     "to_immutable_dict",
 )

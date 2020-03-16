@@ -543,3 +543,26 @@ hk_py_library(
         # pip: jax
     ],
 )
+
+hk_py_library(
+    name = "filtering",
+    srcs = ["filtering.py"],
+    deps = [
+        ":data_structures",
+        ":typing",
+        # pip: jax
+    ],
+)
+
+hk_py_test(
+    name = "filtering_test",
+    srcs = ["filtering_test.py"],
+    deps = [
+        ":base",
+        ":basic",
+        ":filtering",
+        ":typing",
+        # pip: absl/testing:absltest
+        # pip: jax
+    ],
+)

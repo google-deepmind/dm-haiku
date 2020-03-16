@@ -13,6 +13,7 @@ py_library(
     srcs = [
         "__init__.py",
         "data_structures.py",
+        "experimental.py",
         "initializers.py",
         "nets.py",
         "pad.py",

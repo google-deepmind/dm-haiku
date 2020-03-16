@@ -331,7 +331,7 @@ def create_parameter(
   >>> def fp16_creator(next_creator, name, shape, dtype):
   ...   return next_creator(name, shape, jnp.float16)
 
-  >>> with hk.custom_creator(fp16_creator):
+  >>> with hk.experimental.custom_creator(fp16_creator):
   ...   w = hk.get_parameter("w", [], jnp.float32, init=jnp.ones)
   >>> w.dtype
   dtype('float16')
@@ -374,7 +374,7 @@ def custom_creator(creator: ParamCreator):
   >>> def zeros_creator(next_creator, name, shape, dtype, init):
   ...   return next_creator(name, shape, dtype, init=jnp.zeros)
 
-  >>> with hk.custom_creator(zeros_creator):
+  >>> with hk.experimental.custom_creator(zeros_creator):
   ...   w = hk.get_parameter("w", [], jnp.float32, jnp.ones)
   >>> w
   DeviceArray(0., dtype=float32)

@@ -38,7 +38,7 @@ class DotTest(parameterized.TestCase):
     rng = jax.random.PRNGKey(42)
     x = jnp.ones(shape, dtype)
     params, state = f.init(rng, x)
-    self.assertIsNotNone(hk.to_dot(f.apply)(params, state, rng, x))
+    self.assertIsNotNone(hk.experimental.to_dot(f.apply)(params, state, rng, x))
 
 if __name__ == '__main__':
   absltest.main()

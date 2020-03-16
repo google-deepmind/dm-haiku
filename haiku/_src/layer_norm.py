@@ -20,6 +20,7 @@ import collections
 from haiku._src import base
 from haiku._src import module
 from haiku._src import utils
+import jax
 import jax.numpy as jnp
 
 
@@ -101,7 +102,7 @@ class LayerNorm(module.Module):
       axis = self._axis
 
     m = jnp.mean(inputs, axis=axis, keepdims=True)
-    s = jnp.sqrt(jnp.var(inputs, axis=axis, keepdims=True) + self._eps)
+    variance = jnp.var(inputs, axis=axis, keepdims=True)
     param_shape = inputs.shape[-1:]
     if self._create_scale:
       if scale is not None:
@@ -118,7 +119,8 @@ class LayerNorm(module.Module):
       offset = base.get_parameter("offset", param_shape, init=self._offset_init)
     elif offset is None:
       offset = 0.
-    return scale * (inputs - m) / s + offset
+    inv = scale * jax.lax.rsqrt(variance + self._eps)
+    return inv * (inputs - m) + offset
 
 
 class InstanceNorm(LayerNorm):

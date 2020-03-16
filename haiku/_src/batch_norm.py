@@ -178,8 +178,5 @@ class BatchNorm(module.Module):
     elif offset is None:
       offset = 0.
 
-    # TODO(tycai): TF found that the below comment was ~2x faster than this
-    # naive implementation (w/o XLA). Benchmark & consider their implementation.
-    # inv = scale * lax.rsqrt(var + self._eps)
-    # return inputs * inv + (offset - (mean * inv))
-    return scale * (inputs - mean) / jnp.sqrt(var + self._eps) + offset
+    inv = scale * jax.lax.rsqrt(var + self._eps)
+    return (inputs - mean) * inv + offset

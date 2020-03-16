@@ -63,7 +63,7 @@ def to_graph(fun):
     """See `fun`."""
     f = jax.linear_util.wrap_init(fun)
     args_flat, in_tree = jax.tree_flatten((args, {}))
-    flat_fun, _ = jax.api_util.flatten_fun(f, in_tree)
+    flat_fun, out_tree = jax.api_util.flatten_fun(f, in_tree)
     graph = Graph.create(title=getattr(fun, '__name__', str(fun)))
 
     @contextlib.contextmanager
@@ -79,7 +79,8 @@ def to_graph(fun):
     with graph_stack(graph), \
          module.hook_methods(method_hook), \
          jax.core.new_master(DotTrace) as master:
-      out = _interpret_subtrace(flat_fun, master).call_wrapped(*args_flat)
+      out_flat = _interpret_subtrace(flat_fun, master).call_wrapped(*args_flat)
+    out = jax.tree_unflatten(out_tree(), out_flat)
 
     return graph, args, out
 
@@ -172,10 +173,31 @@ def _graph_to_dot(graph: Graph, args, outputs):
       '  @import url(https://fonts.googleapis.com/css?family=Roboto:400,700);',
       '  svg text {',
       '    font-family: \'Roboto\';',
-      '    font-size: 12px;',
       '  }',
+      '  .node text {',
+      '    font-size: 12px;',
+      '  }'
       '>',
   ]
+
+  def format_path(path):
+    if isinstance(outputs, tuple):
+      out = f'output[{path[0]}]'
+      if len(path) > 1:
+        out += ': ' + '/'.join(map(str, path[1:]))
+    else:
+      out = 'output'
+      if path:
+        out += ': ' + '/'.join(map(str, path))
+    return out
+
+  used_argids = set()
+  argid_usecount = collections.Counter()
+  op_outids = set()
+  captures = []
+  argids = {id(v) for v in jax.tree_leaves(args)}
+  outids = {id(v) for v in jax.tree_leaves(outputs)}
+  outname = {id(v): format_path(p) for p, v in tree.flatten_with_path(outputs)}
 
   def render_graph(g: Graph, parent: Optional[Graph] = None):
     """Renders a given graph by appending 'dot' format lines."""
@@ -186,7 +208,8 @@ def _graph_to_dot(graph: Graph, args, outputs):
           '  style="rounded,filled";',
           '  fillcolor="#F0F5F5";',
           '  color="#14234B;";',
-          f'  label = <{g.title}>;',
+          '  fontsize=14;',
+          f'  label = <<b>{g.title}</b>>;',
           '  labelloc = t;',
       ])
 
@@ -194,15 +217,25 @@ def _graph_to_dot(graph: Graph, args, outputs):
       label = f'<b>{node.title}</b>'
       for o in node.outputs:
         label += '<br/>' + _format_val(o)
+        op_outids.add(id(o))
 
       node_id = id(node.id)
+      if node_id in outids:
+        label = f'<b>{outname[node_id]}</b><br/>' + label
+        color = '0053D6'
+        fillcolor = 'AABFFF'
+        style = 'filled,bold'
+      else:
+        color = 'FFDB13'
+        fillcolor = 'FFF26E'
+        style = 'filled'
       lines.append(f'{node_id} [label=<{label}>, '
                    ' shape=rect,'
-                   ' style="filled",'
+                   f' style="{style}",'
                    ' tooltip=" ",'
                    ' fontcolor="black",'
-                   ' color="#FFDB13",'
-                   ' fillcolor="#FFF26E"];')
+                   f' color="#{color}",'
+                   f' fillcolor="#{fillcolor}"];')
 
     for s in g.subgraphs:
       render_graph(s, parent=g)
@@ -211,8 +244,17 @@ def _graph_to_dot(graph: Graph, args, outputs):
       lines.append(f'}}  // subgraph cluster_{id(g)}')
 
     for a, b in g.edges:
+      if id(a) not in argids and id(a) not in op_outids:
+        captures.append(a)
+
       a, b = map(id, (a, b))
-      lines.append(f'{a} -> {b};')
+      if a in argids:
+        i = argid_usecount[a]
+        argid_usecount[a] += 1
+        lines.append(f'{a}{i} -> {b};')
+      else:
+        lines.append(f'{a} -> {b};')
+      used_argids.add(a)
 
   render_graph(graph, parent=None)
 
@@ -222,33 +264,46 @@ def _graph_to_dot(graph: Graph, args, outputs):
       continue
 
     node_id = id(value)
-    label = f'<b>args[{path[0]}]'
-    if len(path) > 1:
-      label += ': ' + '/'.join(map(str, path[1:]))
-    label += '</b>'
-    if hasattr(value, 'shape') and hasattr(value, 'dtype'):
-      label += f'<br/>{_format_val(value)}'
+    if node_id not in used_argids:
+      continue
+
+    for i in range(argid_usecount[node_id]):
+      label = f'<b>args[{path[0]}]'
+      if len(path) > 1:
+        label += ': ' + '/'.join(map(str, path[1:]))
+      label += '</b>'
+      if hasattr(value, 'shape') and hasattr(value, 'dtype'):
+        label += f'<br/>{_format_val(value)}'
+      style = 'filled'
+      fillcolor = '#FFDEAF'
+      fontcolor = 'black'
+
+      if i > 0:
+        label = '<b>(reuse)</b><br/>' + label
+        style += ',dotted'
+        fillcolor = '#FFEACC'
+        fontcolor = '#565858'
+
+      lines.append(f'{node_id}{i} [label=<{label}>'
+                   ' shape=rect,'
+                   f' style="{style}",'
+                   f' fontcolor="{fontcolor}",'
+                   ' color="#FF8A4F",'
+                   f' fillcolor="{fillcolor}"];')
+
+  for value in captures:
+    node_id = id(value)
+    if value.size == 1:
+      label = f'<b>{value.item()}</b>'
+    else:
+      label = f'<b>{_format_val(value)}</b>'
+
     lines.append(f'{node_id} [label=<{label}>'
                  ' shape=rect,'
                  ' style="filled",'
                  ' fontcolor="black",'
-                 ' color="#FF8A4F",'
-                 ' fillcolor="#FFDEAF"];')
-
-  # Process outputs and label them in the graph.
-  if outputs:
-    # Inspired by the XLA graph viewer we create an output node and link all the
-    # outputs to it.
-    lines.append('output [label=<<b>Output</b>>,'
-                 ' shape=circle,'
-                 ' tooltip=" ",'
-                 ' style="filled",'
-                 ' fontcolor="black",'
-                 ' color="#8c7b75",'
-                 ' fillcolor="#bcaaa4"];')
-
-    for output in outputs:
-      lines.append(f'{id(output)} -> output;')
+                 ' color="#A261FF",'
+                 ' fillcolor="#E6D6FF"];')
 
   lines.append('} // digraph G')
   return '\n'.join(lines) + '\n'

@@ -26,9 +26,9 @@ import jax.numpy as jnp
 class DotTest(parameterized.TestCase):
 
   def test_empty(self):
-    graph, args, out_flat = dot.to_graph(lambda: None)()
+    graph, args, out = dot.to_graph(lambda: None)()
     self.assertEmpty(args)
-    self.assertEmpty(out_flat)
+    self.assertIsNone(out)
     self.assertEmpty(graph.nodes)
     self.assertEmpty(graph.edges)
     self.assertEmpty(graph.subgraphs)
@@ -37,9 +37,8 @@ class DotTest(parameterized.TestCase):
   def test_add_module(self):
     mod = AddModule()
     a = b = jnp.ones([])
-    graph, args, out_flat = dot.to_graph(mod)(a, b)
+    graph, args, c = dot.to_graph(mod)(a, b)
     self.assertEqual(args, (a, b))
-    c, = out_flat
     self.assertEqual(c, a + b)
     self.assertEmpty(graph.edges)
     add_graph, = graph.subgraphs
@@ -51,7 +50,7 @@ class DotTest(parameterized.TestCase):
     add_node, = add_graph.nodes
     self.assertEqual(add_node.title, "add")
     add_out, = add_node.outputs
-    self.assertEqual(add_out, out_flat[0])
+    self.assertEqual(add_out, c)
 
 
 class AddModule(module.Module):

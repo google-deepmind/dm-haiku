@@ -20,6 +20,7 @@ from haiku._src import base
 from haiku._src import module
 from haiku._src import stateful
 from haiku._src import test_utils
+from haiku._src import transform
 
 import jax
 import jax.numpy as jnp
@@ -84,7 +85,7 @@ class StatefulTest(absltest.TestCase):
       return g
 
     x = jnp.array(3.)
-    f = base.transform_with_state(f)
+    f = transform.transform_with_state(f)
     params, state = jax.jit(f.init)(None, x)
     g, state = jax.jit(f.apply)(params, state, None, x)
     np.testing.assert_allclose(g, 2 * x, rtol=1e-3)
@@ -95,7 +96,7 @@ class StatefulTest(absltest.TestCase):
       return y, g
 
     x = jnp.array(3.)
-    f = base.transform_with_state(f)
+    f = transform.transform_with_state(f)
     params, state = jax.jit(f.init)(None, x)
     (y, g), state = jax.jit(f.apply)(params, state, None, x)
     np.testing.assert_allclose(y, x ** 2, rtol=1e-3)
@@ -157,7 +158,7 @@ class StatefulTest(absltest.TestCase):
     def f(x):
       mod = SquareModule()
       return stateful.cond(x == 2, x, mod, x, lambda x: mod(x + 1))
-    f = base.transform_with_state(f)
+    f = transform.transform_with_state(f)
     for x, y in ((1, 4), (2, 4), (3, 16)):
       x, y = map(jnp.array, (x, y))
       params, state = f.init(None, x)

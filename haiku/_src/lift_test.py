@@ -19,6 +19,7 @@ from absl.testing import absltest
 from haiku._src import base
 from haiku._src import lift
 from haiku._src import module
+from haiku._src import transform
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -41,7 +42,7 @@ class LiftTest(absltest.TestCase):
     def outer_fn(x):
       assert x.ndim == 2
       x = Bias()(x)
-      inner = base.transform(inner_fn)
+      inner = transform.transform(inner_fn)
       inner_p = lift.lift(inner.init)(base.next_rng_key(), x[0])
       vmap_inner = jax.vmap(inner.apply, in_axes=(None, 0))
       return vmap_inner(inner_p, x)
@@ -50,7 +51,7 @@ class LiftTest(absltest.TestCase):
     init_key, apply_key = jax.random.split(key)
     data = np.zeros((3, 2))
 
-    outer = base.transform(outer_fn, apply_rng=True)
+    outer = transform.transform(outer_fn, apply_rng=True)
     outer_params = outer.init(init_key, data)
     self.assertEqual(outer_params, {
         "bias": {"b": np.ones(())},

@@ -18,61 +18,21 @@
 import collections
 import contextlib
 import functools
-from typing import (Any, Callable, Iterator, MutableMapping, NamedTuple,
-                    Optional, Text, Tuple, Set, TypeVar, Union)
-import warnings
+from typing import Iterator, MutableMapping, NamedTuple, Optional, Set, Union
 
-from haiku._src import analytics
 from haiku._src import data_structures
 from haiku._src.typing import (Shape, DType, ParamName, Initializer, Params,  # pylint: disable=g-multiple-import
                                State, ParamCreator, PRNGKey, PRNGSeed)
 import jax
 import jax.numpy as jnp
 
-namedtuple = collections.namedtuple
-frozendict = data_structures.frozendict
 Stack = data_structures.Stack
 ThreadLocalStack = data_structures.ThreadLocalStack
 
-T = TypeVar("T")
-
-ModuleState = namedtuple("ModuleState", ("module", "method_name"))
-StatePair = namedtuple("StatePair", ("initial", "current"))
-MutableParams = MutableMapping[Text, MutableMapping[ParamName, jnp.ndarray]]
-MutableState = MutableMapping[Text, MutableMapping[Text, StatePair]]
-
-# TODO(tomhennigan): Use protocols to describe *args when we are 3.8+.
-# https://www.python.org/dev/peps/pep-0544/#callback-protocols
-
-
-class Transformed(NamedTuple):
-  """Holds a pair of pure functions.
-
-  Attributes:
-    init: A pure function: ``params = init(rng, *a, **k)``
-    apply: A pure function: ``out = apply(params, rng, *a, **k)``
-  """
-
-  # Args: [Optional[PRNGKey], ...]
-  init: Callable[..., Params]
-
-  # Args: [Params, Optional[PRNGKey], ...]
-  apply: Callable[..., Any]
-
-
-class TransformedWithState(NamedTuple):
-  """Holds a pair of pure functions.
-
-  Attributes:
-    init: A pure function: ``params, state = init(rng, *a, **k)``
-    apply: A pure function: ``out, state = apply(params, state, rng, *a, **k)``
-  """
-
-  # Args: [Optional[PRNGKey], ...]
-  init: Callable[..., Tuple[Params, State]]
-
-  # Args: [Params, State, Optional[PRNGKey], ...]
-  apply: Callable[..., Tuple[Any, State]]
+ModuleState = collections.namedtuple("ModuleState", ("module", "method_name"))
+StatePair = collections.namedtuple("StatePair", ("initial", "current"))
+MutableParams = MutableMapping[str, MutableMapping[ParamName, jnp.ndarray]]
+MutableState = MutableMapping[str, MutableMapping[str, StatePair]]
 
 # TODO(tomhennigan) Should creator_stack be part of frame?
 frame_stack = ThreadLocalStack()  # type: ThreadLocalStack["Frame"]
@@ -90,7 +50,7 @@ class Frame(NamedTuple):
   # Pure python values.
   module_stack: Stack[ModuleState]
   counter_stack: Stack[collections.Counter]
-  used_names_stack: Stack[Set[Text]]
+  used_names_stack: Stack[Set[str]]
 
   @property
   def params_frozen(self):
@@ -226,7 +186,7 @@ def inside_transform():
   return bool(frame_stack)
 
 
-def safe_get_module_name(module) -> Text:
+def safe_get_module_name(module) -> str:
   # TODO(tomhennigan) Module specific code should be part of `module.py`.
   if not hasattr(module, "module_name"):
     raise ValueError("The super constructor must be called before you create "
@@ -245,18 +205,16 @@ def current_bundle_name():
     return "~"
 
 
-def assert_transformed(public_symbol_name):
+def assert_context(public_symbol_name):
   if not frame_stack:
     raise ValueError(
         "`hk.{}` must be used as part of an `hk.transform`".format(
             public_symbol_name))
 
 
-def in_apply():
+def params_frozen():
   """Returns true at apply time, false at init time."""
-  if not frame_stack:
-    raise ValueError(
-        "`base.in_apply` must be used as part of an `hk.transform`")
+  assert_context("params_frozen")
   return current_frame().params_frozen
 
 
@@ -288,7 +246,7 @@ def get_parameter(
   Returns:
     A jnp.ndarray with the parameter of the given shape.
   """
-  assert_transformed("get_parameter")
+  assert_context("get_parameter")
   assert init is not None, "Initializer must be specified."
 
   bundle_name = current_bundle_name()
@@ -388,271 +346,6 @@ def custom_creator(creator: ParamCreator):
   return creator_stack(creator)
 
 
-def make_init_fn(f: Callable[..., Any]) -> Callable[..., Tuple[Params, State]]:
-  """Rewrites `f` to return initial values for parameters and state.
-
-  See :func:`transform` for more details.
-
-  The signature of the resulting function is:
-
-      init_fn(rng, ...) -> params, state
-
-  Args:
-    f: `f(*args, **kwargs) -> Out`
-
-  Returns:
-    A function that given args/kwargs returns the initial state for f.
-  """
-  def init_fn(
-      rng: Optional[Union[PRNGKey, PRNGSeed]],
-      *args,
-      **kwargs,
-  ):
-    """Initializes your function collecting parameters and state."""
-    if rng is not None:
-      try:
-        rng = PRNGSequence(rng)
-      except Exception as e:
-        raise ValueError(
-            "Init must be called with an RNG as the first argument, the "
-            "required signature is: `init(rng, *a, **k)`") from e
-
-    with new_context(rng=rng) as ctx:
-      f(*args, **kwargs)
-
-    return ctx.collect_params(), ctx.collect_initial_state()
-
-  # EXPERIMENTAL: Expose the original function as a private attribute.
-  init_fn._original_fn = f  # pylint: disable=protected-access
-  return init_fn
-
-
-def make_apply_fn(f: Callable[..., T]) -> Callable[..., Tuple[T, State]]:
-  """Rewrites `f` to accept parameters, state and rng as input.
-
-  See :func:`transform` for more details.
-
-  Args:
-    f: `f(...) -> Out`
-
-  Returns:
-    A function that accepts parameters/state as input and computes f(*a, **k).
-  """
-  def apply_fn(
-      params: Params,
-      state: State,
-      rng: Optional[Union[PRNGKey, PRNGSeed]],
-      *args,
-      **kwargs,
-  ):
-    """Applies your function injecting parameters and state."""
-    # TODO(tomhennigan) Remove support for `None` params (used in tests).
-    if rng is not None:
-      try:
-        rng = PRNGSequence(rng)
-      except Exception as e:
-        if state:
-          position, signature = "third", "apply(params, state, rng, *a, **k)"
-        else:
-          position, signature = "second", "apply(params, rng, *a, **k)"
-        raise ValueError(
-            f"Apply must be called with an RNG as the {position} argument, "
-            f"the required signature is: `{signature}`") from e
-
-    with new_context(params=params, state=state, rng=rng) as ctx:
-      out = f(*args, **kwargs)
-
-    return out, ctx.collect_state()
-
-  # EXPERIMENTAL: Expose the original function as a private attribute.
-  apply_fn._original_fn = f  # pylint: disable=protected-access
-  return apply_fn
-
-
-def without_state(f: TransformedWithState) -> Transformed:
-  """Wraps a transformed tuple and ignores state in/out.
-
-  >>> def f(x):
-  ...   mod = hk.Linear(10)
-  ...   return mod(x)
-
-  >>> f = hk.without_state(hk.transform_with_state(f))
-  >>> # NOTE: This is equivalent to `f = hk.transform(f, apply_rng=True)`.
-
-  >>> rng = jax.random.PRNGKey(42)
-  >>> x = jnp.zeros([1, 1])
-  >>> params = f.init(rng, x)
-  >>> out = f.apply(params, rng, x)
-  >>> out
-  DeviceArray([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]], dtype=float32)
-
-  Args:
-    f: A transformed function.
-
-  Returns:
-    A transformed function that does not take or return state.
-  """
-
-  def init_fn(*args, **kwargs):
-    params, state = f.init(*args, **kwargs)
-    if state:
-      raise ValueError("If your transformed function uses `hk.{get,set}_state` "
-                       "then use `hk.transform_with_state`.")
-    return params
-
-  def apply_fn(params, *args, **kwargs):
-    out, state = f.apply(params, {}, *args, **kwargs)
-    if state:
-      raise ValueError("If your transformed function uses `hk.{get,set}_state` "
-                       "then use `hk.transform_with_state`.")
-    return out
-
-  return Transformed(init=init_fn, apply=apply_fn)
-
-
-TransformedT = TypeVar("TransformedT", Transformed, TransformedWithState)
-
-
-def without_apply_rng(f: TransformedT) -> TransformedT:
-  """Removes the rng argument from the apply function."""
-  if isinstance(f, TransformedWithState):
-    def apply_fn(params, state, *args, **kwargs):
-      return f.apply(params, state, None, *args, **kwargs)
-    return TransformedWithState(init=f.init, apply=apply_fn)
-
-  elif isinstance(f, Transformed):
-    def apply_fn(params, *args, **kwargs):
-      return f.apply(params, None, *args, **kwargs)
-    return Transformed(init=f.init, apply=apply_fn)
-
-  else:
-    raise ValueError("Must be called with the reuslt of `hk.transformed` or "
-                     f"`hk.transformed_with_state`, actual {type(f)}")
-
-
-# TODO(tomhennigan) Remove apply_rng.
-def transform(f, *, apply_rng=False) -> Transformed:
-  """Transforms a function using Haiku modules into a pair of pure functions.
-
-  For a function ``out = f(*a, **k)`` this function returns a pair of two pure
-  functions that call ``f(*a, **k)`` explicitly collecting and injecting
-  parameter values::
-
-      params = init(rng, *a, **k)
-      out = apply(params, rng, *a, **k)
-
-  Note that the ``rng`` argument is typically not required for `apply` and
-  passing ``None`` is accepted.
-
-  The first thing to do is to define a `Module`. A module encapsulates some
-  parameters and a computation on those parameters:
-
-  >>> class MyModule(hk.Module):
-  ...   def __call__(self, x):
-  ...     w = hk.get_parameter("w", [], init=jnp.zeros)
-  ...     return x + w
-
-  Next, define some function that creates and applies modules. We use
-  :func:`transform` to transform that function into a pair of functions that
-  allow us to lift all the parameters out of the function (``f.init``) and
-  apply the function with a given set of parameters (``f.apply``):
-
-  >>> def f(x):
-  ...   a = MyModule()
-  ...   b = MyModule()
-  ...   return a(x) + b(x)
-
-  >>> f = hk.transform(f)
-
-  To get the initial state of the module call ``init`` with an example input:
-
-  >>> params = f.init(None, 1)
-  >>> params
-  frozendict({
-    'my_module': frozendict({'w': DeviceArray(0., dtype=float32)}),
-    'my_module_1': frozendict({'w': DeviceArray(0., dtype=float32)}),
-  })
-
-  You can then apply the function with the given parameters by calling
-  ``apply``:
-
-  >>> f.apply(params, 1)
-  DeviceArray(2., dtype=float32)
-
-  It is expected that your program will at some point produce updated parameters
-  and you will want to re-apply ``apply``. You can do this by calling ``apply``
-  with different parameters:
-
-  >>> new_params = {"my_module": {"w": jnp.array(2.)},
-  ...               "my_module_1": {"w": jnp.array(3.)}}
-  >>> f.apply(new_params, 2)
-  DeviceArray(9., dtype=float32)
-
-  If your transformed function needs to maintain internal state (e.g. moving
-  averages in batch norm) then see :func:`transform_with_state`.
-
-  Args:
-    f: A function closing over :class:`Module` instances.
-    apply_rng: Whether ``apply`` should accept `rng` as an argument.
-
-  Returns:
-    A :class:`Transformed` tuple with ``init`` and ``apply`` pure functions.
-  """
-  analytics.log_once("transform")
-
-  if not apply_rng:
-    warnings.warn("Apply_rng will soon be removed and defaulted to True",
-                  DeprecationWarning)
-
-  pair = transform_with_state(f)
-  if not apply_rng:
-    pair = without_apply_rng(pair)
-  return without_state(pair)
-
-
-def transform_with_state(f) -> TransformedWithState:
-  """Transforms a function using Haiku modules into a pair of pure functions.
-
-  See :func:`transform` for general details on Haiku transformations.
-
-  For a function ``out = f(*a, **k)`` this function returns a pair of two pure
-  functions that call ``f(*a, **k)`` explicitly collecting and injecting
-  parameter values and state::
-
-      params, state = init(rng, *a, **k)
-      out, state = apply(params, state, rng, *a, **k)
-
-  Note that the ``rng`` argument is typically not required for `apply` and
-  passing ``None`` is accpeted.
-
-  This function is equivalent to :func:`transform`, however it allows you to
-  maintain and update internal state (e.g. moving averages in batch norm) via
-  :func:`get_state` and :func:`set_state`.
-
-  >>> def f():
-  ...   counter = hk.get_state("counter", shape=[], dtype=jnp.int32,
-  ...                          init=jnp.zeros)
-  ...   hk.set_state("counter", counter + 1)
-  ...   return counter
-
-  >>> f = hk.transform_with_state(f)
-
-  >>> params, state = f.init(None)
-  >>> for _ in range(10):
-  ...   counter, state = f.apply(params, state, None)
-  >>> counter
-  DeviceArray(9, dtype=int32)
-
-  Args:
-    f: A function closing over :class:`Module` instances.
-
-  Returns:
-    A :class:`TransformedWithState` tuple with `init` and `apply` properties.
-  """
-  analytics.log_once("transform_with_state")
-  return TransformedWithState(make_init_fn(f), make_apply_fn(f))
-
-
 def assert_is_prng_key(key: jnp.ndarray):
   """Asserts that the given input looks like a `jax.random.PRNGKey`."""
   if not hasattr(key, "shape") or not hasattr(key, "dtype"):
@@ -700,7 +393,7 @@ class PRNGSequence(Iterator[PRNGKey]):
 
 def next_rng_key() -> PRNGKey:
   """Returns a unique `PRNGKey` split from the current global key."""
-  assert_transformed("next_rng_key")
+  assert_context("next_rng_key")
 
   rng_seq = current_frame().rng_stack.peek()
   if rng_seq is None:
@@ -712,7 +405,7 @@ def next_rng_key() -> PRNGKey:
 
 def maybe_next_rng_key() -> Optional[PRNGKey]:
   """`next_rng_key()` if random numbers are available, otherwise `None`."""
-  assert_transformed("maybe_next_rng_key")
+  assert_context("maybe_next_rng_key")
   rng_seq = current_frame().rng_stack.peek()
   return None if rng_seq is None else next(rng_seq)
 
@@ -762,7 +455,7 @@ def get_state(name: ParamName,
   Returns:
     A jnp.ndarray with the state of the given shape.
   """
-  assert_transformed("get_state")
+  assert_context("get_state")
   state = current_frame().state[current_bundle_name()]
   value = state.get(name, None)
   if value is None:
@@ -806,7 +499,7 @@ def set_state(name: ParamName, value):
     name: A name for the state.
     value: A value to set.
   """
-  assert_transformed("set_state")
+  assert_context("set_state")
   state = current_frame().state[current_bundle_name()]
   if name in state:
     initial, _ = state[name]

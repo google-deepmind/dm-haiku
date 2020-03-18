@@ -44,6 +44,7 @@ py_library(
         "//haiku/_src:spectral_norm",
         "//haiku/_src:stateful",
         "//haiku/_src:test_utils",
+        "//haiku/_src:transform",
         "//haiku/_src:typing",
         "//haiku/_src/nets:mlp",
         "//haiku/_src/nets:mobilenetv1",

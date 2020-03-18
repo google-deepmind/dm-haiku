@@ -27,13 +27,7 @@ from haiku._src.base import maybe_next_rng_key
 from haiku._src.base import next_rng_key
 from haiku._src.base import PRNGSequence
 from haiku._src.base import set_state
-from haiku._src.base import transform
-from haiku._src.base import transform_with_state
-from haiku._src.base import Transformed
-from haiku._src.base import TransformedWithState
 from haiku._src.base import with_rng
-from haiku._src.base import without_apply_rng
-from haiku._src.base import without_state
 from haiku._src.basic import BatchApply
 from haiku._src.basic import dropout
 from haiku._src.basic import expand_apply
@@ -84,6 +78,12 @@ from haiku._src.stateful import grad
 from haiku._src.stateful import jit
 from haiku._src.stateful import remat
 from haiku._src.stateful import value_and_grad
+from haiku._src.transform import transform
+from haiku._src.transform import transform_with_state
+from haiku._src.transform import Transformed
+from haiku._src.transform import TransformedWithState
+from haiku._src.transform import without_apply_rng
+from haiku._src.transform import without_state
 from haiku._src.typing import Params
 from haiku._src.typing import State
 

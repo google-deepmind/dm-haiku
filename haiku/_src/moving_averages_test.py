@@ -16,10 +16,10 @@
 """Tests for haiku._src.moving_averages."""
 
 from absl.testing import absltest
-from haiku._src import base
 from haiku._src import basic
 from haiku._src import moving_averages
 from haiku._src import test_utils
+from haiku._src import transform
 import jax
 import jax.numpy as jnp
 import jax.random as random
@@ -96,7 +96,8 @@ class MovingAveragesTest(absltest.TestCase):
       return moving_averages.ExponentialMovingAverage(0.5)(x)
 
     inp_value = 1.0
-    init_fn, apply_fn = base.without_apply_rng(base.transform_with_state(f))
+    init_fn, apply_fn = transform.without_apply_rng(
+        transform.transform_with_state(f))
     _, params_state = init_fn(None, inp_value)
 
     # The output should never change as long as the input doesn't.
@@ -116,12 +117,12 @@ class EMAParamsTreeTest(absltest.TestCase):
     def f():
       return basic.Linear(output_size=2, name=linear_name)(jnp.zeros([6]))
 
-    init_fn, _ = base.transform(f)
+    init_fn, _ = transform.transform(f)
     params = init_fn(random.PRNGKey(428))
 
     def g(x):
       return moving_averages.EMAParamsTree(0.2, name=ema_name)(x)
-    init_fn, _ = base.transform_with_state(g)
+    init_fn, _ = transform.transform_with_state(g)
     _, params_state = init_fn(None, params)
 
     expected_ema_states = [
@@ -132,12 +133,13 @@ class EMAParamsTreeTest(absltest.TestCase):
     def f():
       return basic.Linear(output_size=2, b_init=jnp.ones)(jnp.zeros([6]))
 
-    init_fn, _ = base.transform(f)
+    init_fn, _ = transform.transform(f)
     params = init_fn(random.PRNGKey(428))
 
     def g(x):
       return moving_averages.EMAParamsTree(0.2)(x)
-    init_fn, apply_fn = base.without_apply_rng(base.transform_with_state(g))
+    init_fn, apply_fn = transform.without_apply_rng(
+        transform.transform_with_state(g))
     _, params_state = init_fn(None, params)
     params, params_state = apply_fn(None, params_state, params)
     # Let's modify our params.
@@ -155,12 +157,13 @@ class EMAParamsTreeTest(absltest.TestCase):
     def f():
       return basic.Linear(output_size=2, b_init=jnp.ones)(jnp.zeros([6]))
 
-    init_fn, _ = base.transform(f)
+    init_fn, _ = transform.transform(f)
     params = init_fn(random.PRNGKey(428))
 
     def g(x):
       return moving_averages.EMAParamsTree(0.2, ignore_regex=".*w")(x)
-    init_fn, apply_fn = base.without_apply_rng(base.transform_with_state(g))
+    init_fn, apply_fn = transform.without_apply_rng(
+        transform.transform_with_state(g))
     _, params_state = init_fn(None, params)
     params, params_state = apply_fn(None, params_state, params)
     # Let's modify our params.
@@ -176,13 +179,14 @@ class EMAParamsTreeTest(absltest.TestCase):
     def f():
       return basic.Linear(output_size=2, b_init=jnp.ones)(jnp.zeros([6]))
 
-    init_fn, _ = base.transform(f)
+    init_fn, _ = transform.transform(f)
     params = init_fn(random.PRNGKey(428))
 
     def g(x):
       """This should never update internal stats."""
       return moving_averages.EMAParamsTree(0.2)(x, update_stats=False)
-    init_fn, apply_fn_g = base.without_apply_rng(base.transform_with_state(g))
+    init_fn, apply_fn_g = transform.without_apply_rng(
+        transform.transform_with_state(g))
     _, params_state = init_fn(None, params)
 
     # Let's modify our params.
@@ -198,7 +202,8 @@ class EMAParamsTreeTest(absltest.TestCase):
     def h(x):
       """This will behave like normal."""
       return moving_averages.EMAParamsTree(0.2)(x, update_stats=True)
-    init_fn, apply_fn_h = base.without_apply_rng(base.transform_with_state(h))
+    init_fn, apply_fn_h = transform.without_apply_rng(
+        transform.transform_with_state(h))
     _, params_state = init_fn(None, params)
     params, params_state = apply_fn_h(None, params_state, params)
 

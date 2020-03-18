@@ -15,7 +15,6 @@ hk_py_library(
     name = "base",
     srcs = ["base.py"],
     deps = [
-        ":analytics",
         ":data_structures",
         ":typing",
         # pip: jax
@@ -28,6 +27,31 @@ hk_py_test(
     deps = [
         ":base",
         ":test_utils",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        # pip: jax
+    ],
+)
+
+hk_py_library(
+    name = "transform",
+    srcs = ["transform.py"],
+    deps = [
+        ":analytics",
+        ":base",
+        ":data_structures",
+        ":typing",
+        # pip: jax
+    ],
+)
+
+hk_py_test(
+    name = "transform_test",
+    srcs = ["transform_test.py"],
+    deps = [
+        ":base",
+        ":test_utils",
+        ":transform",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
@@ -52,6 +76,7 @@ hk_py_test(
         ":base",
         ":bias",
         ":test_utils",
+        ":transform",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
@@ -77,6 +102,7 @@ hk_py_test(
         ":base",
         ":module",
         ":test_utils",
+        ":transform",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
@@ -104,6 +130,7 @@ hk_py_test(
         ":basic",
         ":initializers",
         ":test_utils",
+        ":transform",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
@@ -155,6 +182,7 @@ hk_py_test(
         ":base",
         ":depthwise_conv",
         ":initializers",
+        ":transform",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
@@ -209,6 +237,7 @@ hk_py_test(
         ":conv",
         ":initializers",
         ":test_utils",
+        ":transform",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
@@ -233,6 +262,7 @@ hk_py_test(
         ":base",
         ":lift",
         ":module",
+        ":transform",
         # pip: absl/testing:absltest
         # pip: jax
         # pip: numpy
@@ -389,6 +419,7 @@ hk_py_test(
         ":basic",
         ":moving_averages",
         ":test_utils",
+        ":transform",
         # pip: absl/testing:absltest
         # pip: jax
         # pip: numpy
@@ -418,6 +449,7 @@ hk_py_test(
         ":basic",
         ":recurrent",
         ":test_utils",
+        ":transform",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
@@ -434,6 +466,7 @@ hk_py_test(
         ":basic",
         ":spectral_norm",
         ":test_utils",
+        ":transform",
         # pip: absl/testing:absltest
         # pip: jax
         # pip: numpy
@@ -458,6 +491,7 @@ hk_py_library(
     srcs = ["test_utils.py"],
     deps = [
         ":base",
+        ":transform",
         # pip: absl/testing:parameterized
         # pip: jax
     ],
@@ -505,6 +539,7 @@ hk_py_test(
         ":base",
         ":reshape",
         ":test_utils",
+        ":transform",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
@@ -529,6 +564,7 @@ hk_py_test(
         ":module",
         ":stateful",
         ":test_utils",
+        ":transform",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
@@ -558,9 +594,9 @@ hk_py_test(
     name = "filtering_test",
     srcs = ["filtering_test.py"],
     deps = [
-        ":base",
         ":basic",
         ":filtering",
+        ":transform",
         ":typing",
         # pip: absl/testing:absltest
         # pip: jax

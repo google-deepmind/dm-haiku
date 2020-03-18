@@ -20,6 +20,7 @@ from absl.testing import parameterized
 from haiku._src import base
 from haiku._src import basic
 from haiku._src import test_utils
+from haiku._src import transform
 import jax
 from jax import random
 import jax.numpy as jnp
@@ -59,20 +60,15 @@ class BasicTest(parameterized.TestCase):
         ["linear/w", "linear/b", "linear_1/w", "linear_1/b",
          "sequential_1/linear/w", "sequential_1/linear/b"])
 
+  @test_utils.transform_and_run
   def test_sequential(self):
-    def f():
-      seq = basic.Sequential([basic.Linear(2), jax.nn.relu])
-      return seq(jnp.zeros([3, 2]))
+    seq = basic.Sequential([basic.Linear(2), jax.nn.relu])
+    out = seq(jnp.zeros([3, 2]))
+    self.assertEqual(out.shape, (3, 2))
 
-    init_fn, apply_fn = base.transform(f)
-    params = init_fn(random.PRNGKey(428))
-    self.assertEqual(apply_fn(params).shape, (3, 2))
-
+  @test_utils.transform_and_run
   def test_dropout_connects(self):
-    def f():
-      return basic.dropout(base.next_rng_key(), 0.25, jnp.ones([3, 3]))
-    init_fn, _ = base.transform(f)
-    init_fn(random.PRNGKey(428))
+    basic.dropout(base.next_rng_key(), 0.25, jnp.ones([3, 3]))
 
   def test_batchapply(self):
     def raises(a, b):
@@ -131,7 +127,7 @@ class LinearTest(absltest.TestCase):
     def f():
       return basic.Linear(output_size=2)(jnp.zeros([6]))
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     params = init_fn(random.PRNGKey(428))
     self.assertEqual(params.linear.w.shape, (6, 2))
     self.assertEqual(params.linear.b.shape, (2,))
@@ -141,7 +137,7 @@ class LinearTest(absltest.TestCase):
     def f():
       return basic.Linear(output_size=2)(jnp.zeros((5, 6)))
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     params = init_fn(random.PRNGKey(428))
     self.assertEqual(params.linear.w.shape, (6, 2))
     self.assertEqual(params.linear.b.shape, (2,))
@@ -151,7 +147,7 @@ class LinearTest(absltest.TestCase):
     def f():
       return basic.Linear(output_size=2)(jnp.zeros((2, 5, 6)))
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     params = init_fn(random.PRNGKey(428))
     self.assertEqual(params.linear.w.shape, (6, 2))
     self.assertEqual(params.linear.b.shape, (2,))
@@ -161,7 +157,7 @@ class LinearTest(absltest.TestCase):
     def f():
       return basic.Linear(output_size=6, with_bias=False)(jnp.zeros((5, 6)))
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     params = init_fn(random.PRNGKey(428))
     self.assertEqual(params.linear.w.shape, (6, 6))
     self.assertFalse(hasattr(params.linear, "b"))

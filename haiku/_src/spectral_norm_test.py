@@ -16,10 +16,10 @@
 """Tests for haiku._src.spectral_norm."""
 
 from absl.testing import absltest
-from haiku._src import base
 from haiku._src import basic
 from haiku._src import spectral_norm
 from haiku._src import test_utils
+from haiku._src import transform
 
 import jax.numpy as jnp
 import jax.random as random
@@ -82,12 +82,12 @@ class SNParamsTreeTest(absltest.TestCase):
     def f():
       return basic.Linear(output_size=2, name=linear_name)(jnp.zeros([6, 6]))
 
-    init_fn, _ = base.transform(f)
+    init_fn, _ = transform.transform(f)
     params = init_fn(random.PRNGKey(428))
 
     def g(x):
       return spectral_norm.SNParamsTree(ignore_regex=".*b", name=sn_name)(x)
-    init_fn, _ = base.transform_with_state(g)
+    init_fn, _ = transform.transform_with_state(g)
     _, params_state = init_fn(random.PRNGKey(428), params)
 
     expected_sn_states = [

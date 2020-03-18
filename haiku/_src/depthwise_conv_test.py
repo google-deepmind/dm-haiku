@@ -17,9 +17,9 @@
 
 from absl.testing import absltest
 from absl.testing import parameterized
-from haiku._src import base
 from haiku._src import depthwise_conv
 from haiku._src import initializers
+from haiku._src import transform
 from jax import random
 import jax.numpy as jnp
 import numpy as np
@@ -54,7 +54,7 @@ class DepthwiseConv2DTest(parameterized.TestCase):
           **create_constant_initializers(1.0, 1.0, with_bias))
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     self.assertEqual(out.shape, (1, 8, 8, 3))
     self.assertLen(np.unique(out[0, :, :, 0]), 1)
@@ -86,7 +86,7 @@ class DepthwiseConv2DTest(parameterized.TestCase):
           **create_constant_initializers(1.0, 0.0, with_bias))
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     self.assertEqual(out.shape, (1, 10, 10, 3))
 
@@ -107,7 +107,7 @@ class DepthwiseConv2DTest(parameterized.TestCase):
           **create_constant_initializers(1.0, 0.0, with_bias))
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     self.assertEqual(out.shape, (1, 8, 8, 9))
 
@@ -128,7 +128,7 @@ class DepthwiseConv2DTest(parameterized.TestCase):
           **create_constant_initializers(1.0, 1.0, with_bias))
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     self.assertEqual(out.shape, (1, 3, 8, 8))
     if with_bias:
@@ -157,7 +157,7 @@ class DepthwiseConv2DTest(parameterized.TestCase):
           **create_constant_initializers(1.0, 0.0, with_bias))
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     self.assertEqual(out.shape, (1, 27, 8, 8))
 

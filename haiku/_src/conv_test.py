@@ -17,10 +17,10 @@
 
 from absl.testing import absltest
 from absl.testing import parameterized
-from haiku._src import base
 from haiku._src import conv
 from haiku._src import initializers
 from haiku._src import test_utils
+from haiku._src import transform
 from jax import random
 import jax.numpy as jnp
 import numpy as np
@@ -40,7 +40,7 @@ class ConvTest(parameterized.TestCase):
 
   @parameterized.parameters(0, 4)
   def testIncorrectN(self, n):
-    init_fn, _ = base.transform(
+    init_fn, _ = transform.transform(
         lambda: conv.ConvND(n, output_channels=1, kernel_shape=3))
     with self.assertRaisesRegex(
         ValueError,
@@ -57,7 +57,7 @@ class ConvTest(parameterized.TestCase):
                         padding="SAME")
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     expected_output_shape = (2,) + (16,)*n + (3,)
     self.assertEqual(out.shape, expected_output_shape)
@@ -72,7 +72,7 @@ class ConvTest(parameterized.TestCase):
                         padding="VALID")
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     expected_output_shape = (2,) + (14,)*n + (3,)
     self.assertEqual(out.shape, expected_output_shape)
@@ -86,7 +86,7 @@ class ConvTest(parameterized.TestCase):
       net = conv.ConvND(n, output_channels=3, kernel_shape=3, stride=3)
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     expected_output_shape = (2,) + (6,)*n + (3,)
     self.assertEqual(out.shape, expected_output_shape)
@@ -100,7 +100,7 @@ class ConvTest(parameterized.TestCase):
       net = conv.ConvND(n, output_channels=3, kernel_shape=3, rate=3)
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     expected_output_shape = (2,) + (16,)*n + (3,)
     self.assertEqual(out.shape, expected_output_shape)
@@ -115,7 +115,7 @@ class ConvTest(parameterized.TestCase):
                         data_format="channels_first")
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     expected_output_shape = (2, 3) + (16,)*n
     self.assertEqual(out.shape, expected_output_shape)
@@ -136,7 +136,7 @@ class ConvTest(parameterized.TestCase):
                         padding=foo)
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     expected_output_shape = (2,) + (14,)*n + (3,)
     self.assertEqual(out.shape, expected_output_shape)
@@ -158,7 +158,7 @@ class ConvTest(parameterized.TestCase):
                         padding=foo)
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     expected_output_shape = (2,) + (16,)*n + (3,)
     self.assertEqual(out.shape, expected_output_shape)
@@ -217,7 +217,7 @@ class Conv1DTest(parameterized.TestCase):
           **create_constant_initializers(1.0, 1.0, with_bias))
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
 
     self.assertEqual(out.shape, (1, 5, 1))
@@ -244,7 +244,7 @@ class Conv1DTest(parameterized.TestCase):
           **create_constant_initializers(1.0, 1.0, with_bias))
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
 
     self.assertEqual(out.shape, (1, 3, 1))
@@ -274,7 +274,7 @@ class Conv2DTest(parameterized.TestCase):
           **create_constant_initializers(1.0, 1.0, with_bias))
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
 
     self.assertEqual(out.shape, (1, 5, 5, 1))
@@ -301,7 +301,7 @@ class Conv2DTest(parameterized.TestCase):
           **create_constant_initializers(1.0, 1.0, with_bias))
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
 
     self.assertEqual(out.shape, (1, 3, 3, 1))
@@ -342,7 +342,7 @@ class Conv3DTest(parameterized.TestCase):
           **create_constant_initializers(1.0, 1.0, with_bias))
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
 
     self.assertEqual(out.shape, (1, 5, 5, 5, 1))
@@ -370,7 +370,7 @@ class Conv3DTest(parameterized.TestCase):
           **create_constant_initializers(1.0, 1.0, with_bias))
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
 
     self.assertEqual(out.shape, (1, 3, 3, 3, 1))
@@ -398,7 +398,7 @@ class ConvTransposeTest(parameterized.TestCase):
 
   @parameterized.parameters(0, 4)
   def testIncorrectN(self, n):
-    init_fn, _ = base.transform(
+    init_fn, _ = transform.transform(
         lambda: conv.ConvNDTranspose(n, output_channels=1, kernel_shape=3))
     with self.assertRaisesRegex(
         ValueError,
@@ -414,7 +414,7 @@ class ConvTransposeTest(parameterized.TestCase):
           n, output_channels=3, kernel_shape=3, padding="SAME")
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     expected_output_shape = (2,) + (16,)*n + (3,)
     self.assertEqual(out.shape, expected_output_shape)
@@ -428,7 +428,7 @@ class ConvTransposeTest(parameterized.TestCase):
           n, output_channels=3, kernel_shape=3, padding="VALID")
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     expected_output_shape = (2,) + (18,)*n + (3,)
     self.assertEqual(out.shape, expected_output_shape)
@@ -442,7 +442,7 @@ class ConvTransposeTest(parameterized.TestCase):
           n, output_channels=3, kernel_shape=3, stride=3)
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     expected_output_shape = (2,) + (24,)*n + (3,)
     self.assertEqual(out.shape, expected_output_shape)
@@ -456,7 +456,7 @@ class ConvTransposeTest(parameterized.TestCase):
           n, output_channels=3, kernel_shape=3, data_format="channels_first")
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     expected_output_shape = (2, 3) + (16,)*n
     self.assertEqual(out.shape, expected_output_shape)
@@ -515,7 +515,7 @@ class Conv1DTransposeTest(parameterized.TestCase):
           **create_constant_initializers(1.0, 1.0, with_bias))
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
 
     self.assertEqual(out.shape, (1, 3, 1))
@@ -542,7 +542,7 @@ class Conv1DTransposeTest(parameterized.TestCase):
           **create_constant_initializers(1.0, 1.0, with_bias))
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
 
     self.assertEqual(out.shape, (1, 5, 1))
@@ -569,7 +569,7 @@ class Conv2TransposeTest(parameterized.TestCase):
           **create_constant_initializers(1.0, 1.0, with_bias))
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     expected_out = np.array([[4, 6, 4], [6, 9, 6], [4, 6, 4]])
     if with_bias:
@@ -590,7 +590,7 @@ class Conv2TransposeTest(parameterized.TestCase):
           **create_constant_initializers(1.0, 1.0, with_bias))
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
     expected_out = np.array([[1, 2, 3, 3, 2, 1],
                              [2, 4, 6, 6, 4, 2],
@@ -626,7 +626,7 @@ class Conv3DTransposeTest(parameterized.TestCase):
           **create_constant_initializers(1.0, 1.0, with_bias))
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
 
     self.assertEqual(out.shape, (1, 3, 3, 3, 1))
@@ -657,7 +657,7 @@ class Conv3DTransposeTest(parameterized.TestCase):
           **create_constant_initializers(1.0, 1.0, with_bias))
       return net(data)
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     out = apply_fn(init_fn(random.PRNGKey(428)))
 
     self.assertEqual(out.shape, (1, 5, 5, 5, 1))

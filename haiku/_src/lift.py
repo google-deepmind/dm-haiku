@@ -69,7 +69,7 @@ class LiftingModule(module.Module):
   def __call__(self, *args, **kwargs):
     frame = base.current_frame()
     bundle_name = self.module_name
-    if base.in_apply():
+    if base.params_frozen():
       prefix = bundle_name + "/"
       lifted_params = unpack_from_dict(frame.params, prefix)
       return lifted_params

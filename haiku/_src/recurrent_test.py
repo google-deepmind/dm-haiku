@@ -18,12 +18,11 @@ import itertools as it
 
 from absl.testing import absltest
 from absl.testing import parameterized
-from haiku._src import base
 from haiku._src import basic
 from haiku._src import recurrent
 from haiku._src import test_utils
+from haiku._src import transform
 import jax
-from jax import random
 import jax.nn
 import jax.numpy as jnp
 import numpy as np
@@ -52,34 +51,22 @@ class RecurrentTest(parameterized.TestCase):
   @parameterized.parameters(
       *it.product((recurrent.dynamic_unroll, recurrent.static_unroll),
                   (recurrent.VanillaRNN, recurrent.LSTM, recurrent.GRU)))
+  @test_utils.transform_and_run
   def test_core_unroll_unbatched(self, unroll, core_cls):
-    def net(seqs):
-      # seqs is [T, F]
-      core = core_cls(hidden_size=4)
-      outs, state = unroll(core, seqs, core.initial_state(batch_size=None))
-      return outs, state
-
-    seq = make_sequence([8, 1])
-    init_fn, apply_fn = base.transform(net)
-    params = init_fn(jax.random.PRNGKey(428), seq)
-    out, _ = apply_fn(params, seq)
+    seqs = make_sequence([8, 1])  # [T, F]
+    core = core_cls(hidden_size=4)
+    out, _ = unroll(core, seqs, core.initial_state(batch_size=None))
     self.assertEqual(out.shape, (8, 4))
 
   @parameterized.parameters(
       *it.product((recurrent.dynamic_unroll, recurrent.static_unroll),
                   (recurrent.VanillaRNN, recurrent.LSTM, recurrent.GRU)))
+  @test_utils.transform_and_run
   def test_core_unroll_batched(self, unroll, core_cls):
-    def net(seqs):
-      # seqs is [T, B, F]
-      core = core_cls(hidden_size=4)
-      batch_size = seqs.shape[1]
-      outs, state = unroll(core, seqs, core.initial_state(batch_size))
-      return outs, state
-
-    seqs = make_sequence([4, 8, 1])
-    init_fn, apply_fn = base.transform(net)
-    params = init_fn(jax.random.PRNGKey(428), seqs)
-    out, _ = apply_fn(params, seqs)
+    seqs = make_sequence([4, 8, 1])  # [T, B, F]
+    core = core_cls(hidden_size=4)
+    batch_size = seqs.shape[1]
+    out, _ = unroll(core, seqs, core.initial_state(batch_size))
     self.assertEqual(out.shape, (4, 8, 4))
 
 
@@ -100,26 +87,18 @@ class LSTMTest(absltest.TestCase):
 class ConvLSTMTest(parameterized.TestCase):
 
   @parameterized.parameters(1, 2, 3)
+  @test_utils.transform_and_run
   def test_connect_conv_same(self, n):
     batch_size = 2
-    input_shape = [16]*n
-    input_shape_ = [batch_size] + input_shape + [4]
-    state_shape_ = [batch_size] + input_shape + [3]
+    input_shape = (16,) * n
+    input_shape_b = (batch_size,) + input_shape + (4,)
 
-    data_ = jnp.zeros(input_shape_)
-    state_init_ = (jnp.zeros(state_shape_), jnp.zeros(state_shape_))
-
-    def f(data, state_init):
-      net = recurrent.ConvNDLSTM(n, input_shape=input_shape, output_channels=3,
-                                 kernel_shape=3)
-      return net(data, state_init)
-
-    init_fn, apply_fn = base.transform(f)
-    params = init_fn(random.PRNGKey(42), data_, state_init_)
-
-    out, state = apply_fn(params, data_, state_init_)
-
-    expected_output_shape = (batch_size,) + tuple(input_shape) + (3,)
+    data = jnp.zeros(input_shape_b)
+    core = recurrent.ConvNDLSTM(
+        n, input_shape=input_shape, output_channels=3, kernel_shape=3)
+    state = core.initial_state(batch_size=batch_size)
+    out, state = core(data, state)
+    expected_output_shape = (batch_size,) + input_shape + (3,)
     self.assertEqual(out.shape, expected_output_shape)
     self.assertEqual(state[0].shape, expected_output_shape)
     self.assertEqual(state[1].shape, expected_output_shape)
@@ -178,7 +157,7 @@ class ResetCoreTest(parameterized.TestCase):
     seqs = make_sequence([batch_size, 1])
     seqs = np.stack([seqs, seqs], axis=0)
 
-    init_fn, apply_fn = base.transform(net)
+    init_fn, apply_fn = transform.transform(net)
     params = init_fn(jax.random.PRNGKey(428), seqs, resets)
     result = apply_fn(params, seqs, resets)
 
@@ -229,80 +208,53 @@ class ResetCoreTest(parameterized.TestCase):
 
 class DeepRNNTest(parameterized.TestCase):
 
+  @test_utils.transform_and_run
   def test_only_callables(self):
+    x = make_sequence([4, 3])  # [B, F]
+    core = recurrent.DeepRNN([jnp.tanh, jnp.square])
+    initial_state = core.initial_state(x.shape[0])
+    out, next_state = core(x, initial_state)
+    np.testing.assert_allclose(out, np.square(np.tanh(x)), rtol=1e-4)
+    self.assertEmpty(next_state)
+    self.assertEmpty(initial_state)
 
-    def net(x):
-      # x is [B, F].
-      core = recurrent.DeepRNN([jnp.tanh, jnp.square])
-      initial_state = core.initial_state(x.shape[0])
-      out, next_state = core(x, initial_state)
-      return dict(out=out, next_state=next_state, initial_state=initial_state)
-
-    data = make_sequence([4, 3])
-    init_fn, apply_fn = base.transform(net)
-    params = init_fn(None, data)
-    result = apply_fn(params, data)
-
-    np.testing.assert_allclose(
-        result["out"], np.square(np.tanh(data)), rtol=1e-4)
-    self.assertEqual(result["next_state"], tuple())
-    self.assertEqual(result["initial_state"], tuple())
-
+  @test_utils.transform_and_run
   def test_connection_and_shapes(self):
-
-    def net(x):
-      # x is [B, F].
-      core = recurrent.DeepRNN([
-          recurrent.VanillaRNN(hidden_size=3),
-          basic.Linear(2),
-          jax.nn.relu,
-          recurrent.VanillaRNN(hidden_size=5),
-          jax.nn.relu,
-      ])
-      initial_state = core.initial_state(x.shape[0])
-      out, next_state = core(x, initial_state)
-
-      return dict(out=out, next_state=next_state, initial_state=initial_state)
-
     batch_size = 4
-    data = make_sequence([batch_size, 3])
-    init_fn, apply_fn = base.transform(net)
-    params = init_fn(jax.random.PRNGKey(428), data)
-    result = apply_fn(params, data)
+    x = make_sequence([batch_size, 3])  # [B, F]
+    core = recurrent.DeepRNN([
+        recurrent.VanillaRNN(hidden_size=3),
+        basic.Linear(2),
+        jax.nn.relu,
+        recurrent.VanillaRNN(hidden_size=5),
+        jax.nn.relu,
+    ])
+    initial_state = core.initial_state(x.shape[0])
+    out, next_state = core(x, initial_state)
 
-    self.assertEqual(result["out"].shape, (batch_size, 5))
+    self.assertEqual(out.shape, (batch_size, 5))
     # Verifies that at least last layer of relu is applied.
-    self.assertTrue(np.all(result["out"] >= np.zeros([batch_size, 5])))
+    self.assertTrue(np.all(out >= np.zeros([batch_size, 5])))
 
-    self.assertLen(result["next_state"], 2)
-    self.assertEqual(result["initial_state"][0].shape, (batch_size, 3))
-    self.assertEqual(result["initial_state"][1].shape, (batch_size, 5))
+    self.assertLen(next_state, 2)
+    self.assertEqual(initial_state[0].shape, (batch_size, 3))
+    self.assertEqual(initial_state[1].shape, (batch_size, 5))
 
-    self.assertLen(result["initial_state"], 2)
-    np.testing.assert_allclose(result["initial_state"][0],
-                               jnp.zeros([batch_size, 3]))
-    np.testing.assert_allclose(result["initial_state"][1],
-                               jnp.zeros([batch_size, 5]))
+    self.assertLen(initial_state, 2)
+    np.testing.assert_allclose(initial_state[0], jnp.zeros([batch_size, 3]))
+    np.testing.assert_allclose(initial_state[1], jnp.zeros([batch_size, 5]))
 
+  @test_utils.transform_and_run
   def test_skip_connections(self):
-
-    def net(x):
-      # x is [B, F].
-      core = recurrent.deep_rnn_with_skip_connections([
-          recurrent.VanillaRNN(hidden_size=3),
-          recurrent.VanillaRNN(hidden_size=5),
-      ])
-      initial_state = core.initial_state(x.shape[0])
-      out, _ = core(x, initial_state)
-      return out
-
     batch_size = 4
-    data = make_sequence([batch_size, 3])
-    init_fn, apply_fn = base.transform(net)
-    params = init_fn(jax.random.PRNGKey(428), data)
-    result = apply_fn(params, data)
-
-    self.assertEqual(result.shape, (batch_size, 8))
+    x = make_sequence([batch_size, 3])  # [B, F]
+    core = recurrent.deep_rnn_with_skip_connections([
+        recurrent.VanillaRNN(hidden_size=3),
+        recurrent.VanillaRNN(hidden_size=5),
+    ])
+    initial_state = core.initial_state(x.shape[0])
+    out, _ = core(x, initial_state)
+    self.assertEqual(out.shape, (batch_size, 8))
     # Previous tests test the correctness of state handling.
 
   @test_utils.transform_and_run

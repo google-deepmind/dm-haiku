@@ -16,9 +16,9 @@
 """Tests for haiku._src.bias."""
 
 from absl.testing import absltest
-from haiku._src import base
 from haiku._src import bias
 from haiku._src import test_utils
+from haiku._src import transform
 import jax.numpy as jnp
 import numpy as np
 
@@ -40,7 +40,7 @@ class BiasTest(absltest.TestCase):
     def f():
       mod = bias.Bias(bias_dims=())
       return mod(jnp.ones([1, 2, 3, 4]))
-    params = base.transform(f).init(None)
+    params = transform.transform(f).init(None)
     self.assertEmpty(params["bias"]["b"].shape)
 
   @test_utils.transform_and_run
@@ -51,7 +51,7 @@ class BiasTest(absltest.TestCase):
       out = mod(jnp.ones([b, d1, d2, d3]))
       self.assertEqual(mod.bias_shape, (d1, 1, d3))
       return out
-    f = base.transform(f)
+    f = transform.transform(f)
     params = f.init(None)
     out = f.apply(params)
     self.assertEqual(params["bias"]["b"].shape, (d1, 1, d3))
@@ -63,7 +63,7 @@ class BiasTest(absltest.TestCase):
       mod = bias.Bias(bias_dims=[-1, -2])
       mod(jnp.ones([1, 2, 3]))
       self.assertEqual(mod.bias_shape, (2, 3))
-    params = base.transform(f).init(None)
+    params = transform.transform(f).init(None)
     self.assertEqual(params["bias"]["b"].shape, (2, 3))
 
   @test_utils.transform_and_run

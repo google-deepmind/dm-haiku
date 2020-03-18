@@ -21,6 +21,7 @@ from absl.testing import parameterized
 from haiku._src import base
 from haiku._src import module
 from haiku._src import test_utils
+from haiku._src import transform
 import jax
 import jax.numpy as jnp
 
@@ -113,12 +114,13 @@ class ModuleTest(parameterized.TestCase):
       EmptyModule()
 
   def test_params(self):
-    init_fn, _ = base.transform(lambda: ScalarModule()())  # pylint: disable=unnecessary-lambda
+    init_fn, _ = transform.transform(lambda: ScalarModule()())  # pylint: disable=unnecessary-lambda
     params = init_fn(None)
     self.assertEqual(params, {"scalar_module": {"w": jnp.zeros([])}})
 
   def test_params_nested(self):
-    init_fn, _ = base.transform(lambda: MultipleForwardMethods(name="outer")())  # pylint: disable=unnecessary-lambda
+    init_fn, _ = transform.transform(
+        lambda: MultipleForwardMethods(name="outer")())  # pylint: disable=unnecessary-lambda
     params = init_fn(None)
     self.assertEqual(params,
                      {"outer/~/scalar_module": {"w": jnp.zeros([])},
@@ -137,7 +139,7 @@ class ModuleTest(parameterized.TestCase):
       with base.custom_creator(counting_creator):
         return MultipleForwardMethods()()
 
-    init_fn, apply_fn = base.transform(net)
+    init_fn, apply_fn = transform.transform(net)
 
     params = init_fn(None)
     self.assertEqual(log, [
@@ -152,22 +154,23 @@ class ModuleTest(parameterized.TestCase):
     self.assertEmpty(log)
 
   def test_stateful_module(self):
-    init_fn, apply_fn = base.transform_with_state(lambda: CountingModule()())  # pylint: disable=unnecessary-lambda
+    init_fn, apply_fn = transform.transform_with_state(
+        lambda: CountingModule()())  # pylint: disable=unnecessary-lambda
     params, state = init_fn(None)
     self.assertEqual(state, {"counting_module": {"count": 0}})
     _, state = apply_fn(params, state, None)
     self.assertEqual(state, {"counting_module": {"count": 10}})
 
   def test_without_state(self):
-    init_fn, apply_fn = base.without_state(
-        base.transform_with_state(lambda: ScalarModule()()))  # pylint: disable=unnecessary-lambda
+    init_fn, apply_fn = transform.without_state(
+        transform.transform_with_state(lambda: ScalarModule()()))  # pylint: disable=unnecessary-lambda
     params = init_fn(None)
     out = apply_fn(params, None)
     self.assertEqual(out, 0)
 
   def test_without_state_raises_if_state_used(self):
-    init_fn, _ = base.without_state(
-        base.transform_with_state(lambda: CountingModule()()))  # pylint: disable=unnecessary-lambda
+    init_fn, _ = transform.without_state(
+        transform.transform_with_state(lambda: CountingModule()()))  # pylint: disable=unnecessary-lambda
     with self.assertRaisesRegex(ValueError, "use.*transform_with_state"):
       init_fn(None)
 
@@ -198,7 +201,7 @@ class ModuleTest(parameterized.TestCase):
     def f():
       return ScalarModule()()
 
-    f = base.transform(f)
+    f = transform.transform(f)
 
     rng = jax.random.PRNGKey(42)
     params = f.init(rng)
@@ -206,7 +209,7 @@ class ModuleTest(parameterized.TestCase):
     self.assertEqual(w, 0)
 
   def test_transparent(self):
-    init_fn, _ = base.transform(lambda: TransparentModule()())  # pylint: disable=unnecessary-lambda
+    init_fn, _ = transform.transform(lambda: TransparentModule()())  # pylint: disable=unnecessary-lambda
     params = init_fn(None)
     self.assertEqual(params, {"scalar_module": {"w": jnp.zeros([])}})
 

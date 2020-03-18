@@ -22,7 +22,7 @@ import types
 from typing import Generator, Optional, Sequence, Text, Tuple, TypeVar
 
 from absl.testing import parameterized
-from haiku._src import base
+from haiku._src import transform
 from jax import random
 
 T = TypeVar("T")
@@ -59,7 +59,7 @@ def transform_and_run(f=None, seed: Optional[int] = 42, run_apply: bool = True):
   def wrapper(*a, **k):
     """Runs init and apply of f."""
     rng = random.PRNGKey(seed) if seed is not None else None
-    transformed = base.transform_with_state(lambda: f(*a, **k))
+    transformed = transform.transform_with_state(lambda: f(*a, **k))
     params, state = transformed.init(rng)
     if run_apply:
       transformed.apply(params, state, rng)

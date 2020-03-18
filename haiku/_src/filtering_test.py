@@ -18,9 +18,9 @@
 import re
 from typing import Any, Callable, Sequence, Set, Text, Tuple
 from absl.testing import absltest
-from haiku._src import base
 from haiku._src import basic
 from haiku._src import filtering
+from haiku._src import transform
 from haiku._src.typing import Params
 import jax
 import jax.numpy as jnp
@@ -98,7 +98,7 @@ class PartitionTest(absltest.TestCase):
 
   def test_partitioning(self):
 
-    init_fn, _ = base.transform(get_net)
+    init_fn, _ = transform.transform(get_net)
     params = init_fn(jax.random.PRNGKey(428), jnp.ones((1, 1)))
 
     # parse by layer
@@ -147,7 +147,7 @@ class PartitionTest(absltest.TestCase):
 
   def test_matching(self):
 
-    init_fn, _ = base.transform(get_net)
+    init_fn, _ = transform.transform(get_net)
     params = init_fn(jax.random.PRNGKey(428), jnp.ones((1, 1)))
 
     second_layer_params = filtering.filter(
@@ -172,7 +172,7 @@ class PartitionTest(absltest.TestCase):
     # doutdw0 = w1
     # doutdw1 = w0 + b0
     # with w0 = 1.0, b0 = 1.5, w1 = 3.0, b1 = 4.5
-    init_fn, apply_fn = base.transform(get_net)
+    init_fn, apply_fn = transform.transform(get_net)
     inputs = jnp.ones((1, 1))
     params = init_fn(jax.random.PRNGKey(428), inputs)
 
@@ -196,7 +196,7 @@ class PartitionTest(absltest.TestCase):
     def get_stacked_net(x):
       y = get_net(x)
       return jnp.stack([y, 2.0 * y])
-    _, apply_fn = base.transform(get_stacked_net)
+    _, apply_fn = transform.transform(get_stacked_net)
     jf_fn = jax_fn_with_filter(
         jax_fn=jax.jacobian,
         f=apply_fn,

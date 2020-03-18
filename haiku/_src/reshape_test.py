@@ -17,9 +17,9 @@
 
 from absl.testing import absltest
 from absl.testing import parameterized
-from haiku._src import base
 from haiku._src import reshape
 from haiku._src import test_utils
+from haiku._src import transform
 import jax.numpy as jnp
 import numpy as np
 
@@ -38,7 +38,7 @@ class ReshapeTest(parameterized.TestCase):
     def f(inputs):
       return reshape.Reshape(output_shape=(-1, D),
                              preserve_dims=preserve_dims)(inputs)
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     params = init_fn(None, jnp.ones([B, H, W, C, D]))
     outputs = apply_fn(params, np.ones([B, H, W, C, D]))
     self.assertEqual(outputs.shape, expected_output_shape)
@@ -48,7 +48,7 @@ class ReshapeTest(parameterized.TestCase):
       mod = reshape.Reshape(output_shape=[-1, -1])
       return mod(np.ones([1, 2, 3]))
 
-    init_fn, _ = base.transform(f)
+    init_fn, _ = transform.transform(f)
     with self.assertRaises(ValueError):
       init_fn(None)
 
@@ -57,7 +57,7 @@ class ReshapeTest(parameterized.TestCase):
       mod = reshape.Reshape(output_shape=[7, "string"])
       return mod(np.ones([1, 2, 3]))
 
-    init_fn, _ = base.transform(f)
+    init_fn, _ = transform.transform(f)
     with self.assertRaises(TypeError):
       init_fn(None)
 
@@ -65,7 +65,7 @@ class ReshapeTest(parameterized.TestCase):
     def f():
       return reshape.Flatten(preserve_dims=2)(jnp.zeros([2, 3, 4, 5]))
 
-    init_fn, apply_fn = base.transform(f)
+    init_fn, apply_fn = transform.transform(f)
     params = init_fn(None)
     self.assertEqual(apply_fn(params).shape, (2, 3, 20))
 

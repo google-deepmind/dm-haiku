@@ -160,8 +160,9 @@ class Linear(module.Module):
                            inputs.dtype, init=w_init)
     out = jnp.dot(inputs, w)
     if self.with_bias:
-      out += base.get_parameter("b", [self.output_size], inputs.dtype,
-                                init=self.b_init)
+      b = base.get_parameter("b", [self.output_size], inputs.dtype,
+                             init=self.b_init)
+      out += jnp.broadcast_to(b, out.shape)
     return out
 
 

@@ -115,6 +115,7 @@ class Bias(module.Module):
 
     self.input_size = input_size
     b = base.get_parameter("b", self.bias_shape, inputs.dtype, init=self.b_init)
+    b = jnp.broadcast_to(b, inputs.shape)
 
     if multiplier is not None:
       return inputs + (b * multiplier)

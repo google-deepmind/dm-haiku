@@ -119,6 +119,11 @@ class LayerNorm(module.Module):
       offset = base.get_parameter("offset", param_shape, init=self._offset_init)
     elif offset is None:
       offset = 0.
+
+    scale = jnp.broadcast_to(scale, inputs.shape)
+    offset = jnp.broadcast_to(offset, inputs.shape)
+    m = jnp.broadcast_to(m, inputs.shape)
+
     inv = scale * jax.lax.rsqrt(variance + self._eps)
     return inv * (inputs - m) + offset
 

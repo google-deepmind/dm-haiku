@@ -118,5 +118,5 @@ class DepthwiseConv2D(module.Module):
         bias_shape = (self._channel_multiplier *
                       inputs.shape[channel_index], 1, 1)
       b = base.get_parameter("b", bias_shape, init=self._b_init)
-      result = result + b
+      result = result + jnp.broadcast_to(b, result.shape)
     return result

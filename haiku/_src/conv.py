@@ -155,7 +155,7 @@ class ConvND(module.Module):
       else:
         bias_shape = (self._output_channels,) + (1,)*self._num_spatial_dims
       b = base.get_parameter("b", bias_shape, inputs.dtype, init=self._b_init)
-      result = result + b
+      result = result + jnp.broadcast_to(b, result.shape)
     return result
 
 
@@ -425,7 +425,7 @@ class ConvNDTranspose(module.Module):
       else:
         bias_shape = (self._output_channels,) + (1,)*self._num_spatial_dims
       b = base.get_parameter("b", bias_shape, init=self._b_init)
-      result = result + b
+      result = result + jnp.broadcast_to(b, result.shape)
     return result
 
 

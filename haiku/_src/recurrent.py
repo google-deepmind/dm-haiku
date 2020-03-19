@@ -282,11 +282,11 @@ class GRU(RNNCore):
     zr_x, a_x = jnp.split(
         gates_x, indices_or_sections=[2 * hidden_size], axis=-1)
     zr_h = jnp.matmul(state, w_h_z)
-    zr = zr_x + zr_h + b_z
+    zr = zr_x + zr_h + jnp.broadcast_to(b_z, zr_h.shape)
     z, r = jnp.split(jax.nn.sigmoid(zr), indices_or_sections=2, axis=-1)
 
     a_h = jnp.matmul(r * state, w_h_a)
-    a = jnp.tanh(a_x + a_h + b_a)
+    a = jnp.tanh(a_x + a_h + jnp.broadcast_to(b_a, a_h.shape))
 
     next_state = (1 - z) * state + z * a
     return next_state, next_state

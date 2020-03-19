@@ -18,6 +18,7 @@
 import collections
 import contextlib
 import functools
+import html
 from typing import NamedTuple, List, Optional
 
 from haiku._src import data_structures
@@ -106,9 +107,7 @@ class DotTracer(jax.core.Tracer):
 
   @property
   def aval(self):
-    if isinstance(self.val, jax.core.Tracer):
-      return self.val.aval
-    return jax.abstract_arrays.ShapedArray(self.val.shape, self.val.dtype)
+    return jax.core.get_aval(self.val)
 
   def full_lower(self):
     return self
@@ -150,6 +149,8 @@ class DotTrace(jax.core.Trace):
 
 
 def _format_val(val):
+  if not hasattr(val, 'shape'):
+    return repr(val)
   shape = ','.join(map(str, val.shape))
   dtype = val.dtype.name
   dtype = dtype.replace('complex', 'c')
@@ -159,26 +160,12 @@ def _format_val(val):
   return f'{dtype}[{shape}]'
 
 
+def escape(value):
+  return html.escape(str(value))
+
+
 def _graph_to_dot(graph: Graph, args, outputs):
   """Converts from an internal graph IR to 'dot' format."""
-
-  lines = [
-      'digraph G {',
-      'rankdir = TD;',
-      'compound = true;',
-      f'label = <<b>{graph.title}</b>>;',
-      'labelloc = t;',
-      'stylesheet = <',
-      '  data:text/css,',
-      '  @import url(https://fonts.googleapis.com/css?family=Roboto:400,700);',
-      '  svg text {',
-      '    font-family: \'Roboto\';',
-      '  }',
-      '  .node text {',
-      '    font-size: 12px;',
-      '  }'
-      '>',
-  ]
 
   def format_path(path):
     if isinstance(outputs, tuple):
@@ -191,6 +178,7 @@ def _graph_to_dot(graph: Graph, args, outputs):
         out += ': ' + '/'.join(map(str, path))
     return out
 
+  lines = []
   used_argids = set()
   argid_usecount = collections.Counter()
   op_outids = set()
@@ -210,33 +198,35 @@ def _graph_to_dot(graph: Graph, args, outputs):
           '  color="#14234B;";',
           '  pad=0.1;',
           f'  fontsize={int(1.4 ** depth * 14)};',
-          f'  label = <<b>{g.title}</b>>;',
+          f'  label = <<b>{escape(g.title)}</b>>;',
           '  labelloc = t;',
       ])
 
     for node in g.nodes:
-      label = f'<b>{node.title}</b>'
+      label = f'<b>{escape(node.title)}</b>'
       for o in node.outputs:
         label += '<br/>' + _format_val(o)
         op_outids.add(id(o))
 
       node_id = id(node.id)
       if node_id in outids:
-        label = f'<b>{outname[node_id]}</b><br/>' + label
-        color = '0053D6'
-        fillcolor = 'AABFFF'
+        label = f'<b>{escape(outname[node_id])}</b><br/>' + label
+        color = '#0053D6'
+        fillcolor = '#AABFFF'
         style = 'filled,bold'
       else:
-        color = 'FFDB13'
-        fillcolor = 'FFF26E'
+        color = '#FFDB13'
+        fillcolor = '#FFF26E'
         style = 'filled'
+
       lines.append(f'{node_id} [label=<{label}>, '
+                   f' id="node{node_id}",'
                    ' shape=rect,'
                    f' style="{style}",'
                    ' tooltip=" ",'
                    ' fontcolor="black",'
-                   f' color="#{color}",'
-                   f' fillcolor="#{fillcolor}"];')
+                   f' color="{color}",'
+                   f' fillcolor="{fillcolor}"];')
 
     for s in g.subgraphs:
       render_graph(s, parent=g, depth=depth - 1)
@@ -276,35 +266,34 @@ def _graph_to_dot(graph: Graph, args, outputs):
       continue
 
     for i in range(argid_usecount[node_id]):
-      label = f'<b>args[{path[0]}]'
+      label = f'<b>args[{escape(path[0])}]'
       if len(path) > 1:
         label += ': ' + '/'.join(map(str, path[1:]))
       label += '</b>'
       if hasattr(value, 'shape') and hasattr(value, 'dtype'):
-        label += f'<br/>{_format_val(value)}'
-      style = 'filled'
+        label += f'<br/>{escape(_format_val(value))}'
       fillcolor = '#FFDEAF'
       fontcolor = 'black'
 
       if i > 0:
         label = '<b>(reuse)</b><br/>' + label
-        style += ',dotted'
         fillcolor = '#FFEACC'
         fontcolor = '#565858'
 
       lines.append(f'{node_id}{i} [label=<{label}>'
+                   f' id="node{node_id}{i}",'
                    ' shape=rect,'
-                   f' style="{style}",'
+                   ' style="filled",'
                    f' fontcolor="{fontcolor}",'
                    ' color="#FF8A4F",'
                    f' fillcolor="{fillcolor}"];')
 
   for value in captures:
     node_id = id(value)
-    if value.size == 1:
+    if hasattr(value, 'size') and value.size == 1:
       label = f'<b>{value.item()}</b>'
     else:
-      label = f'<b>{_format_val(value)}</b>'
+      label = f'<b>{escape(_format_val(value))}</b>'
 
     lines.append(f'{node_id} [label=<{label}>'
                  ' shape=rect,'
@@ -313,5 +302,36 @@ def _graph_to_dot(graph: Graph, args, outputs):
                  ' color="#A261FF",'
                  ' fillcolor="#E6D6FF"];')
 
+  head = [
+      'digraph G {',
+      'rankdir = TD;',
+      'compound = true;',
+      f'label = <<b>{escape(graph.title)}</b>>;',
+      'labelloc = t;',
+      'stylesheet = <',
+      '  data:text/css,',
+      '  @import url(https://fonts.googleapis.com/css?family=Roboto:400,700);',
+      '  svg text {',
+      '    font-family: \'Roboto\';',
+      '  }',
+      '  .node text {',
+      '    font-size: 12px;',
+      '  }'
+  ]
+  for node_id, use_count in argid_usecount.items():
+    if use_count == 1:
+      continue
+    # Add hover animation for reused args.
+    for a in range(use_count):
+      for b in range(use_count):
+        if a == b:
+          head.append(f'%23node{node_id}{a}:hover '
+                      '{ stroke-width: 0.2em; }')
+        else:
+          head.append(
+              f'%23node{node_id}{a}:hover ~ %23node{node_id}{b} '
+              '{ stroke-width: 0.2em; }')
+  head.append('>')
+
   lines.append('} // digraph G')
-  return '\n'.join(lines) + '\n'
+  return '\n'.join(head + lines) + '\n'

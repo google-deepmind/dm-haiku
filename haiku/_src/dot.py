@@ -57,6 +57,10 @@ def to_dot(fun):
   return wrapped_fun
 
 
+def name_or_str(o):
+  return getattr(o, '__name__', str(o))
+
+
 def to_graph(fun):
   """Converts a Haiku function into an graph IR (extracted for testing)."""
   @functools.wraps(fun)
@@ -65,7 +69,7 @@ def to_graph(fun):
     f = jax.linear_util.wrap_init(fun)
     args_flat, in_tree = jax.tree_flatten((args, {}))
     flat_fun, out_tree = jax.api_util.flatten_fun(f, in_tree)
-    graph = Graph.create(title=getattr(fun, '__name__', str(fun)))
+    graph = Graph.create(title=name_or_str(fun))
 
     @contextlib.contextmanager
     def method_hook(mod: module.Module, method_name: str):
@@ -140,7 +144,7 @@ class DotTrace(jax.core.Trace):
 
   def process_call(self, call_primitive, f, tracers, params):
     assert call_primitive.multiple_results
-    graph = Graph.create(title=str(call_primitive))
+    graph = Graph.create(title=f'{call_primitive} ({name_or_str(f.f)})')
     graph_stack.peek().subgraphs.append(graph)
     with graph_stack(graph):
       f = _interpret_subtrace(f, self.master)

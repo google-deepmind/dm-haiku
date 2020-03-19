@@ -20,6 +20,7 @@ from absl.testing import parameterized
 from haiku._src import dot
 from haiku._src import module
 from haiku._src import test_utils
+import jax
 import jax.numpy as jnp
 
 
@@ -51,6 +52,16 @@ class DotTest(parameterized.TestCase):
     self.assertEqual(add_node.title, "add")
     add_out, = add_node.outputs
     self.assertEqual(add_out, c)
+
+  def test_call(self):
+    def my_function(x):
+      return x
+
+    graph, _, _ = dot.to_graph(jax.jit(my_function))(jnp.ones([]))
+    self.assertEmpty(graph.nodes)
+    self.assertEmpty(graph.edges)
+    jit, = graph.subgraphs
+    self.assertEqual(jit.title, "xla_call (my_function)")
 
 
 class AddModule(module.Module):

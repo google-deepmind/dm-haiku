@@ -388,7 +388,7 @@ class PRNGSequence(Iterator[PRNGKey]):
     self._key = key
     return subkey
 
-  next = __next__  # For Python 2.
+  next = __next__
 
 
 def next_rng_key() -> PRNGKey:

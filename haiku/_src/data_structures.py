@@ -89,7 +89,6 @@ class KeysOnlyKeysView(collections.abc.KeysView):
   __str__ = __repr__
 
 
-# TODO(tomhennigan) Use types.MappingProxyType when we are Python 3 only.
 # TODO(lenamartens) Deprecate type
 class frozendict(Mapping[K, V]):  # pylint: disable=invalid-name
   """Immutable mapping from keys to values."""
@@ -136,11 +135,6 @@ class frozendict(Mapping[K, V]):  # pylint: disable=invalid-name
             2, ",\n".join(_repr_item(k, self._storage[k]) for k in self._keys)))
 
   __str__ = __repr__
-
-  def __ne__(self, other):
-    # Defined for Python 2 support.
-    # https://docs.python.org/2/reference/datamodel.html#object.__ne__
-    return not self.__eq__(other)
 
   def __eq__(self, other):
     if isinstance(other, frozendict):

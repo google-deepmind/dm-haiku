@@ -199,7 +199,7 @@ def _graph_to_dot(graph: Graph, args, outputs):
   outids = {id(v) for v in jax.tree_leaves(outputs)}
   outname = {id(v): format_path(p) for p, v in tree.flatten_with_path(outputs)}
 
-  def render_graph(g: Graph, parent: Optional[Graph] = None):
+  def render_graph(g: Graph, parent: Optional[Graph] = None, depth: int = 0):
     """Renders a given graph by appending 'dot' format lines."""
 
     if parent:
@@ -208,7 +208,8 @@ def _graph_to_dot(graph: Graph, args, outputs):
           '  style="rounded,filled";',
           '  fillcolor="#F0F5F5";',
           '  color="#14234B;";',
-          '  fontsize=14;',
+          '  pad=0.1;',
+          f'  fontsize={int(1.4 ** depth * 14)};',
           f'  label = <<b>{g.title}</b>>;',
           '  labelloc = t;',
       ])
@@ -238,7 +239,7 @@ def _graph_to_dot(graph: Graph, args, outputs):
                    f' fillcolor="#{fillcolor}"];')
 
     for s in g.subgraphs:
-      render_graph(s, parent=g)
+      render_graph(s, parent=g, depth=depth - 1)
 
     if parent:
       lines.append(f'}}  // subgraph cluster_{id(g)}')
@@ -256,7 +257,14 @@ def _graph_to_dot(graph: Graph, args, outputs):
         lines.append(f'{a} -> {b};')
       used_argids.add(a)
 
-  render_graph(graph, parent=None)
+  # Determine maximum nesting depth to appropriately scale subgraph labels.
+  def max_depth(g: Graph) -> int:
+    if g.subgraphs:
+      return 1 + max(0, *[max_depth(s) for s in g.subgraphs])
+    else:
+      return 1
+
+  render_graph(graph, parent=None, depth=max_depth(graph))
 
   # Process inputs and label them in the graph.
   for path, value in tree.flatten_with_path(args):

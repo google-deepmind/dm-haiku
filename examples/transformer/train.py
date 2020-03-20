@@ -25,6 +25,8 @@ Note: Run with --alsologtostderr to see outputs.
 """
 
 import functools
+import os
+import pickle
 import time
 from typing import Any, Mapping
 
@@ -37,18 +39,22 @@ from haiku.examples.transformer import model
 import jax
 from jax.experimental import optix
 import jax.numpy as jnp
+import numpy as np
 import tensorflow.compat.v2 as tf
 
-flags.DEFINE_integer('batch_size', 8, 'Train batch size per core')
-flags.DEFINE_integer('sequence_length', 32, 'Sequence length to learn on')
+flags.DEFINE_integer('batch_size', 16, 'Train batch size per core')
+flags.DEFINE_integer('sequence_length', 128, 'Sequence length to learn on')
 
 flags.DEFINE_integer('d_model', 256, 'model width')
 flags.DEFINE_integer('num_heads', 4, 'Number of attention heads')
-flags.DEFINE_integer('num_layers', 4, 'Number of transformer layers')
+flags.DEFINE_integer('num_layers', 6, 'Number of transformer layers')
 flags.DEFINE_float('dropout_rate', 0.1, 'Dropout rate')
 
 flags.DEFINE_float('learning_rate', 2e-4, 'Max learning-rate')
 flags.DEFINE_float('grad_clip_value', 0.25, 'Gradient norm clip value')
+
+flags.DEFINE_string('checkpoint_dir', '/tmp/haiku-lm1b',
+                    'Directory to store checkpoints.')
 
 FLAGS = flags.FLAGS
 LOG_EVERY = 50
@@ -121,7 +127,7 @@ class Updater:
     params = self._net_init(init_rng, data)
     opt_state = self._opt.init(params)
     out = dict(
-        step=0,
+        step=np.array(0),
         rng=out_rng,
         opt_state=opt_state,
         params=params,
@@ -152,6 +158,57 @@ class Updater:
     return new_state, metrics
 
 
+class CheckpointingUpdater:
+  """A didactic checkpointing wrapper around an Updater.
+
+  A more mature checkpointing implementation might:
+    - Use np.savez() to store the core data instead of pickle.
+    - Not block JAX async dispatch.
+    - Automatically garbage collect old checkpoints.
+  """
+
+  def __init__(self,
+               inner: Updater,
+               checkpoint_dir: str,
+               checkpoint_every_n: int = 10000):
+    self._inner = inner
+    self._checkpoint_dir = checkpoint_dir
+    self._checkpoint_every_n = checkpoint_every_n
+
+  def _checkpoint_paths(self):
+    return [p for p in os.listdir(self._checkpoint_dir) if 'checkpoint_' in p]
+
+  def init(self, rng, data):
+    """Initialize experiment state."""
+    if not os.path.exists(self._checkpoint_dir) or not self._checkpoint_paths():
+      os.makedirs(self._checkpoint_dir, exist_ok=True)
+      return self._inner.init(rng, data)
+    else:
+      checkpoint = os.path.join(self._checkpoint_dir,
+                                self._checkpoint_paths()[-1])
+      logging.info('Loading checkpoint from %s', checkpoint)
+      with open(checkpoint, 'rb') as f:
+        state = pickle.load(f)
+      return state
+
+  def update(self, state, data):
+    """Update experiment state."""
+    # NOTE: This blocks until `state` is computed. If you want to use JAX async
+    # dispatch, maintain state['step'] as a NumPy scalar instead of a JAX array.
+    # Context: https://jax.readthedocs.io/en/latest/async_dispatch.html
+    step = np.array(state['step'])
+    if step % self._checkpoint_every_n == 0:
+      path = os.path.join(self._checkpoint_dir,
+                          'checkpoint_{:07d}.pkl'.format(step))
+      checkpoint_state = jax.device_get(state)
+      logging.info('Serializing experiment state to %s', path)
+      with open(path, 'wb') as f:
+        pickle.dump(checkpoint_state, f)
+
+    state, out = self._inner.update(state, data)
+    return state, out
+
+
 def main(_):
   # Create the dataset.
   train_dataset, vocab_size = dataset.load(FLAGS.batch_size,
@@ -167,6 +224,7 @@ def main(_):
       optix.adam(FLAGS.learning_rate, b1=0.9, b2=0.99))
 
   updater = Updater(forward_fn.init, loss_fn, optimizer)
+  updater = CheckpointingUpdater(updater, FLAGS.checkpoint_dir)
 
   # Initialize parameters.
   logging.info('Initializing parameters...')

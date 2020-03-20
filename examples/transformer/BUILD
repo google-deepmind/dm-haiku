@@ -18,6 +18,7 @@ hk_py_binary(
         "//haiku",
         # pip: jax
         # pip: jax:optix
+        # pip: numpy
         # pip: tensorflow
     ],
 )

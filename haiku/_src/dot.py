@@ -168,6 +168,18 @@ def escape(value):
   return html.escape(str(value))
 
 
+# Determine maximum nesting depth to appropriately scale subgraph labels.
+def _max_depth(g: Graph) -> int:
+  if g.subgraphs:
+    return 1 + max(0, *[_max_depth(s) for s in g.subgraphs])
+  else:
+    return 1
+
+
+def _scaled_font_size(depth: int) -> int:
+  return int(1.4**depth * 14)
+
+
 def _graph_to_dot(graph: Graph, args, outputs):
   """Converts from an internal graph IR to 'dot' format."""
 
@@ -201,7 +213,7 @@ def _graph_to_dot(graph: Graph, args, outputs):
           '  fillcolor="#F0F5F5";',
           '  color="#14234B;";',
           '  pad=0.1;',
-          f'  fontsize={int(1.4 ** depth * 14)};',
+          f'  fontsize={_scaled_font_size(depth)};',
           f'  label = <<b>{escape(g.title)}</b>>;',
           '  labelloc = t;',
       ])
@@ -251,14 +263,8 @@ def _graph_to_dot(graph: Graph, args, outputs):
         lines.append(f'{a} -> {b};')
       used_argids.add(a)
 
-  # Determine maximum nesting depth to appropriately scale subgraph labels.
-  def max_depth(g: Graph) -> int:
-    if g.subgraphs:
-      return 1 + max(0, *[max_depth(s) for s in g.subgraphs])
-    else:
-      return 1
-
-  render_graph(graph, parent=None, depth=max_depth(graph))
+  graph_depth = _max_depth(graph)
+  render_graph(graph, parent=None, depth=graph_depth)
 
   # Process inputs and label them in the graph.
   for path, value in tree.flatten_with_path(args):
@@ -311,6 +317,7 @@ def _graph_to_dot(graph: Graph, args, outputs):
       'rankdir = TD;',
       'compound = true;',
       f'label = <<b>{escape(graph.title)}</b>>;',
+      f'fontsize={_scaled_font_size(graph_depth)};',
       'labelloc = t;',
       'stylesheet = <',
       '  data:text/css,',
@@ -320,7 +327,7 @@ def _graph_to_dot(graph: Graph, args, outputs):
       '  }',
       '  .node text {',
       '    font-size: 12px;',
-      '  }'
+      '  }',
   ]
   for node_id, use_count in argid_usecount.items():
     if use_count == 1:

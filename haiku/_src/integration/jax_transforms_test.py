@@ -36,7 +36,8 @@ def module_type(module_fn: ModuleFn) -> Type[hk.Module]:
   return f.apply(*f.init(jax.random.PRNGKey(42)), None)[0]
 
 DEFAULT_ATOL = 1e-5
-CUSTOM_ATOL = {hk.nets.ResNet50: 0.05, hk.nets.MobileNetV1: 0.05}
+CUSTOM_ATOL = {hk.nets.ResNet50: 0.05, hk.nets.MobileNetV1: 0.05,
+               hk.BatchNorm: 1e-4}
 
 
 class JaxTransformsTest(parameterized.TestCase):

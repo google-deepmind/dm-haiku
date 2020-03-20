@@ -21,6 +21,7 @@ from haiku._src import base
 from haiku._src import data_structures
 from haiku._src import initializers
 from haiku._src import module
+import jax
 import jax.numpy as jnp
 
 
@@ -59,7 +60,7 @@ class ExponentialMovingAverage(module.Module):
 
   def _cond(self, cond, t, f, dtype):
     """Internal, implements jax.lax.cond without control flow."""
-    c = jnp.asarray(cond).astype(dtype)
+    c = cond.astype(dtype)
     return c * t + (1. - c) * f
 
   def __call__(self, value, update_stats=True):
@@ -74,29 +75,31 @@ class ExponentialMovingAverage(module.Module):
 
     Returns:
       The exponentially weighted average of the input value.
-
     """
-    value = jnp.asarray(value)  # Ensure value has a dtype.
-    prev_counter = base.get_state(
-        "counter", shape=(), dtype=jnp.int32,
-        init=initializers.Constant(-self._warmup_length))
-    prev_hidden = base.get_state("hidden", shape=value.shape, dtype=value.dtype,
-                                 init=jnp.zeros)
+    if not isinstance(value, jnp.ndarray):
+      value = jnp.asarray(value)
 
-    decay = jnp.asarray(self._decay).astype(value.dtype)
-    counter = prev_counter + 1
-    decay = self._cond(jnp.less_equal(counter, 0), 0.0, decay, value.dtype)
-    hidden = prev_hidden * decay + value * (1 - decay)
+    counter = base.get_state("counter", (), jnp.int32,
+                             init=initializers.Constant(-self._warmup_length))
+    counter += 1
 
+    decay = jax.lax.convert_element_type(self._decay, value.dtype)
+    if self._warmup_length > 0:
+      decay = self._cond(counter <= 0, 0.0, decay, value.dtype)
+
+    one = jnp.ones([], value.dtype)
+    hidden = base.get_state("hidden", value.shape, value.dtype, init=jnp.zeros)
+    hidden = hidden * decay + value * (one - decay)
+
+    average = hidden
     if self._zero_debias:
-      average = hidden / (1. - jnp.power(decay, counter))
-    else:
-      average = hidden
+      average /= (one - jnp.power(decay, counter))
 
     if update_stats:
       base.set_state("counter", counter)
       base.set_state("hidden", hidden)
       base.set_state("average", average)
+
     return average
 
   @property

@@ -92,12 +92,14 @@ class KeysOnlyKeysView(collections.abc.KeysView):
 # TODO(lenamartens) Deprecate type
 class frozendict(Mapping[K, V]):  # pylint: disable=invalid-name
   """Immutable mapping from keys to values."""
+  _isinitialized = False
 
   def __init__(self, *args, **kwargs):
     self._storage = dict(*args, **kwargs)
     self._keys = tuple(sorted(self._storage))
     # Dict values aren't necessarily hashable so we just use the keys.
     self._hash = hash(self._keys)
+    self._isinitialized = True
 
   def keys(self):
     return KeysOnlyKeysView(self)
@@ -115,6 +117,13 @@ class frozendict(Mapping[K, V]):  # pylint: disable=invalid-name
       return self._storage[key]
     except KeyError as e:
       raise AttributeError(e)
+
+  def __setattr__(self, key: K, value: V):
+    # Disallow setattr after instantiation:
+    # https://github.com/deepmind/dm-haiku/issues/25
+    if self._isinitialized:
+      raise AttributeError("can't set attribute")
+    super().__setattr__(key, value)
 
   def get(self, key: K, default: Optional[T] = None) -> Union[V, Optional[T]]:
     return self._storage.get(key, default)

@@ -382,7 +382,7 @@ class TransformTest(parameterized.TestCase):
     self.assertEqual(ctx.collect_state(), {"~": {"w": jnp.array(2.)}})
     self.assertEqual(before, {"~": {"w": jnp.array(1.)}})
 
-  def test_without_state_raises_if_state_used2(self):
+  def test_without_state_raises_if_state_used_on_apply(self):
     def f(x):
       hk.set_state("~", 1)
       mod = hk.Linear(10)

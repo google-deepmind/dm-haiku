@@ -72,11 +72,11 @@ class Embed(module.Module):
         is not consistent with the supplied matrix.
     """
     super(Embed, self).__init__(name=name)
-    if not embedding_matrix and not (vocab_size and embed_dim):
+    if embedding_matrix is None and not (vocab_size and embed_dim):
       raise ValueError(
           "hk.Embed must be supplied either with an initial `embedding_matrix` "
           "or with `embed_dim` and `vocab_size`.")
-    if embedding_matrix:
+    if embedding_matrix is not None:
       embedding_matrix = jnp.asarray(embedding_matrix)
       if vocab_size and embedding_matrix.shape[0] != vocab_size:
         raise ValueError(

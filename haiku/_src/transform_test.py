@@ -19,6 +19,7 @@ import inspect
 
 from absl.testing import absltest
 from absl.testing import parameterized
+import haiku as hk
 from haiku._src import base
 from haiku._src import test_utils
 from haiku._src import transform
@@ -379,6 +380,18 @@ class TransformTest(parameterized.TestCase):
     self.assertEqual(ctx.collect_initial_state(), before)
     self.assertEqual(ctx.collect_state(), {"~": {"w": jnp.array(2.)}})
     self.assertEqual(before, {"~": {"w": jnp.array(1.)}})
+
+  def test_without_state_raises_if_state_used2(self):
+    def f(x):
+      hk.set_state("~", 1)
+      mod = hk.Linear(10)
+      return mod(x)
+    f = hk.without_state(hk.transform_with_state(f))
+    rng = jax.random.PRNGKey(42)
+    x = jnp.zeros([1, 1])
+    with self.assertRaisesRegex(ValueError, "use.*transform_with_state"):
+      params = f.init(rng, x)
+      f.apply(params, rng, x)
 
 
 class ObjectWithTransform(object):

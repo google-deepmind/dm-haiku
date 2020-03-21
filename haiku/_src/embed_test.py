@@ -27,11 +27,11 @@ import jax.numpy as jnp
 import numpy as np
 
 
-_EMBEDDING_MATRIX = [
+_EMBEDDING_MATRIX = np.asarray([
     [0.0, 0.0, 0.0, 0.0],
     [0.5, 0.5, 0.5, 0.5],
     [0.1, 0.2, 0.3, 0.4]
-]
+])
 
 
 _1D_IDS = [0, 2]  # pylint: disable=invalid-name

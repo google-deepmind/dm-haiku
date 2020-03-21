@@ -13,16 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Tests for haiku.examples.impala.learner."""
-from absl.testing import absltest
-import jax
-from jax.experimental import optix
-import numpy as np
-import haiku as hk
+"""Tests for haiku.examples.impala_lite."""
 import queue
 import threading
+
+import jax
+import numpy as np
+from absl.testing import absltest
+from jax.experimental import optix
 from bsuite.experiments.catch import catch
-from examples.impala_lite import SimpleNet, Agent, Learner, preprocess_step, run_actor
+
+import haiku as hk
+from examples.impala_lite import Agent, Learner, SimpleNet, preprocess_step, \
+  run_actor
+
 
 class ImpalaLiteTest(absltest.TestCase):
 

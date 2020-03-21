@@ -19,12 +19,13 @@ import inspect
 
 from absl.testing import absltest
 from absl.testing import parameterized
+import jax
+import jax.numpy as jnp
 import haiku as hk
+
 from haiku._src import base
 from haiku._src import test_utils
 from haiku._src import transform
-import jax
-import jax.numpy as jnp
 
 # TODO(tomhennigan) Improve test coverage.
 

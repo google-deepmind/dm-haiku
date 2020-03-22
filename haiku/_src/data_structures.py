@@ -92,6 +92,7 @@ class KeysOnlyKeysView(collections.abc.KeysView):
 # TODO(lenamartens) Deprecate type
 class frozendict(Mapping[K, V]):  # pylint: disable=invalid-name
   """Immutable mapping from keys to values."""
+  __slots__ = ("_storage", "_keys", "_hash")
 
   def __init__(self, *args, **kwargs):
     self._storage = dict(*args, **kwargs)

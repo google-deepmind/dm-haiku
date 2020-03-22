@@ -139,6 +139,15 @@ class FrozenDictTest(parameterized.TestCase):
     self.assertEqual(f.a, 1)
     self.assertEqual(f.b, 2)
 
+  def test_setattr(self):
+    f = frozendict(a=1)
+    with self.assertRaises(AttributeError):
+      # Existing attr.
+      f.a = 4  # pytype: disable=not-writable
+    with self.assertRaises(AttributeError):
+      # New attr.
+      f.c = 4  # pytype: disable=not-writable
+
   def test_getitem(self):
     f = frozendict(a=1, b=2)
     self.assertEqual(f["a"], 1)

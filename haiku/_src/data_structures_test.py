@@ -26,7 +26,6 @@ import dill
 from haiku._src import data_structures
 import jax
 import tree
-import pytest
 
 frozendict = data_structures.frozendict
 Stack = data_structures.Stack
@@ -141,11 +140,13 @@ class FrozenDictTest(parameterized.TestCase):
     self.assertEqual(f.b, 2)
 
   def test_setattr(self):
-    f = frozendict(a=1, b=2)
-    with pytest.raises(AttributeError, match="can't set attribute"):
-      f.a = 3  # pre-existing attr
-    with pytest.raises(AttributeError, match="can't set attribute"):
-      f.c = 4  # new attr
+    f = frozendict(a=1)
+    with self.assertRaises(AttributeError):
+      # Existing attr.
+      f.a = 4  # pytype: disable=not-writable
+    with self.assertRaises(AttributeError):
+      # New attr.
+      f.c = 4  # pytype: disable=not-writable
 
   def test_getitem(self):
     f = frozendict(a=1, b=2)

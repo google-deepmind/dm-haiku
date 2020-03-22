@@ -5,6 +5,7 @@
 * [MLP on MNIST](https://github.com/deepmind/dm-haiku/blob/master/examples/mnist.py).
 * [ResNet50 on ImageNet](https://github.com/deepmind/dm-haiku/tree/master/examples/imagenet/).
 * [Transformer on LM1B](https://github.com/deepmind/dm-haiku/blob/master/examples/transformer/train.py)
+* [LSTMs](https://colab.research.google.com/github/deepmind/dm-haiku/blob/master/examples/haiku_lstms.ipynb)
 
 # Reinforcement learning
 

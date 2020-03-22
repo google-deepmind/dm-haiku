@@ -1,5 +1,12 @@
 # Haiku examples
 
+To run these examples you probably need to install their requirements:
+
+```shell
+$ pip install -r examples/requirements.txt
+$ python -m examples.mnist
+```
+
 ## Supervised learning
 
 * [MLP on MNIST](https://github.com/deepmind/dm-haiku/blob/master/examples/mnist.py).
@@ -7,7 +14,7 @@
 * [Transformer on LM1B](https://github.com/deepmind/dm-haiku/blob/master/examples/transformer/train.py)
 * [LSTMs](https://colab.research.google.com/github/deepmind/dm-haiku/blob/master/examples/haiku_lstms.ipynb)
 
-# Reinforcement learning
+## Reinforcement learning
 
 * [Impala lite](https://github.com/deepmind/dm-haiku/blob/master/examples/impala_lite.py).
 * [Impala on Catch](https://github.com/deepmind/dm-haiku/blob/master/examples/impala/run_catch.py).

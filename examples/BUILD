@@ -1,4 +1,4 @@
-load("//haiku/_src:build_defs.bzl", "hk_py_binary")
+load("//haiku/_src:build_defs.bzl", "hk_py_binary", "hk_py_test")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -32,5 +32,14 @@ hk_py_binary(
         # pip: jax:optix
         # pip: numpy
         # pip: rlax
+    ],
+)
+
+hk_py_test(
+    name = "impala_lite_test",
+    srcs = ["impala_lite_test.py"],
+    deps = [
+        ":impala_lite",
+        # pip: absl/testing:absltest
     ],
 )

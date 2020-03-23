@@ -207,7 +207,8 @@ class Learner:
     return optix.apply_updates(params, updates), new_opt_state
 
 
-def main(_):
+def run(*, trajectories_per_actor, num_actors, unroll_len):
+  """Runs the example."""
 
   # Construct the agent network. We need a sample environment for its spec.
   env = catch.Catch()
@@ -239,9 +240,6 @@ def main(_):
     return jax.device_put(batch)
 
   # Start the actors.
-  num_actors = 2
-  trajectories_per_actor = 500
-  unroll_len = 20
   for i in range(num_actors):
     key = jax.random.PRNGKey(i)
     args = (agent, key, current_params, q.put, unroll_len,
@@ -253,6 +251,10 @@ def main(_):
   for i in range(num_steps):
     traj = dequeue()
     params, opt_state = learner.update(params, opt_state, traj)
+
+
+def main(_):
+  run(trajectories_per_actor=500, num_actors=2, unroll_len=20)
 
 if __name__ == '__main__':
   app.run(main)

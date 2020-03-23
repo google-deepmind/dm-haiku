@@ -380,6 +380,14 @@ class TransformTest(parameterized.TestCase):
     self.assertEqual(ctx.collect_state(), {"~": {"w": jnp.array(2.)}})
     self.assertEqual(before, {"~": {"w": jnp.array(1.)}})
 
+  def test_without_state_raises_if_state_used_on_apply(self):
+    f = lambda: base.set_state("~", 1)
+    f = transform.without_state(transform.transform_with_state(f))
+    rng = jax.random.PRNGKey(42)
+    with self.assertRaisesRegex(ValueError, "use.*transform_with_state"):
+      params = f.init(rng)
+      f.apply(params, rng)
+
 
 class ObjectWithTransform(object):
 

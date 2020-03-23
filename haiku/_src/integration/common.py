@@ -21,6 +21,7 @@ from haiku._src.integration import descriptors
 from haiku._src.typing import DType, Shape  # pylint: disable=g-multiple-import
 import jax
 import jax.numpy as jnp
+import tree
 
 
 class DTypeTestCase(parameterized.TestCase):
@@ -52,22 +53,23 @@ class DTypeTestCase(parameterized.TestCase):
     # NOTE: We need to do this since some initializers (e.g. random.uniform) do
     # not support <32bit dtypes.
     x = jax.random.uniform(rng, shape)
-    params, state = init_fn(rng, x)
+    params, state = jax.eval_shape(init_fn, rng, x)
 
     # Cast f32 to test_dtype.
-    f32_to_test_dtype = (
-        lambda v: v.astype(test_dtype) if v.dtype == jnp.float32 else v)
-    params, state = jax.tree_map(f32_to_test_dtype, (params, state))
+    def make_param(v):
+      dtype = test_dtype if v.dtype == jnp.float32 else v.dtype
+      return jnp.ones(v.shape, dtype)
+    params, state = jax.tree_map(make_param, (params, state))
 
     # test_dtype in should result in test_dtype out.
     x = x.astype(test_dtype)
 
     for _ in range(2):
-      y, state = apply_fn(params, state, rng, x)
+      y, state = jax.eval_shape(apply_fn, params, state, rng, x)
 
-      def assert_dtype(v):
+      def assert_dtype(path, v):
         if v.dtype != jnp.int32:
-          self.assertEqual(v.dtype, test_dtype)
+          self.assertEqual(v.dtype, test_dtype, msg=path)
 
-      jax.tree_map(assert_dtype, y)
-      jax.tree_map(assert_dtype, state)
+      tree.map_structure_with_path(assert_dtype, y)
+      tree.map_structure_with_path(assert_dtype, state)

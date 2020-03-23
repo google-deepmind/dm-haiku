@@ -269,6 +269,38 @@ params = forward.init(next(key), x)
 y = forward.apply(params, x)
 ```
 
+### Working with stochastic models
+
+Some models may require random sampling as part of the computation.
+For example, in variational autoencoders with the reparametrization trick,
+a random sample from the standard normal distribution is needed.
+The main hurdle in making this work with JAX is in management of PRNG keys.
+
+In Haiku we provide a simple API for maintaining a PRNG key sequence associated
+with modules: `hk.next_rng_key()` (or `next_rng_keys()` for multiple keys).
+In order to use this functionality you need to specify `apply_rng=True`
+argument on the `hk.transform` call:
+
+```python
+class Dropout(hk.Module):
+  def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+    rng_key = hk.next_rng_key()
+    p = jax.random.bernoulli(rng_key, 1.0 - self.rate, shape=x.shape)
+    return x * p / (1.0 - self.rate)
+
+forward = hk.transform(lambda x: VAE()(x), apply_rng=True)
+
+rng_key1, rng_key2 = jax.random.split(jax.random.PRNGKey(42), 2)
+
+params = forward.init(rng_key1, x)
+prediction = forward.apply(params, rng_key2, x)
+```
+
+**Note:** `hk.next_rng_key()` is not functionally pure which means you should
+avoid using it alongside JAX transformations which are inside `hk.transform`.
+For more information and possible workarounds, please consult the docs on
+[Haiku transforms](https://dm-haiku.readthedocs.io/en/latest/transforms.html).
+
 ### Working with non-trainable state
 
 Some models may want to maintain some internal, mutable state. For example, in

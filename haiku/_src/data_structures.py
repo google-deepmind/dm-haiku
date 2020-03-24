@@ -19,10 +19,12 @@ import collections
 import contextlib
 import pprint
 import threading
-from typing import Any, Callable, Generic, Mapping, Optional, TypeVar, Tuple, Union
+import types
+from typing import Any, Callable, Generic, Mapping, Optional, TypeVar, Tuple, Sequence, Union
 
 from haiku._src import utils
 import jax
+from jax import tree_util
 
 K = TypeVar("K")
 V = TypeVar("V")
@@ -181,35 +183,33 @@ jax.tree_util.register_pytree_node(
     lambda s: (tuple(s.values()), tuple(s.keys())),
     lambda k, xs: frozendict(zip(k, xs)))
 
-# TODO(lenamartens) replace with recursive types when supported (b/109648354)
-# Structure = Tuple[Union[Tuple[K], Tuple[K, "Structure"]]]
-Structure = Tuple[Tuple[K, Tuple]]
-# Index = Mapping[K, Tuple[int, int, Union[Tuple[()], "Index"]]]
-Index = Mapping[K, Tuple[int, int, Mapping]]
-Leaves = Tuple[Any]
-Flat = Tuple[Leaves, Tuple[Structure, Index]]
+# PyTreeDef is defined in jaxlib/pytree.cc but not exposed.
+PyTreeDef = Any
 
 
-class FlatMapping(collections.Mapping):
-  """Immutable mapping with O(1) flatten and unflatten operation."""
+class FlatMapping(Mapping[K, V]):
+  """Immutable mapping with O(1) flatten and O(n) unflatten operation."""
 
-  def __init__(self, flat: Flat):
-    """Constructs a flat mapping from a Flat structure.
+  def __init__(self, flat: Tuple[Sequence[Any], PyTreeDef],
+               check_leaves: bool = True):
+    """Constructs a flat mapping from already flattened components.
 
     Args:
-      flat: A tuple containing a flat sequence of values and a tuple
-      representing the desired nested structure of the mapping.
-
-    A Flat structure maps to the internal representation of a FlatMapping and is
-    the output when calling `flatten` on a FlatMapping.
-
-    This is useful to implement an O(N) map_structure:
-    >>> a = FlatMapping.from_mapping("foo": "bar", "baz": {"bat": "qux"})
-    >>> leaves, structure = a.flatten()        # O(1)
-    >>> leaves = map(lambda x: x + 1, leaves)  # O(N)
-    >>> d = FlatMapping((leaves, structure))   # O(1)
+      flat: A tuple containing a flat sequence of values and a PyTreeDef
+      representing the output of jax.tree_flatten on a structure.
+      check_leaves: Check if all leaves are flat values, and reflatten if not.
+      This check is O(n), whereas the normal construction time is O(1).
     """
-    self._leaves, (self._structure, self._index) = flat
+    leaves, structure = flat
+
+    # TODO(lenamartens): upstream is_leaf check to Jax
+    is_leaf = lambda x: type(x) not in tree_util._registry  # pylint: disable=unidiomatic-typecheck  pylint: disable=protected-access
+    if check_leaves and not all(map(is_leaf, leaves)):
+      tree = jax.tree_unflatten(structure, leaves)
+      leaves, structure = jax.tree_flatten(tree)
+
+    self._structure = structure
+    self._leaves = tuple(leaves)
 
   @classmethod
   def from_mapping(cls, m: Mapping[Any, Any]) -> "FlatMapping":
@@ -218,23 +218,25 @@ class FlatMapping(collections.Mapping):
     Args:
       m: If m is a FlatMapping, the internal structures from m are reused
          to construct a new FlatMapping (this is O(1))
-         If m is any other Mapping, m will be deconstructed into
-         its Flat representation (this is O(n logn))
+         If m is any other Mapping, m will be flattened (this is O(n logn))
     Returns:
       A FlatMapping with the keys and values of the input mapping.
     """
     if isinstance(m, FlatMapping):
-      return cls(m.flatten())
-    return cls(deconstruct(m))
+      return cls(m.flatten(), check_leaves=False)
+    return cls(jax.tree_flatten(m), check_leaves=False)
+
+  def to_mapping(self):
+    return jax.tree_unflatten(self._structure, self._leaves)
 
   def keys(self):
-    return [node[0] for node in self._structure]
+    return KeysOnlyKeysView(self.to_mapping())
 
   def values(self):
-    return [self[key] for key in self.keys()]
+    return self.to_mapping().values()
 
   def items(self):
-    return [(node[0], self[node[0]]) for node in self._structure]
+    return self.to_mapping().items()
 
   def __eq__(self, other):
     if not isinstance(other, Mapping):
@@ -242,103 +244,41 @@ class FlatMapping(collections.Mapping):
     if isinstance(other, FlatMapping):
       leaves, structure = other._leaves, other._structure  # pylint: disable=protected-access
     else:
-      leaves, (structure, _) = deconstruct(other)
-    return self._leaves == leaves and self._structure == structure
+      leaves, structure = jax.tree_flatten(other)
+    return self._leaves == tuple(leaves) and self._structure == structure
 
   def __getitem__(self, key):
-    leaf_index, structure_index, subindex = self._index[key]
-    if subindex:
-      # Item at key is a subtree
-      if structure_index == len(self._structure) - 1:
-        end_index = None  # slice till end
-      else:
-        next_key = self._structure[structure_index + 1][0]
-        end_index, _, _ = self._index[next_key]
-      return FlatMapping((self._leaves[leaf_index:end_index],
-                          (self._structure[structure_index][1], subindex)))
-    else:
-      # Item at key is a leaf
-      return self._leaves[leaf_index]
+    value = self.to_mapping()[key]
+    if isinstance(value, Mapping):
+      # Create a read-only version to prevent modification of the returned item:
+      # modifying the item will not modify the node in the FlatMapping,
+      # which will be confusing.
+      value = types.MappingProxyType(value)
+    return value
 
   def __iter__(self):
     return iter(self.keys())
 
   def __len__(self):
-    return len(self._structure)
+    return len(self.keys())
 
-  def flatten(self) -> Flat:
-    return self._leaves, (self._structure, self._index)
+  def flatten(self) -> Tuple[Tuple[Any], PyTreeDef]:
+    return self._leaves, self._structure
 
   def __str__(self):
-    s = "{}({{{}}})".format(
+    single_line = "{}({{{}}})".format(
         type(self).__name__,
         ", ".join("{!r}: {!r}".format(k, v) for k, v in self.items()))
-    return s
+    if len(single_line) <= 80:
+      return single_line
+
+    return "{}({{\n{},\n}})".format(
+        type(self).__name__,
+        utils.indent(
+            2, ",\n".join(_repr_item(k, v) for k, v in self.items())))
 
   __repr__ = __str__
 
-
-# pylint: disable=unidiomatic-typecheck
-def deconstruct(value: Mapping[K, Any]) -> Flat:
-  """Deconstruct a Mapping into the three internal structures of a FlatMapping.
-
-  Args:
-    value: A (possibly nested) mapping to be deconstructed into flat structures
-  Returns:
-    Three structures: a flat tuple containing the leaf values of the mapping,
-    a tuple containing the original structure of the mapping and a helper index
-
-  eg.:
-  >>> leaves, (structure, index) = deconstruct({foo:{a:1, b:2}, bar: 3})
-
-  Leaves represents the flat values of the structure in key order:
-  >>> leaves
-  (3, 1, 2)
-
-  Leaf values are any values that are not a dict or FlatMapping
-
-  Structure represents the ordered and nested key space of the structure:
-  >>> structure
-  (('bar',), ('foo', (('a',), ('b',))))
-
-  Index represents a nested index allowing efficient lookup into leaves:
-  >>> index
-  {'bar': (0, 0, ()), 'foo': (1, 1, {'a': (0, 0, ()), 'b': (1, 1, ())})}
-  """
-  if type(value) == FlatMapping:
-    return value.flatten()  # pytype: disable=attribute-error
-  structure = []
-  leaves = []
-  index = {}
-  leaf_index = 0
-  structure_index = 0
-  # Needs to be sorted by key to guarantee iteration order on the FlatMapping
-  items = sorted(value.items(), key=lambda kv: kv[0])
-
-  for key, value in items:
-
-    # Replacing this type check with isinstanceof is much slower for FlatMapping
-    # because it inherits from Mapping
-    if type(value) == dict or type(value) == FlatMapping:
-      new_leaves, (new_structure, new_index) = deconstruct(value)
-
-      structure.append((key, new_structure))
-      leaves.extend(new_leaves)
-      index[key] = (leaf_index, structure_index, new_index)
-      leaf_index += len(new_leaves)
-
-    else:
-      # TODO(lenamartens) support case where value is a Sequence:
-      # currently the sequence will be stored in the leaves as is,
-      # which makes the leaves structure not flat
-      structure.append((key,))
-      leaves.append(value)
-      index[key] = (leaf_index, structure_index, ())
-      leaf_index += 1
-    structure_index += 1
-
-  return tuple(leaves), (tuple(structure), index)
-# pylint: enable=unidiomatic-typecheck
 
 jax.tree_util.register_pytree_node(
     FlatMapping,

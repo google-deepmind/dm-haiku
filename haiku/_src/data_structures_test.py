@@ -207,25 +207,24 @@ class FlatMappingTest(parameterized.TestCase):
 
     # Init from dict with nested FlatMapping
     inner = FlatMapping.from_mapping({"a": 1})
-    nested_flatmapping = FlatMapping.from_mapping({"foo": inner, "bar": 2})
-    self.assertEqual(f, nested_flatmapping)
+    outer = {"foo": inner, "bar": 2}
+    nested_flatmapping = FlatMapping.from_mapping(outer)
+    self.assertEqual(outer, nested_flatmapping)
 
     # Init from flat structures
     values, treedef = f.flatten()
     self.assertEqual(FlatMapping((values, treedef)), f)
 
   def test_get_item(self):
-    f_map = FlatMapping.from_mapping({"foo": {"b": {"c": 1}, "d": {"e": 2}},
-                                      "bar": {"c": 1}})
-    self.assertEqual(f_map["foo"], FlatMapping.from_mapping({"b": {"c": 1},
-                                                             "d": {"e": 2}}))
-    self.assertEqual(f_map["foo"]["d"], FlatMapping.from_mapping({"e": 2}))
-    self.assertEqual(f_map["foo"]["d"]["e"], 2)
-    self.assertEqual(f_map["foo"]["b"]["c"], 1)
-    self.assertEqual(f_map["bar"], FlatMapping.from_mapping({"c": 1}))
-    self.assertEqual(f_map["bar"]["c"], 1)
+    f_map = FlatMapping.from_mapping({"foo": {"b": [1], "d": {"e": 2}},
+                                      "bar": (1,)})
+    self.assertEqual(f_map["foo"], {"b": [1], "d": {"e": 2}})
+    self.assertEqual(f_map["bar"], (1,))
     with self.assertRaises(KeyError):
       _ = f_map["b"]
+
+    with self.assertRaises(TypeError):
+      f_map["foo"]["b"] = 2
 
   def test_items(self):
     f_map = FlatMapping.from_mapping({"foo": {"b": {"c": 1}, "d": {"e": 2}},
@@ -252,6 +251,24 @@ class FlatMappingTest(parameterized.TestCase):
     uf = jax.tree_unflatten(treedef, leaves)
     self.assertEqual(type(f), FlatMapping)
     self.assertEqual(f, uf)
+
+  @parameterized.named_parameters(("tuple", tuple), ("list", list),)
+  def test_different_sequence_types(self, type_of_sequence):
+    f_map = FlatMapping.from_mapping({"foo": type_of_sequence((1, 2)),
+                                      "bar": type_of_sequence((3, {"b": 4}))})
+    leaves, _ = f_map.flatten()
+
+    self.assertEqual(leaves, (3, 4, 1, 2))
+    self.assertEqual(f_map["foo"][0], 1)
+    self.assertEqual(f_map["bar"][1]["b"], 4)
+
+  def test_replace_leaves_with_nodes_in_map(self):
+    f = FlatMapping.from_mapping({"foo": 1, "bar": 2})
+
+    f_nested = jax.tree_map(lambda x: {"a": (x, x)}, f)
+    leaves, _ = f_nested.flatten()
+
+    self.assertEqual(leaves, (2, 2, 1, 1))
 
 
 class DataStructuresTest(absltest.TestCase):

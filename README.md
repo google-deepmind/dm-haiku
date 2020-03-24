@@ -296,6 +296,9 @@ params = forward.init(rng_key1, x)
 prediction = forward.apply(params, rng_key2, x)
 ```
 
+For a more complete look at working with stochastic models, please see our
+[VAE example](https://github.com/deepmind/dm-haiku/tree/master/examples/vae.py).
+
 **Note:** `hk.next_rng_key()` is not functionally pure which means you should
 avoid using it alongside JAX transformations which are inside `hk.transform`.
 For more information and possible workarounds, please consult the docs on

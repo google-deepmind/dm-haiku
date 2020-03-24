@@ -185,13 +185,13 @@ jax.tree_util.register_pytree_node(
 
 # PyTreeDef is defined in jaxlib/pytree.cc but not exposed.
 PyTreeDef = Any
+FlatComponents = Tuple[Sequence[Any], PyTreeDef]
 
 
 class FlatMapping(Mapping[K, V]):
   """Immutable mapping with O(1) flatten and O(n) unflatten operation."""
 
-  def __init__(self, flat: Tuple[Sequence[Any], PyTreeDef],
-               check_leaves: bool = True):
+  def __init__(self, flat: FlatComponents, check_leaves: bool = True):
     """Constructs a flat mapping from already flattened components.
 
     Args:
@@ -210,6 +210,7 @@ class FlatMapping(Mapping[K, V]):
 
     self._structure = structure
     self._leaves = tuple(leaves)
+    self._mapping = None
 
   @classmethod
   def from_mapping(cls, m: Mapping[Any, Any]) -> "FlatMapping":
@@ -226,8 +227,10 @@ class FlatMapping(Mapping[K, V]):
       return cls(m.flatten(), check_leaves=False)
     return cls(jax.tree_flatten(m), check_leaves=False)
 
-  def to_mapping(self):
-    return jax.tree_unflatten(self._structure, self._leaves)
+  def to_mapping(self) -> Mapping[K, V]:
+    if not self._mapping:
+      self._mapping = jax.tree_unflatten(self._structure, self._leaves)
+    return self._mapping
 
   def keys(self):
     return KeysOnlyKeysView(self.to_mapping())
@@ -262,7 +265,7 @@ class FlatMapping(Mapping[K, V]):
   def __len__(self):
     return len(self.keys())
 
-  def flatten(self) -> Tuple[Tuple[Any], PyTreeDef]:
+  def flatten(self) -> FlatComponents:
     return self._leaves, self._structure
 
   def __str__(self):

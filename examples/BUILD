@@ -35,6 +35,21 @@ hk_py_binary(
 )
 
 hk_py_binary(
+    name = "mnist_pruning",
+    srcs = ["mnist_pruning.py"],
+    deps = [
+        # pip: absl:app
+        # pip: absl/flags
+        # pip: absl/logging
+        "//haiku",
+        # pip: jax
+        # pip: jax:optix
+        # pip: numpy
+        # pip: tensorflow_datasets
+    ],
+)
+
+hk_py_binary(
     name = "impala_lite",
     srcs = ["impala_lite.py"],
     deps = [

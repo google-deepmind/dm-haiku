@@ -232,7 +232,7 @@ def transform_with_state(f) -> TransformedWithState:
       out, state = apply(params, state, rng, *a, **k)
 
   Note that the ``rng`` argument is typically not required for `apply` and
-  passing ``None`` is accpeted.
+  passing ``None`` is accepted.
 
   This function is equivalent to :func:`transform`, however it allows you to
   maintain and update internal state (e.g. moving averages in batch norm) via

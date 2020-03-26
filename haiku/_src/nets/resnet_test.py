@@ -39,7 +39,7 @@ class ResnetTest(parameterized.TestCase):
   def test_error_incorrect_args_block_list(self, list_length):
     block_list = [i for i in range(list_length)]
     with self.assertRaisesRegex(
-        ValueError, "blocks_per_group_list` must be of length 4 not {}".format(
+        ValueError, "blocks_per_group` must be of length 4 not {}".format(
             list_length)):
       resnet.ResNet(block_list, 10, {"decay_rate": 0.9, "eps": 1e-5})
 
@@ -49,10 +49,10 @@ class ResnetTest(parameterized.TestCase):
     channel_list = [i for i in range(list_length)]
     with self.assertRaisesRegex(
         ValueError,
-        "channels_per_group_list` must be of length 4 not {}".format(
+        "channels_per_group` must be of length 4 not {}".format(
             list_length)):
       resnet.ResNet([1, 1, 1, 1], 10, {"decay_rate": 0.9, "eps": 1e-5},
-                    channels_per_group_list=channel_list)
+                    channels_per_group=channel_list)
 
 if __name__ == "__main__":
   absltest.main()

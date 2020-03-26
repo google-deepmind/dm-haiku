@@ -35,78 +35,68 @@ class BottleNeckBlockV1(module.Module):
                use_projection: bool,
                bn_config: Mapping[Text, float],
                name: Optional[Text] = None):
-    super(BottleNeckBlockV1, self).__init__(name=name)
-    self._channels = channels
-    self._stride = stride
+    super().__init__(name=name)
     self._use_projection = use_projection
-    self._bn_config = bn_config
 
-    batchnorm_args = {
-        "create_scale": True,
-        "create_offset": True,
-        "decay_rate": 0.999,
-    }
-    batchnorm_args.update(bn_config)
+    bn_config = dict(bn_config)
+    bn_config.setdefault("create_scale", True)
+    bn_config.setdefault("create_offset", True)
+    bn_config.setdefault("decay_rate", 0.999)
 
     if self._use_projection:
-      self._proj_conv = conv.Conv2D(
-          output_channels=channels,
-          kernel_shape=1,
-          stride=stride,
-          with_bias=False,
-          padding="SAME",
-          name="shortcut_conv")
-      self._proj_batchnorm = batch_norm.BatchNorm(
-          name="shortcut_batchnorm", **batchnorm_args)
+      self._proj_conv = conv.Conv2D(output_channels=channels,
+                                    kernel_shape=1,
+                                    stride=stride,
+                                    with_bias=False,
+                                    padding="SAME",
+                                    name="shortcut_conv")
 
-    self._layers = []
-    conv_0 = conv.Conv2D(
-        output_channels=channels // 4,
-        kernel_shape=1,
-        stride=1,
-        with_bias=False,
-        padding="SAME",
-        name="conv_0")
-    self._layers.append(
-        [conv_0,
-         batch_norm.BatchNorm(name="batchnorm_0", **batchnorm_args)])
+      self._proj_batchnorm = batch_norm.BatchNorm(name="shortcut_batchnorm",
+                                                  **bn_config)
 
-    conv_1 = conv.Conv2D(
-        output_channels=channels // 4,
-        kernel_shape=3,
-        stride=stride,
-        with_bias=False,
-        padding="SAME",
-        name="conv_1")
-    self._layers.append(
-        [conv_1,
-         batch_norm.BatchNorm(name="batchnorm_1", **batchnorm_args)])
+    conv_0 = conv.Conv2D(output_channels=channels // 4,
+                         kernel_shape=1,
+                         stride=1,
+                         with_bias=False,
+                         padding="SAME",
+                         name="conv_0")
+    bn_0 = batch_norm.BatchNorm(name="batchnorm_0", **bn_config)
 
-    conv_2 = conv.Conv2D(
-        output_channels=channels,
-        kernel_shape=1,
-        stride=1,
-        with_bias=False,
-        padding="SAME",
-        name="conv_2")
-    batchnorm_2 = batch_norm.BatchNorm(
-        name="batchnorm_2", scale_init=jnp.zeros, **batchnorm_args)
-    self._layers.append([conv_2, batchnorm_2])
+    conv_1 = conv.Conv2D(output_channels=channels // 4,
+                         kernel_shape=3,
+                         stride=stride,
+                         with_bias=False,
+                         padding="SAME",
+                         name="conv_1")
+
+    bn_1 = batch_norm.BatchNorm(name="batchnorm_1", **bn_config)
+
+    conv_2 = conv.Conv2D(output_channels=channels,
+                         kernel_shape=1,
+                         stride=1,
+                         with_bias=False,
+                         padding="SAME",
+                         name="conv_2")
+
+    bn_2 = batch_norm.BatchNorm(name="batchnorm_2", scale_init=jnp.zeros,
+                                **bn_config)
+
+    self._layers = ((conv_0, bn_0), (conv_1, bn_1), (conv_2, bn_2))
 
   def __call__(self, inputs, is_training):
+    x = shortcut = inputs
+
     if self._use_projection:
-      shortcut = self._proj_conv(inputs)
+      shortcut = self._proj_conv(shortcut)
       shortcut = self._proj_batchnorm(shortcut, is_training=is_training)
-    else:
-      shortcut = inputs
 
-    net = inputs
-    for i, [conv_layer, batchnorm_layer] in enumerate(self._layers):
-      net = conv_layer(net)
-      net = batchnorm_layer(net, is_training=is_training)
-      net = jax.nn.relu(net) if i < 2 else net  # Don't apply relu on last layer
+    for i, (conv_i, bn_i) in enumerate(self._layers):
+      x = conv_i(x)
+      x = bn_i(x, is_training=is_training)
+      if i < 2:  # Don't apply relu on last layer
+        x = jax.nn.relu(x)
 
-    return jax.nn.relu(net + shortcut)
+    return jax.nn.relu(x + shortcut)
 
 
 class BottleNeckBlockV2(module.Module):
@@ -118,70 +108,63 @@ class BottleNeckBlockV2(module.Module):
                use_projection: bool,
                bn_config: Mapping[Text, float],
                name: Optional[Text] = None):
-    super(BottleNeckBlockV2, self).__init__(name=name)
-    self._channels = channels
-    self._stride = stride
+    super().__init__(name=name)
     self._use_projection = use_projection
-    self._bn_config = bn_config
 
-    batchnorm_args = {"create_scale": True, "create_offset": True}
-    batchnorm_args.update(bn_config)
+    bn_config = dict(bn_config)
+    bn_config.setdefault("create_scale", True)
+    bn_config.setdefault("create_offset", True)
 
     if self._use_projection:
-      self._proj_conv = conv.Conv2D(
-          output_channels=channels,
-          kernel_shape=1,
-          stride=stride,
-          with_bias=False,
-          padding="SAME",
-          name="shortcut_conv")
+      self._proj_conv = conv.Conv2D(output_channels=channels,
+                                    kernel_shape=1,
+                                    stride=stride,
+                                    with_bias=False,
+                                    padding="SAME",
+                                    name="shortcut_conv")
 
-    self._conv_0 = conv.Conv2D(
-        output_channels=channels // 4,
-        kernel_shape=1,
-        stride=1,
-        with_bias=False,
-        padding="SAME",
-        name="conv_0")
+    conv_0 = conv.Conv2D(output_channels=channels // 4,
+                         kernel_shape=1,
+                         stride=1,
+                         with_bias=False,
+                         padding="SAME",
+                         name="conv_0")
 
-    self._bn_0 = batch_norm.BatchNorm(name="batchnorm_0", **batchnorm_args)
+    bn_0 = batch_norm.BatchNorm(name="batchnorm_0", **bn_config)
 
-    self._conv_1 = conv.Conv2D(
-        output_channels=channels // 4,
-        kernel_shape=3,
-        stride=stride,
-        with_bias=False,
-        padding="SAME",
-        name="conv_1")
+    conv_1 = conv.Conv2D(output_channels=channels // 4,
+                         kernel_shape=3,
+                         stride=stride,
+                         with_bias=False,
+                         padding="SAME",
+                         name="conv_1")
 
-    self._bn_1 = batch_norm.BatchNorm(name="batchnorm_1", **batchnorm_args)
+    bn_1 = batch_norm.BatchNorm(name="batchnorm_1", **bn_config)
 
-    self._conv_2 = conv.Conv2D(
-        output_channels=channels,
-        kernel_shape=1,
-        stride=1,
-        with_bias=False,
-        padding="SAME",
-        name="conv_2")
+    conv_2 = conv.Conv2D(output_channels=channels,
+                         kernel_shape=1,
+                         stride=1,
+                         with_bias=False,
+                         padding="SAME",
+                         name="conv_2")
 
     # NOTE: Some implementations of ResNet50 v2 suggest initializing gamma/scale
     # here to zeros.
-    self._bn_2 = batch_norm.BatchNorm(name="batchnorm_2", **batchnorm_args)
+    bn_2 = batch_norm.BatchNorm(name="batchnorm_2", **bn_config)
+
+    self._layers = ((conv_0, bn_0), (conv_1, bn_1), (conv_2, bn_2))
 
   def __call__(self, inputs, is_training):
-    net = inputs
-    shortcut = inputs
+    x = shortcut = inputs
 
-    for i, (conv_i, bn_i) in enumerate(((self._conv_0, self._bn_0),
-                                        (self._conv_1, self._bn_1),
-                                        (self._conv_2, self._bn_2))):
-      net = bn_i(net, is_training=is_training)
-      net = jax.nn.relu(net)
+    for i, (conv_i, bn_i) in enumerate(self._layers):
+      x = bn_i(x, is_training=is_training)
+      x = jax.nn.relu(x)
       if i == 0 and self._use_projection:
-        shortcut = self._proj_conv(net)
-      net = conv_i(net)
+        shortcut = self._proj_conv(x)
+      x = conv_i(x)
 
-    return net + shortcut
+    return x + shortcut
 
 
 class BlockGroup(module.Module):
@@ -194,48 +177,45 @@ class BlockGroup(module.Module):
                bn_config: Mapping[Text, float],
                resnet_v2: bool = False,
                name: Optional[Text] = None):
-    super(BlockGroup, self).__init__(name=name)
-    self._channels = channels
-    self._num_blocks = num_blocks
-    self._stride = stride
-    self._bn_config = bn_config
+    super().__init__(name=name)
 
-    if resnet_v2:
-      bottle_neck_block = BottleNeckBlockV2
-    else:
-      bottle_neck_block = BottleNeckBlockV1
+    block_cls = BottleNeckBlockV2 if resnet_v2 else BottleNeckBlockV1
 
     self._blocks = []
-    for id_block in range(num_blocks):
+    for i in range(num_blocks):
       self._blocks.append(
-          bottle_neck_block(
-              channels=channels,
-              stride=stride if id_block == 0 else 1,
-              use_projection=(id_block == 0),
-              bn_config=bn_config,
-              name="block_%d" % (id_block)))
+          block_cls(channels=channels,
+                    stride=(1 if i else stride),
+                    use_projection=(i == 0),
+                    bn_config=bn_config,
+                    name="block_%d" % (i)))
 
   def __call__(self, inputs, is_training):
-    net = inputs
+    x = inputs
     for block in self._blocks:
-      net = block(net, is_training=is_training)
-    return net
+      x = block(x, is_training=is_training)
+    return x
+
+
+def check_length(length, value, name):
+  if len(value) != length:
+    raise ValueError(f"`{name}` must be of length 4 not {len(value)}")
 
 
 class ResNet(module.Module):
   """ResNet model."""
 
   def __init__(self,
-               blocks_per_group_list: Sequence[int],
+               blocks_per_group: Sequence[int],
                num_classes: int,
                bn_config: Optional[Mapping[Text, float]] = None,
                resnet_v2: bool = False,
-               channels_per_group_list: Sequence[int] = (256, 512, 1024, 2048),
+               channels_per_group: Sequence[int] = (256, 512, 1024, 2048),
                name: Optional[Text] = None):
     """Constructs a ResNet model.
 
     Args:
-      blocks_per_group_list: A sequence of length 4 that indicates the number of
+      blocks_per_group: A sequence of length 4 that indicates the number of
         blocks created in each group.
       num_classes: The number of classes to classify the inputs into.
       bn_config: A dictionary of two elements, `decay_rate` and `eps` to be
@@ -243,91 +223,75 @@ class ResNet(module.Module):
         `0.9` and `eps` is `1e-5`.
       resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults to
         False.
-      channels_per_group_list: A sequence of length 4 that indicates the number
+      channels_per_group: A sequence of length 4 that indicates the number
         of channels used for each block in each group.
       name: Name of the module.
     """
-    super(ResNet, self).__init__(name=name)
-    if bn_config is None:
-      bn_config = {"decay_rate": 0.9, "eps": 1e-5}
-    self._bn_config = bn_config
+    super().__init__(name=name)
     self._resnet_v2 = resnet_v2
 
+    bn_config = dict(bn_config or {})
+    bn_config.setdefault("decay_rate", 0.9)
+    bn_config.setdefault("eps", 1e-5)
+    bn_config.setdefault("create_scale", True)
+    bn_config.setdefault("create_offset", True)
+
     # Number of blocks in each group for ResNet.
-    if len(blocks_per_group_list) != 4:
-      raise ValueError(
-          "`blocks_per_group_list` must be of length 4 not {}".format(
-              len(blocks_per_group_list)))
-    self._blocks_per_group_list = blocks_per_group_list
+    check_length(4, blocks_per_group, "blocks_per_group")
+    check_length(4, channels_per_group, "channels_per_group")
 
-    # Number of channels in each group for ResNet.
-    if len(channels_per_group_list) != 4:
-      raise ValueError(
-          "`channels_per_group_list` must be of length 4 not {}".format(
-              len(channels_per_group_list)))
-    self._channels_per_group_list = channels_per_group_list
+    self._initial_conv = conv.Conv2D(output_channels=64,
+                                     kernel_shape=7,
+                                     stride=2,
+                                     with_bias=False,
+                                     padding="SAME",
+                                     name="initial_conv")
 
-    self._initial_conv = conv.Conv2D(
-        output_channels=64,
-        kernel_shape=7,
-        stride=2,
-        with_bias=False,
-        padding="SAME",
-        name="initial_conv")
     if not self._resnet_v2:
-      self._initial_batchnorm = batch_norm.BatchNorm(
-          create_scale=True,
-          create_offset=True,
-          name="initial_batchnorm",
-          **bn_config)
+      self._initial_batchnorm = batch_norm.BatchNorm(name="initial_batchnorm",
+                                                     **bn_config)
 
     self._block_groups = []
-    strides = [1, 2, 2, 2]
+    strides = (1, 2, 2, 2)
     for i in range(4):
       self._block_groups.append(
-          BlockGroup(
-              channels=self._channels_per_group_list[i],
-              num_blocks=self._blocks_per_group_list[i],
-              stride=strides[i],
-              bn_config=bn_config,
-              resnet_v2=resnet_v2,
-              name="block_group_%d" % (i)))
+          BlockGroup(channels=channels_per_group[i],
+                     num_blocks=blocks_per_group[i],
+                     stride=strides[i],
+                     bn_config=bn_config,
+                     resnet_v2=resnet_v2,
+                     name="block_group_%d" % (i)))
 
     if self._resnet_v2:
-      self._final_batchnorm = batch_norm.BatchNorm(
-          create_scale=True,
-          create_offset=True,
-          name="final_batchnorm",
-          **bn_config)
+      self._final_batchnorm = batch_norm.BatchNorm(name="final_batchnorm",
+                                                   **bn_config)
 
-    self._logits = basic.Linear(
-        output_size=num_classes, w_init=jnp.zeros, name="logits")
+    self._logits = basic.Linear(num_classes, w_init=jnp.zeros, name="logits")
 
   def __call__(self, inputs, is_training):
-    net = inputs
-    net = self._initial_conv(net)
+    x = inputs
+    x = self._initial_conv(x)
     if not self._resnet_v2:
-      net = self._initial_batchnorm(net, is_training=is_training)
-      net = jax.nn.relu(net)
+      x = self._initial_batchnorm(x, is_training=is_training)
+      x = jax.nn.relu(x)
 
-    net = pool.max_pool(
-        net,
-        window_shape=(1, 3, 3, 1),
-        strides=(1, 2, 2, 1),
-        padding="SAME")
+    x = pool.max_pool(x,
+                      window_shape=(1, 3, 3, 1),
+                      strides=(1, 2, 2, 1),
+                      padding="SAME")
 
     for block_group in self._block_groups:
-      net = block_group(net, is_training)
+      x = block_group(x, is_training)
 
     if self._resnet_v2:
-      net = self._final_batchnorm(net, is_training=is_training)
-      net = jax.nn.relu(net)
-    net = jnp.mean(net, axis=[1, 2])
-    return self._logits(net)
+      x = self._final_batchnorm(x, is_training=is_training)
+      x = jax.nn.relu(x)
+    x = jnp.mean(x, axis=[1, 2])
+    return self._logits(x)
 
 
 class ResNet50(ResNet):
-  """ResNet50 module."""
+  """ResNet50."""
 
   def __init__(self,
                num_classes: int,
@@ -340,12 +304,87 @@ class ResNet50(ResNet):
       num_classes: The number of classes to classify the inputs into.
       bn_config: A dictionary of two elements, `decay_rate` and `eps` to be
         passed on to the `BatchNorm` layers.
-      resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults to
-        False.
+      resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults
+        to False.
       name: Name of the module.
     """
-    super(ResNet50, self).__init__([3, 4, 6, 3],
-                                   num_classes=num_classes,
-                                   bn_config=bn_config,
-                                   resnet_v2=resnet_v2,
-                                   name=name)
+    super().__init__(blocks_per_group=(3, 4, 6, 3),
+                     num_classes=num_classes,
+                     bn_config=bn_config,
+                     resnet_v2=resnet_v2,
+                     name=name)
+
+
+class ResNet101(ResNet):
+  """ResNet101."""
+
+  def __init__(self,
+               num_classes: int,
+               bn_config: Optional[Mapping[Text, float]] = None,
+               resnet_v2: bool = False,
+               name: Optional[Text] = None):
+    """Constructs a ResNet model.
+
+    Args:
+      num_classes: The number of classes to classify the inputs into.
+      bn_config: A dictionary of two elements, `decay_rate` and `eps` to be
+        passed on to the `BatchNorm` layers.
+      resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults
+        to False.
+      name: Name of the module.
+    """
+    super().__init__(blocks_per_group=(3, 4, 23, 3),
+                     num_classes=num_classes,
+                     bn_config=bn_config,
+                     resnet_v2=resnet_v2,
+                     name=name)
+
+
+class ResNet152(ResNet):
+  """ResNet152."""
+
+  def __init__(self,
+               num_classes: int,
+               bn_config: Optional[Mapping[Text, float]] = None,
+               resnet_v2: bool = False,
+               name: Optional[Text] = None):
+    """Constructs a ResNet model.
+
+    Args:
+      num_classes: The number of classes to classify the inputs into.
+      bn_config: A dictionary of two elements, `decay_rate` and `eps` to be
+        passed on to the `BatchNorm` layers.
+      resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults
+        to False.
+      name: Name of the module.
+    """
+    super().__init__(blocks_per_group=(3, 8, 36, 3),
+                     num_classes=num_classes,
+                     bn_config=bn_config,
+                     resnet_v2=resnet_v2,
+                     name=name)
+
+
+class ResNet200(ResNet):
+  """ResNet200."""
+
+  def __init__(self,
+               num_classes: int,
+               bn_config: Optional[Mapping[Text, float]] = None,
+               resnet_v2: bool = False,
+               name: Optional[Text] = None):
+    """Constructs a ResNet model.
+
+    Args:
+      num_classes: The number of classes to classify the inputs into.
+      bn_config: A dictionary of two elements, `decay_rate` and `eps` to be
+        passed on to the `BatchNorm` layers.
+      resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults
+        to False.
+      name: Name of the module.
+    """
+    super().__init__(blocks_per_group=(3, 24, 36, 3),
+                     num_classes=num_classes,
+                     bn_config=bn_config,
+                     resnet_v2=resnet_v2,
+                     name=name)

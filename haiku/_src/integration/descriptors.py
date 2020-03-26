@@ -118,8 +118,8 @@ BATCH_MODULES = (
         create=lambda: hk.SpectralNorm(),
         shape=(BATCH_SIZE, 3, 2)),
     ModuleDescriptor(
-        name="nets.ResNet50",
-        create=lambda: Training(hk.nets.ResNet50(1000)),
+        name="nets.ResNet",
+        create=lambda: Training(hk.nets.ResNet((3, 4, 6, 3), 1000)),
         shape=(BATCH_SIZE, 3, 3, 2)),
     # pylint: disable=g-long-lambda
     ModuleDescriptor(
@@ -261,4 +261,10 @@ IGNORED_MODULES = {
     # Recurrent.
     hk.DeepRNN,
     hk.RNNCore,
+
+    # Tested transitively.
+    hk.nets.ResNet50,
+    hk.nets.ResNet101,
+    hk.nets.ResNet152,
+    hk.nets.ResNet200,
 }

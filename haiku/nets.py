@@ -13,14 +13,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Haiku is a neural network library for JAX."""
+"""Common networks built using Haiku modules."""
 
 from haiku._src.nets.mlp import MLP
 from haiku._src.nets.mobilenetv1 import MobileNetV1
+from haiku._src.nets.resnet import ResNet
+from haiku._src.nets.resnet import ResNet101
+from haiku._src.nets.resnet import ResNet152
+from haiku._src.nets.resnet import ResNet200
 from haiku._src.nets.resnet import ResNet50
 
 __all__ = (
+    "ResNet",
     "ResNet50",
+    "ResNet101",
+    "ResNet152",
+    "ResNet200",
     "MLP",
     "MobileNetV1"
 )

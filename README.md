@@ -21,11 +21,10 @@ library for [TensorFlow](https://github.com/tensorflow/tensorflow).
 **Disambiguation:** if you are looking for Haiku the operating system then
 please see https://haiku-os.org/.
 
-NOTE: Haiku is currently **alpha**. A number of researchers have tested Haiku
+NOTE: Haiku is currently **beta**. A number of researchers have tested Haiku
 for several months and have reproduced a number of experiments at scale. Please
-feel free to use Haiku, but be sure to test any assumptions and to
-[let us know](https://github.com/deepmind/dm-haiku/issues) if things don't look
-right!
+feel free to use Haiku, and
+[let us know](https://github.com/deepmind/dm-haiku/issues) if you have issues!
 
 ## Overview
 
@@ -403,7 +402,7 @@ To cite this repository:
   author = {Tom Hennigan and Trevor Cai and Tamara Norman and Igor Babuschkin},
   title = {{H}aiku: {S}onnet for {JAX}},
   url = {http://github.com/deepmind/dm-haiku},
-  version = {0.0.1a0},
+  version = {0.0.1b0},
   year = {2020},
 }
 ```

@@ -61,7 +61,7 @@ setup(
     zip_safe=False,
     # PyPI package information.
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Intended Audience :: Education',
         'Intended Audience :: Science/Research',

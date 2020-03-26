@@ -87,7 +87,7 @@ from haiku._src.transform import without_state
 from haiku._src.typing import Params
 from haiku._src.typing import State
 
-__version__ = "0.0.1a0"
+__version__ = "0.0.1b0"
 
 __all__ = (
     "AvgPool",

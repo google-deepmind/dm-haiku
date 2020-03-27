@@ -62,7 +62,7 @@ class ConvND(module.Module):
         length `num_spatial_dims`.
       stride: Optional stride for the kernel. Either an integer or a sequence of
         length `num_spatial_dims`. Defaults to 1.
-      rate: Optional kernal dilation rate. Either an integer or a sequence of
+      rate: Optional kernel dilation rate. Either an integer or a sequence of
         length `num_spatial_dims`. 1 corresponds to standard ND convolution,
         `rate > 1` corresponds to dilated convolution. Defaults to 1.
       padding: Optional padding algorithm. Either "VALID" or "SAME" or
@@ -97,8 +97,8 @@ class ConvND(module.Module):
     self._b_init = b_init or jnp.zeros
     self._mask = mask
     self._lhs_dilation = utils.replicate(1, num_spatial_dims, "lhs_dilation")
-    self._kernal_dilation = utils.replicate(rate, num_spatial_dims,
-                                            "kernal_dilation")
+    self._kernel_dilation = utils.replicate(rate, num_spatial_dims,
+                                            "kernel_dilation")
     self._data_format = data_format
     self._channel_index = utils.get_channel_index(data_format)
     if self._channel_index == -1:
@@ -112,7 +112,7 @@ class ConvND(module.Module):
       self._padding = pad.create(
           padding=padding,
           kernel=self._kernel_shape,
-          rate=self._kernal_dilation,
+          rate=self._kernel_dilation,
           n=self._num_spatial_dims)
 
   def __call__(self, inputs):
@@ -147,7 +147,7 @@ class ConvND(module.Module):
         self._stride,
         self._padding,
         lhs_dilation=self._lhs_dilation,
-        rhs_dilation=self._kernal_dilation,
+        rhs_dilation=self._kernel_dilation,
         dimension_numbers=self._dn)
     if self._with_bias:
       if self._channel_index == -1:
@@ -182,7 +182,7 @@ class Conv1D(ConvND):
         length 1.
       stride: Optional stride for the kernel. Either an integer or a sequence of
         length 1. Defaults to 1.
-      rate: Optional kernal dilation rate. Either an integer or a sequence of
+      rate: Optional kernel dilation rate. Either an integer or a sequence of
         length 1. 1 corresponds to standard ND convolution,
         `rate > 1` corresponds to dilated convolution. Defaults to 1.
       padding: Optional padding algorithm. Either "VALID" or "SAME" or
@@ -238,7 +238,7 @@ class Conv2D(ConvND):
         length 2.
       stride: Optional stride for the kernel. Either an integer or a sequence of
         length 2. Defaults to 1.
-      rate: Optional kernal dilation rate. Either an integer or a sequence of
+      rate: Optional kernel dilation rate. Either an integer or a sequence of
         length 2. 1 corresponds to standard ND convolution,
         `rate > 1` corresponds to dilated convolution. Defaults to 1.
       padding: Optional padding algorithm. Either "VALID" or "SAME" or
@@ -294,7 +294,7 @@ class Conv3D(ConvND):
         length 3.
       stride: Optional stride for the kernel. Either an integer or a sequence of
         length 3. Defaults to 1.
-      rate: Optional kernal dilation rate. Either an integer or a sequence of
+      rate: Optional kernel dilation rate. Either an integer or a sequence of
         length 3. 1 corresponds to standard ND convolution,
         `rate > 1` corresponds to dilated convolution. Defaults to 1.
       padding: Optional padding algorithm. Either "VALID" or "SAME" or

@@ -19,7 +19,6 @@ import collections
 import contextlib
 import pprint
 import threading
-import types
 from typing import Any, Callable, Generic, Mapping, Optional, TypeVar, Tuple, Sequence, Union
 
 from haiku._src import utils
@@ -250,14 +249,11 @@ class FlatMapping(Mapping[K, V]):
       leaves, structure = jax.tree_flatten(other)
     return self._leaves == tuple(leaves) and self._structure == structure
 
-  def __getitem__(self, key):
-    value = self.to_mapping()[key]
-    if isinstance(value, Mapping):
-      # Create a read-only version to prevent modification of the returned item:
-      # modifying the item will not modify the node in the FlatMapping,
-      # which will be confusing.
-      value = types.MappingProxyType(value)
-    return value
+  def __getitem__(self, key: K) -> Union["FrozenDict", "FrozenList", V]:
+    # Create a read-only version to prevent modification of the returned item:
+    # modifying an item will not modify the node in the FlatMapping,
+    # which will be confusing. User-defined nodes will still be mutable.
+    return builtin_to_immutable(self.to_mapping()[key])
 
   def __iter__(self):
     return iter(self.keys())
@@ -287,3 +283,85 @@ jax.tree_util.register_pytree_node(
     FlatMapping,
     lambda s: s.flatten(),
     lambda treedef, leaves: FlatMapping((leaves, treedef)))
+
+
+def builtin_to_immutable(value):
+  if type(value) is dict:  # pylint: disable=unidiomatic-typecheck
+    return FrozenDict(value)
+  elif type(value) is list:  # pylint: disable=unidiomatic-typecheck
+    return FrozenList(value)
+  else:
+    return value
+
+
+def not_supported(method_name):
+  def method(self, *a, **k):
+    raise TypeError(
+        f"{type(self).__name__!r} object does not support {method_name!r}")
+  return method
+
+
+# TODO(lenamartens) merge FrozenDict and frozendict when frozendict has been
+# swapped out for FlatMapping
+class FrozenDict(frozendict):
+  """Immutable dictionary that contains immutable dicts/lists itself."""
+  __slots__ = ()
+
+  def __getattr__(self, name):
+    value = super().__getattr__(name)
+    value = builtin_to_immutable(value)
+    return value
+
+  def __getitem__(self, name):
+    value = super().__getitem__(name)
+    value = builtin_to_immutable(value)
+    return value
+
+
+jax.tree_util.register_pytree_node(
+    FrozenDict,
+    lambda s: (tuple(s.values()), tuple(s.keys())),
+    lambda k, xs: FrozenDict(zip(k, xs)))
+
+
+class FrozenList(tuple):
+  """Immutable list that contains immutable dicts/lists itself."""
+  __slots__ = ()
+
+  def __repr__(self):
+    return f"{type(self).__name__}({list(self)})"
+  __str__ = __repr__
+
+  def __getitem__(self, name):
+    value = super().__getitem__(name)
+    value = builtin_to_immutable(value)
+    return value
+
+  def __iter__(self):
+    for v in super().__iter__():
+      yield builtin_to_immutable(v)
+
+  def __reversed__(self):
+    return reversed([v for v in self])
+
+  def __sorted__(self):
+    return sorted([v for v in self])
+
+  # Adding an explicit TypeError for methods that are defined for tuples but
+  # not for lists
+  __iadd__ = not_supported("__iadd__")
+  __imul__ = not_supported("__imul__")
+  append = not_supported("append")
+  clear = not_supported("clear")
+  copy = not_supported("copy")
+  extend = not_supported("extend")
+  insert = not_supported("insert")
+  pop = not_supported("pop")
+  remove = not_supported("remove")
+  reverse = not_supported("reverse")
+  sort = not_supported("sort")
+
+jax.tree_util.register_pytree_node(
+    FrozenList,
+    lambda xs: (xs, None),
+    lambda _, xs: FrozenList(xs))

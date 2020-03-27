@@ -223,9 +223,6 @@ class FlatMappingTest(parameterized.TestCase):
     with self.assertRaises(KeyError):
       _ = f_map["b"]
 
-    with self.assertRaises(TypeError):
-      f_map["foo"]["b"] = 2
-
   def test_items(self):
     f_map = FlatMapping.from_mapping({"foo": {"b": {"c": 1}, "d": {"e": 2}},
                                       "bar": {"c": 1}})
@@ -269,6 +266,31 @@ class FlatMappingTest(parameterized.TestCase):
     leaves, _ = f_nested.flatten()
 
     self.assertEqual(leaves, (2, 2, 1, 1))
+
+  def test_nested_immutability(self):
+    f = FlatMapping.from_mapping({"foo": [{"a": 3}, 2],
+                                  "bar": {"a": [3, 2]}})
+
+    with self.assertRaises(TypeError):
+      f["foo"][1] = 1  # pytype: disable=unsupported-operands
+
+    with self.assertRaises(TypeError):
+      f["foo"][0]["a"] = 1  # pytype: disable=unsupported-operands
+
+    with self.assertRaises(TypeError):
+      f["bar"]["a"] = 1  # pytype: disable=unsupported-operands
+
+    with self.assertRaises(TypeError):
+      f["bar"]["a"][0] = 1  # pytype: disable=unsupported-operands
+
+  def test_frozen_builtins_jax_compatibility(self):
+    f = FlatMapping.from_mapping({"foo": [3, 2],
+                                  "bar": {"a": 3}})
+    mapped_frozen_list = jax.tree_map(lambda x: x+1, f["foo"])
+    self.assertEqual(mapped_frozen_list[0], 4)
+
+    mapped_frozen_dict = jax.tree_map(lambda x: x+1, f["bar"])
+    self.assertEqual(mapped_frozen_dict["a"], 4)
 
 
 class DataStructuresTest(absltest.TestCase):

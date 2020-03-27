@@ -116,7 +116,7 @@ def sparsity_ignore(m: Text, n: Text, v: jnp.ndarray) -> bool:
 
 
 @functools.partial(jax.jit, static_argnums=2)
-def apply_mask(params: hk.Params, masks: hk.Params,
+def apply_mask(params: hk.Params, masks: Sequence[hk.Params],
                module_sparsity: ModuleSparsity) -> hk.Params:
   """Apply existing masks to params based on sparsity_predicate_map.
 
@@ -147,7 +147,7 @@ def apply_mask(params: hk.Params, masks: hk.Params,
 
 @functools.partial(jax.jit, static_argnums=2)
 def update_mask(params: hk.Params, sparsity_fraction: float,
-                module_sparsity: ModuleSparsity) -> jnp.ndarray:
+                module_sparsity: ModuleSparsity) -> Sequence[hk.Params]:
   """Generate masks based on module_sparsity and sparsity_fraction."""
   params_to_prune, sparsities, _ = _create_partitions(module_sparsity, params)
   masks = []

@@ -324,7 +324,7 @@ jax.tree_util.register_pytree_node(
     lambda k, xs: FrozenDict(zip(k, xs)))
 
 
-class FrozenList(tuple):
+class FrozenList(list):
   """Immutable list that contains immutable dicts/lists itself."""
   __slots__ = ()
 
@@ -337,6 +337,9 @@ class FrozenList(tuple):
     value = builtin_to_immutable(value)
     return value
 
+  def __hash__(self):
+    return hash(tuple(self))
+
   def __iter__(self):
     for v in super().__iter__():
       yield builtin_to_immutable(v)
@@ -347,10 +350,15 @@ class FrozenList(tuple):
   def __sorted__(self):
     return sorted([v for v in self])
 
+  def __reduce__(self):
+    return type(self), (list(self),)
+
   # Adding an explicit TypeError for methods that are defined for tuples but
   # not for lists
   __iadd__ = not_supported("__iadd__")
   __imul__ = not_supported("__imul__")
+  __setattr__ = not_supported("__setattr__")
+  __setitem__ = not_supported("__setitem__")
   append = not_supported("append")
   clear = not_supported("clear")
   copy = not_supported("copy")

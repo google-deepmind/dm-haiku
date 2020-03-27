@@ -28,6 +28,7 @@ import jax
 import tree
 
 frozendict = data_structures.frozendict
+FrozenList = data_structures.FrozenList
 Stack = data_structures.Stack
 FlatMapping = data_structures.FlatMapping
 
@@ -309,6 +310,53 @@ class DataStructuresTest(absltest.TestCase):
     self.assertEqual(type(after), dict)
     self.assertEqual(type(after["a"]), dict)
 
+
+class FrozenListTest(parameterized.TestCase):
+
+  def test_isinstance(self):
+    self.assertIsInstance(FrozenList(), list)
+
+  def test_equality_with_list(self):
+    self.assertEqual(FrozenList([1, FrozenList([2, 3]), 4]), [1, [2, 3], 4])
+
+  def test_hashable(self):
+    self.assertEqual(hash(FrozenList([1, 2])), hash(FrozenList([1, 2])))
+
+  @parameterized.named_parameters(
+      ("copy", copy.copy),
+      ("deepcopy", copy.deepcopy),
+      ("pickle", lambda v: pickle.loads(pickle.dumps(v))),
+      ("cloudpickle", lambda v: cloudpickle.loads(cloudpickle.dumps(v))),
+      ("dill", lambda v: dill.loads(dill.dumps(v))),
+  )
+  def test_copy(self, clone):
+    before = FrozenList([1, FrozenList([2, 3]), 4])
+    after = clone(before)
+    self.assertIsNot(before, after)
+    self.assertEqual(before, after)
+    self.assertEqual(after, [1, [2, 3], 4])
+
+  def test_cannot_setitem(self):
+    l = FrozenList([0])
+    with self.assertRaisesRegex(TypeError, "'FrozenList' .* does not support"):
+      l[0] = None
+
+  def test_cannot_append(self):
+    l = FrozenList([0])
+    with self.assertRaisesRegex(TypeError, "'FrozenList' .* does not support"):
+      l.append(None)
+
+  def test_cannot_extend(self):
+    l = FrozenList([0])
+    with self.assertRaisesRegex(TypeError, "'FrozenList' .* does not support"):
+      l.extend([1])
+
+  @parameterized.parameters("clear", "sort", "pop", "reverse")
+  def test_cannot(self, name):
+    l = FrozenList([0])
+    m = getattr(l, name)
+    with self.assertRaisesRegex(TypeError, "'FrozenList' .* does not support"):
+      m()
 
 if __name__ == "__main__":
   absltest.main()

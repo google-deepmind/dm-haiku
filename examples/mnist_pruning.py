@@ -33,7 +33,7 @@ PredicateMap = Mapping[Predicate, jnp.ndarray]
 ModuleSparsity = Sequence[Tuple[Predicate, jnp.ndarray]]
 
 
-def _topk_mask(value: jnp.ndarray, density_fraction: float) -> jnp.ndarray:
+def topk_mask(value: jnp.ndarray, density_fraction: float) -> jnp.ndarray:
   """Return a mask with 1s marking the top fraction of value.
 
   Note: This routine takes care to make sure that ties are handled without
@@ -50,7 +50,7 @@ def _topk_mask(value: jnp.ndarray, density_fraction: float) -> jnp.ndarray:
     determined based on density_fraction and the size of value.
   """
 
-  def _topk_mask_internal(value, density_fraction):
+  def topk_mask_internal(value):
     assert value.ndim == 1
     indices = jnp.argsort(value)
     k = jnp.round(density_fraction * jnp.size(value)).astype(jnp.int32)
@@ -65,7 +65,7 @@ def _topk_mask(value: jnp.ndarray, density_fraction: float) -> jnp.ndarray:
   shuffled_indices = jax.random.shuffle(
       jax.random.PRNGKey(42), jnp.arange(0, jnp.size(value), dtype=jnp.int32))
 
-  shuffled_mask = _topk_mask_internal(value[shuffled_indices], density_fraction)
+  shuffled_mask = topk_mask_internal(value[shuffled_indices])
   mask = jax.ops.index_update(
       jnp.zeros_like(shuffled_mask), shuffled_indices, shuffled_mask)
   mask = jnp.reshape(mask, orig_shape)
@@ -153,10 +153,10 @@ def update_mask(params: hk.Params, sparsity_fraction: float,
   masks = []
 
   def map_fn(x: jnp.ndarray, sparsity: float) -> jnp.ndarray:
-    return _topk_mask(jnp.abs(x), 1. - sparsity * sparsity_fraction)
+    return topk_mask(jnp.abs(x), 1. - sparsity * sparsity_fraction)
 
   for tree, sparsity in zip(params_to_prune, sparsities):
-    map_fn_sparsity = jax.tree_util.Partial(map_fn, sparsity=sparsity)
+    map_fn_sparsity = functools.partial(map_fn, sparsity=sparsity)
     mask = jax.tree_util.tree_map(map_fn_sparsity, tree)
     masks.append(mask)
   return masks

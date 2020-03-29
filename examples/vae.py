@@ -168,14 +168,14 @@ def main(_):
 
   @jax.jit
   def loss_fn(params: hk.Params, rng_key: PRNGKey, batch: Batch) -> jnp.ndarray:
-    """ELBO loss: E_p[log(e)] - KL(d||q), where p ~ Be(0.5) and q ~ N(0,1)."""
+    """ELBO loss: E_p[log(x)] - KL(d||q), where p ~ Be(0.5) and q ~ N(0,1)."""
     outputs: VAEOutput = model.apply(params, rng_key, batch["image"])
 
     log_likelihood = -binary_cross_entropy(batch["image"], outputs.logits)
     kl = kl_gaussian(outputs.mean, outputs.stddev**2)
-    loss = log_likelihood - kl
+    elbo = log_likelihood - kl
 
-    return -jnp.mean(loss)
+    return -jnp.mean(elbo)
 
   @jax.jit
   def update(

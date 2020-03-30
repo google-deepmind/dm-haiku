@@ -151,14 +151,6 @@ class DotTrace(jax.core.Trace):
       vals_out = f.call_wrapped(*[t.val for t in tracers])
       return [DotTracer(self, v) for v in vals_out]
 
-  def process_custom_jvp_call(self, prim, fun, jvp, tracers):
-    del prim, jvp  # Unused.
-    return fun.call_wrapped(*tracers)
-
-  def process_custom_vjp_call(self, prim, fun, fwd, bwd, tracers, out_trees):
-    del prim, fwd, bwd, out_trees  # Unused.
-    return fun.call_wrapped(*tracers)
-
 
 def _format_val(val):
   if not hasattr(val, 'shape'):

@@ -162,7 +162,7 @@ BATCH_MODULES = (
 )
 
 
-class IdentityCore(hk.RNNCore):
+class DummyCore(hk.RNNCore):
 
   def initial_state(self, batch_size):
     return jnp.ones([batch_size, 128, 1])
@@ -186,11 +186,15 @@ class ResetCoreAdapter(Wrapped, hk.RNNCore):
 RNN_CORES = (
     ModuleDescriptor(
         name="ResetCore",
-        create=lambda: ResetCoreAdapter(hk.ResetCore(IdentityCore())),
+        create=lambda: ResetCoreAdapter(hk.ResetCore(DummyCore())),
         shape=(BATCH_SIZE, 128)),
     ModuleDescriptor(
         name="GRU",
         create=lambda: hk.GRU(1),
+        shape=(BATCH_SIZE, 128)),
+    ModuleDescriptor(
+        name="IdentityCore",
+        create=lambda: hk.IdentityCore(),
         shape=(BATCH_SIZE, 128)),
     ModuleDescriptor(
         name="LSTM",

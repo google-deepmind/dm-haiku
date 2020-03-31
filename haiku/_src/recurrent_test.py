@@ -206,6 +206,22 @@ class ResetCoreTest(parameterized.TestCase):
                  jnp.array([2, 3, 4]))
 
 
+class IdentityCoreTest(parameterized.TestCase):
+
+  @test_utils.transform_and_run
+  def testIdenittyCore_call(self):
+    core = recurrent.IdentityCore()
+    inputs, state_in = object(), object()
+    outputs, state_out = core(inputs, state_in)
+    self.assertIs(inputs, outputs)
+    self.assertIs(state_in, state_out)
+
+  @test_utils.transform_and_run
+  def testIdenittyCore_initial_state(self):
+    core = recurrent.IdentityCore()
+    self.assertEqual(core.initial_state(1), ())
+
+
 class DeepRNNTest(parameterized.TestCase):
 
   @test_utils.transform_and_run

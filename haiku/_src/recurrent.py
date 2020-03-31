@@ -298,6 +298,20 @@ class GRU(RNNCore):
     return state
 
 
+class IdentityCore(RNNCore):
+  """A recurrent core that forwards the inputs and an empty state.
+
+  This is commonly used when switching between recurrent and feedforward
+  versions of a model while preserving the same interface.
+  """
+
+  def __call__(self, inputs, state):
+    return inputs, state
+
+  def initial_state(self, batch_size):
+    return ()
+
+
 class ResetCore(RNNCore):
   """A wrapper for managing state resets during unrolls.
 

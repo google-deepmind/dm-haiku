@@ -64,6 +64,7 @@ from haiku._src.recurrent import deep_rnn_with_skip_connections
 from haiku._src.recurrent import DeepRNN
 from haiku._src.recurrent import dynamic_unroll
 from haiku._src.recurrent import GRU
+from haiku._src.recurrent import IdentityCore
 from haiku._src.recurrent import LSTM
 from haiku._src.recurrent import ResetCore
 from haiku._src.recurrent import RNNCore
@@ -111,6 +112,7 @@ __all__ = (
     "ExponentialMovingAverage",
     "Flatten",
     "GRU",
+    "IdentityCore",
     "InstanceNorm",
     "LSTM",
     "LayerNorm",

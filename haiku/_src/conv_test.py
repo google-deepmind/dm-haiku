@@ -227,7 +227,7 @@ class Conv1DTest(parameterized.TestCase):
     if with_bias:
       expected_out += 1
 
-    np.testing.assert_allclose(out, expected_out)
+    np.testing.assert_allclose(out, expected_out, rtol=1e-5)
 
   @parameterized.parameters(True, False)
   def test_computation_padding_valid(self, with_bias):
@@ -254,7 +254,7 @@ class Conv1DTest(parameterized.TestCase):
     if with_bias:
       expected_out += 1
 
-    np.testing.assert_allclose(out, expected_out)
+    np.testing.assert_allclose(out, expected_out, rtol=1e-5)
 
 
 class Conv2DTest(parameterized.TestCase):

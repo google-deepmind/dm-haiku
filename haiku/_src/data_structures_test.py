@@ -28,6 +28,7 @@ import jax
 import tree
 
 frozendict = data_structures.frozendict
+FrozenDict = data_structures.FrozenDict
 FrozenList = data_structures.FrozenList
 Stack = data_structures.Stack
 FlatMapping = data_structures.FlatMapping
@@ -193,6 +194,15 @@ class FrozenDictTest(parameterized.TestCase):
     self.assertEqual(str(d.keys()), "KeysOnlyKeysView(['key1', 'key2'])")
     self.assertEqual(repr(d.keys()), "KeysOnlyKeysView(['key1', 'key2'])")
 
+  def test_getattr2(self):
+    d = FrozenDict({"key1": "value", "key2": "value2"})
+    self.assertEqual(d.key1, "value")
+
+  def test_eq_invalid(self):
+    a = frozendict(a=1, b=2)
+    b = 3
+    self.assertNotEqual(a, b)
+
 
 class FlatMappingTest(parameterized.TestCase):
 
@@ -293,6 +303,66 @@ class FlatMappingTest(parameterized.TestCase):
     mapped_frozen_dict = jax.tree_map(lambda x: x+1, f["bar"])
     self.assertEqual(mapped_frozen_dict["a"], 4)
 
+  def test_equals(self):
+    f1 = FlatMapping.from_mapping({"foo": [3, 2],
+                                   "bar": {"a": 3}})
+
+    f2 = FlatMapping.from_mapping({"foo": [3, 2],
+                                   "bar": {"a": 3}})
+    self.assertEqual(f1, f2)
+
+  def test_not_equals(self):
+    f1 = FlatMapping.from_mapping({"foo": [3, 2],
+                                   "bar": {"a": 3}})
+
+    f2 = FlatMapping.from_mapping({"foo": [3, 2, 4],
+                                   "bar": {"a": 2}})
+    self.assertNotEqual(f1, f2)
+
+    m1 = FlatMapping.from_mapping({"foo": [3, 2],
+                                   "bar": {"a": 3}})
+
+    m2 = 3
+    self.assertNotEqual(m1, m2)
+
+  def test_len(self):
+    f1 = FlatMapping.from_mapping({"foo": [3, 2],
+                                   "bar": {"a": 3}})
+
+    self.assertEqual(len(f1), 2)
+
+  def test_iter(self):
+    f1 = FlatMapping.from_mapping({"foo": [3, 2],
+                                   "bar": {"a": 3}})
+    for item in f1:
+      self.assertEqual(item, "bar")
+      break
+
+  def test_str(self):
+    f1 = FlatMapping.from_mapping({"foo": [3, 2],
+                                   "bar": {"a": 3}})
+    self.assertEqual(str(f1), "FlatMapping({'bar': {'a': 3}, 'foo': [3, 2]})")
+
+  def test_str_long(self):
+    f1 = FlatMapping.from_mapping({"foo": [3, 2],
+                                   "bar": {"a": [1, 2, 3, 4, 5, 6, 7, 8, 9]},
+                                   "bar2": {"a": [1, 2, 3, 4, 5, 6, 7, 8, 9]},
+                                   "bar3": {"a": [1, 2, 3, 4, 5, 6, 7, 8, 9]},
+                                   "bar4": {"a": [1, 2, 3, 4, 5, 6, 7, 8, 9]},
+                                   "bar5": {"a": [1, 2, 3, 4, 5, 6, 7, 8, 9]},
+                                   "bar6": {"a": [1, 2, 3, 4, 5, 6, 7, 8, 9]},
+                                   "bar7": {"a": [1, 2, 3, 4, 5, 6, 7, 8, 9]}})
+    self.assertEqual(str(f1), """FlatMapping({
+  'bar': {'a': [1, 2, 3, 4, 5, 6, 7, 8, 9]},
+  'bar2': {'a': [1, 2, 3, 4, 5, 6, 7, 8, 9]},
+  'bar3': {'a': [1, 2, 3, 4, 5, 6, 7, 8, 9]},
+  'bar4': {'a': [1, 2, 3, 4, 5, 6, 7, 8, 9]},
+  'bar5': {'a': [1, 2, 3, 4, 5, 6, 7, 8, 9]},
+  'bar6': {'a': [1, 2, 3, 4, 5, 6, 7, 8, 9]},
+  'bar7': {'a': [1, 2, 3, 4, 5, 6, 7, 8, 9]},
+  'foo': [3, 2],
+})""")
+
 
 class DataStructuresTest(absltest.TestCase):
 
@@ -357,6 +427,21 @@ class FrozenListTest(parameterized.TestCase):
     m = getattr(l, name)
     with self.assertRaisesRegex(TypeError, "'FrozenList' .* does not support"):
       m()
+
+  def test_repr(self):
+    l = FrozenList([0])
+    self.assertEqual(str(l), "FrozenList([0])")
+
+  def test_reversed(self):
+    l1 = FrozenList([0, 3, 2])
+    l2 = FrozenList([2, 3, 0])
+    self.assertEqual(FrozenList(reversed(l1)), l2)
+
+  def test_sorted(self):
+    l1 = FrozenList([0, 3, 2])
+    l2 = FrozenList([0, 2, 3])
+    self.assertEqual(l1.__sorted__(), l2)
+
 
 if __name__ == "__main__":
   absltest.main()

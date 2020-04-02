@@ -294,6 +294,7 @@ hk_py_library(
     srcs = ["pool.py"],
     deps = [
         ":module",
+        ":typing",
         # pip: jax
     ],
 )

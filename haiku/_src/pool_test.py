@@ -76,6 +76,35 @@ class MaxPoolTest(absltest.TestCase):
 
     np.testing.assert_equal(result.shape, x.shape)
 
+  def test_max_pool_basic_with_inferred_shapes(self):
+    x = np.arange(6, dtype=jnp.float32).reshape([6, 1])
+    x = np.broadcast_to(x, (2, 10, 6, 2))
+
+    result = pool.max_pool(x, 2, 2, padding="VALID")
+
+    ground_truth = np.asarray([1., 3., 5.]).reshape([3, 1])
+    ground_truth = np.broadcast_to(ground_truth, (2, 5, 3, 2))
+
+    np.testing.assert_equal(result, ground_truth)
+
+  def test_max_pool_same_padding_with_inferred_shapes(self):
+    x = np.arange(6, dtype=jnp.float32)
+    x = np.broadcast_to(x, (2, 3, 6))
+
+    result = pool.max_pool(x, 3, 1, padding="SAME", channel_axis=None)
+
+    np.testing.assert_equal(result.shape, x.shape)
+
+  @test_utils.transform_and_run
+  def test_max_pool_same_padding_class_with_inferred_shapes(self):
+    x = np.arange(6, dtype=jnp.float32)
+    x = np.broadcast_to(x, (2, 3, 6))
+
+    max_pool = pool.MaxPool(3, 1, padding="SAME", channel_axis=None)
+    result = max_pool(x)
+
+    np.testing.assert_equal(result.shape, x.shape)
+
 
 class AvgPoolTest(absltest.TestCase):
 
@@ -130,6 +159,36 @@ class AvgPoolTest(absltest.TestCase):
     avg_pool = pool.AvgPool(
         window_shape=window_shape, strides=strides, padding="SAME")
     result = avg_pool(x)
+
+    np.testing.assert_equal(result.shape, x.shape)
+    # Since x is constant, its avg value should be itself.
+    np.testing.assert_equal(result, x)
+
+  def test_avg_pool_basic_with_inferred_shapes(self):
+    x = np.arange(6, dtype=jnp.float32).reshape([6, 1])
+    x = np.broadcast_to(x, (2, 10, 6, 2))
+
+    result = pool.avg_pool(x, 2, 2, padding="VALID")
+
+    ground_truth = np.asarray([0.5, 2.5, 4.5]).reshape([3, 1])
+    ground_truth = np.broadcast_to(ground_truth, (2, 5, 3, 2))
+
+    np.testing.assert_equal(result, ground_truth)
+
+  def test_avg_pool_same_padding_with_inferred_shapes(self):
+    x = np.ones((2, 3, 6))
+
+    result = pool.avg_pool(x, 3, 1, padding="SAME", channel_axis=None)
+
+    np.testing.assert_equal(result.shape, x.shape)
+    # Since x is constant, its avg value should be itself.
+    np.testing.assert_equal(result, x)
+
+  @test_utils.transform_and_run
+  def test_avg_pool_same_padding_class_with_inferred_shapes(self):
+    x = np.ones((2, 3, 6))
+
+    result = pool.AvgPool(3, 1, padding="SAME", channel_axis=None)(x)
 
     np.testing.assert_equal(result.shape, x.shape)
     # Since x is constant, its avg value should be itself.

@@ -19,6 +19,7 @@ from typing import Any, Callable, Mapping, Text, Sequence, Union
 import jax.numpy as jnp
 
 Shape = Sequence[int]
+ShapeLike = Union[int, Shape]
 DType = Any
 ParamName = Text
 Initializer = Callable[[Shape, DType], jnp.ndarray]

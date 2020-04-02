@@ -15,35 +15,76 @@
 # ==============================================================================
 """Pooling Haiku modules."""
 
+from typing import Optional, Text
 from haiku._src import module
+from haiku._src.typing import Shape, ShapeLike  # pylint: disable=g-multiple-import
 from jax import lax
 import jax.numpy as jnp
 
 
-def max_pool(value, window_shape, strides, padding):
+def _infer_shape(
+    x: jnp.ndarray,
+    size: ShapeLike,
+    channel_axis: Optional[int] = -1,
+) -> Shape:
+  """Infer shape for pooling window or strides."""
+  if isinstance(size, int):
+    if channel_axis and not 0 <= abs(channel_axis) < x.ndim:
+      raise ValueError(f"Invalid channel axis {channel_axis} for {x.shape}")
+    if channel_axis and channel_axis < 0:
+      channel_axis = x.ndim + channel_axis
+    return [1,] + [size if d != channel_axis else 1 for d in range(1, x.ndim)]
+  else:
+    assert x.ndim == len(size)
+    return size
+
+
+def max_pool(
+    value: jnp.ndarray,
+    window_shape: ShapeLike = 3,
+    strides: ShapeLike = 2,
+    padding: Text = "SAME",
+    channel_axis: Optional[int] = -1,
+) -> jnp.ndarray:
   """Max pool.
 
   Args:
     value: Value to pool.
-    window_shape: Shape of window to pool over. Same rank as value.
-    strides: Strides for the window. Same rank as value.
+    window_shape: Shape of the pooling window, an int or same rank as value.
+    strides: Strides of the pooling window, an int or same rank as value.
     padding: Padding algorithm. Either "VALID" or "SAME".
+    channel_axis: Axis of the spatial channels for which pooling is skipped,
+      used to infer `window_shape` or `strides` if they are an integer.
 
   Returns:
     Pooled result. Same rank as value.
   """
+  if padding not in ["SAME", "VALID"]:
+    raise ValueError(f"Invalid padding '{padding}', must be 'SAME' or 'VALID'.")
+
+  window_shape = _infer_shape(value, window_shape, channel_axis)
+  strides = _infer_shape(value, strides, channel_axis)
+
   return lax.reduce_window(value, -jnp.inf, lax.max, window_shape, strides,
                            padding)
 
 
-def avg_pool(value, window_shape, strides, padding):
+def avg_pool(
+    value: jnp.ndarray,
+    window_shape: ShapeLike = 3,
+    strides: ShapeLike = 2,
+    padding: str = "SAME",
+    channel_axis: Optional[int] = -1,
+) -> jnp.ndarray:
   """Average pool.
 
   Args:
     value: Value to pool.
-    window_shape: Shape of window to pool over. Same rank as value.
-    strides: Strides for the window. Same rank as value.
+    window_shape: Shape of the pooling window, an int or same rank as value.
+    strides: Strides of the pooling window, an int or same rank as value.
     padding: Padding algorithm. Either "VALID" or "SAME".
+    channel_axis: Axis of the spatial channels for which pooling is skipped,
+      used to infer `window_shape` or `strides` if they are an integer.
 
   Returns:
     Pooled result. Same rank as value.
@@ -51,6 +92,12 @@ def avg_pool(value, window_shape, strides, padding):
   Raises:
     ValueError: If the padding is not VALID.
   """
+  if padding not in ["SAME", "VALID"]:
+    raise ValueError(f"Invalid padding '{padding}', must be 'SAME' or 'VALID'.")
+
+  window_shape = _infer_shape(value, window_shape, channel_axis)
+  strides = _infer_shape(value, strides, channel_axis)
+
   reduce_window_args = (0., lax.add, window_shape, strides, padding)
   pooled = lax.reduce_window(value, *reduce_window_args)
   if padding == "VALID":
@@ -73,23 +120,33 @@ class MaxPool(module.Module):
   Equivalent to partial application of `hk.max_pool`.
   """
 
-  def __init__(self, window_shape, strides, padding, name=None):
+  def __init__(
+      self,
+      window_shape: ShapeLike = 3,
+      strides: ShapeLike = 2,
+      padding: str = "SAME",
+      channel_axis: Optional[int] = -1,
+      name: Optional[Text] = None,
+  ):
     """Max pool.
 
     Args:
-      window_shape: Shape of window to pool over. Same rank as value.
-      strides: Strides for the window. Same rank as value.
+      window_shape: Shape of window to pool over. Same rank as value or int.
+      strides: Strides for the window. Same rank as value or int.
       padding: Padding algorithm. Either "VALID" or "SAME".
+      channel_axis: Axis of the spatial channels for which pooling is skipped.
       name: String name for the module.
     """
     super(MaxPool, self).__init__(name=name)
+
     self.window_shape = window_shape
     self.strides = strides
     self.padding = padding
+    self.channel_axis = channel_axis
 
-  def __call__(self, value):
-    return max_pool(value, window_shape=self.window_shape, strides=self.strides,
-                    padding=self.padding)
+  def __call__(self, value: jnp.ndarray) -> jnp.ndarray:
+    return max_pool(value, self.window_shape, self.strides,
+                    self.padding, self.channel_axis)
 
 
 class AvgPool(module.Module):
@@ -98,20 +155,30 @@ class AvgPool(module.Module):
   Equivalent to partial application of `hk.avg_pool`.
   """
 
-  def __init__(self, window_shape, strides, padding, name=None):
+  def __init__(
+      self,
+      window_shape: ShapeLike = 3,
+      strides: ShapeLike = 2,
+      padding: str = "SAME",
+      channel_axis: Optional[int] = -1,
+      name: Optional[Text] = None,
+  ):
     """Average pool.
 
     Args:
-      window_shape: Shape of window to pool over. Same rank as value.
-      strides: Strides for the window. Same rank as value.
+      window_shape: Shape of window to pool over. Same rank as value or int.
+      strides: Strides for the window. Same rank as value or int.
       padding: Padding algorithm. Either "VALID" or "SAME".
+      channel_axis: Axis of the spatial channels for which pooling is skipped.
       name: String name for the module.
     """
     super(AvgPool, self).__init__(name=name)
+
     self.window_shape = window_shape
     self.strides = strides
     self.padding = padding
+    self.channel_axis = channel_axis
 
-  def __call__(self, value):
-    return avg_pool(value, window_shape=self.window_shape, strides=self.strides,
-                    padding=self.padding)
+  def __call__(self, value: jnp.ndarray) -> jnp.ndarray:
+    return avg_pool(value, self.window_shape, self.strides,
+                    self.padding, self.channel_axis)

@@ -41,9 +41,9 @@ def _infer_shape(
 
 def max_pool(
     value: jnp.ndarray,
-    window_shape: ShapeLike = 3,
-    strides: ShapeLike = 2,
-    padding: Text = "SAME",
+    window_shape: ShapeLike,
+    strides: ShapeLike,
+    padding: Text,
     channel_axis: Optional[int] = -1,
 ) -> jnp.ndarray:
   """Max pool.
@@ -71,9 +71,9 @@ def max_pool(
 
 def avg_pool(
     value: jnp.ndarray,
-    window_shape: ShapeLike = 3,
-    strides: ShapeLike = 2,
-    padding: str = "SAME",
+    window_shape: ShapeLike,
+    strides: ShapeLike,
+    padding: str,
     channel_axis: Optional[int] = -1,
 ) -> jnp.ndarray:
   """Average pool.
@@ -122,9 +122,9 @@ class MaxPool(module.Module):
 
   def __init__(
       self,
-      window_shape: ShapeLike = 3,
-      strides: ShapeLike = 2,
-      padding: str = "SAME",
+      window_shape: ShapeLike,
+      strides: ShapeLike,
+      padding: str,
       channel_axis: Optional[int] = -1,
       name: Optional[Text] = None,
   ):
@@ -157,9 +157,9 @@ class AvgPool(module.Module):
 
   def __init__(
       self,
-      window_shape: ShapeLike = 3,
-      strides: ShapeLike = 2,
-      padding: str = "SAME",
+      window_shape: ShapeLike,
+      strides: ShapeLike,
+      padding: str,
       channel_axis: Optional[int] = -1,
       name: Optional[Text] = None,
   ):

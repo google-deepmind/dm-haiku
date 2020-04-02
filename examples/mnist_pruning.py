@@ -256,7 +256,7 @@ def main(_):
                              avg_params, new_params)
 
   # Make datasets.
-  train = load_dataset("train", is_training=True, batch_size=100)
+  train = load_dataset("train", is_training=True, batch_size=1000)
   train_eval = load_dataset("train", is_training=False, batch_size=10000)
   test_eval = load_dataset("test", is_training=False, batch_size=10000)
 
@@ -281,9 +281,12 @@ def main(_):
       avg_params = apply_mask(avg_params, masks, module_sparsity)
       train_accuracy = accuracy(avg_params, next(train_eval))
       test_accuracy = accuracy(avg_params, next(test_eval))
+      total_params, total_nnz, per_layer_sparsities = get_sparsity(avg_params)
+      train_accuracy, test_accuracy, total_nnz, per_layer_sparsities = (
+          jax.device_get(
+              (train_accuracy, test_accuracy, total_nnz, per_layer_sparsities)))
       print(f"[Step {step}] Train / Test accuracy: "
             f"{train_accuracy:.3f} / {test_accuracy:.3f}.")
-      total_params, total_nnz, per_layer_sparsities = get_sparsity(avg_params)
       print(f"Non-zero params / Total: {total_nnz} / {total_params}; "
             f"Total Sparsity: {1. - total_nnz / total_params:.3f}")
 

@@ -104,7 +104,7 @@ def main(_):
                              avg_params, new_params)
 
   # Make datasets.
-  train = load_dataset("train", is_training=True, batch_size=100)
+  train = load_dataset("train", is_training=True, batch_size=1000)
   train_eval = load_dataset("train", is_training=False, batch_size=10000)
   test_eval = load_dataset("test", is_training=False, batch_size=10000)
 
@@ -118,6 +118,8 @@ def main(_):
       # Periodically evaluate classification accuracy on train & test sets.
       train_accuracy = accuracy(avg_params, next(train_eval))
       test_accuracy = accuracy(avg_params, next(test_eval))
+      train_accuracy, test_accuracy = jax.device_get(
+          (train_accuracy, test_accuracy))
       print(f"[Step {step}] Train / Test accuracy: "
             f"{train_accuracy:.3f} / {test_accuracy:.3f}.")
 

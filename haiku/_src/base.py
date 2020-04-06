@@ -273,7 +273,7 @@ def get_parameter(
 
   assert param.shape == tuple(shape), (
       "{!r} with shape {!r} does not match shape={!r} dtype={!r}".format(
-          param, param.shape, shape, dtype))
+          fq_name, param.shape, shape, dtype))
 
   return param
 

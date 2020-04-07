@@ -260,6 +260,7 @@ def get_parameter(
 
   params = frame.params[bundle_name]
   param = params.get(name)
+  fq_name = bundle_name + "/" + name
   if param is None:
     if frame.params_frozen:
       raise ValueError(
@@ -267,7 +268,6 @@ def get_parameter(
           "All parameters must be created as part of `init`.".format(
               name, bundle_name))
 
-    fq_name = bundle_name + "/" + name
     param = create_parameter(fq_name, shape, dtype, init)
     params[name] = param  # pytype: disable=unsupported-operands
 

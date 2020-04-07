@@ -58,6 +58,12 @@ class BaseTest(parameterized.TestCase):
           ValueError, "parameters must be created as part of `init`"):
         base.get_parameter("w", [], init=jnp.zeros)
 
+  def test_get_parameter_wrong_shape(self):
+    with base.new_context():
+      with self.assertRaisesRegex(AssertionError, "does not match shape"):
+        base.get_parameter("w", (1,), init=jnp.zeros)
+        base.get_parameter("w", (2,), init=jnp.zeros)
+
   def test_rng_no_transform(self):
     with self.assertRaisesRegex(ValueError,
                                 "must be used as part of an `hk.transform`"):

@@ -284,7 +284,7 @@ class Conv2DTest(parameterized.TestCase):
     if with_bias:
       expected_out += 1
 
-    np.testing.assert_equal(out, expected_out)
+    np.testing.assert_allclose(out, expected_out, rtol=1e-5)
 
   @parameterized.parameters(True, False)
   def test_computation_padding_valid(self, with_bias):
@@ -311,7 +311,7 @@ class Conv2DTest(parameterized.TestCase):
     if with_bias:
       expected_out += 1
 
-    np.testing.assert_equal(out, expected_out)
+    np.testing.assert_allclose(out, expected_out, rtol=1e-5)
 
 
 class Conv3DTest(parameterized.TestCase):
@@ -347,7 +347,7 @@ class Conv3DTest(parameterized.TestCase):
 
     self.assertEqual(out.shape, (1, 5, 5, 5, 1))
     out = np.squeeze(out, axis=(0, 4))
-    np.testing.assert_equal(out, expected_out)
+    np.testing.assert_allclose(out, expected_out, rtol=1e-5)
 
   @parameterized.parameters(True, False)
   def test_computation_padding_valid(self, with_bias):
@@ -375,7 +375,7 @@ class Conv3DTest(parameterized.TestCase):
 
     self.assertEqual(out.shape, (1, 3, 3, 3, 1))
     out = np.squeeze(out, axis=(0, 4))
-    np.testing.assert_equal(out, expected_out)
+    np.testing.assert_allclose(out, expected_out, rtol=1e-5)
 
   @test_utils.transform_and_run
   def test_invalid_input_shape(self):
@@ -525,7 +525,7 @@ class Conv1DTransposeTest(parameterized.TestCase):
     if with_bias:
       expected_out += 1
 
-    np.testing.assert_equal(out, expected_out)
+    np.testing.assert_allclose(out, expected_out, rtol=1e-5)
 
   @parameterized.parameters(True, False)
   def test_computation_padding_valid(self, with_bias):
@@ -552,7 +552,7 @@ class Conv1DTransposeTest(parameterized.TestCase):
     if with_bias:
       expected_out += 1
 
-    np.testing.assert_equal(out, expected_out)
+    np.testing.assert_allclose(out, expected_out, rtol=1e-5)
 
 
 class Conv2TransposeTest(parameterized.TestCase):
@@ -575,7 +575,7 @@ class Conv2TransposeTest(parameterized.TestCase):
     if with_bias:
       expected_out += 1
     expected_out = np.expand_dims(np.atleast_3d(expected_out), axis=0)
-    np.testing.assert_equal(out, expected_out)
+    np.testing.assert_allclose(out, expected_out, rtol=1e-5)
 
   @parameterized.parameters(True, False)
   def test_computation_padding_valid(self, with_bias):
@@ -601,7 +601,7 @@ class Conv2TransposeTest(parameterized.TestCase):
     if with_bias:
       expected_out += 1
     expected_out = np.expand_dims(np.atleast_3d(expected_out), axis=0)
-    np.testing.assert_equal(out, expected_out)
+    np.testing.assert_allclose(out, expected_out, rtol=1e-5)
 
 
 class Conv3DTransposeTest(parameterized.TestCase):
@@ -631,7 +631,7 @@ class Conv3DTransposeTest(parameterized.TestCase):
 
     self.assertEqual(out.shape, (1, 3, 3, 3, 1))
     out = np.squeeze(out, axis=(0, 4))
-    np.testing.assert_equal(out, expected_out)
+    np.testing.assert_allclose(out, expected_out, rtol=1e-5)
 
   @parameterized.parameters(True, False)
   def test_computation_padding_valid(self, with_bias):
@@ -662,7 +662,7 @@ class Conv3DTransposeTest(parameterized.TestCase):
 
     self.assertEqual(out.shape, (1, 5, 5, 5, 1))
     out = np.squeeze(out, axis=(0, 4))
-    np.testing.assert_equal(out, expected_out)
+    np.testing.assert_allclose(out, expected_out, rtol=1e-5)
 
 
 if __name__ == "__main__":

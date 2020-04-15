@@ -60,7 +60,7 @@ class LayerNorm(module.Module):
       self._axis = (axis,)
     elif (isinstance(axis, collections.Iterable) and
           all(isinstance(ax, int) for ax in axis)):
-      self._axis = axis
+      self._axis = tuple(axis)
     else:
       raise ValueError("`axis` should be an int, slice or iterable of ints.")
 

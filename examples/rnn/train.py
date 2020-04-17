@@ -30,6 +30,8 @@ from jax.experimental import optix
 import jax.numpy as jnp
 import numpy as np
 
+import tensorflow_datasets as tfds
+
 flags.DEFINE_integer('train_batch_size', 32, '')
 flags.DEFINE_integer('eval_batch_size', 1000, '')
 flags.DEFINE_integer('sequence_length', 128, '')
@@ -129,7 +131,7 @@ def main(_):
 
   # Make training dataset.
   train_data = dataset.load(
-      'train',
+      tfds.Split.TRAIN,
       batch_size=FLAGS.train_batch_size,
       sequence_length=FLAGS.sequence_length)
 
@@ -138,7 +140,8 @@ def main(_):
       split: dataset.load(
           split,
           batch_size=FLAGS.eval_batch_size,
-          sequence_length=FLAGS.sequence_length) for split in ['train', 'test']
+          sequence_length=FLAGS.sequence_length)
+      for split in [tfds.Split.TRAIN, tfds.Split.TEST]
   }
 
   # Make loss, sampler, and optimizer.

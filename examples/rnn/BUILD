@@ -26,5 +26,6 @@ hk_py_binary(
         # pip: jax
         # pip: jax:optix
         # pip: numpy
+        # pip: tensorflow_datasets
     ],
 )

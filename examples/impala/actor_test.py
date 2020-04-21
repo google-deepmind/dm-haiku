@@ -15,7 +15,7 @@
 # ==============================================================================
 """Actor test."""
 from absl.testing import absltest
-from bsuite.experiments.catch import catch
+from bsuite.environments import catch
 import dm_env
 from haiku.examples.impala import actor as actor_lib
 from haiku.examples.impala import agent as agent_lib

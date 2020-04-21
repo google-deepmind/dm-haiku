@@ -28,7 +28,7 @@ from typing import Any, Callable, NamedTuple, Tuple
 
 from absl import app
 from absl import logging
-from bsuite.experiments.catch import catch
+from bsuite.environments import catch
 import dm_env
 import haiku as hk
 import jax

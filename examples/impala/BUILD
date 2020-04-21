@@ -16,7 +16,7 @@ hk_py_binary(
         ":learner",
         ":util",
         # pip: absl:app
-        # pip: bsuite/experiments/catch
+        # pip: bsuite/environments:catch
         # pip: jax
         # pip: jax:optix
     ],
@@ -46,7 +46,7 @@ hk_py_test(
         ":learner",
         ":util",
         # pip: absl/testing:absltest
-        # pip: bsuite/experiments/catch
+        # pip: bsuite/environments:catch
         # pip: dm_env
         # pip: jax
         # pip: mock
@@ -102,7 +102,7 @@ hk_py_test(
         ":haiku_nets",
         ":learner",
         # pip: absl/testing:absltest
-        # pip: bsuite/experiments/catch
+        # pip: bsuite/environments:catch
         # pip: jax
         # pip: jax:optix
     ],

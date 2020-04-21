@@ -55,7 +55,7 @@ hk_py_binary(
     deps = [
         # pip: absl:app
         # pip: absl/logging
-        # pip: bsuite/experiments/catch
+        # pip: bsuite/environments:catch
         # pip: dm_env
         "//haiku",
         # pip: jax

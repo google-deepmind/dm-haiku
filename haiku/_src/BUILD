@@ -382,6 +382,7 @@ hk_py_test(
         ":initializers",
         ":layer_norm",
         ":test_utils",
+        ":transform",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
@@ -397,6 +398,7 @@ hk_py_library(
         ":module",
         ":utils",
         # pip: jax
+        # pip: numpy
     ],
 )
 

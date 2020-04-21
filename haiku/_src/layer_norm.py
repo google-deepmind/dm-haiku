@@ -22,6 +22,7 @@ from haiku._src import module
 from haiku._src import utils
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 
 class LayerNorm(module.Module):
@@ -110,7 +111,7 @@ class LayerNorm(module.Module):
             "Cannot pass `scale` at call time if `create_scale=True`.")
       scale = base.get_parameter("scale", param_shape, init=self._scale_init)
     elif scale is None:
-      scale = 1.
+      scale = np.array(1., dtype=inputs.dtype)
 
     if self._create_offset:
       if offset is not None:
@@ -118,7 +119,7 @@ class LayerNorm(module.Module):
             "Cannot pass `offset` at call time if `create_offset=True`.")
       offset = base.get_parameter("offset", param_shape, init=self._offset_init)
     elif offset is None:
-      offset = 0.
+      offset = np.array(0., dtype=inputs.dtype)
 
     scale = jnp.broadcast_to(scale, inputs.shape)
     offset = jnp.broadcast_to(offset, inputs.shape)

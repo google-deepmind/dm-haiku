@@ -15,11 +15,15 @@
 # ==============================================================================
 """Tests for haiku._src.layer_norm."""
 
+import itertools
+
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import initializers
 from haiku._src import layer_norm
 from haiku._src import test_utils
+from haiku._src import transform
+import jax
 import jax.numpy as jnp
 import numpy as np
 
@@ -42,6 +46,20 @@ class LayerNormTest(parameterized.TestCase):
                                       create_offset=True)(data))
 
     return norms
+
+  @parameterized.parameters(itertools.permutations([True, False], 2))
+  def test_bf16(self, create_scale, create_offset):
+    """For all configurations, ensure bf16 outputs from bf16 inputs."""
+    def f(x):
+      ln = layer_norm.LayerNorm(
+          axis=-1, create_scale=create_scale, create_offset=create_offset)
+      return ln(x)
+
+    fwd = transform.transform(f)
+    data = jnp.zeros([2, 3, 4, 5], dtype=jnp.bfloat16)
+    params = fwd.init(jax.random.PRNGKey(428), data)
+    bf16_params = jax.tree_map(lambda t: t.astype(jnp.bfloat16), params)
+    self.assertEqual(fwd.apply(bf16_params, data).dtype, jnp.bfloat16)
 
   @test_utils.transform_and_run
   def test_simple_case(self):

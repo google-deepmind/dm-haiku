@@ -18,8 +18,8 @@
 import collections
 import contextlib
 import functools
-from typing import (Iterator, MutableMapping, NamedTuple, Optional, Set, Tuple,
-                    Union)
+from typing import (Iterator, Iterable, MutableMapping, NamedTuple, Optional,
+                    Set, Tuple, Union)
 
 from haiku._src import data_structures
 from haiku._src.typing import (Shape, DType, ParamName, Initializer, Params,  # pylint: disable=g-multiple-import
@@ -360,6 +360,8 @@ def assert_is_prng_key(key: PRNGKey):
         f"expected=(shape=(2,), dtype=uint32) "
         f"actual=(shape={key.shape}, dtype={key.dtype})")
 
+PRNGSequenceState = Tuple[PRNGKey, Iterable[PRNGKey]]
+
 
 class PRNGSequence(Iterator[PRNGKey]):
   """Iterator of PRNGKeys.
@@ -375,22 +377,26 @@ class PRNGSequence(Iterator[PRNGKey]):
   >>> seq.reserve(4)
   >>> keys = [next(seq) for _ in range(4)]
   """
-  __slots__ = ("_keys",)
+  __slots__ = ("_key", "_subkeys")
 
-  def __init__(self, key_or_seed: Union[PRNGKey, int]):
-    if isinstance(key_or_seed, int):
-      self._keys = (jax.random.PRNGKey(key_or_seed),)
-    elif isinstance(key_or_seed, tuple):
-      map(assert_is_prng_key, key_or_seed)
-      self._keys = key_or_seed
+  def __init__(self, key_or_seed: Union[PRNGKey, int, PRNGSequenceState]):
+    if isinstance(key_or_seed, tuple):
+      key, subkeys = key_or_seed
+      assert_is_prng_key(key)
+      map(assert_is_prng_key, subkeys)
+      self._key = key
+      self._subkeys = collections.deque(subkeys)
     else:
-      assert_is_prng_key(key_or_seed)
-      self._keys = (key_or_seed,)
+      if isinstance(key_or_seed, int):
+        key_or_seed = jax.random.PRNGKey(key_or_seed)
+      else:
+        assert_is_prng_key(key_or_seed)
+      self._key = key_or_seed
+      self._subkeys = collections.deque()
 
   def reserve(self, num):
     """Splits an additional ``num`` keys for later use."""
     if num > 0:
-      new_keys = tuple(jax.random.split(self._keys[0], num + 1))
       # When storing keys we adopt a pattern of key0 being reserved for future
       # splitting and all other keys being provided to the user in linear order.
       # In terms of jax.random.split this looks like:
@@ -399,33 +405,30 @@ class PRNGSequence(Iterator[PRNGKey]):
       #     key, subkey3, subkey4 = jax.random.split(key, 3)  # reserve(2)
       #
       # Where subkey1->subkey4 are provided to the user in order when requested.
-      self._keys = new_keys[:1] + self._keys[1:] + new_keys[1:]
+      new_keys = tuple(jax.random.split(self._key, num + 1))
+      self._key = new_keys[0]
+      self._subkeys.extend(new_keys[1:])
 
   @property
-  def internal_state(self):
-    return self._keys
+  def internal_state(self) -> PRNGSequenceState:
+    return self._key, tuple(self._subkeys)
 
-  def replace_internal_state(
-      self, key_or_keys: Union[PRNGKey, Tuple[PRNGKey, ...]]):
-    if isinstance(key_or_keys, tuple):
-      map(assert_is_prng_key, key_or_keys)
-      self._keys = key_or_keys
-    else:
-      assert_is_prng_key(key_or_keys)
-      self._keys = (key_or_keys,)
+  def replace_internal_state(self, state: PRNGSequenceState):
+    key, subkeys = state
+    assert_is_prng_key(key)
+    map(assert_is_prng_key, subkeys)
+    self._key = key
+    self._subkeys = collections.deque(subkeys)
 
   def __next__(self) -> PRNGKey:
-    if len(self._keys) == 1:
+    if not self._subkeys:
       self.reserve(1)
-    subkey = self._keys[1]
-    # See note in reserve re linear ordering of keys.
-    self._keys = self._keys[:1] + self._keys[2:]
-    return subkey
+    return self._subkeys.popleft()
 
   next = __next__
 
   def take(self, num) -> Tuple[PRNGKey, ...]:
-    self.reserve(max(num - len(self._keys) + 1, 0))
+    self.reserve(max(num - len(self._subkeys), 0))
     return tuple(next(self) for _ in range(num))
 
 

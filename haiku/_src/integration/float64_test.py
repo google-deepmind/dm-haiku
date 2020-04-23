@@ -29,6 +29,15 @@ import jax.numpy as jnp
 class Float64Test(common.DTypeTestCase):
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
+  def test_float32(
+      self,
+      module_fn: descriptors.ModuleFn,
+      shape: Shape,
+      dtype: DType,
+  ):
+    self.assert_dtype(jnp.float32, module_fn, shape, dtype)
+
+  @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
   def test_float64(
       self,
       module_fn: descriptors.ModuleFn,

@@ -18,7 +18,6 @@
 from haiku._src import base
 from haiku._src.typing import Initializer, Shape, DType  # pylint: disable=g-multiple-import
 import jax
-from jax import lax
 import jax.numpy as jnp
 import numpy as np
 
@@ -69,8 +68,8 @@ class RandomNormal(Initializer):
     self._mean = mean
 
   def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
-    m = lax.convert_element_type(self._mean, dtype)
-    s = lax.convert_element_type(self._stddev, dtype)
+    m = jax.lax.convert_element_type(self._mean, dtype)
+    s = jax.lax.convert_element_type(self._stddev, dtype)
     return m + s * jax.random.normal(base.next_rng_key(), shape, dtype)
 
 
@@ -89,9 +88,11 @@ class TruncatedNormal(Initializer):
     self.mean = mean
 
   def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
+    m = jax.lax.convert_element_type(self.mean, dtype)
+    s = jax.lax.convert_element_type(self.stddev, dtype)
     unscaled = jax.random.truncated_normal(base.next_rng_key(), -2., 2., shape,
                                            dtype)
-    return self.stddev * unscaled + self.mean
+    return s * unscaled + m
 
 
 class RandomUniform(Initializer):
@@ -252,4 +253,4 @@ class Orthogonal(Initializer):
       q_mat = q_mat.T
     q_mat = jnp.reshape(q_mat, (n_rows,) + tuple(np.delete(shape, self.axis)))
     q_mat = jnp.moveaxis(q_mat, 0, self.axis)
-    return self.scale * q_mat
+    return jax.lax.convert_element_type(self.scale, dtype) * q_mat

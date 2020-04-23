@@ -18,31 +18,46 @@
 from absl.testing import absltest
 from haiku._src import initializers
 from haiku._src import test_utils
+from jax.config import config
 import jax.numpy as jnp
+import numpy as np
 
 
 class InitializersTest(absltest.TestCase):
 
   @test_utils.transform_and_run
   def test_initializers(self):
+    as_np_f64 = lambda t: np.array(t, dtype=np.float64)
     # This just makes sure we can call the initializers in accordance to the
     # API and get the right shapes and dtypes out.
     inits = [
         initializers.Constant(42.0),
+        initializers.Constant(as_np_f64(42.0)),
         initializers.RandomNormal(),
         initializers.RandomNormal(2.0),
+        initializers.RandomNormal(as_np_f64(2.0)),
         initializers.RandomUniform(),
         initializers.RandomUniform(3.0),
+        initializers.RandomUniform(as_np_f64(3.0)),
         initializers.VarianceScaling(),
         initializers.VarianceScaling(2.0),
+        initializers.VarianceScaling(as_np_f64(2.0)),
         initializers.VarianceScaling(2.0, mode="fan_in"),
+        initializers.VarianceScaling(as_np_f64(2.0), mode="fan_in"),
         initializers.VarianceScaling(2.0, mode="fan_out"),
+        initializers.VarianceScaling(as_np_f64(2.0), mode="fan_out"),
         initializers.VarianceScaling(2.0, mode="fan_avg"),
+        initializers.VarianceScaling(as_np_f64(2.0), mode="fan_avg"),
         initializers.VarianceScaling(2.0, distribution="truncated_normal"),
+        initializers.VarianceScaling(
+            as_np_f64(2.0), distribution="truncated_normal"),
         initializers.VarianceScaling(2.0, distribution="normal"),
+        initializers.VarianceScaling(as_np_f64(2.0), distribution="normal"),
         initializers.VarianceScaling(2.0, distribution="uniform"),
+        initializers.VarianceScaling(as_np_f64(2.0), distribution="uniform"),
         initializers.UniformScaling(),
         initializers.UniformScaling(2.0),
+        initializers.UniformScaling(as_np_f64(2.0)),
         initializers.TruncatedNormal(),
         initializers.Orthogonal(),
 
@@ -101,4 +116,5 @@ class InitializersTest(absltest.TestCase):
 
 
 if __name__ == "__main__":
+  config.update("jax_enable_x64", True)
   absltest.main()

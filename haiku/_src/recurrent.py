@@ -104,7 +104,7 @@ class VanillaRNN(RNNCore):
 class LSTM(RNNCore):
   """LSTM.
 
-  Following https://dl.acm.org/doi/10.5555/3045118.304536, we add a constant
+  Following :cite:`jozefowicz2015empirical`, we add a constant
   bias of 1 to the forget gate in order to reduce the scale of forgetting in
   the beginning of the training.
   """
@@ -138,7 +138,7 @@ class ConvNDLSTM(RNNCore):
 
   The implementation is based on https://arxiv.org/abs/1506.04214.
 
-  Following https://dl.acm.org/doi/10.5555/3045118.304536, we add a constant
+  Following :cite:`jozefowicz2015empirical`, we add a constant
   bias of 1 to the forget gate in order to reduce the scale of forgetting in
   the beginning of the training.
   """

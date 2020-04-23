@@ -42,6 +42,12 @@ Random Number Generators
 
 .. autofunction:: next_rng_key
 
+.. autofunction:: next_rng_keys
+
+.. autofunction:: maybe_next_rng_key
+
+.. autofunction:: reserve_rng_keys
+
 .. autofunction:: with_rng
 
 Linear modules

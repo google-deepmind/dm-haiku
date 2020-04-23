@@ -34,7 +34,7 @@ def internal_state() -> InternalState:
   frame = base.current_frame()
   rng = frame.rng_stack.peek()
   if rng is not None:
-    rng = rng.peek()
+    rng = rng.internal_state
   return InternalState(params=copy_structure(frame.params),
                        state=copy_structure(frame.state),
                        rng=rng)
@@ -56,7 +56,7 @@ def update_internal_state(state: InternalState):
   update_recursive(frame.state, state.state)
   rng = state.rng
   if rng is not None:
-    frame.rng_stack.peek().replace(rng)
+    frame.rng_stack.peek().replace_internal_state(rng)
 
 
 def temporary_internal_state(state: InternalState):

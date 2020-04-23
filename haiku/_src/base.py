@@ -18,7 +18,8 @@
 import collections
 import contextlib
 import functools
-from typing import Iterator, MutableMapping, NamedTuple, Optional, Set, Union
+from typing import (Iterator, MutableMapping, NamedTuple, Optional, Set, Tuple,
+                    Union)
 
 from haiku._src import data_structures
 from haiku._src.typing import (Shape, DType, ParamName, Initializer, Params,  # pylint: disable=g-multiple-import
@@ -346,7 +347,7 @@ def custom_creator(creator: ParamCreator):
   return creator_stack(creator)
 
 
-def assert_is_prng_key(key: jnp.ndarray):
+def assert_is_prng_key(key: PRNGKey):
   """Asserts that the given input looks like a `jax.random.PRNGKey`."""
   if not hasattr(key, "shape") or not hasattr(key, "dtype"):
     raise ValueError("The provided key is not a JAX PRNGKey but a "
@@ -363,44 +364,136 @@ def assert_is_prng_key(key: jnp.ndarray):
 class PRNGSequence(Iterator[PRNGKey]):
   """Iterator of PRNGKeys.
 
-      >>> seq = hk.PRNGSequence(42)  # OR pass a jax.random.PRNGKey
-      >>> key1 = next(seq)
-      >>> key2 = next(seq)
-      >>> assert key1 is not key2
+  >>> seq = hk.PRNGSequence(42)  # OR pass a jax.random.PRNGKey
+  >>> key1 = next(seq)
+  >>> key2 = next(seq)
+  >>> assert key1 is not key2
+
+  If you know how many keys you will want then you can use ``reserve`` to more
+  efficiently split the keys you need::
+
+  >>> seq.reserve(4)
+  >>> keys = [next(seq) for _ in range(4)]
   """
+  __slots__ = ("_keys",)
 
   def __init__(self, key_or_seed: Union[PRNGKey, int]):
     if isinstance(key_or_seed, int):
-      key = jax.random.PRNGKey(key_or_seed)
+      self._keys = (jax.random.PRNGKey(key_or_seed),)
+    elif isinstance(key_or_seed, tuple):
+      map(assert_is_prng_key, key_or_seed)
+      self._keys = key_or_seed
     else:
       assert_is_prng_key(key_or_seed)
-      key = key_or_seed
-    self._key = key
+      self._keys = (key_or_seed,)
 
-  def peek(self):
-    return self._key
+  def reserve(self, num):
+    """Splits an additional ``num`` keys for later use."""
+    if num > 0:
+      new_keys = tuple(jax.random.split(self._keys[0], num + 1))
+      # When storing keys we adopt a pattern of key0 being reserved for future
+      # splitting and all other keys being provided to the user in linear order.
+      # In terms of jax.random.split this looks like:
+      #
+      #     key, subkey1, subkey2 = jax.random.split(key, 3)  # reserve(2)
+      #     key, subkey3, subkey4 = jax.random.split(key, 3)  # reserve(2)
+      #
+      # Where subkey1->subkey4 are provided to the user in order when requested.
+      self._keys = new_keys[:1] + self._keys[1:] + new_keys[1:]
 
-  def replace(self, key: PRNGKey):
-    self._key = key
+  @property
+  def internal_state(self):
+    return self._keys
+
+  def replace_internal_state(
+      self, key_or_keys: Union[PRNGKey, Tuple[PRNGKey, ...]]):
+    if isinstance(key_or_keys, tuple):
+      map(assert_is_prng_key, key_or_keys)
+      self._keys = key_or_keys
+    else:
+      assert_is_prng_key(key_or_keys)
+      self._keys = (key_or_keys,)
 
   def __next__(self) -> PRNGKey:
-    key, subkey = jax.random.split(self._key)
-    self._key = key
+    if len(self._keys) == 1:
+      self.reserve(1)
+    subkey = self._keys[1]
+    # See note in reserve re linear ordering of keys.
+    self._keys = self._keys[:1] + self._keys[2:]
     return subkey
 
   next = __next__
 
+  def take(self, num) -> Tuple[PRNGKey, ...]:
+    self.reserve(max(num - len(self._keys) + 1, 0))
+    return tuple(next(self) for _ in range(num))
 
-def next_rng_key() -> PRNGKey:
-  """Returns a unique `PRNGKey` split from the current global key."""
-  assert_context("next_rng_key")
 
+def rng_seq_or_fail() -> PRNGSequence:
   rng_seq = current_frame().rng_stack.peek()
   if rng_seq is None:
     raise ValueError("You must pass a non-None PRNGKey to init and/or apply "
                      "if you make use of random numbers.")
+  return rng_seq
 
+
+def reserve_rng_keys(num: int):
+  """Pre-allocate some number of JAX RNG keys.
+
+  See :func:`next_rng_key`.
+
+  This API offers a way to micro-optimize how RNG keys are split when using
+  Haiku. It is unlikely that you need it unless you find compilation time of
+  your ``init`` function to be a problem, or you sample a lot of random numbers
+  in ``apply``.
+
+  >>> hk.reserve_rng_keys(2)  # Pre-allocate 2 keys for us to consume.
+  >>> _ = hk.next_rng_key()   # Takes the first pre-allocated key.
+  >>> _ = hk.next_rng_key()   # Takes the second pre-allocated key.
+  >>> _ = hk.next_rng_key()   # Splits a new key.
+
+  Args:
+    num: The number of JAX rng keys to allocate.
+  """
+  assert_context("reserve_rng_keys")
+  rng_seq = rng_seq_or_fail()
+  rng_seq.reserve(num)
+
+
+def next_rng_key() -> PRNGKey:
+  """Returns a unique JAX RNG key split from the current global key.
+
+  >>> key = hk.next_rng_key()
+  >>> _ = jax.random.uniform(key, [])
+
+  Returns:
+    A unique (within a transformed function) JAX rng key that can be used with
+    APIs such as ``jax.random.uniform``.
+  """
+  assert_context("next_rng_key")
+  rng_seq = rng_seq_or_fail()
   return next(rng_seq)
+
+
+def next_rng_keys(num: int) -> Tuple[PRNGKey, ...]:
+  """Returns one or more JAX RNG key split from the current global key.
+
+  >>> k1, k2 = hk.next_rng_keys(2)
+  >>> assert (k1 != k2).all()
+  >>> a = jax.random.uniform(k1, [])
+  >>> b = jax.random.uniform(k2, [])
+  >>> assert a != b
+
+  Args:
+    num: The number of keys to split.
+
+  Returns:
+    One or more unique (within a transformed function) JAX rng key that can be
+    used with APIs such as ``jax.random.uniform``.
+  """
+  assert_context("next_rng_keys")
+  rng_seq = rng_seq_or_fail()
+  return rng_seq.take(num)
 
 
 def maybe_next_rng_key() -> Optional[PRNGKey]:

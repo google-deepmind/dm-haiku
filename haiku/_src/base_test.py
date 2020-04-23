@@ -15,12 +15,15 @@
 # ==============================================================================
 """Tests for haiku._src.base."""
 
+import itertools as it
+
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import base
 from haiku._src import test_utils
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 # TODO(tomhennigan) Improve test coverage.
 
@@ -64,16 +67,24 @@ class BaseTest(parameterized.TestCase):
         base.get_parameter("w", (1,), init=jnp.zeros)
         base.get_parameter("w", (2,), init=jnp.zeros)
 
-  def test_rng_no_transform(self):
+  @parameterized.parameters(base.next_rng_key, lambda: base.next_rng_keys(1))
+  def test_rng_no_transform(self, f):
     with self.assertRaisesRegex(ValueError,
                                 "must be used as part of an `hk.transform`"):
-      base.next_rng_key()
+      f()
 
   @test_utils.transform_and_run
   def test_rng(self):
     a = base.next_rng_key()
     b = base.next_rng_key()
     self.assertIsNot(a, b)
+
+  @test_utils.transform_and_run
+  def test_rngs(self):
+    a, b = base.next_rng_keys(2)
+    c, d = base.next_rng_keys(2)
+    for l, r in it.permutations((a, b, c, d), 2):
+      self.assertIsNot(l, r)
 
   @test_utils.transform_and_run(seed=None)
   def test_no_rng(self):
@@ -223,6 +234,32 @@ class BaseTest(parameterized.TestCase):
     with self.assertRaisesRegex(ValueError,
                                 "key did not have expected shape and/or dtype"):
       base.PRNGSequence(jax.random.split(jax.random.PRNGKey(42), 2))
+
+  def test_prng_reserve(self):
+    k = jax.random.PRNGKey(42)
+    s = base.PRNGSequence(k)
+    s.reserve(10)
+    hk_keys = tuple(next(s) for _ in range(10))
+    jax_keys = tuple(jax.random.split(k, num=11)[1:])
+    jax.tree_multimap(np.testing.assert_equal, hk_keys, jax_keys)
+
+  def test_prng_reserve_twice(self):
+    k = jax.random.PRNGKey(42)
+    s = base.PRNGSequence(k)
+    s.reserve(2)
+    s.reserve(2)
+    hk_keys = tuple(next(s) for _ in range(4))
+    k, subkey1, subkey2 = tuple(jax.random.split(k, num=3))
+    _, subkey3, subkey4 = tuple(jax.random.split(k, num=3))
+    jax_keys = (subkey1, subkey2, subkey3, subkey4)
+    jax.tree_multimap(np.testing.assert_equal, hk_keys, jax_keys)
+
+  def test_prng_sequence_split(self):
+    k = jax.random.PRNGKey(42)
+    s = base.PRNGSequence(k)
+    hk_keys = s.take(10)
+    jax_keys = tuple(jax.random.split(k, num=11)[1:])
+    jax.tree_multimap(np.testing.assert_equal, hk_keys, jax_keys)
 
   @parameterized.parameters(42, 28)
   def test_with_rng(self, seed):

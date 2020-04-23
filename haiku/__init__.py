@@ -25,7 +25,9 @@ from haiku._src.base import get_parameter
 from haiku._src.base import get_state
 from haiku._src.base import maybe_next_rng_key
 from haiku._src.base import next_rng_key
+from haiku._src.base import next_rng_keys
 from haiku._src.base import PRNGSequence
+from haiku._src.base import reserve_rng_keys
 from haiku._src.base import set_state
 from haiku._src.base import with_rng
 from haiku._src.basic import BatchApply
@@ -148,9 +150,11 @@ __all__ = (
     "multinomial",
     "nets",
     "next_rng_key",
+    "next_rng_keys",
     "one_hot",
     "pad",
     "remat",
+    "reserve_rng_keys",
     "set_state",
     "static_unroll",
     "testing",

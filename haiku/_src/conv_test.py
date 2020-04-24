@@ -164,7 +164,7 @@ class ConvTest(parameterized.TestCase):
     self.assertEqual(out.shape, expected_output_shape)
     self.assertEqual(reached[0], n*2)
 
-  @test_utils.transform_and_run
+  @test_utils.transform_and_run(run_apply=False)
   def test_invalid_input_shape(self):
     n = 1
     input_shape = [2, 4] + [16]*n
@@ -176,7 +176,7 @@ class ConvTest(parameterized.TestCase):
                         data_format="channels_first")
       net(data)
 
-  @test_utils.transform_and_run
+  @test_utils.transform_and_run(run_apply=False)
   def test_invalid_mask_shape(self):
     n = 1
     input_shape = [2, 4] + [16]*n
@@ -377,7 +377,7 @@ class Conv3DTest(parameterized.TestCase):
     out = np.squeeze(out, axis=(0, 4))
     np.testing.assert_allclose(out, expected_out, rtol=1e-5)
 
-  @test_utils.transform_and_run
+  @test_utils.transform_and_run(run_apply=False)
   def test_invalid_input_shape(self):
     with_bias = True
 
@@ -461,7 +461,7 @@ class ConvTransposeTest(parameterized.TestCase):
     expected_output_shape = (2, 3) + (16,)*n
     self.assertEqual(out.shape, expected_output_shape)
 
-  @test_utils.transform_and_run
+  @test_utils.transform_and_run(run_apply=False)
   def test_invalid_input_shape(self):
     n = 1
     with self.assertRaisesRegex(ValueError,
@@ -472,7 +472,7 @@ class ConvTransposeTest(parameterized.TestCase):
           n, output_channels=3, kernel_shape=3, data_format="channels_first")
       return net(data)
 
-  @test_utils.transform_and_run
+  @test_utils.transform_and_run(run_apply=False)
   def test_invalid_input_mask(self):
     n = 2
     with self.assertRaisesRegex(ValueError, "Mask needs to have the same "

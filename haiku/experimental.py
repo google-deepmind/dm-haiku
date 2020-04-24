@@ -21,10 +21,12 @@ Features may be removed or modified at any time.
 from haiku._src.base import custom_creator
 from haiku._src.dot import to_dot
 from haiku._src.lift import lift
+from haiku._src.module import profiler_name_scopes
 
 
 __all__ = (
     "custom_creator",
     "lift",
     "to_dot",
+    "profiler_name_scopes",
 )

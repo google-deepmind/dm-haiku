@@ -23,6 +23,8 @@ from haiku._src import test_utils
 import jax
 import jax.numpy as jnp
 
+module.profiler_name_scopes(False)
+
 
 class DotTest(parameterized.TestCase):
 

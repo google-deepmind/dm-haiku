@@ -91,6 +91,7 @@ hk_py_library(
     deps = [
         ":base",
         ":data_structures",
+        ":named_call",
         ":utils",
         # pip: jax
     ],
@@ -432,6 +433,28 @@ hk_py_test(
 )
 
 hk_py_library(
+    name = "named_call",
+    srcs = ["named_call.py"],
+    srcs_version = "PY3",
+    deps = [
+        ":base",
+        ":stateful",
+        # pip: jax
+    ],
+)
+
+hk_py_test(
+    name = "named_call_test",
+    srcs = ["named_call_test.py"],
+    deps = [
+        ":named_call",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        # pip: jax
+    ],
+)
+
+hk_py_library(
     name = "recurrent",
     srcs = ["recurrent.py"],
     deps = [
@@ -557,6 +580,7 @@ hk_py_library(
     deps = [
         ":base",
         # pip: jax
+        # pip: pudb
     ],
 )
 

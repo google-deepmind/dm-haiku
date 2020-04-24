@@ -25,12 +25,20 @@ from typing import (Any, Callable, ContextManager, Dict, Mapping, Optional,
 
 from haiku._src import base
 from haiku._src import data_structures
+from haiku._src import named_call
 from haiku._src import utils
 import jax.numpy as jnp
 
 ThreadLocalStack = data_structures.ThreadLocalStack
 T = TypeVar("T")
 _APPLY_NAME_SCOPE = "__haiku_name_scope"
+modules_with_named_call = False
+
+
+def profiler_name_scopes(enabled=True):
+  """Enable/disable profiler name_scopes on all haiku module methods."""
+  global modules_with_named_call
+  modules_with_named_call = enabled
 
 
 class ModuleMetaclass(abc.ABCMeta):
@@ -138,10 +146,15 @@ def with_name_scope(method_name, unbound_method):
     state = base.ModuleState(module=module, method_name=method_name)
     with frame.module(state), _module_method_call(module, method_name):
       # hk.Module enters the module name scope for all methods.
-      out = unbound_method(module, *args, **kwargs)
+      module_name = getattr(module, "module_name", None)
+      f = unbound_method
+      if modules_with_named_call and module_name:
+        local_name = module_name.split("/")[-1]
+        f = named_call.stateful_named_call(f, name=local_name)
+
+      out = f(module, *args, **kwargs)
 
       # Notify parent modules about our existence.
-      module_name = getattr(module, "module_name", None)
       if module_name is not None:
         for module_state in frame.module_stack:
           module_state.module._submodules.add(module_name)  # pylint: disable=protected-access

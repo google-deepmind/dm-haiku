@@ -24,6 +24,7 @@ from haiku._src import test_utils
 from haiku._src.integration import descriptors
 from haiku._src.typing import DType, Shape  # pylint: disable=g-multiple-import
 import jax
+from jax.interpreters import xla
 import jax.numpy as jnp
 import numpy as np
 
@@ -101,6 +102,39 @@ class HaikuTransformsTest(parameterized.TestCase):
     jax.tree_multimap(assert_allclose,
                       grad_jax_remat(params, state, rng, x),
                       grad_hk_remat(params, state, rng, x))
+
+  @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
+  def test_profiler_name_scopes(
+      self,
+      module_fn: descriptors.ModuleFn,
+      shape: Shape,
+      dtype: DType,
+  ):
+    if not hasattr(xla.xb, 'parameter'):
+      self.skipTest('Need Jaxlib version > 0.1.45')
+
+    rng = jax.random.PRNGKey(42)
+    if jnp.issubdtype(dtype, jnp.integer):
+      x = jax.random.randint(rng, shape, 0, np.prod(shape), dtype)
+    else:
+      x = jax.random.uniform(rng, shape, dtype)
+
+    def g(x, name_scopes=False):
+      hk.experimental.profiler_name_scopes(enabled=name_scopes)
+      mod = module_fn()
+      return mod(x)
+
+    f = hk.transform_with_state(g)
+
+    assert_allclose = functools.partial(np.testing.assert_allclose, atol=1e-5)
+
+    params, state = f.init(rng, x)
+    jax.tree_multimap(assert_allclose,
+                      f.apply(params, state, rng, x),
+                      f.apply(params, state, rng, x, name_scopes=True))
+
+    # TODO(lenamartens): flip to True when default changes
+    hk.experimental.profiler_name_scopes(enabled=False)
 
 if __name__ == '__main__':
   absltest.main()

@@ -405,13 +405,13 @@ def run_custom_getters(
   context = ParamContext(full_name=full_name, module=current_module())
   getter_stack_copy = getter_stack.clone()
 
-  def next_creator(value):
+  def next_getter(value):
     if getter_stack_copy:
-      return getter_stack_copy.popleft()(next_creator, value, context)
+      return getter_stack_copy.popleft()(next_getter, value, context)
     else:
       return value
 
-  return next_creator(value)
+  return next_getter(value)
 
 NextGetter = Callable[[ParamName, jnp.ndarray], jnp.ndarray]
 ParamGetter = Callable[[NextGetter, jnp.ndarray, ParamContext], jnp.ndarray]

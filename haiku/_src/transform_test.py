@@ -133,38 +133,26 @@ class TransformTest(parameterized.TestCase):
     self.assertTrue(jnp.all(jnp.array(rngs) == jnp.array(maybes)))
 
   def test_init_custom_creator(self):
-    def zeros_creator(next_creator, name, shape, dtype, init):
-      self.assertEqual(name, "~/w")
+    def zeros_creator(next_creator, shape, dtype, init, context):
+      self.assertEqual(context.full_name, "~/w")
       self.assertEqual(shape, [])
       self.assertEqual(dtype, jnp.float32)
       self.assertEqual(init, jnp.ones)
-      return next_creator(name, shape, dtype, jnp.zeros)
+      return next_creator(shape, dtype, jnp.zeros)
 
-    init_fn, _ = transform.transform(
-        lambda: base.get_parameter("w", [], init=jnp.ones))
+    def f():
+      with base.custom_creator(zeros_creator):
+        return base.get_parameter("w", [], init=jnp.ones)
 
-    with base.custom_creator(zeros_creator):
-      params = init_fn(None)
-
+    params = transform.transform(f).init(None)
     self.assertEqual(params, {"~": {"w": jnp.zeros([])}})
 
-  def test_unable_to_mutate_name(self):
-    def mutates_name(next_creator, name, shape, dtype, init):
-      next_creator(name + "_foo", shape, dtype, init)
-
-    init_fn, _ = transform.transform(
-        lambda: base.get_parameter("w", [], init=jnp.ones))
-
-    with self.assertRaisesRegex(ValueError, "Modifying .*name.* not supported"):
-      with base.custom_creator(mutates_name):
-        init_fn(None)
-
-  def test_used_inside_transform(self):
+  def test_not_triggered_in_apply(self):
     log = []
 
-    def counting_creator(next_creator, name, shape, dtype, init):
-      log.append(name)
-      return next_creator(name, shape, dtype, init)
+    def counting_creator(next_creator, shape, dtype, init, context):
+      log.append(context.full_name)
+      return next_creator(shape, dtype, init)
 
     def net():
       with base.custom_creator(counting_creator):
@@ -184,18 +172,20 @@ class TransformTest(parameterized.TestCase):
     log = []
 
     def logging_creator(log_msg):
-      def _logging_creator(next_creator, name, shape, dtype, init):
+      def _logging_creator(next_creator, shape, dtype, init, context):
+        del context
         log.append(log_msg)
-        return next_creator(name, shape, dtype, init)
+        return next_creator(shape, dtype, init)
       return _logging_creator
 
-    init_fn, _ = transform.transform(
-        lambda: base.get_parameter("w", [], init=jnp.ones))
+    def f():
+      a, b, c = map(logging_creator, ["a", "b", "c"])
+      with base.custom_creator(a), \
+           base.custom_creator(b), \
+           base.custom_creator(c):
+        return base.get_parameter("w", [], init=jnp.ones)
 
-    a, b, c = map(logging_creator, ["a", "b", "c"])
-    with base.custom_creator(a), base.custom_creator(b), base.custom_creator(c):
-      init_fn(None)
-
+    transform.transform(f).init(None)
     self.assertEqual(log, ["a", "b", "c"])
 
   def test_argspec(self):

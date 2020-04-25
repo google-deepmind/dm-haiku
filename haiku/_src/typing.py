@@ -15,8 +15,17 @@
 # ==============================================================================
 """Haiku types."""
 
+import typing
 from typing import Any, Callable, Mapping, Text, Sequence, Union
 import jax.numpy as jnp
+
+# pytype: disable=module-attr
+try:
+  # Using PyType's experimental support for forward references.
+  Module = typing._ForwardRef('haiku.Module')  # pylint: disable=protected-access
+except AttributeError:
+  Module = Any
+# pytype: enable=module-attr
 
 Shape = Sequence[int]
 ShapeLike = Union[int, Shape]
@@ -25,9 +34,6 @@ ParamName = Text
 Initializer = Callable[[Shape, DType], jnp.ndarray]
 Params = Mapping[Text, Mapping[ParamName, jnp.ndarray]]
 State = Mapping[Text, Mapping[Text, jnp.ndarray]]
-NextCreator = Callable[[ParamName, Shape, DType, Initializer], jnp.ndarray]
-ParamCreator = Callable[[NextCreator, ParamName, Shape, DType, Initializer],
-                        jnp.ndarray]
 Padding = Callable[[int], Sequence[int]]
 Paddings = Union[Padding, Sequence[Padding]]
 

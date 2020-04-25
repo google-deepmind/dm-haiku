@@ -129,11 +129,14 @@ class ModuleTest(parameterized.TestCase):
                       "outer/~decode/scalar_module": {"w": jnp.zeros([])}})
 
   def test_used_inside_transform(self):
-    log = []
+    name_log = []
+    module_log = []
 
-    def counting_creator(next_creator, name, shape, dtype, init):
-      log.append(name)
-      return next_creator(name, shape, dtype, init)
+    def counting_creator(next_creator, shape, dtype, init, context):
+      name_log.append(context.full_name)
+      mod = context.module
+      module_log.append((type(mod), mod.module_name))
+      return next_creator(shape, dtype, init)
 
     def net():
       with base.custom_creator(counting_creator):
@@ -142,16 +145,23 @@ class ModuleTest(parameterized.TestCase):
     init_fn, apply_fn = transform.transform(net)
 
     params = init_fn(None)
-    self.assertEqual(log, [
+    self.assertEqual(name_log, [
         "multiple_forward_methods/~/scalar_module/w",        # __init__
         "multiple_forward_methods/scalar_module/w",          # __call__
         "multiple_forward_methods/~encode/scalar_module/w",  # encode
         "multiple_forward_methods/~decode/scalar_module/w",  # decode
     ])
 
-    del log[:]
+    self.assertEqual(module_log, [
+        (ScalarModule, "multiple_forward_methods/~/scalar_module"),
+        (ScalarModule, "multiple_forward_methods/scalar_module"),
+        (ScalarModule, "multiple_forward_methods/~encode/scalar_module"),
+        (ScalarModule, "multiple_forward_methods/~decode/scalar_module"),
+    ])
+
+    del name_log[:]
     apply_fn(params)
-    self.assertEmpty(log)
+    self.assertEmpty(name_log)
 
   def test_stateful_module(self):
     init_fn, apply_fn = transform.transform_with_state(

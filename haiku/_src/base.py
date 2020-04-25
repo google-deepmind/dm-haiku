@@ -17,13 +17,21 @@
 
 import collections
 import contextlib
-import functools
-from typing import (Iterator, Iterable, MutableMapping, NamedTuple, Optional,
-                    Set, Tuple, Union)
+from typing import (Callable, Iterator, Iterable, MutableMapping, NamedTuple,
+                    Optional, Set, Tuple, Union)
 
 from haiku._src import data_structures
-from haiku._src.typing import (Shape, DType, ParamName, Initializer, Params,  # pylint: disable=g-multiple-import
-                               State, ParamCreator, PRNGKey, PRNGSeed)
+from haiku._src.typing import (  # pylint: disable=g-multiple-import
+    Shape,
+    DType,
+    ParamName,
+    Initializer,
+    Params,
+    State,
+    Module,
+    PRNGKey,
+    PRNGSeed,
+)
 import jax
 import jax.numpy as jnp
 
@@ -37,7 +45,8 @@ MutableState = MutableMapping[str, MutableMapping[str, StatePair]]
 
 # TODO(tomhennigan) Should creator_stack be part of frame?
 frame_stack = ThreadLocalStack()  # type: ThreadLocalStack["Frame"]
-creator_stack = ThreadLocalStack()  # type: ThreadLocalStack[ParamCreator]
+creator_stack = ThreadLocalStack()  # type: ThreadLocalStack["ParamCreator"]
+getter_stack = ThreadLocalStack()  # type: ThreadLocalStack["ParamGetter"]
 
 
 class Frame(NamedTuple):
@@ -187,7 +196,7 @@ def inside_transform():
   return bool(frame_stack)
 
 
-def safe_get_module_name(module) -> str:
+def safe_get_module_name(module: Module) -> str:
   # TODO(tomhennigan) Module specific code should be part of `module.py`.
   if not hasattr(module, "module_name"):
     raise ValueError("The super constructor must be called before you create "
@@ -195,12 +204,18 @@ def safe_get_module_name(module) -> str:
   return module.module_name
 
 
-def current_bundle_name():
+def current_module() -> Optional[Module]:
   frame = current_frame()
   if frame.module_stack:
-    module = frame.module_stack.peek().module
-    module_name = safe_get_module_name(module)
-    return module_name
+    return frame.module_stack.peek().module
+  else:
+    return None
+
+
+def current_bundle_name():
+  module = current_module()
+  if module is not None:
+    return safe_get_module_name(module)
   else:
     # Any parameters defined outside an `hk.Module` are put in the same group.
     return "~"
@@ -272,6 +287,10 @@ def get_parameter(
     param = create_parameter(fq_name, shape, dtype, init)
     params[name] = param  # pytype: disable=unsupported-operands
 
+  # Custom getters allow a hook for users to customize the value returned by
+  # get_parameter. For example casting values to some dtype.
+  param = run_custom_getters(fq_name, param)
+
   assert param.shape == tuple(shape), (
       "{!r} with shape {!r} does not match shape={!r} dtype={!r}".format(
           fq_name, param.shape, shape, dtype))
@@ -280,23 +299,24 @@ def get_parameter(
 
 
 def create_parameter(
-    original_name: ParamName,
+    full_name: ParamName,
     shape: Shape,
     dtype: DType = jnp.float32,
     init: Initializer = None,
 ) -> jnp.ndarray:
   """Creates a parameter by running user defined creators then init.
 
-  >>> def fp16_creator(next_creator, name, shape, dtype):
-  ...   return next_creator(name, shape, jnp.float16)
+  >>> def zeros_creator(next_creator, shape, dtype, init, context):
+  ...   init = jnp.zeros
+  ...   return next_creator(shape, dtype, init)
 
-  >>> with hk.experimental.custom_creator(fp16_creator):
+  >>> with hk.experimental.custom_creator(zeros_creator):
   ...   w = hk.get_parameter("w", [], jnp.float32, init=jnp.ones)
   >>> w.dtype
   dtype('float16')
 
   Args:
-    original_name: Name of the parameter, including parent module name.
+    full_name: Name of the parameter, including parent module name.
     shape: The shape of the parameter.
     dtype: The dtype of the parameter.
     init: A callable of shape, dtype to generate an initial value for the
@@ -308,20 +328,27 @@ def create_parameter(
   if not creator_stack:
     return init(shape, dtype)
 
-  def next_creator(name, shape, dtype, init):
-    if name != original_name:
-      raise ValueError(
-          "Modifying variable `name` in a custom creator is not supported.")
+  context = ParamContext(full_name=full_name, module=current_module())
+  creator_stack_copy = creator_stack.clone()
 
+  def next_creator(shape, dtype, init):
     if creator_stack_copy:
-      return creator_stack_copy.popleft()(name, shape, dtype, init)
+      return creator_stack_copy.popleft()(next_creator, shape, dtype, init,
+                                          context)
     else:
       return init(shape, dtype)
 
-  creator_stack_copy = creator_stack.map(
-      lambda c: functools.partial(c, next_creator))
+  return next_creator(shape, dtype, init)
 
-  return creator_stack_copy.popleft()(original_name, shape, dtype, init)
+
+class ParamContext(NamedTuple):
+  """Read only state showing where parameters are being created."""
+  full_name: str
+  module: Optional[Module]
+
+NextCreator = Callable[[Shape, DType, Initializer], jnp.ndarray]
+ParamCreator = Callable[[NextCreator, Shape, DType, Initializer, ParamContext],
+                        jnp.ndarray]
 
 
 def custom_creator(creator: ParamCreator):
@@ -330,8 +357,9 @@ def custom_creator(creator: ParamCreator):
   When new parameters are created via :func:`get_parameter` we first run custom
   creators passing user defined values through. For example:
 
-  >>> def zeros_creator(next_creator, name, shape, dtype, init):
-  ...   return next_creator(name, shape, dtype, init=jnp.zeros)
+  >>> def zeros_creator(next_creator, shape, dtype, init, context):
+  ...   init = jnp.zeros
+  ...   return next_creator(shape, dtype, init)
 
   >>> with hk.experimental.custom_creator(zeros_creator):
   ...   w = hk.get_parameter("w", [], jnp.float32, jnp.ones)
@@ -344,7 +372,74 @@ def custom_creator(creator: ParamCreator):
   Returns:
     Context manager under which the creator is active.
   """
+  assert_context("experimental.custom_creator")
   return creator_stack(creator)
+
+
+def run_custom_getters(
+    full_name: ParamName,
+    value: jnp.ndarray,
+) -> jnp.ndarray:
+  """Creates a parameter by running user defined creators then init.
+
+  >>> def bfloat16_scope(next_getter, value, context):
+  ...   if value.dtype == jnp.float32:
+  ...     value = value.astype(jnp.bfloat16)
+  ...   return next_getter(value)
+
+  >>> with hk.experimental.custom_getter(bfloat16_scope):
+  ...   w = hk.get_parameter("w", [], jnp.float32, init=jnp.ones)
+  >>> w.dtype
+  dtype('bfloat16')
+
+  Args:
+    full_name: Name of the parameter, including parent module name.
+    value: The current value of the parameter.
+
+  Returns:
+    A jnp.ndarray with the parameter of the given shape/dtype.
+  """
+  if not getter_stack:
+    return value
+
+  context = ParamContext(full_name=full_name, module=current_module())
+  getter_stack_copy = getter_stack.clone()
+
+  def next_creator(value):
+    if getter_stack_copy:
+      return getter_stack_copy.popleft()(next_creator, value, context)
+    else:
+      return value
+
+  return next_creator(value)
+
+NextGetter = Callable[[ParamName, jnp.ndarray], jnp.ndarray]
+ParamGetter = Callable[[NextGetter, jnp.ndarray, ParamContext], jnp.ndarray]
+
+
+def custom_getter(getter: ParamGetter):
+  """Registers a custom parameter getter.
+
+  When parameters are retrieved using :func:`get_parameter` we always run all
+  custom getters before returning a value to the user.
+
+  >>> def bf16_getter(next_getter, value, context):
+  ...   value = value.astype(jnp.bfloat16)
+  ...   return next_getter(value)
+
+  >>> with hk.experimental.custom_getter(bf16_getter):
+  ...   w = hk.get_parameter("w", [], jnp.float32, jnp.ones)
+  >>> w.dtype
+  dtype(bfloat16)
+
+  Args:
+    getter: A parameter getter.
+
+  Returns:
+    Context manager under which the getter is active.
+  """
+  assert_context("experimental.custom_getter")
+  return getter_stack(getter)
 
 
 def assert_is_prng_key(key: PRNGKey):

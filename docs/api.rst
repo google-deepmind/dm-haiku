@@ -30,8 +30,6 @@ Parameters and State
 
 .. autofunction:: set_state
 
-.. autofunction:: custom_creator
-
 .. autofunction:: transparent
 
 Random Number Generators
@@ -344,6 +342,31 @@ ResNet50
 
 .. autoclass:: ResNet50
    :members:
+
+Experimental
+------------
+
+.. automodule:: haiku.experimental
+
+custom_creator
+~~~~~~~~~~~~~
+
+.. autofunction:: custom_creator
+
+custom_getter
+~~~~~~~~~~~~~
+
+.. autofunction:: custom_getter
+
+lift
+~~~~
+
+.. autofunction:: lift
+
+to_dot
+~~~~~~
+
+.. autofunction:: to_dot
 
 References
 ----------

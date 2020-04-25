@@ -129,12 +129,12 @@ class BaseTest(parameterized.TestCase):
     self.assertTrue(jnp.all(jnp.array(rngs) == jnp.array(maybes)))
 
   def test_init_custom_creator(self):
-    def zeros_creator(next_creator, name, shape, dtype, init):
-      self.assertEqual(name, "~/w")
+    def zeros_creator(next_creator, shape, dtype, init, context):
+      self.assertEqual(context.full_name, "~/w")
       self.assertEqual(shape, [])
       self.assertEqual(dtype, jnp.float32)
       self.assertEqual(init, jnp.ones)
-      return next_creator(name, shape, dtype, jnp.zeros)
+      return next_creator(shape, dtype, jnp.zeros)
 
     with base.new_context() as ctx:
       with base.custom_creator(zeros_creator):
@@ -142,22 +142,14 @@ class BaseTest(parameterized.TestCase):
 
     self.assertEqual(ctx.collect_params(), {"~": {"w": jnp.zeros([])}})
 
-  def test_unable_to_mutate_name(self):
-    def mutates_name(next_creator, name, shape, dtype, init):
-      next_creator(name + "_foo", shape, dtype, init)
-
-    with base.new_context(), base.custom_creator(mutates_name):
-      with self.assertRaisesRegex(ValueError,
-                                  "Modifying .*name.* not supported"):
-        base.get_parameter("w", [], init=jnp.ones)
-
   def test_nested_creators(self):
     log = []
 
     def logging_creator(log_msg):
-      def _logging_creator(next_creator, name, shape, dtype, init):
+      def _logging_creator(next_creator, shape, dtype, init, context):
+        del context
         log.append(log_msg)
-        return next_creator(name, shape, dtype, init)
+        return next_creator(shape, dtype, init)
       return _logging_creator
 
     with base.new_context():
@@ -167,6 +159,65 @@ class BaseTest(parameterized.TestCase):
         base.get_parameter("w", [], init=jnp.ones)
 
     self.assertEqual(log, ["a", "b", "c"])
+
+  def test_custom_getter_bf16(self):
+    def bf16_getter(next_getter, value, context):
+      del context
+      if value.dtype == jnp.float32:
+        value = value.astype(jnp.bfloat16)
+      return next_getter(value)
+
+    with base.new_context() as ctx:
+      with base.custom_getter(bf16_getter):
+        f = base.get_parameter("f", [], jnp.float32, init=jnp.ones)
+        i = base.get_parameter("i", [], jnp.int32, init=jnp.ones)
+
+    params = ctx.collect_params()
+    self.assertEqual(params["~"]["f"].dtype, jnp.float32)
+    self.assertEqual(f.dtype, jnp.bfloat16)
+    self.assertEqual(params["~"]["i"].dtype, jnp.int32)
+    self.assertEqual(i.dtype, jnp.int32)
+
+  def test_nested_getters(self):
+    log = []
+
+    def logging_getter(log_msg, dtype_in, dtype_out):
+      def _logging_getter(next_getter, value, context):
+        del context
+        log.append(log_msg)
+        self.assertEqual(value.dtype, dtype_in)
+        value = value.astype(dtype_out)
+        return next_getter(value)
+      return _logging_getter
+
+    with base.new_context():
+      with base.custom_getter(logging_getter("a", jnp.float32, jnp.bfloat16)), \
+           base.custom_getter(logging_getter("b", jnp.bfloat16, jnp.int32)), \
+           base.custom_getter(logging_getter("c", jnp.int32, jnp.int8)):
+        w = base.get_parameter("w", [], init=jnp.ones)
+
+    self.assertEqual(w.dtype, jnp.int8)
+    self.assertEqual(log, ["a", "b", "c"])
+
+  def test_creator_requires_context(self):
+    def my_creator(next_creator, shape, dtype, init, context):
+      del context
+      return next_creator(shape, dtype, init)
+
+    with self.assertRaisesRegex(ValueError,
+                                "must be used as part of an `hk.transform`"):
+      with base.custom_creator(my_creator):
+        pass
+
+  def test_getter_requires_context(self):
+    def my_getter(next_getter, value, context):
+      del context
+      return next_getter(value)
+
+    with self.assertRaisesRegex(ValueError,
+                                "must be used as part of an `hk.transform`"):
+      with base.custom_getter(my_getter):
+        pass
 
   def test_get_state_no_init_raises(self):
     with base.new_context():

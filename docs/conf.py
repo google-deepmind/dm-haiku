@@ -61,6 +61,7 @@ extensions = [
     'sphinxcontrib.bibtex',
     'sphinxcontrib.katex',
     'sphinx_autodoc_typehints',
+    'coverage_check',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

@@ -47,4 +47,5 @@ python -m pytest -n "${N_JOBS}" haiku
 cd docs/
 pip install -r requirements.txt
 # TODO(tomhennigan) Add `make doctest`.
+make coverage_check
 make html

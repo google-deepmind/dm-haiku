@@ -244,15 +244,14 @@ class BatchApply(object):
 def expand_apply(f, axis=0):
   """Wraps f to temporarily add a size-1 axis to its inputs.
 
-  Syntactic sugar for:
-  ```
-      in = tree.map_structure(lambda t: np.expand_dims(t, axis=axis), in)
-      out = f(in)
-      out = tree.map_structure(lambda t: np.squeeze(t, axis=axis), out)
-  ```
+  Syntactic sugar for::
 
-  This may be useful for applying a function built for [Time, Batch, ...] arrays
-  to a single timestep.
+      ins = tree.map_structure(lambda t: np.expand_dims(t, axis=axis), ins)
+      out = f(ins)
+      out = tree.map_structure(lambda t: np.squeeze(t, axis=axis), out)
+
+  This may be useful for applying a function built for ``[Time, Batch, ...]``
+  arrays to a single timestep.
 
   Args:
     f: The callable to be applied to the expanded inputs.
@@ -299,6 +298,7 @@ def to_module(f):
   """Converts a function into a module.
 
   Sample usage:
+
   >>> def add_bias(x):
   ...   b = hk.get_parameter("b", [], init=hk.initializers.RandomNormal())
   ...   return x + b

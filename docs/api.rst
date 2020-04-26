@@ -10,19 +10,30 @@ Transforming Functions
 
 .. autofunction:: transform
 
-.. autoclass:: Transformed
-
 .. autofunction:: transform_with_state
 
-.. autoclass:: TransformedWithState
-
 .. autofunction:: without_apply_rng
+
+.. autofunction:: without_state
+
+Type Hints
+~~~~~~~~~~
+
+.. autoclass:: Params
+
+.. autoclass:: State
+
+.. autoclass:: Transformed
+
+.. autoclass:: TransformedWithState
 
 Parameters and State
 ~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: Module
    :members:
+
+.. autofunction:: to_module
 
 .. autofunction:: get_parameter
 
@@ -83,6 +94,23 @@ Max Pool
 
 .. autoclass:: MaxPool
    :members:
+
+Dropout
+-------
+
+dropout
+~~~~~~~
+
+.. autofunction:: dropout
+
+Combinator modules
+------------------
+
+Sequential
+~~~~~~~~~~
+
+.. autoclass:: Sequential
+  :members:
 
 Convolutional modules
 ---------------------
@@ -154,6 +182,30 @@ BatchNorm
 .. autoclass:: BatchNorm
    :members:
 
+ExponentialMovingAverage
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: ExponentialMovingAverage
+   :members:
+
+SpectralNorm
+~~~~~~~~~~~~
+
+.. autoclass:: SpectralNorm
+   :members:
+
+SNParamsTree
+~~~~~~~~~~~~
+
+.. autoclass:: SNParamsTree
+   :members:
+
+EMAParamsTree
+~~~~~~~~~~~~~
+
+.. autoclass:: EMAParamsTree
+   :members:
+
 Recurrent modules
 -----------------
 
@@ -175,6 +227,11 @@ static_unroll
 
 .. autofunction:: static_unroll
 
+expand_apply
+~~~~~~~~~~~~
+
+.. autofunction:: expand_apply
+
 VanillaRNN
 ~~~~~~~~~~
 
@@ -189,7 +246,7 @@ LSTM
    :members:
 
 GRU
-~~~~
+~~~
 
 .. autoclass:: GRU
    :members:
@@ -208,8 +265,32 @@ ResetCore
 .. autoclass:: ResetCore
    :members:
 
-Batch
------
+IdentityCore
+~~~~~~~~~~~~
+
+.. autoclass:: IdentityCore
+   :members:
+
+Conv1DLSTM
+~~~~~~~~~~~~~~~
+
+.. autoclass:: Conv1DLSTM
+   :members:
+
+Conv2DLSTM
+~~~~~~~~~~~~~~~
+
+.. autoclass:: Conv2DLSTM
+   :members:
+
+Conv3DLSTM
+~~~~~~~~~~~~~~~
+
+.. autoclass:: Conv3DLSTM
+   :members:
+
+Batch modules
+-------------
 
 .. currentmodule:: haiku
 
@@ -240,6 +321,12 @@ Embed
 ~~~~~
 
 .. autoclass:: Embed
+   :members:
+
+EmbedLookupStyle
+~~~~~~~~~~~~~~~~
+
+.. autoclass:: EmbedLookupStyle
    :members:
 
 Initializers
@@ -289,6 +376,12 @@ VarianceScaling
 .. autoclass:: VarianceScaling
    :members:
 
+UniformScaling
+~~~~~~~~~~~~~~
+
+.. autoclass:: UniformScaling
+   :members:
+
 Paddings
 --------
 
@@ -326,8 +419,8 @@ valid
 
 .. TODO(tomhennigan): rename to something more appropriate.
 
-Nets
-----
+Networks
+--------
 
 .. automodule:: haiku.nets
 
@@ -337,11 +430,112 @@ MLP
 .. autoclass:: MLP
    :members:
 
+MobileNetV1
+~~~~~~~~~~~
+
+.. autoclass:: MobileNetV1
+   :members:
+
+ResNet
+~~~~~~
+
+.. autoclass:: ResNet
+   :members:
+
 ResNet50
 ~~~~~~~~
 
 .. autoclass:: ResNet50
    :members:
+
+ResNet101
+~~~~~~~~~
+
+.. autoclass:: ResNet101
+   :members:
+
+ResNet152
+~~~~~~~~~
+
+.. autoclass:: ResNet152
+   :members:
+
+ResNet200
+~~~~~~~~~
+
+.. autoclass:: ResNet200
+   :members:
+
+JAX Transforms
+--------------
+
+.. currentmodule:: haiku
+
+cond
+~~~~
+
+.. autofunction:: cond
+
+grad
+~~~~
+
+.. autofunction:: grad
+
+jit
+~~~
+
+.. autofunction:: jit
+
+remat
+~~~~~
+
+.. autofunction:: remat
+
+value_and_grad
+~~~~~~~~~~~~~~
+
+.. autofunction:: value_and_grad
+
+Testing
+-------
+
+.. automodule:: haiku.testing
+
+transform_and_run
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: transform_and_run
+
+Data structures
+---------------
+
+.. automodule:: haiku.data_structures
+
+filter
+~~~~~~
+
+.. autofunction:: filter
+
+merge
+~~~~~
+
+.. autofunction:: merge
+
+partition
+~~~~~~~~~
+
+.. autofunction:: partition
+
+to_immutable_dict
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: to_immutable_dict
+
+to_mutable_dict
+~~~~~~~~~~~~~~~
+
+.. autofunction:: to_mutable_dict
+
 
 Experimental
 ------------
@@ -358,15 +552,40 @@ custom_getter
 
 .. autofunction:: custom_getter
 
+ParamContext
+~~~~~~~~~~~~
+
+.. autoclass:: ParamContext
+
 lift
 ~~~~
 
 .. autofunction:: lift
 
+profiler_name_scopes
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: profiler_name_scopes
+
 to_dot
 ~~~~~~
 
 .. autofunction:: to_dot
+
+Utilities
+---------
+
+.. currentmodule:: haiku
+
+multinomial
+~~~~~~~~~~~
+
+.. autofunction:: multinomial
+
+one_hot
+~~~~~~~
+
+.. autofunction:: one_hot
 
 References
 ----------

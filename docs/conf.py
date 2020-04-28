@@ -100,6 +100,10 @@ doctest_global_setup = """
 import haiku as hk
 import jax
 import jax.numpy as jnp
+
+# Equivalent to wrapping the whole files doctests in `hk.transform_with_state`.
+from haiku._src import base
+base.new_context(rng=jax.random.PRNGKey(42)).__enter__()
 """
 doctest_default_flags = (
     doctest.ELLIPSIS

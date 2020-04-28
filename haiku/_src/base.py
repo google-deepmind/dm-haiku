@@ -362,8 +362,8 @@ def custom_creator(creator: ParamCreator):
   ...   return next_creator(shape, dtype, init)
 
   >>> with hk.experimental.custom_creator(zeros_creator):
-  ...   w = hk.get_parameter("w", [], jnp.float32, jnp.ones)
-  >>> w
+  ...   z = hk.get_parameter("z", [], jnp.float32, jnp.ones)
+  >>> z
   DeviceArray(0., dtype=float32)
 
   Args:

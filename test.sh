@@ -46,6 +46,6 @@ python -m pytest -n "${N_JOBS}" haiku
 # Test docs still build.
 cd docs/
 pip install -r requirements.txt
-# TODO(tomhennigan) Add `make doctest`.
 make coverage_check
+make doctest
 make html

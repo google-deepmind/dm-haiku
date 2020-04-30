@@ -36,6 +36,18 @@ DIMENSION_NUMBERS_NCSPATIAL = {
     3: ("NCDHW", "DHWIO", "NCDHW")
 }
 
+DIMENSION_NUMBERS_T = {
+    1: ("NWC", "WOI", "NWC"),
+    2: ("NHWC", "HWOI", "NHWC"),
+    3: ("NDHWC", "DHWOI", "NDHWC")
+}
+
+DIMENSION_NUMBERS_NCSPATIAL_T = {
+    1: ("NCH", "HOI", "NCH"),
+    2: ("NCHW", "HWOI", "NCHW"),
+    3: ("NCDHW", "DHWOI", "NCDHW")
+}
+
 
 class ConvND(module.Module):
   """A general N-dimensional convolutional module."""
@@ -382,9 +394,9 @@ class ConvNDTranspose(module.Module):
     self._data_format = data_format
     self._channel_index = utils.get_channel_index(data_format)
     if self._channel_index == -1:
-      self._dn = DIMENSION_NUMBERS[self._num_spatial_dims]
+      self._dn = DIMENSION_NUMBERS_T[self._num_spatial_dims]
     else:
-      self._dn = DIMENSION_NUMBERS_NCSPATIAL[self._num_spatial_dims]
+      self._dn = DIMENSION_NUMBERS_NCSPATIAL_T[self._num_spatial_dims]
 
   def __call__(self, inputs):
     """Connects Conv2DTranspose layer.
@@ -399,11 +411,12 @@ class ConvNDTranspose(module.Module):
       raise ValueError("Input to ConvND needs to have rank {}, but input "
                        "has shape {}.".format(
                            self._num_spatial_dims + 2, inputs.shape))
-    weight_shape = self._kernel_shape + (inputs.shape[self._channel_index],
-                                         self._output_channels)
 
-    fan_in_shape = np.sqrt(np.prod(weight_shape[:-1]))
-    stddev = 1. / fan_in_shape
+    input_channels = inputs.shape[self._channel_index]
+    weight_shape = self._kernel_shape + (self._output_channels, input_channels)
+    fan_in_shape = self._kernel_shape + (input_channels,)
+
+    stddev = 1. / np.sqrt(np.prod(fan_in_shape))
     w_init = self._w_init or initializers.TruncatedNormal(stddev=stddev)
     w = base.get_parameter("w", weight_shape, inputs.dtype, init=w_init)
 

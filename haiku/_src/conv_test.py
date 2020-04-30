@@ -493,10 +493,36 @@ class ConvTransposeTest(parameterized.TestCase):
     net = conv.ConvNDTranspose(
         n, output_channels=3, kernel_shape=3,
         data_format="channels_first",
-        mask=jnp.zeros([3, 3, 4, 3]))
+        mask=jnp.zeros([3, 3, 3, 4]))
     out = net(data)
     expected_output_shape = (2, 3, 16, 16)
     self.assertEqual(out.shape, expected_output_shape)
+
+  @parameterized.parameters(
+      (1, (3,), 128, 5, "NWC"),
+      (2, (4, 4), 64, 3, "NHWC"),
+      (3, (4, 4, 4), 64, 3, "NDHWC"))
+  @test_utils.transform_and_run
+  def test_initializer_variance(self, num_spatial_dims, kernel_shape,
+                                in_channels, output_channels, data_format):
+    c = conv.ConvNDTranspose(
+        num_spatial_dims=num_spatial_dims,
+        kernel_shape=kernel_shape,
+        output_channels=output_channels,
+        data_format=data_format)
+
+    inputs = jnp.ones([16] + ([32] * num_spatial_dims) + [in_channels])
+    c(inputs)
+
+    w = c.params_dict()["conv_nd_transpose/w"]
+    actual_std = w.std()
+    expected_std = 1 / (np.sqrt(np.prod(kernel_shape + (in_channels,))))
+
+    # This ratio of the error compared to the expected std might be somewhere
+    # around 0.15 normally. We check it is not > 0.5, as that would indicate
+    # something seriously wrong (ie the previous buggy initialization).
+    rel_diff = np.abs(actual_std - expected_std) / expected_std
+    self.assertLess(rel_diff, 0.5)
 
 
 class Conv1DTransposeTest(parameterized.TestCase):

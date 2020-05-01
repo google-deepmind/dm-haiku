@@ -15,7 +15,7 @@
 # ==============================================================================
 """Module descriptors programatically describe how to use modules."""
 
-from typing import Any, Callable, NamedTuple
+from typing import Any, Callable, NamedTuple, Type
 
 import haiku as hk
 from haiku._src.typing import Shape, DType  # pylint: disable=g-multiple-import
@@ -129,6 +129,14 @@ BATCH_MODULES = (
                                                     channels=(16, 32, 64))),
         shape=(BATCH_SIZE, 64, 64, 2)),
     # pylint: enable=g-long-lambda
+    ModuleDescriptor(
+        name="nets.VectorQuantizer",
+        create=lambda: Training(hk.nets.VectorQuantizer(64, 512, 0.25)),
+        shape=(BATCH_SIZE, 64)),
+    ModuleDescriptor(
+        name="nets.VectorQuantizerEMA",
+        create=lambda: Training(hk.nets.VectorQuantizerEMA(64, 512, 0.25, 0.9)),
+        shape=(BATCH_SIZE, 64)),
 
     # TODO(tomhennigan) Make these modules support unbatched input.
     ModuleDescriptor(
@@ -238,6 +246,10 @@ def unroll_descriptors(descriptors, unroller):
                          dtype=dtype))
   return tuple(out)
 
+
+def module_type(module_fn: ModuleFn) -> Type[hk.Module]:
+  f = hk.transform_with_state(lambda: type(unwrap(module_fn())))
+  return f.apply(*f.init(jax.random.PRNGKey(42)), None)[0]
 
 # Modules that require time then batch input.
 RECURRENT_MODULES = (

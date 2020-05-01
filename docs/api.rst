@@ -466,6 +466,18 @@ ResNet200
 .. autoclass:: ResNet200
    :members:
 
+VectorQuantizer
+~~~~~~~~~~~~~~~
+
+.. autoclass:: VectorQuantizer
+   :members:
+
+VectorQuantizerEMA
+~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: VectorQuantizerEMA
+   :members:
+
 JAX Transforms
 --------------
 

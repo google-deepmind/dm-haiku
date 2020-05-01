@@ -83,3 +83,31 @@ hk_py_test(
         # pip: jax
     ],
 )
+
+hk_py_library(
+    name = "vqvae",
+    srcs = ["vqvae.py"],
+    deps = [
+        "//haiku/_src:base",
+        "//haiku/_src:initializers",
+        "//haiku/_src:module",
+        "//haiku/_src:moving_averages",
+        "//haiku/_src:typing",
+        # pip: jax
+    ],
+)
+
+hk_py_test(
+    name = "vqvae_test",
+    timeout = "long",
+    srcs = ["vqvae_test.py"],
+    deps = [
+        ":vqvae",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        "//haiku/_src:stateful",
+        "//haiku/_src:test_utils",
+        # pip: jax
+        # pip: numpy
+    ],
+)

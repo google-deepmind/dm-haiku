@@ -16,7 +16,6 @@
 """Tests for haiku._src.conformance.descriptors."""
 
 import functools
-from typing import Type
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -31,12 +30,9 @@ import numpy as np
 ModuleFn = descriptors.ModuleFn
 
 
-def module_type(module_fn: ModuleFn) -> Type[hk.Module]:
-  f = hk.transform_with_state(lambda: type(descriptors.unwrap(module_fn())))
-  return f.apply(*f.init(jax.random.PRNGKey(42)), None)[0]
-
 DEFAULT_ATOL = 1e-5
 CUSTOM_ATOL = {hk.nets.ResNet: 0.05, hk.nets.MobileNetV1: 0.05,
+               hk.nets.VectorQuantizer: 0.05, hk.nets.VectorQuantizerEMA: 0.05,
                hk.BatchNorm: 1e-4}
 
 
@@ -60,7 +56,7 @@ class JaxTransformsTest(parameterized.TestCase):
 
     f = hk.transform_with_state(g)
 
-    atol = CUSTOM_ATOL.get(module_type(module_fn), DEFAULT_ATOL)
+    atol = CUSTOM_ATOL.get(descriptors.module_type(module_fn), DEFAULT_ATOL)
     assert_allclose = functools.partial(np.testing.assert_allclose, atol=atol)
 
     # Ensure initialization under jit is the same.

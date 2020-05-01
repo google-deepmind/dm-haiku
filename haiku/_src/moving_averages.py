@@ -63,6 +63,11 @@ class ExponentialMovingAverage(module.Module):
     c = cond.astype(dtype)
     return c * t + (1. - c) * f
 
+  def initialize(self, value):
+    """If uninitialized sets the average to ``zeros_like`` the given value."""
+    base.get_state("hidden", value.shape, value.dtype, init=jnp.zeros)
+    base.get_state("average", value.shape, value.dtype, init=jnp.zeros)
+
   def __call__(self, value, update_stats=True):
     """Updates the EMA and returns the new value.
 

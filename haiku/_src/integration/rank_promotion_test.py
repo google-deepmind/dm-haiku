@@ -31,6 +31,10 @@ class RankPromotionTest(parameterized.TestCase):
     super().setUp()
     jax.config.update('jax_numpy_rank_promotion', 'raise')
 
+  def tearDown(self):
+    super().tearDown()
+    jax.config.update('jax_numpy_rank_promotion', 'warn')
+
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
   def test_strict_promotion(
       self,
@@ -38,6 +42,10 @@ class RankPromotionTest(parameterized.TestCase):
       shape: Shape,
       dtype: DType,
   ):
+    if descriptors.module_type(module_fn) in (hk.nets.VectorQuantizer,
+                                              hk.nets.VectorQuantizerEMA):
+      self.skipTest('Requires: https://github.com/google/jax/pull/2901')
+
     f = hk.transform_with_state(lambda x: module_fn()(x))  # pylint: disable=unnecessary-lambda
     rng = jax.random.PRNGKey(42)
     x = jnp.ones(shape, dtype)

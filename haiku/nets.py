@@ -22,6 +22,8 @@ from haiku._src.nets.resnet import ResNet101
 from haiku._src.nets.resnet import ResNet152
 from haiku._src.nets.resnet import ResNet200
 from haiku._src.nets.resnet import ResNet50
+from haiku._src.nets.vqvae import VectorQuantizer
+from haiku._src.nets.vqvae import VectorQuantizerEMA
 
 __all__ = (
     "ResNet",
@@ -30,5 +32,7 @@ __all__ = (
     "ResNet152",
     "ResNet200",
     "MLP",
-    "MobileNetV1"
+    "MobileNetV1",
+    "VectorQuantizer",
+    "VectorQuantizerEMA",
 )

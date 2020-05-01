@@ -107,6 +107,18 @@ class MovingAveragesTest(absltest.TestCase):
       # Floating point error creeps up to 1e-7 (the default).
       np.testing.assert_allclose(inp_value, value, rtol=1e-6)
 
+  @test_utils.transform_and_run
+  def test_initialize(self):
+    ema = moving_averages.ExponentialMovingAverage(0.99)
+    ema.initialize(jnp.ones([]))
+    self.assertEqual(ema.average, 0.)
+    ema(jnp.array(100.))
+
+    # Matching the behavior of Sonnet 2 initialize only sets the value to zero
+    # if the EMA has not already been initialized.
+    ema.initialize(jnp.ones([]))
+    self.assertNotEqual(ema.average, 0.)
+
 
 class EMAParamsTreeTest(absltest.TestCase):
 

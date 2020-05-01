@@ -54,7 +54,7 @@ class HaikuTransformsTest(parameterized.TestCase):
 
     f = hk.transform_with_state(g)
 
-    assert_allclose = functools.partial(np.testing.assert_allclose, atol=1e-5)
+    assert_allclose = functools.partial(np.testing.assert_allclose, atol=1e-4)
 
     # NOTE: We shard init/apply tests since some modules are expensive to jit
     # (e.g. ResNet50 takes ~60s to compile and we compile it twice per test).
@@ -88,7 +88,10 @@ class HaikuTransformsTest(parameterized.TestCase):
       mod = module_fn()
       if remat:
         mod = hk.remat(mod)
-      return jnp.mean(mod(x))
+      out = mod(x)
+      if isinstance(out, dict):
+        out = out['loss']
+      return jnp.mean(out)
 
     f = hk.transform_with_state(g)
 

@@ -34,8 +34,8 @@ from absl import app
 from absl import flags
 from absl import logging
 import haiku as hk
-from haiku.examples.transformer import dataset
-from haiku.examples.transformer import model
+from examples.transformer import dataset
+from examples.transformer import model
 import jax
 from jax.experimental import optix
 import jax.numpy as jnp

@@ -16,9 +16,9 @@
 """IMPALA actor class."""
 import dm_env
 import haiku as hk
-from haiku.examples.impala import agent as agent_lib
-from haiku.examples.impala import learner as learner_lib
-from haiku.examples.impala import util
+from examples.impala import agent as agent_lib
+from examples.impala import learner as learner_lib
+from examples.impala import util
 import jax
 import numpy as np
 

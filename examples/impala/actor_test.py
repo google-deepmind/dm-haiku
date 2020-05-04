@@ -17,11 +17,11 @@
 from absl.testing import absltest
 from bsuite.environments import catch
 import dm_env
-from haiku.examples.impala import actor as actor_lib
-from haiku.examples.impala import agent as agent_lib
-from haiku.examples.impala import haiku_nets
-from haiku.examples.impala import learner as learner_lib
-from haiku.examples.impala import util
+from examples.impala import actor as actor_lib
+from examples.impala import agent as agent_lib
+from examples.impala import haiku_nets
+from examples.impala import learner as learner_lib
+from examples.impala import util
 import jax
 import mock
 import numpy as np

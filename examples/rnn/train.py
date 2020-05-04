@@ -22,7 +22,7 @@ from absl import flags
 from absl import logging
 
 import haiku as hk
-from haiku.examples.rnn import dataset
+from examples.rnn import dataset
 import jax
 from jax import lax
 from jax import ops

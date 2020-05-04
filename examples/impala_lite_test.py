@@ -16,7 +16,7 @@
 """Tests for haiku.examples.impala_lite."""
 
 from absl.testing import absltest
-from haiku.examples import impala_lite
+from examples import impala_lite
 
 
 class ImpalaLiteTest(absltest.TestCase):

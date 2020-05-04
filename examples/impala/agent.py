@@ -20,7 +20,7 @@ from typing import Any, Callable, Optional, Tuple
 
 import dm_env
 import haiku as hk
-from haiku.examples.impala import util
+from examples.impala import util
 import jax
 import jax.numpy as jnp
 

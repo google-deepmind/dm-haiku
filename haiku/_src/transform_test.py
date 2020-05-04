@@ -103,6 +103,18 @@ class TransformTest(parameterized.TestCase):
       args = (args,)
     f.apply(*args, None)
 
+  def test_invalid_params(self):
+    f = transform.transform_with_state(lambda: None)
+    with self.assertRaisesRegex(TypeError,
+                                "params argument does not appear valid"):
+      f.apply("z", {}, None)
+
+  def test_invalid_state(self):
+    f = transform.transform_with_state(lambda: None)
+    with self.assertRaisesRegex(TypeError,
+                                "state argument does not appear valid"):
+      f.apply({}, "z", None)
+
   def test_maybe_rng_no_transform(self):
     with self.assertRaisesRegex(ValueError,
                                 "must be used as part of an `hk.transform`"):

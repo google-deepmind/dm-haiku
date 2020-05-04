@@ -15,7 +15,7 @@
 # ==============================================================================
 """Base Haiku module."""
 
-from typing import Any, Callable, NamedTuple, Optional, Tuple, TypeVar, Union
+from typing import Any, Callable, Mapping, NamedTuple, Optional, Tuple, TypeVar, Union
 import warnings
 
 from haiku._src import analytics
@@ -279,6 +279,8 @@ def transform_with_state(f) -> TransformedWithState:
       **kwargs,
   ) -> Tuple[Any, State]:
     """Applies your function injecting parameters and state."""
+    params = check_mapping("params", params)
+    state = check_mapping("state", state)
     rng = to_prng_sequence(
         rng, err_msg=(APPLY_RNG_STATE_ERROR if state else APPLY_RNG_ERROR))
     with base.new_context(params=params, state=state, rng=rng) as ctx:
@@ -290,3 +292,14 @@ def transform_with_state(f) -> TransformedWithState:
   apply_fn._original_fn = f  # pylint: disable=protected-access
 
   return TransformedWithState(init_fn, apply_fn)
+
+
+def check_mapping(name: str, mapping: T) -> T:
+  # TODO(tomhennigan) Remove support for empty non-Mappings.
+  if mapping and not isinstance(mapping, Mapping):
+    raise TypeError(f"{name} argument does not appear valid: {mapping!r}. "
+                    "For reference the parameters for apply are "
+                    "`apply(params, rng, ...)`` for `hk.transform` and "
+                    "`apply(params, state, rng, ...)` for "
+                    "`hk.transform_with_state`.")
+  return mapping

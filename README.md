@@ -143,8 +143,8 @@ mapping of module name to module parameters, where a module parameter is a mappi
 of parameter name to parameter value. For example:
 
 ```
-{'linear': {'b': ndarray(..., shape=(1000,), dtype=float32),
-            'w': ndarray(..., shape=(28, 1000), dtype=float32)},
+{'linear': {'b': ndarray(..., shape=(300,), dtype=float32),
+            'w': ndarray(..., shape=(28, 300), dtype=float32)},
  'linear_1': {'b': ndarray(..., shape=(100,), dtype=float32),
               'w': ndarray(..., shape=(1000, 100), dtype=float32)},
  'linear_2': {'b': ndarray(..., shape=(10,), dtype=float32),
@@ -272,8 +272,9 @@ y = forward.apply(params, x)
 
 Some models may require random sampling as part of the computation.
 For example, in variational autoencoders with the reparametrization trick,
-a random sample from the standard normal distribution is needed.
-The main hurdle in making this work with JAX is in management of PRNG keys.
+a random sample from the standard normal distribution is needed. For dropout we
+need a random mask to drop units from the input. The main hurdle in making this
+work with JAX is in management of PRNG keys.
 
 In Haiku we provide a simple API for maintaining a PRNG key sequence associated
 with modules: `hk.next_rng_key()` (or `next_rng_keys()` for multiple keys).
@@ -282,17 +283,20 @@ argument on the `hk.transform` call:
 
 ```python
 class Dropout(hk.Module):
-  def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
-    rng_key = hk.next_rng_key()
-    p = jax.random.bernoulli(rng_key, 1.0 - self.rate, shape=x.shape)
+  def __init__(self, rate=0.5):
+    super().__init__()
+    self.rate = rate
+
+  def __call__(self, x):
+    key = hk.next_rng_key()
+    p = jax.random.bernoulli(key, 1.0 - self.rate, shape=x.shape)
     return x * p / (1.0 - self.rate)
 
-forward = hk.transform(lambda x: VAE()(x), apply_rng=True)
+forward = hk.transform(lambda x: Dropout()(x), apply_rng=True)
 
-rng_key1, rng_key2 = jax.random.split(jax.random.PRNGKey(42), 2)
-
-params = forward.init(rng_key1, x)
-prediction = forward.apply(params, rng_key2, x)
+key1, key2 = jax.random.split(jax.random.PRNGKey(42), 2)
+params = forward.init(key1, x)
+prediction = forward.apply(params, key2, x)
 ```
 
 For a more complete look at working with stochastic models, please see our

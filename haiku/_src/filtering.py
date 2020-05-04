@@ -16,13 +16,13 @@
 """Functions for filtering parameters and state in Haiku."""
 
 import collections
-from typing import Callable, Text, Tuple, TypeVar
+from typing import Callable, Tuple, TypeVar
 
 from haiku._src import data_structures
 from haiku._src.typing import Params, State  # pylint: disable=g-multiple-import
 import jax.numpy as jnp
 
-Predicate = Callable[[Text, Text, jnp.ndarray], bool]
+Predicate = Callable[[str, str, jnp.ndarray], bool]
 T = TypeVar("T", Params, State)
 
 

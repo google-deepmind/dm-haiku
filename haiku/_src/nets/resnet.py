@@ -15,7 +15,7 @@
 # ==============================================================================
 """Resnet."""
 
-from typing import Mapping, Optional, Sequence, Text, Union
+from typing import Mapping, Optional, Sequence, Union
 
 from haiku._src import basic
 from haiku._src import batch_norm
@@ -33,8 +33,8 @@ class BottleNeckBlockV1(module.Module):
                channels: int,
                stride: Union[int, Sequence[int]],
                use_projection: bool,
-               bn_config: Mapping[Text, float],
-               name: Optional[Text] = None):
+               bn_config: Mapping[str, float],
+               name: Optional[str] = None):
     super().__init__(name=name)
     self._use_projection = use_projection
 
@@ -106,8 +106,8 @@ class BottleNeckBlockV2(module.Module):
                channels: int,
                stride: Union[int, Sequence[int]],
                use_projection: bool,
-               bn_config: Mapping[Text, float],
-               name: Optional[Text] = None):
+               bn_config: Mapping[str, float],
+               name: Optional[str] = None):
     super().__init__(name=name)
     self._use_projection = use_projection
 
@@ -174,9 +174,9 @@ class BlockGroup(module.Module):
                channels: int,
                num_blocks: int,
                stride: Union[int, Sequence[int]],
-               bn_config: Mapping[Text, float],
+               bn_config: Mapping[str, float],
                resnet_v2: bool = False,
-               name: Optional[Text] = None):
+               name: Optional[str] = None):
     super().__init__(name=name)
 
     block_cls = BottleNeckBlockV2 if resnet_v2 else BottleNeckBlockV1
@@ -208,10 +208,10 @@ class ResNet(module.Module):
   def __init__(self,
                blocks_per_group: Sequence[int],
                num_classes: int,
-               bn_config: Optional[Mapping[Text, float]] = None,
+               bn_config: Optional[Mapping[str, float]] = None,
                resnet_v2: bool = False,
                channels_per_group: Sequence[int] = (256, 512, 1024, 2048),
-               name: Optional[Text] = None):
+               name: Optional[str] = None):
     """Constructs a ResNet model.
 
     Args:
@@ -295,9 +295,9 @@ class ResNet50(ResNet):
 
   def __init__(self,
                num_classes: int,
-               bn_config: Optional[Mapping[Text, float]] = None,
+               bn_config: Optional[Mapping[str, float]] = None,
                resnet_v2: bool = False,
-               name: Optional[Text] = None):
+               name: Optional[str] = None):
     """Constructs a ResNet model.
 
     Args:
@@ -320,9 +320,9 @@ class ResNet101(ResNet):
 
   def __init__(self,
                num_classes: int,
-               bn_config: Optional[Mapping[Text, float]] = None,
+               bn_config: Optional[Mapping[str, float]] = None,
                resnet_v2: bool = False,
-               name: Optional[Text] = None):
+               name: Optional[str] = None):
     """Constructs a ResNet model.
 
     Args:
@@ -345,9 +345,9 @@ class ResNet152(ResNet):
 
   def __init__(self,
                num_classes: int,
-               bn_config: Optional[Mapping[Text, float]] = None,
+               bn_config: Optional[Mapping[str, float]] = None,
                resnet_v2: bool = False,
-               name: Optional[Text] = None):
+               name: Optional[str] = None):
     """Constructs a ResNet model.
 
     Args:
@@ -370,9 +370,9 @@ class ResNet200(ResNet):
 
   def __init__(self,
                num_classes: int,
-               bn_config: Optional[Mapping[Text, float]] = None,
+               bn_config: Optional[Mapping[str, float]] = None,
                resnet_v2: bool = False,
-               name: Optional[Text] = None):
+               name: Optional[str] = None):
     """Constructs a ResNet model.
 
     Args:

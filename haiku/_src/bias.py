@@ -15,7 +15,7 @@
 # ==============================================================================
 """Bias module."""
 
-from typing import Optional, Sequence, Text, Union
+from typing import Optional, Sequence, Union
 
 from haiku._src import base
 from haiku._src import module
@@ -70,7 +70,7 @@ class Bias(module.Module):
                output_size: Optional[Union[int, ShapeLike]] = None,
                bias_dims: Optional[Sequence[int]] = None,
                b_init: Optional[base.Initializer] = None,
-               name: Optional[Text] = None):
+               name: Optional[str] = None):
     """Constructs a `Bias` module that supports broadcasting.
 
     Args:

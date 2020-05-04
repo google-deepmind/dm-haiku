@@ -16,7 +16,7 @@
 """Tests for haiku._src.filtering."""
 
 import re
-from typing import Any, Callable, Sequence, Set, Text, Tuple
+from typing import Any, Callable, Sequence, Set, Tuple
 from absl.testing import absltest
 from haiku._src import basic
 from haiku._src import filtering
@@ -71,7 +71,7 @@ def get_net(x):
   return jnp.mean(h)
 
 
-def get_names(params: Params) -> Set[Text]:
+def get_names(params: Params) -> Set[str]:
   names = set([])
   for path, module in params.items():
     for name in module.keys():
@@ -79,7 +79,7 @@ def get_names(params: Params) -> Set[Text]:
   return names
 
 
-def to_set(params: Params) -> Set[Tuple[Text, Sequence[float]]]:
+def to_set(params: Params) -> Set[Tuple[str, Sequence[float]]]:
   entries = set([])
   for path, module in params.items():
     for key, value in module.items():

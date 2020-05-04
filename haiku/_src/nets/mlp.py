@@ -15,7 +15,7 @@
 # ==============================================================================
 """A minimal interface mlp module."""
 
-from typing import Callable, Iterable, Optional, Text
+from typing import Callable, Iterable, Optional
 
 from haiku._src import base
 from haiku._src import basic
@@ -34,7 +34,7 @@ class MLP(module.Module):
                with_bias: bool = True,
                activation: Callable[[jnp.ndarray], jnp.ndarray] = jax.nn.relu,
                activate_final: bool = False,
-               name: Optional[Text] = None):
+               name: Optional[str] = None):
     """Constructs an MLP.
 
     Args:
@@ -110,7 +110,7 @@ class MLP(module.Module):
 
   def reverse(self,
               activate_final: Optional[bool] = None,
-              name: Optional[Text] = None) -> "MLP":
+              name: Optional[str] = None) -> "MLP":
     """Returns a new MLP which is the layer-wise reverse of this MLP.
 
     NOTE: Since computing the reverse of an MLP requires knowing the input size

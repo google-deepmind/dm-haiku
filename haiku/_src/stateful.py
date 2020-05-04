@@ -17,13 +17,13 @@
 
 import collections
 import functools
-from typing import Any, Mapping, MutableMapping, Text
+from typing import Any, Mapping, MutableMapping
 
 from haiku._src import base
 import jax
 
 InternalState = collections.namedtuple("InternalState", "params,state,rng")
-Bundle = Mapping[Text, Mapping[Text, Any]]
+Bundle = Mapping[str, Mapping[str, Any]]
 
 
 def copy_structure(bundle: Bundle) -> Bundle:

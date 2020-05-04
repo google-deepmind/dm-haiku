@@ -16,7 +16,7 @@
 """Haiku types."""
 
 import typing
-from typing import Any, Callable, Mapping, Text, Sequence, Union
+from typing import Any, Callable, Mapping, Sequence, Union
 import jax.numpy as jnp
 
 # pytype: disable=module-attr
@@ -30,10 +30,10 @@ except AttributeError:
 Shape = Sequence[int]
 ShapeLike = Union[int, Shape]
 DType = Any
-ParamName = Text
+ParamName = str
 Initializer = Callable[[Shape, DType], jnp.ndarray]
-Params = Mapping[Text, Mapping[ParamName, jnp.ndarray]]
-State = Mapping[Text, Mapping[Text, jnp.ndarray]]
+Params = Mapping[str, Mapping[ParamName, jnp.ndarray]]
+State = Mapping[str, Mapping[str, jnp.ndarray]]
 Padding = Callable[[int], Sequence[int]]
 Paddings = Union[Padding, Sequence[Padding]]
 

@@ -21,7 +21,7 @@ import functools
 import inspect
 import re
 from typing import (Any, Callable, ContextManager, Dict, Mapping, Optional,
-                    Text, Tuple, Type, TypeVar)
+                    Tuple, Type, TypeVar)
 
 from haiku._src import base
 from haiku._src import data_structures
@@ -46,9 +46,9 @@ class ModuleMetaclass(abc.ABCMeta):
 
   def __new__(
       mcs: Type[Type[T]],
-      name: Text,
+      name: str,
       bases: Tuple[Type[Any], ...],
-      clsdict: Dict[Text, Any],
+      clsdict: Dict[str, Any],
   ) -> Type[T]:
     method_names = []
 
@@ -198,7 +198,7 @@ class Module(object, metaclass=ModuleMetaclass):
   DeviceArray(2., dtype=float32)
   """
 
-  def __init__(self, name: Optional[Text] = None):
+  def __init__(self, name: Optional[str] = None):
     """Initializes the current module with the given name.
 
     Subclasses should call this constructor before creating other modules or
@@ -255,7 +255,7 @@ def transparent(method: T) -> T:
   return method
 
 
-def unique_and_canonical_name(name: Text) -> Text:
+def unique_and_canonical_name(name: str) -> str:
   """Returns a canonical name for the given name."""
   frame = base.current_frame()
 

@@ -19,7 +19,7 @@ import functools
 import inspect
 import itertools
 import types
-from typing import Generator, Optional, Sequence, Text, Tuple, TypeVar
+from typing import Generator, Optional, Sequence, Tuple, TypeVar
 
 from absl.testing import parameterized
 from haiku._src import transform
@@ -69,7 +69,7 @@ def transform_and_run(f=None, seed: Optional[int] = 42, run_apply: bool = True):
 
 def find_internal_python_modules(
     root_module: types.ModuleType,
-) -> Sequence[Tuple[Text, types.ModuleType]]:
+) -> Sequence[Tuple[str, types.ModuleType]]:
   """Returns `(name, module)` for all Haiku submodules under `root_module`."""
   modules = set([(root_module.__name__, root_module)])
   visited = set()
@@ -130,6 +130,6 @@ def combined_named_parameters(*parameters):
       functools.reduce(combine, r) for r in itertools.product(*parameters))
 
 
-def named_bools(name) -> Sequence[Tuple[Text, bool]]:
+def named_bools(name) -> Sequence[Tuple[str, bool]]:
   """Returns a pair of booleans suitable for use with ``named_parameters``."""
   return (name, True), ("not_{}".format(name), False)

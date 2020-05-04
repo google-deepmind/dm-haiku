@@ -25,7 +25,7 @@ The average pooling is currently done via a mean, and returns (N, 1, 1, 1024).
 If something different is desired, replace with AvgPool.
 """
 
-from typing import Optional, Sequence, Text
+from typing import Optional, Sequence
 
 from haiku._src import basic
 from haiku._src import batch_norm
@@ -45,7 +45,7 @@ class MobileNetV1Block(module.Module):
                channels: int,
                stride: int,
                use_bn: bool = True,
-               name: Optional[Text] = None):
+               name: Optional[str] = None):
     super(MobileNetV1Block, self).__init__(name=name)
     self._channels = channels
     self._stride = stride
@@ -92,7 +92,7 @@ class MobileNetV1(module.Module):
                                           512, 512, 512, 512, 1024, 1024),
                num_classes: int = 1000,
                use_bn: bool = True,
-               name: Optional[Text] = None):
+               name: Optional[str] = None):
     """Constructs a MobileNetV1 model.
 
     Args:

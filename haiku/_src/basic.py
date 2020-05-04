@@ -16,7 +16,7 @@
 """Basic Haiku modules and functions."""
 
 import functools
-from typing import Any, Callable, Iterable, Optional, Text
+from typing import Any, Callable, Iterable, Optional
 
 from haiku._src import base
 from haiku._src import initializers
@@ -106,7 +106,7 @@ class Sequential(module.Module):
 
   def __init__(self,
                layers: Iterable[Callable[..., Any]] = None,
-               name: Optional[Text] = None):
+               name: Optional[str] = None):
     super(Sequential, self).__init__(name=name)
     self.layers = layers
 
@@ -129,7 +129,7 @@ class Linear(module.Module):
                with_bias: bool = True,
                w_init: Optional[base.Initializer] = None,
                b_init: Optional[base.Initializer] = None,
-               name: Optional[Text] = None):
+               name: Optional[str] = None):
     """Constructs the Linear module.
 
     Args:

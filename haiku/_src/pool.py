@@ -15,7 +15,7 @@
 # ==============================================================================
 """Pooling Haiku modules."""
 
-from typing import Optional, Text
+from typing import Optional
 from haiku._src import module
 from haiku._src.typing import Shape, ShapeLike  # pylint: disable=g-multiple-import
 from jax import lax
@@ -43,7 +43,7 @@ def max_pool(
     value: jnp.ndarray,
     window_shape: ShapeLike,
     strides: ShapeLike,
-    padding: Text,
+    padding: str,
     channel_axis: Optional[int] = -1,
 ) -> jnp.ndarray:
   """Max pool.
@@ -126,7 +126,7 @@ class MaxPool(module.Module):
       strides: ShapeLike,
       padding: str,
       channel_axis: Optional[int] = -1,
-      name: Optional[Text] = None,
+      name: Optional[str] = None,
   ):
     """Max pool.
 
@@ -161,7 +161,7 @@ class AvgPool(module.Module):
       strides: ShapeLike,
       padding: str,
       channel_axis: Optional[int] = -1,
-      name: Optional[Text] = None,
+      name: Optional[str] = None,
   ):
     """Average pool.
 

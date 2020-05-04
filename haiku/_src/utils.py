@@ -19,7 +19,7 @@ import collections
 import inspect
 import pprint
 import re
-from typing import Any, Sequence, Text, Tuple, Type, TypeVar, Union
+from typing import Any, Sequence, Tuple, Type, TypeVar, Union
 
 T = TypeVar("T")
 
@@ -35,7 +35,7 @@ def compare_or_false(a, b) -> bool:
     return False
 
 
-def auto_repr(cls: Type[Any], *args, **kwargs) -> Text:
+def auto_repr(cls: Type[Any], *args, **kwargs) -> str:
   """Derives a `__repr__` from constructor arguments of a given class.
 
       >>> class Foo(object):
@@ -91,7 +91,7 @@ def auto_repr(cls: Type[Any], *args, **kwargs) -> Text:
         indent(4, ",\n".join(fancy_repr(n, v) for n, v in names_and_values)))
 
 
-def fancy_repr(name: Text, value: Any) -> Text:
+def fancy_repr(name: str, value: Any) -> str:
   try:
     repr_value = pprint.pformat(value)
   # C++ obejcts by way of pybind11 may not pprint correctly, but do have repr.
@@ -103,7 +103,7 @@ def fancy_repr(name: Text, value: Any) -> Text:
   return name + repr_value
 
 
-def indent(amount: int, s: Text) -> Text:
+def indent(amount: int, s: str) -> str:
   """Indents `s` with `amount` spaces."""
   prefix = amount * " "
   return "\n".join(prefix + line for line in s.splitlines())
@@ -112,7 +112,7 @@ def indent(amount: int, s: Text) -> Text:
 def replicate(
     element: Union[T, Sequence[T]],
     num_times: int,
-    name: Text,
+    name: str,
 ) -> Tuple[T]:
   """Replicates entry in `element` `num_times` if needed."""
   if (isinstance(element, (str, bytes)) or
@@ -132,7 +132,7 @@ _SPATIAL_CHANNELS_LAST = re.compile("^N[^C]*C$")
 _SEQUENTIAL = re.compile("^((BT)|(TB))[^D]*D$")
 
 
-def get_channel_index(data_format: Text) -> int:
+def get_channel_index(data_format: str) -> int:
   """Returns the channel index when given a valid data format.
 
   Args:

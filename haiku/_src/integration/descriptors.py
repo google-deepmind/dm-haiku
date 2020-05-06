@@ -185,8 +185,8 @@ class ResetCoreAdapter(Wrapped, hk.RNNCore):
     return self.wrapped.initial_state(batch_size)
 
   def __call__(self, inputs, state):
-    t, b = inputs.shape
-    resets = np.broadcast_to(True, (t, b))
+    batch_size = inputs.shape[0]
+    resets = np.broadcast_to(True, (batch_size,))
     return self.wrapped((inputs, resets), state)
 
 

@@ -312,6 +312,17 @@ class IdentityCore(RNNCore):
     return ()
 
 
+def _validate_and_conform(should_reset, state):
+  """Ensures that should_reset is compatible with state."""
+  if should_reset.shape == state.shape[:should_reset.ndim]:
+    broadcast_shape = should_reset.shape + (1,)*(state.ndim - should_reset.ndim)
+    return jnp.reshape(should_reset, broadcast_shape)
+
+  raise ValueError(
+      "should_reset signal shape {} is not compatible with "
+      "state shape {}".format(should_reset.shape, state.shape))
+
+
 class ResetCore(RNNCore):
   """A wrapper for managing state resets during unrolls.
 
@@ -319,7 +330,9 @@ class ResetCore(RNNCore):
   to reset the core's state at different timesteps for different elements of the
   batch. The `ResetCore` class enables this by taking a batch of `should_reset`
   booleans in addition to the batch of inputs, and conditionally resetting the
-  core's state for individual elements of the batch.
+  core's state for individual elements of the batch. You may also reset
+  individual entries of the state by passing a `should_reset` nest compatible
+  with the state structure.
   """
 
   def __init__(self, core, name=None):
@@ -327,22 +340,79 @@ class ResetCore(RNNCore):
     self._core = core
 
   def __call__(self, inputs, state):
-    inputs, should_reset = inputs
-    # Protect against an easy, invisible error class. This should be jitted out.
-    # >>> np.where(np.asarray([False, True]), np.zeros([2,2]), np.ones([2,2]))
-    # ... array([[1., 0.], [1., 0.]])
-    # Using a should_reset of rank R - 1 could result in one example
-    # affecting another.
-    for x in jax.tree_leaves(state):
-      if len(x.shape) - 1 != len(should_reset.shape):
-        raise ValueError("should_reset must have rank-1 of state.")
-    should_reset = jnp.expand_dims(should_reset, axis=-1)
+    """Run one step of the wrapped core, handling state reset.
 
+    Args:
+      inputs: Tuple with two elements, (inputs, should_reset), where
+        should_reset is the signal used to reset the wrapped core's state.
+        should_reset can be either tensor or nest. If nest, should_reset must
+        match the state structure, and its components' shapes must be prefixes
+        of the correponding entries tensors' shapes in the state nest.
+        If tensor, supported shapes are all commom shape prefixes of the state
+        component tensors, e.g. `[batch_size]`.
+      state: Previous wrapped core state.
+
+    Returns:
+      Tuple of the wrapped core's (output, next_state).
+    """
+    inputs, should_reset = inputs
+    if jax.treedef_is_leaf(jax.tree_structure(should_reset)):
+      # Equivalent to not tree.is_nested, but with support for Jax extensible
+      # pytrees.
+      should_reset = jax.tree_map(lambda _: should_reset, state)
+
+    # We now need to manually pad 'on the right' to ensure broadcasting operates
+    # correctly.
+    # Automatic broadcasting would in fact implicitly pad 'on the left',
+    # resulting in the signal to trigger resets for parts of the state
+    # across batch entries. For example:
+    #
+    # import jax
+    # import jax.numpy as jnp
+    #
+    # shape = (2, 2, 2)
+    # x = jnp.zeros(shape)
+    # y = jnp.ones(shape)
+    # should_reset = jnp.array([False, True])
+    # v = jnp.where(should_reset, x, y)
+    # for batch_entry in range(shape[0]):
+    #   print("batch_entry {}:\n".format(batch_entry), v[batch_entry])
+    #
+    # >> batch_entry 0:
+    # >>  [[1. 0.]
+    # >>  [1. 0.]]
+    # >> batch_entry 1:
+    # >>  [[1. 0.]
+    # >>  [1. 0.]]
+    #
+    # Note how manually padding the should_reset tensor yields the desired
+    # behavior.
+    #
+    # import jax
+    # import jax.numpy as jnp
+    #
+    # shape = (2, 2, 2)
+    # x = jnp.zeros(shape)
+    # y = jnp.ones(shape)
+    # should_reset = jnp.array([False, True])
+    # dims_to_add = x.ndim - should_reset.ndim
+    # should_reset = should_reset.reshape(should_reset.shape + (1,)*dims_to_add)
+    # v = jnp.where(should_reset, x, y)
+    # for batch_entry in range(shape[0]):
+    #   print("batch_entry {}:\n".format(batch_entry), v[batch_entry])
+    #
+    # >> batch_entry 0:
+    # >>  [[1. 1.]
+    # >>  [1. 1.]]
+    # >> batch_entry 1:
+    # >>  [[0. 0.]
+    # >>  [0. 0.]]
+    should_reset = jax.tree_multimap(
+        _validate_and_conform, should_reset, state)
     batch_size = jax.tree_leaves(inputs)[0].shape[0]
-    initial_state = jax.tree_multimap(lambda s, i: i.astype(s.dtype),
-                                      state, self.initial_state(batch_size))
-    state = jax.tree_multimap(lambda i, s: jnp.where(should_reset, i, s),
-                              initial_state, state)
+    initial_state = jax.tree_multimap(
+        lambda s, i: i.astype(s.dtype), state, self.initial_state(batch_size))
+    state = jax.tree_multimap(jnp.where, should_reset, initial_state, state)
     return self._core(inputs, state)
 
   def initial_state(self, batch_size):

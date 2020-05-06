@@ -15,7 +15,6 @@
 # ==============================================================================
 """Tests for haiku._src.recurrent."""
 import itertools as it
-
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import basic
@@ -113,6 +112,19 @@ class GRUTest(absltest.TestCase):
       core(jnp.zeros([]), core.initial_state(None))
 
 
+class _DummyCore(recurrent.RNNCore):
+
+  def __init__(self, state, name="dummy"):
+    super().__init__(name=name)
+    self._state = state
+
+  def __call__(self, x, y):
+    return x, y
+
+  def initial_state(self, batch_size):
+    return jax.tree_map(jnp.zeros_like, self._state)
+
+
 class ResetCoreTest(parameterized.TestCase):
 
   @parameterized.parameters(recurrent.dynamic_unroll, recurrent.static_unroll)
@@ -196,14 +208,32 @@ class ResetCoreTest(parameterized.TestCase):
     for cs, rs in zip(core_states, reset_states):
       np.testing.assert_allclose(cs[0, 0], rs[1, 0], rtol=1e-6, atol=1e-6)
 
+  @parameterized.parameters(
+      (np.array((True, False)),
+       np.array(((0, 0), (0, 0)))),
+      (np.array((True, False)),
+       dict(core=np.array(((0, 0), (0, 0))))),
+      (np.array((True, False)),
+       np.array(((0, 0, 0, 0), (0, 0, 0, 0))).reshape((2, 1, 1, 4))),
+      (dict(core=np.array((True, False))),
+       dict(core=np.array(((0, 0), (0, 0))))),
+  )
   @test_utils.transform_and_run
-  def test_invalid_input(self):
-    core = recurrent.LSTM(hidden_size=4)
-    reset_core = recurrent.ResetCore(core)
-    with self.assertRaisesRegex(ValueError,
-                                "should_reset must have rank-1 of state."):
-      reset_core((jnp.array([1, 2, 3]), jnp.array([2, 3, 4])),
-                 jnp.array([2, 3, 4]))
+  def test_input_conform(self, reset, state):
+    core = recurrent.ResetCore(core=_DummyCore(state=state))
+    core((state, reset), state)
+
+  @parameterized.parameters(
+      (np.array((True, False)).reshape((2, 1, 1)),
+       np.array(((0, 0), (0, 0)))),
+      (dict(core=np.array((True, False))),
+       dict(another_core=np.array(((0, 0), (0, 0))))),
+  )
+  @test_utils.transform_and_run
+  def test_input_conform_fails(self, reset, state):
+    core = recurrent.ResetCore(core=_DummyCore(state=state))
+    with self.assertRaises(ValueError):
+      core((state, reset), state)
 
 
 class IdentityCoreTest(parameterized.TestCase):

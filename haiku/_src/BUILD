@@ -149,6 +149,7 @@ hk_py_library(
         ":moving_averages",
         ":utils",
         # pip: jax
+        # pip: numpy
     ],
 )
 

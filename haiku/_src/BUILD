@@ -631,3 +631,26 @@ hk_py_test(
         # pip: jax
     ],
 )
+
+hk_py_library(
+    name = "random",
+    srcs = ["random.py"],
+    deps = [
+        ":base",
+        ":data_structures",
+        # pip: jax
+    ],
+)
+
+hk_py_test(
+    name = "random_test",
+    srcs = ["random_test.py"],
+    deps = [
+        ":base",
+        ":random",
+        ":transform",
+        # pip: absl/testing:absltest
+        # pip: jax
+        # pip: numpy
+    ],
+)

@@ -555,7 +555,7 @@ Experimental
 .. automodule:: haiku.experimental
 
 custom_creator
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 .. autofunction:: custom_creator
 
@@ -568,6 +568,11 @@ ParamContext
 ~~~~~~~~~~~~
 
 .. autoclass:: ParamContext
+
+optimize_rng_use
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: optimize_rng_use
 
 lift
 ~~~~

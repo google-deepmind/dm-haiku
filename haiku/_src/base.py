@@ -126,10 +126,10 @@ class HaikuContext(object):
     return data_structures.to_immutable_dict(self.__params)
 
   def collect_initial_state(self) -> State:
-    return _extract_state(self.__state, initial=True)
+    return extract_state(self.__state, initial=True)
 
   def collect_state(self) -> State:
-    return _extract_state(self.__state, initial=False)
+    return extract_state(self.__state, initial=False)
 
   def __enter__(self):
     frame = Frame.create(
@@ -601,7 +601,7 @@ def maybe_next_rng_key() -> Optional[PRNGKey]:
   return None if rng_seq is None else next(rng_seq)
 
 
-def _extract_state(state: MutableState, *, initial) -> State:
+def extract_state(state: MutableState, *, initial) -> State:
   state = {m: {k: (v.initial if initial else v.current) for k, v in p.items()}
            for m, p in state.items()}
   state = data_structures.to_immutable_dict(state)

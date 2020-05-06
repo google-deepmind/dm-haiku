@@ -39,6 +39,7 @@ py_library(
         "//haiku/_src:moving_averages",
         "//haiku/_src:pad",
         "//haiku/_src:pool",
+        "//haiku/_src:random",
         "//haiku/_src:recurrent",
         "//haiku/_src:reshape",
         "//haiku/_src:spectral_norm",

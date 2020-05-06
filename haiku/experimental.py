@@ -24,6 +24,7 @@ from haiku._src.base import ParamContext
 from haiku._src.dot import to_dot
 from haiku._src.lift import lift
 from haiku._src.module import profiler_name_scopes
+from haiku._src.random import optimize_rng_use
 
 
 __all__ = (
@@ -31,6 +32,7 @@ __all__ = (
     "custom_getter",
     "ParamContext",
     "lift",
-    "to_dot",
+    "optimize_rng_use",
     "profiler_name_scopes",
+    "to_dot",
 )

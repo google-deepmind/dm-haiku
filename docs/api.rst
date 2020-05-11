@@ -117,6 +117,12 @@ Convolutional modules
 
 .. currentmodule:: haiku
 
+ConvND
+~~~~~~
+
+.. autoclass:: ConvND
+   :members:
+
 Conv1D
 ~~~~~~
 
@@ -133,6 +139,12 @@ Conv3D
 ~~~~~~
 
 .. autoclass:: Conv3D
+   :members:
+
+ConvNDTranspose
+~~~~~~~~~~~~~~~
+
+.. autoclass:: ConvNDTranspose
    :members:
 
 Conv1DTranspose

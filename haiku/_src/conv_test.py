@@ -38,13 +38,13 @@ def create_constant_initializers(w, b, with_bias):
 
 class ConvTest(parameterized.TestCase):
 
-  @parameterized.parameters(0, 4)
+  @parameterized.parameters(0, -2)
   def testIncorrectN(self, n):
     init_fn, _ = transform.transform(
         lambda: conv.ConvND(n, output_channels=1, kernel_shape=3))
     with self.assertRaisesRegex(
         ValueError,
-        "only support convolution operations for num_spatial_dims=1, 2 or 3"):
+        "convolution operations for `num_spatial_dims` greater than 0"):
       init_fn(None)
 
   @parameterized.parameters(1, 2, 3)
@@ -396,13 +396,13 @@ class Conv3DTest(parameterized.TestCase):
 
 class ConvTransposeTest(parameterized.TestCase):
 
-  @parameterized.parameters(0, 4)
+  @parameterized.parameters(0, -2)
   def testIncorrectN(self, n):
     init_fn, _ = transform.transform(
         lambda: conv.ConvNDTranspose(n, output_channels=1, kernel_shape=3))
     with self.assertRaisesRegex(
         ValueError,
-        "only support convolution operations for num_spatial_dims=1, 2 or 3"):
+        "convolution operations for `num_spatial_dims` greater than 0"):
       init_fn(None)
 
   @parameterized.parameters(1, 2, 3)

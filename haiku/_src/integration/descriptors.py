@@ -140,6 +140,14 @@ BATCH_MODULES = (
 
     # TODO(tomhennigan) Make these modules support unbatched input.
     ModuleDescriptor(
+        name="ConvND",
+        create=lambda: hk.ConvND(1, 3, 3),
+        shape=(BATCH_SIZE, 2, 2)),
+    ModuleDescriptor(
+        name="ConvNDTranspose",
+        create=lambda: hk.ConvNDTranspose(1, 3, 3),
+        shape=(BATCH_SIZE, 2, 2)),
+    ModuleDescriptor(
         name="Conv1D",
         create=lambda: hk.Conv1D(3, 3),
         shape=(BATCH_SIZE, 2, 2)),

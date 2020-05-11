@@ -94,10 +94,10 @@ class ConvND(module.Module):
     """
     super(ConvND, self).__init__(name=name)
 
-    if not 1 <= num_spatial_dims <= 3:
+    if num_spatial_dims <= 0:
       raise ValueError(
-          "We only support convolution operations for num_spatial_dims=1, 2 or "
-          "3, received num_spatial_dims={}.".format(num_spatial_dims))
+          "We only support convolution operations for `num_spatial_dims` "
+          f"greater than 0, received num_spatial_dims={num_spatial_dims}.")
     self._num_spatial_dims = num_spatial_dims
     self._output_channels = output_channels
     self._kernel_shape = utils.replicate(kernel_shape, num_spatial_dims,
@@ -374,10 +374,11 @@ class ConvNDTranspose(module.Module):
       name: The name of the module.
     """
     super(ConvNDTranspose, self).__init__(name=name)
-    if not 1 <= num_spatial_dims <= 3:
+
+    if num_spatial_dims <= 0:
       raise ValueError(
-          "We only support convolution operations for num_spatial_dims=1, 2 or "
-          "3, received num_spatial_dims={}.".format(num_spatial_dims))
+          "We only support convolution operations for `num_spatial_dims` "
+          f"greater than 0, received num_spatial_dims={num_spatial_dims}.")
     self._num_spatial_dims = num_spatial_dims
     self._output_channels = output_channels
     self._kernel_shape = utils.replicate(kernel_shape, num_spatial_dims,

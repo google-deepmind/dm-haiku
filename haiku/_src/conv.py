@@ -24,29 +24,28 @@ from jax import lax
 import jax.numpy as jnp
 import numpy as np
 
-DIMENSION_NUMBERS = {
-    1: ("NWC", "WIO", "NWC"),
-    2: ("NHWC", "HWIO", "NHWC"),
-    3: ("NDHWC", "DHWIO", "NDHWC")
-}
 
-DIMENSION_NUMBERS_NCSPATIAL = {
-    1: ("NCH", "HIO", "NCH"),
-    2: ("NCHW", "HWIO", "NCHW"),
-    3: ("NCDHW", "DHWIO", "NCDHW")
-}
+def to_dimension_numbers(num_spatial_dims: int, channels_last: bool,
+                         transpose: bool) -> lax.ConvDimensionNumbers:
+  """Create a `lax.ConvDimensionNumbers` for the given inputs."""
+  num_dims = num_spatial_dims + 2
+  image_dn = [0]
+  if channels_last:
+    image_dn.append(num_dims-1)
+    spatial_dims = range(1, num_dims-1)
+  else:
+    image_dn.append(1)
+    spatial_dims = range(2, num_dims)
+  image_dn = image_dn + list(spatial_dims)
 
-DIMENSION_NUMBERS_T = {
-    1: ("NWC", "WOI", "NWC"),
-    2: ("NHWC", "HWOI", "NHWC"),
-    3: ("NDHWC", "DHWOI", "NDHWC")
-}
+  if transpose:
+    kernel_dn = [num_dims-2, num_dims-1]
+  else:
+    kernel_dn = [num_dims - 1, num_dims - 2]
+  kernel_dn = kernel_dn + list(range(num_dims - 2))
 
-DIMENSION_NUMBERS_NCSPATIAL_T = {
-    1: ("NCH", "HOI", "NCH"),
-    2: ("NCHW", "HWOI", "NCHW"),
-    3: ("NCDHW", "DHWOI", "NCDHW")
-}
+  return lax.ConvDimensionNumbers(
+      tuple(image_dn), tuple(kernel_dn), tuple(image_dn))
 
 
 class ConvND(module.Module):
@@ -113,10 +112,9 @@ class ConvND(module.Module):
                                             "kernel_dilation")
     self._data_format = data_format
     self._channel_index = utils.get_channel_index(data_format)
-    if self._channel_index == -1:
-      self._dn = DIMENSION_NUMBERS[self._num_spatial_dims]
-    else:
-      self._dn = DIMENSION_NUMBERS_NCSPATIAL[self._num_spatial_dims]
+    self._dn = to_dimension_numbers(num_spatial_dims,
+                                    channels_last=(self._channel_index == -1),
+                                    transpose=False)
 
     if isinstance(padding, str):
       self._padding = padding.upper()
@@ -393,10 +391,9 @@ class ConvNDTranspose(module.Module):
 
     self._data_format = data_format
     self._channel_index = utils.get_channel_index(data_format)
-    if self._channel_index == -1:
-      self._dn = DIMENSION_NUMBERS_T[self._num_spatial_dims]
-    else:
-      self._dn = DIMENSION_NUMBERS_NCSPATIAL_T[self._num_spatial_dims]
+    self._dn = to_dimension_numbers(num_spatial_dims,
+                                    channels_last=(self._channel_index == -1),
+                                    transpose=True)
 
   def __call__(self, inputs):
     """Connects Conv2DTranspose layer.

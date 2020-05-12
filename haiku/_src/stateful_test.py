@@ -75,7 +75,7 @@ class StatefulTest(absltest.TestCase):
 
     x = jnp.array(3.)
     (y, aux), g = stateful.value_and_grad(f, has_aux=True)(x)
-    self.assertEqual(y, x ** 2)
+    self.assertEqual(y, jnp.float_power(x, 2))
     np.testing.assert_allclose(g, 2 * x, rtol=1e-4)
     self.assertIs(aux, o)
 

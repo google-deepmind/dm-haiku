@@ -62,7 +62,7 @@ class TransformTest(parameterized.TestCase):
     self.assertEqual(params,
                      {"~": {"w1": jnp.zeros([]), "w2": jnp.ones([])}})
 
-  @parameterized.parameters(({},), ({"~": {}},))
+  @parameterized.parameters((None,), ({},), ({"~": {}},))
   def test_parameter_in_apply(self, params):
     _, apply_fn = transform.transform(
         lambda: base.get_parameter("w", [], init=jnp.zeros))

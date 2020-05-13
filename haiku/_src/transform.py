@@ -294,7 +294,7 @@ def transform_with_state(f) -> TransformedWithState:
   return TransformedWithState(init_fn, apply_fn)
 
 
-def check_mapping(name: str, mapping: T) -> T:
+def check_mapping(name: str, mapping: Optional[T]) -> [T]:
   # TODO(tomhennigan) Remove support for empty non-Mappings.
   if mapping and not isinstance(mapping, Mapping):
     raise TypeError(f"{name} argument does not appear valid: {mapping!r}. "
@@ -302,4 +302,8 @@ def check_mapping(name: str, mapping: T) -> T:
                     "`apply(params, rng, ...)`` for `hk.transform` and "
                     "`apply(params, state, rng, ...)` for "
                     "`hk.transform_with_state`.")
-  return mapping
+  if mapping is not None:
+    return mapping
+  else:
+    # Convert None to empty dict.
+    return dict()

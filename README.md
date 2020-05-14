@@ -1,4 +1,4 @@
-# Haiku: [Sonnet](https://github.com/deepmind/sonnet) for [JAX](https://github.com/google/jax)
+# Haiku: [Sonnet] for [JAX]
 
 [**Overview**](#overview)
 | [**Why Haiku?**](#why-haiku)
@@ -13,10 +13,12 @@
 
 ## What is Haiku?
 
-Haiku is a simple neural network library for
-[JAX](https://github.com/google/jax) developed by some of the
-authors of [Sonnet](https://github.com/deepmind/sonnet), a neural network
-library for [TensorFlow](https://github.com/tensorflow/tensorflow).
+> Haiku is a tool<br>
+> For building neural networks<br>
+> Think: "[Sonnet] for [JAX]"
+
+Haiku is a simple neural network library for [JAX] developed by some of the
+authors of [Sonnet], a neural network library for [TensorFlow].
 
 **Disambiguation:** if you are looking for Haiku the operating system then
 please see https://haiku-os.org/.
@@ -28,8 +30,8 @@ feel free to use Haiku, and
 
 ## Overview
 
-[JAX](https://github.com/google/jax) is a numerical computing library that
-combines NumPy, automatic differentiation, and first-class GPU/TPU support.
+[JAX] is a numerical computing library that combines NumPy, automatic
+differentiation, and first-class GPU/TPU support.
 
 Haiku is a simple neural network library for JAX that enables users to use
 familiar **object-oriented programming models** while allowing full access to
@@ -414,3 +416,7 @@ To cite this repository:
 In this bibtex entry, the version number is intended to be from
 [`haiku/__init__.py`](https://github.com/deepmind/dm-haiku/blob/master/haiku/__init__.py),
 and the year corresponds to the project's open-source release.
+
+[JAX]: https://github.com/google/jax
+[Sonnet]: https://github.com/deepmind/sonnet
+[Tensorflow]: https://github.com/tensorflow/tensorflow

@@ -272,8 +272,8 @@ def transform_with_state(f) -> TransformedWithState:
     return ctx.collect_params(), ctx.collect_initial_state()
 
   def apply_fn(
-      params: Params,
-      state: State,
+      params: Optional[Params],
+      state: Optional[State],
       rng: Optional[Union[PRNGKey, PRNGSeed]],
       *args,
       **kwargs,
@@ -295,15 +295,15 @@ def transform_with_state(f) -> TransformedWithState:
 
 
 def check_mapping(name: str, mapping: Optional[T]) -> [T]:
+  """Cleans inputs to apply_fn, providing better errors."""
   # TODO(tomhennigan) Remove support for empty non-Mappings.
-  if mapping and not isinstance(mapping, Mapping):
+  if mapping is None:
+    # Convert None to empty dict.
+    mapping = dict()
+  if not isinstance(mapping, Mapping):
     raise TypeError(f"{name} argument does not appear valid: {mapping!r}. "
                     "For reference the parameters for apply are "
                     "`apply(params, rng, ...)`` for `hk.transform` and "
                     "`apply(params, state, rng, ...)` for "
                     "`hk.transform_with_state`.")
-  if mapping is not None:
-    return mapping
-  else:
-    # Convert None to empty dict.
-    return dict()
+  return mapping

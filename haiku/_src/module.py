@@ -147,12 +147,12 @@ def with_name_scope(method_name, unbound_method):
     with frame.module(state), _module_method_call(module, method_name):
       # hk.Module enters the module name scope for all methods.
       module_name = getattr(module, "module_name", None)
-      f = unbound_method
+      f = functools.partial(unbound_method, module)
       if modules_with_named_call and module_name:
         local_name = module_name.split("/")[-1]
         f = named_call.stateful_named_call(f, name=local_name)
 
-      out = f(module, *args, **kwargs)
+      out = f(*args, **kwargs)
 
       # Notify parent modules about our existence.
       if module_name is not None:

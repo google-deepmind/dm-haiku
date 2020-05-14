@@ -97,6 +97,8 @@ html_static_path = ['_static']
 
 doctest_test_doctest_blocks = 'true'
 doctest_global_setup = """
+import unittest
+
 import haiku as hk
 import jax
 import jax.numpy as jnp

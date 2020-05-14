@@ -35,17 +35,32 @@ def transform_and_run(f=None, seed: Optional[int] = 42, run_apply: bool = True):
 
   >>> def f(x):
   ...   return x
-
   >>> x = jnp.ones([])
   >>> rng = jax.random.PRNGKey(42)
   >>> f = hk.transform_with_state(f)
   >>> params, state = f.init(rng, x)
-  >>> _ = f.apply(params, state, rng, x)
+  >>> out = f.apply(params, state, rng, x)
+
+  This function makes it very convenient to unit test Haiku:
+
+  >>> class MyTest(unittest.TestCase):
+  ...   @hk.testing.transform_and_run
+  ...   def test_linear_output(self):
+  ...     mod = hk.Linear(1)
+  ...     out = mod(jnp.ones([1, 1]))
+  ...     self.assertEqual(out.ndim, 2)
+
+  And can also be useful in an interactive environment like ipython, Jupyter or
+  Google Colaboratory:
+
+  >>> f = lambda x: hk.Bias()(x)
+  >>> hk.testing.transform_and_run(f)(jnp.ones([1, 1]))
+  DeviceArray([[1.]], dtype=float32)
 
   See :func:`transform` for more details.
 
   Args:
-    f: A test method to transform.
+    f: A function method to transform.
     seed: A seed to pass to init and apply.
     run_apply: Whether to run apply as well as init. Defaults to true.
 
@@ -62,7 +77,8 @@ def transform_and_run(f=None, seed: Optional[int] = 42, run_apply: bool = True):
     transformed = transform.transform_with_state(lambda: f(*a, **k))
     params, state = transformed.init(rng)
     if run_apply:
-      transformed.apply(params, state, rng)
+      out, state = transformed.apply(params, state, rng)
+      return out
 
   return wrapper
 

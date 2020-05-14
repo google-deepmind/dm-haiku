@@ -18,6 +18,7 @@
 import contextlib
 import doctest
 import inspect
+import unittest
 
 from absl import logging
 from absl.testing import absltest
@@ -37,6 +38,7 @@ class DoctestTest(parameterized.TestCase):
           module,
           optionflags=doctest.ELLIPSIS,
           extraglobs={
+              "unittest": unittest,
               "contextlib": contextlib,
               "hk": hk,
               "jnp": jnp,

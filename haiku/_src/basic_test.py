@@ -120,6 +120,46 @@ class BasicTest(parameterized.TestCase):
     with self.assertRaisesRegex(ValueError, "only supports axis=0 or axis=-1"):
       basic.expand_apply(lambda: 1, axis=1)()
 
+  @test_utils.transform_and_run
+  def test_to_module(self):
+    def bias_fn(x):
+      b = base.get_parameter("b", [], init=jnp.ones)
+      return x + b
+
+    Bias = basic.to_module(bias_fn)  # pylint: disable=invalid-name
+    mod = Bias()
+    self.assertEqual(mod(jnp.ones([])), 2.)
+
+  @test_utils.transform_and_run
+  def test_to_module_error_invalid_name(self):
+    def bias_fn(x):
+      b = base.get_parameter("b", [], init=jnp.ones)
+      return x + b
+
+    cls = basic.to_module(bias_fn)
+    garbage = object()
+    with self.assertRaisesRegex(TypeError,
+                                f"Expected a string name .* got: {garbage}"):
+      cls(garbage)  # pytype: disable=wrong-arg-types
+
+  @test_utils.transform_and_run
+  def test_to_module_error_docs(self):
+    def documented_fn():
+      """Really great docs."""
+
+    def undocumented_fn():
+      pass
+
+    cls = basic.to_module(documented_fn)
+    documented = cls()
+    self.assertEqual(documented.__doc__, "Really great docs.")
+    self.assertEqual(documented.__call__.__doc__, "Really great docs.")
+
+    cls = basic.to_module(undocumented_fn)
+    undocumented = cls()
+    self.assertEqual(undocumented.__doc__, "Module produced by `hk.to_module`.")
+    self.assertIsNone(undocumented.__call__.__doc__)
+
 
 class LinearTest(absltest.TestCase):
 

@@ -16,7 +16,7 @@
 """Basic Haiku modules and functions."""
 
 import functools
-from typing import Any, Callable, Iterable, Optional
+from typing import Any, Callable, Iterable, Optional, Type
 
 from haiku._src import base
 from haiku._src import initializers
@@ -294,17 +294,23 @@ def dropout(rng, rate, x):
   return keep * x / keep_rate
 
 
-def to_module(f):
-  """Converts a function into a module.
+class CallableModule(module.Module):
+
+  def __call__(self, *args, **kwargs) -> Any:
+    raise NotImplementedError
+
+
+def to_module(f: Callable[..., Any]) -> Type[CallableModule]:
+  """Converts a function into a callable module class.
 
   Sample usage:
 
-  >>> def add_bias(x):
+  >>> def bias_fn(x):
   ...   b = hk.get_parameter("b", [], init=hk.initializers.RandomNormal())
   ...   return x + b
-  >>> Bias = hk.to_module(add_bias)
+  >>> Bias = hk.to_module(bias_fn)
   >>> def net(x, y):
-  ...   b = Bias()
+  ...   b = Bias(name="my_bias")
   ...   # Bias x and y by the same amount.
   ...   return b(x) * b(y)
 
@@ -315,14 +321,26 @@ def to_module(f):
     A module class which runs runs `f` when called.
   """
 
-  class Wrapper(module.Module):
+  class ToModuleWrapper(CallableModule):
+    """Module produced by `hk.to_module`."""
 
     def __init__(self, name=None):
       if name is None:
         name = f.__name__
-      super(Wrapper, self).__init__(name=name)
+      elif not isinstance(name, str):
+        raise TypeError("Expected a string name as the first argument to the "
+                        f"module constructor, got: {name}. Note that "
+                        "`hk.to_module` returns a class not an object, so to "
+                        "use your module you need to instantiate it first: "
+                        "`cls = hk.to_module(fn); mod = cls(); out = mod(x)`.")
+
+      super().__init__(name=name)
 
     def __call__(self, *a, **k):
       return f(*a, **k)
 
-  return Wrapper
+  if hasattr(f, "__doc__") and f.__doc__:
+    ToModuleWrapper.__doc__ = f.__doc__
+  functools.update_wrapper(ToModuleWrapper.__call__, f)
+
+  return ToModuleWrapper

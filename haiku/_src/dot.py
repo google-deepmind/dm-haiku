@@ -151,6 +151,8 @@ class DotTrace(jax.core.Trace):
       vals_out = f.call_wrapped(*[t.val for t in tracers])
       return [DotTracer(self, v) for v in vals_out]
 
+  process_map = process_call
+
 
 def _format_val(val):
   if not hasattr(val, 'shape'):

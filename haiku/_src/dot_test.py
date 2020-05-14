@@ -65,6 +65,17 @@ class DotTest(parameterized.TestCase):
     jit, = graph.subgraphs
     self.assertEqual(jit.title, "xla_call (my_function)")
 
+  def test_pmap(self):
+    def my_function(x):
+      return x
+
+    n = jax.local_device_count()
+    graph, _, _ = dot.to_graph(jax.pmap(my_function))(jnp.ones([n]))
+    self.assertEmpty(graph.nodes)
+    self.assertEmpty(graph.edges)
+    jit, = graph.subgraphs
+    self.assertEqual(jit.title, "xla_pmap (my_function)")
+
 
 class AddModule(module.Module):
 

@@ -17,12 +17,15 @@
 
 from absl.testing import absltest
 from absl.testing import parameterized
+from haiku._src import test_utils
 from haiku._src import utils
+import jax.numpy as jnp
+import numpy as np
 
 lines = lambda *a: "\n".join(a)
 
 
-class UtilsTest(absltest.TestCase):
+class UtilsTest(parameterized.TestCase):
 
   def test_indent(self):
     self.assertEqual(
@@ -41,6 +44,25 @@ class UtilsTest(absltest.TestCase):
                      utils.auto_repr(SomeClass, 1, b=2, c=3))
     self.assertEqual("SomeClass(a=1, b=2, c=3)",
                      utils.auto_repr(SomeClass, a=1, b=2, c=3))
+
+  SHAPES = (("r0", []), ("r1", [1]), ("r2", [200, 200]), ("r3", [2, 3, 4]),
+            ("r1_empty", [0]))
+  DTYPES = (("f32", np.float32), ("f16", np.float16), ("s8", np.int8),
+            ("bf16", jnp.bfloat16))
+  CONTAINERS = (("list", lambda x: [x]), ("tuple", lambda x: (x,)),
+                ("dict", lambda x: {"a": x}))
+
+  @test_utils.combined_named_parameters(SHAPES, DTYPES, CONTAINERS)
+  def test_tree_size(self, shape, dtype, container):
+    x = np.ones(shape, dtype=dtype)
+    expected_size = np.prod(x.shape) if x.ndim else 1
+    self.assertEqual(utils.tree_size(container(x)), expected_size)
+
+  @test_utils.combined_named_parameters(SHAPES, DTYPES, CONTAINERS)
+  def test_tree_bytes(self, shape, dtype, container):
+    x = np.ones(shape, dtype=dtype)
+    expected_bytes = (np.prod(x.shape) if x.ndim else 1) * x.itemsize
+    self.assertEqual(utils.tree_bytes(container(x)), expected_bytes)
 
 
 class ReplicateTest(parameterized.TestCase):

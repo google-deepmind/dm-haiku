@@ -340,6 +340,9 @@ hk_py_test(
 hk_py_library(
     name = "utils",
     srcs = ["utils.py"],
+    deps = [
+        # pip: jax
+    ],
 )
 
 hk_py_test(
@@ -347,10 +350,12 @@ hk_py_test(
     srcs = ["utils_test.py"],
     tpu = False,  # TODO(tomhennigan) Debug TPU build error.
     deps = [
+        ":test_utils",
         ":utils",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
+        # pip: numpy
     ],
 )
 

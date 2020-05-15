@@ -20,6 +20,8 @@ from haiku._src.data_structures import to_mutable_dict
 from haiku._src.filtering import filter  # pylint: disable=redefined-builtin
 from haiku._src.filtering import merge
 from haiku._src.filtering import partition
+from haiku._src.utils import tree_bytes
+from haiku._src.utils import tree_size
 
 
 __all__ = (
@@ -28,4 +30,6 @@ __all__ = (
     "partition",
     "to_mutable_dict",
     "to_immutable_dict",
+    "tree_bytes",
+    "tree_size",
 )

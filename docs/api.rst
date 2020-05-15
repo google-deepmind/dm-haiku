@@ -560,6 +560,16 @@ to_mutable_dict
 
 .. autofunction:: to_mutable_dict
 
+tree_bytes
+~~~~~~~~~~
+
+.. autofunction:: tree_bytes
+
+tree_size
+~~~~~~~~~
+
+.. autofunction:: tree_size
+
 
 Experimental
 ------------

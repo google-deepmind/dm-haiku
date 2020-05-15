@@ -21,6 +21,8 @@ import pprint
 import re
 from typing import Any, Sequence, Tuple, Type, TypeVar, Union
 
+import jax
+
 T = TypeVar("T")
 
 
@@ -166,3 +168,75 @@ def assert_minimum_rank(inputs, rank: int):
   """Asserts the rank of the input is at least `rank`."""
   if inputs.ndim < rank:
     raise ValueError("Input %r must have rank >= %d" % (inputs, rank))
+
+
+def tree_size(tree) -> int:
+  """Sums the sizes of all arrays in a pytree.
+
+  For example given a ResNet50 model:
+
+  >>> f = hk.transform_with_state(lambda x: hk.nets.ResNet50(1000)(x, True))
+  >>> rng = jax.random.PRNGKey(42)
+  >>> x = jnp.ones([128, 224, 224, 3])
+  >>> params, state = f.init(rng, x)
+
+  We can count the number of parameters and their size at f32:
+
+  >>> num_params = hk.data_structures.tree_size(params)
+  >>> byte_size = hk.data_structures.tree_bytes(params)
+  >>> print(f'{num_params} params, size: {byte_size / 1e6:.2f}MB')
+  25557032 params, size: 102.23MB
+
+  And compare that with casting our parameters to bf16:
+
+  >>> params = jax.tree_map(lambda x: x.astype(jnp.bfloat16), params)
+  >>> num_params = hk.data_structures.tree_size(params)
+  >>> byte_size = hk.data_structures.tree_bytes(params)
+  >>> print(f'{num_params} params, size: {byte_size / 1e6:.2f}MB')
+  25557032 params, size: 51.11MB
+
+  Args:
+    tree: A tree of jnp.ndarrays.
+
+  Returns:
+    The total size (number of elements) of the array(s) in the input.
+  """
+  return sum(x.size for x in jax.tree_leaves(tree))
+
+
+def tree_bytes(tree) -> int:
+  """Sums the size in bytes of all arrays in a pytree.
+
+  Note that this is the minimum size of the array (e.g. for a float32 we need
+  at least 4 bytes) however on some accelerators buffers may occupy more memory
+  due to padding/alignment constraints.
+
+  For example given a ResNet50 model:
+
+  >>> f = hk.transform_with_state(lambda x: hk.nets.ResNet50(1000)(x, True))
+  >>> rng = jax.random.PRNGKey(42)
+  >>> x = jnp.ones([128, 224, 224, 3])
+  >>> params, state = f.init(rng, x)
+
+  We can count the number of parameters and their size at f32:
+
+  >>> num_params = hk.data_structures.tree_size(params)
+  >>> byte_size = hk.data_structures.tree_bytes(params)
+  >>> print(f'{num_params} params, size: {byte_size / 1e6:.2f}MB')
+  25557032 params, size: 102.23MB
+
+  And compare that with casting our parameters to bf16:
+
+  >>> params = jax.tree_map(lambda x: x.astype(jnp.bfloat16), params)
+  >>> num_params = hk.data_structures.tree_size(params)
+  >>> byte_size = hk.data_structures.tree_bytes(params)
+  >>> print(f'{num_params} params, size: {byte_size / 1e6:.2f}MB')
+  25557032 params, size: 51.11MB
+
+  Args:
+    tree: A tree of jnp.ndarrays.
+
+  Returns:
+    The total size in bytes of the array(s) in the input.
+  """
+  return sum(x.size * x.dtype.itemsize for x in jax.tree_leaves(tree))

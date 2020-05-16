@@ -22,6 +22,9 @@ from haiku._src.initializers import RandomUniform
 from haiku._src.initializers import TruncatedNormal
 from haiku._src.initializers import UniformScaling
 from haiku._src.initializers import VarianceScaling
+from haiku._src.initializers import Zeros
+from haiku._src.initializers import Ones
+from haiku._src.initializers import Identity
 from haiku._src.typing import Initializer
 
 
@@ -34,4 +37,7 @@ __all__ = (
     "TruncatedNormal",
     "UniformScaling",
     "VarianceScaling",
+    "Zeros",
+    "Ones",
+    "Identity"
 )

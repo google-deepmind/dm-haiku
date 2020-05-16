@@ -254,3 +254,42 @@ class Orthogonal(Initializer):
     q_mat = jnp.reshape(q_mat, (n_rows,) + tuple(np.delete(shape, self.axis)))
     q_mat = jnp.moveaxis(q_mat, 0, self.axis)
     return jax.lax.convert_element_type(self.scale, dtype) * q_mat
+
+
+  class Zeros(Initializer):
+    """Initializer that generates tensors initialized to 0."""
+
+    def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
+      return jnp.zeros(shape, dtype)
+
+  class Ones(Initializer):
+    """Initializer that generates tensors initialized to 1."""
+
+    def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
+      return jnp.ones(shape, dtype)
+
+
+  class Identity(Initializer):
+    """Initializer that generates the identity matrix.
+    Constructs a 2D identity matrix or batches of these.
+    """
+
+    def __init__(self, gain: float = 1.0):
+      """Constructs an identity initializer.
+      Args:
+         gain: Multiplicative factor to apply to the identity matrix.
+      """
+    self.gain = gain
+
+    def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
+      if len(shpe) < 2:
+        raise ValueError('Identity initializer requires at least a 2D shape.')
+      elif len(shape) == 2:
+        initializer = jnp.eye(num_rows=shape[0], num_columns=shape[1], dtype=dtype)
+      else:
+        initializer = jnp.eye(
+          num_rows=shape[-2],
+          num_columns=shape[-1],
+          batch_shape=shape[:-2],
+          dtype=dtype)
+      return self.gain * initializer

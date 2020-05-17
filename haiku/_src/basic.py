@@ -274,7 +274,7 @@ def expand_apply(f, axis=0):
   return wrapper
 
 
-def dropout(rng, rate, x):
+def dropout(rng, rate, x, is_training=True):
   """Randomly drop units in the input at a given rate.
 
   See: http://www.cs.toronto.edu/~hinton/absps/dropout.pdf
@@ -289,6 +289,8 @@ def dropout(rng, rate, x):
   """
   if rate < 0 or rate >= 1:
     raise ValueError("rate must be in [0, 1).")
+  if not is_training:
+    return x
   keep_rate = 1.0 - rate
   keep = jax.random.bernoulli(rng, keep_rate, shape=x.shape)
   return keep * x / keep_rate

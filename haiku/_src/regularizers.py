@@ -17,8 +17,7 @@
 
 from haiku._src import base
 from haiku._src.typing import Shape, DType, Regularizer
-import jax
-from jax.flatten_util import ravel_pytree
+from jax import tree_flatten
 import jax.numpy as jnp
 
 
@@ -38,8 +37,8 @@ class L1(Regularizer):
 
 
   def __call__(self, parameters) -> jnp.array:
-    values, _ = ravel_pytree(parameters)
-    return self.scale * jnp.sum(jnp.abs(values))
+    leaves, _ = tree_flatten(parameters)
+    return sum([jnp.sum(jnp.abs(leaf)) for leaf in leaves])
 
 class L2(Regularizer):
   """L2 regularizer."""
@@ -57,5 +56,5 @@ class L2(Regularizer):
 
 
   def __call__(self, parameters) -> jnp.array:
-    values, _ = ravel_pytree(parameters)
-    return self.scale * jnp.sum(jnp.square(values))
+    leaves, _ = tree_flatten(parameters)
+    return sum([jnp.sum(leaf ** 2) for leaf in leaves])

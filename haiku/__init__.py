@@ -21,6 +21,7 @@ from haiku import initializers
 from haiku import nets
 from haiku import pad
 from haiku import testing
+from haiku import regularizers
 from haiku._src.base import get_parameter
 from haiku._src.base import get_state
 from haiku._src.base import maybe_next_rng_key

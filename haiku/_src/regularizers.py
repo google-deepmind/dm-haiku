@@ -17,7 +17,7 @@
 
 from haiku._src import base
 from haiku._src.typing import Shape, DType, Regularizer
-from jax import tree_flatten
+import jax
 import jax.numpy as jnp
 
 
@@ -37,7 +37,7 @@ class L1(Regularizer):
 
 
   def __call__(self, parameters) -> jnp.array:
-    leaves, _ = tree_flatten(parameters)
+    leaves = jax.tree_leaves(parameters)
     return sum([jnp.sum(jnp.abs(leaf)) for leaf in leaves])
 
 class L2(Regularizer):
@@ -56,5 +56,5 @@ class L2(Regularizer):
 
 
   def __call__(self, parameters) -> jnp.array:
-    leaves, _ = tree_flatten(parameters)
+    leaves, _ = jax.tree_leaves(parameters)
     return sum([jnp.sum(leaf ** 2) for leaf in leaves])

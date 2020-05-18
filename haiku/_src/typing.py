@@ -36,7 +36,7 @@ Params = Mapping[str, Mapping[ParamName, jnp.ndarray]]
 State = Mapping[str, Mapping[str, jnp.ndarray]]
 Padding = Callable[[int], Sequence[int]]
 Paddings = Union[Padding, Sequence[Padding]]
-Regularizer = Callable[[jnp.ndarray], float]
+Regularizer = Callable[[Params], jnp.ndarray]
 
 # Missing JAX types.
 PRNGKey = jnp.ndarray  # pylint: disable=invalid-name

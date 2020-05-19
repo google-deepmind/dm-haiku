@@ -24,11 +24,14 @@ import jax.numpy as jnp
 
 class ResnetTest(parameterized.TestCase):
 
-  @parameterized.parameters(True, False)
+  @test_utils.combined_named_parameters(test_utils.named_bools("resnet_v2"),
+                                        test_utils.named_bools("bottleneck"))
   @test_utils.transform_and_run
-  def test_simple(self, resnet_v2):
+  def test_simple(self, resnet_v2, bottleneck):
     image = jnp.ones([2, 64, 64, 3])
-    model = resnet.ResNet([1, 1, 1, 1], 10, resnet_v2=resnet_v2)
+    model = resnet.ResNet([1, 1, 1, 1], 10,
+                          resnet_v2=resnet_v2,
+                          bottleneck=bottleneck)
 
     logits = model(image, is_training=True)
     self.assertIsNotNone(logits)

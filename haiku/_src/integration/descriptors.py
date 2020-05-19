@@ -287,6 +287,8 @@ IGNORED_MODULES = {
     hk.RNNCore,
 
     # Tested transitively.
+    hk.nets.ResNet18,
+    hk.nets.ResNet34,
     hk.nets.ResNet50,
     hk.nets.ResNet101,
     hk.nets.ResNet152,

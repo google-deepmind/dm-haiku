@@ -15,6 +15,7 @@
 # ==============================================================================
 """A minimal interface mlp module."""
 
+import types
 from typing import Callable, Iterable, Optional
 
 from haiku._src import base
@@ -23,18 +24,30 @@ from haiku._src import module
 import jax
 import jax.numpy as jnp
 
+# If forking replace this block with `import haiku as hk`.
+hk = types.ModuleType("haiku")
+hk.Module = module.Module
+hk.Initializer = base.Initializer
+hk.get_parameter = base.get_parameter
+hk.PRNGSequence = base.PRNGSequence
+hk.Linear = basic.Linear
+hk.dropout = basic.dropout
+del base, basic, module
 
-class MLP(module.Module):
+
+class MLP(hk.Module):
   """A multi-layer perceptron module."""
 
-  def __init__(self,
-               output_sizes: Iterable[int],
-               w_init: Optional[base.Initializer] = None,
-               b_init: Optional[base.Initializer] = None,
-               with_bias: bool = True,
-               activation: Callable[[jnp.ndarray], jnp.ndarray] = jax.nn.relu,
-               activate_final: bool = False,
-               name: Optional[str] = None):
+  def __init__(
+      self,
+      output_sizes: Iterable[int],
+      w_init: Optional[hk.Initializer] = None,
+      b_init: Optional[hk.Initializer] = None,
+      with_bias: bool = True,
+      activation: Callable[[jnp.ndarray], jnp.ndarray] = jax.nn.relu,
+      activate_final: bool = False,
+      name: Optional[str] = None,
+  ):
     """Constructs an MLP.
 
     Args:
@@ -54,25 +67,20 @@ class MLP(module.Module):
     if not with_bias and b_init is not None:
       raise ValueError("When with_bias=False b_init must not be set.")
 
-    super(MLP, self).__init__(name=name)
-    self._with_bias = with_bias
-    self._w_init = w_init
-    self._b_init = b_init
-    self._activation = activation
-    self._activate_final = activate_final
-    self._layers = []
+    super().__init__(name=name)
+    self.with_bias = with_bias
+    self.w_init = w_init
+    self.b_init = b_init
+    self.activation = activation
+    self.activate_final = activate_final
+    layers = []
     for index, output_size in enumerate(output_sizes):
-      self._layers.append(
-          basic.Linear(
-              output_size=output_size,
-              w_init=w_init,
-              b_init=b_init,
-              with_bias=with_bias,
-              name="linear_%d" % index))
-
-  @property
-  def layers(self):
-    return tuple(self._layers)
+      layers.append(hk.Linear(output_size=output_size,
+                              w_init=w_init,
+                              b_init=b_init,
+                              with_bias=with_bias,
+                              name="linear_%d" % index))
+    self.layers = tuple(layers)
 
   def __call__(
       self,
@@ -95,22 +103,25 @@ class MLP(module.Module):
     elif dropout_rate is None and rng is not None:
       raise ValueError("RNG should only be passed when using dropout.")
 
-    rng = base.PRNGSequence(rng) if rng is not None else None
-    num_layers = len(self._layers)
+    rng = hk.PRNGSequence(rng) if rng is not None else None
+    num_layers = len(self.layers)
 
-    for i, layer in enumerate(self._layers):
-      inputs = layer(inputs)
-      if i < (num_layers - 1) or self._activate_final:
+    out = inputs
+    for i, layer in enumerate(self.layers):
+      out = layer(out)
+      if i < (num_layers - 1) or self.activate_final:
         # Only perform dropout if we are activating the output.
         if dropout_rate is not None:
-          inputs = basic.dropout(next(rng), dropout_rate, inputs)
-        inputs = self._activation(inputs)
+          out = hk.dropout(next(rng), dropout_rate, out)
+        out = self.activation(out)
 
-    return inputs
+    return out
 
-  def reverse(self,
-              activate_final: Optional[bool] = None,
-              name: Optional[str] = None) -> "MLP":
+  def reverse(
+      self,
+      activate_final: Optional[bool] = None,
+      name: Optional[str] = None,
+  ) -> "MLP":
     """Returns a new MLP which is the layer-wise reverse of this MLP.
 
     NOTE: Since computing the reverse of an MLP requires knowing the input size
@@ -139,15 +150,15 @@ class MLP(module.Module):
     """
 
     if activate_final is None:
-      activate_final = self._activate_final
+      activate_final = self.activate_final
     if name is None:
       name = self.name + "_reversed"
 
     return MLP(
-        output_sizes=(layer.input_size for layer in reversed(self._layers)),
-        w_init=self._w_init,
-        b_init=self._b_init,
-        with_bias=self._with_bias,
-        activation=self._activation,
+        output_sizes=(layer.input_size for layer in reversed(self.layers)),
+        w_init=self.w_init,
+        b_init=self.b_init,
+        with_bias=self.with_bias,
+        activation=self.activation,
         activate_final=activate_final,
         name=name)

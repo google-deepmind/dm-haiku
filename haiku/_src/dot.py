@@ -53,7 +53,14 @@ def to_dot(fun):
   graph_fun = to_graph(fun)
   @functools.wraps(fun)
   def wrapped_fun(*args):
-    return _graph_to_dot(*graph_fun(*args))
+    # Disable namescopes so they don't show up in the generated dot
+    current_setting = module.modules_with_named_call
+    try:
+      module.profiler_name_scopes(enabled=False)
+      gtd = _graph_to_dot(*graph_fun(*args))
+    finally:
+      module.profiler_name_scopes(enabled=current_setting)
+    return gtd
   return wrapped_fun
 
 

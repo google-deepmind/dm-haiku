@@ -210,10 +210,12 @@ hk_py_test(
     deps = [
         ":dot",
         ":module",
+        ":named_call",
         ":test_utils",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
+        # pip: mock
         # pip: tree
     ],
 )

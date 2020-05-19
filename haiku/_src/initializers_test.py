@@ -129,6 +129,14 @@ class InitializersTest(absltest.TestCase):
     expected = jnp.eye(3, 3, (4, 4))
     self.assertEqual(init((4, 4, 3, 3)), expected)
 
+  @test_utils.transform_and_run
+  def test_identity_invalid_shape(self):
+    init = initializers.Identity()
+    shape = (20,)
+    with self.assertRaisesRegex(
+        ValueError, "Identity initializer requires at least a 2D shape."):
+      init(shape, jnp.float32)
+
   if __name__ == "__main__":
   config.update("jax_enable_x64", True)
   absltest.main()

@@ -26,58 +26,136 @@ import jax.nn
 import jax.numpy as jnp
 
 
-def add_batch(nest, batch_size):
-  broadcast = lambda x: jnp.broadcast_to(x, (batch_size,) + x.shape)
-  return jax.tree_map(broadcast, nest)
-
-
-def static_unroll(core, inputs, state):
-  """Unroll core over inputs, starting from state."""
-  outs = []
-  num_steps = jax.tree_leaves(inputs)[0].shape[0]
-  for t in range(num_steps):
-    next_input = jax.tree_map(lambda x, t=t: x[t], inputs)
-    out, state = core(next_input, state)
-    outs.append(out)
-  return jnp.stack(outs), state
-
-
-def dynamic_unroll(core, inputs, state):
-  """Unroll core over inputs, starting from state."""
-  # Swap the input and output of core.
-  def scan_f(prev_state, next_input):
-    out, next_state = core(next_input, prev_state)
-    return next_state, out
-  state, outs = jax.lax.scan(scan_f, state, inputs)
-  return outs, state
-
-
-class RNNCore(module.Module, metaclass=abc.ABCMeta):
+class RNNCore(module.Module):
   """Base class for RNN cores.
 
-  Cores can be dynamically unrolled with jax.lax.scan().
+  This class defines the basic functionality that every core should
+  implement: :meth:`initial_state`, used to construct an example of the
+  core state; and :meth:`__call__` which applies the core parameterized
+  by a previous state to an input.
+
+  Cores may be used with :func:`dynamic_unroll` and
+  :func:`static_unroll` to iteratively construct an output sequence from
+  the given input sequence.
   """
 
   @abc.abstractmethod
-  def __call__(self, inputs, state):
+  def __call__(self, inputs, prev_state):
     """Run one step of the RNN.
 
     Args:
-      inputs: Arbitrary nest of inputs.
-      state: Previous core state.
+      inputs: An arbitrarily nested structure.
+      prev_state: Previous core state.
+
     Returns:
-      Tuple of (output, next_state).
+      A tuple with two elements:
+      * **outputs** - An arbitrarily nested structure.
+      * **next_state** - Next core state, must be of the same shape as the
+        previous one.
     """
 
   @abc.abstractmethod
   def initial_state(self, batch_size):
-    """Construct an initial state for the core.
+    """Constructs an initial state for this core.
 
     Args:
-      batch_size: Specifies the batch size of the initial state. Cores may
-        experimentally support returning an initial state without a batch
-        dimension if batch_size is None.
+      batch_size: Optional int or an integral scalar tensor representing
+        batch size. If None, the core may either fail or (experimentally)
+        return an initial state without a batch dimension.
+
+    Returns:
+      Arbitrarily nested initial state for this core.
     """
+
+
+def static_unroll(core, input_sequence, initial_state):
+  """Performs a static unroll of an RNN.
+
+  An *unroll* corresponds to calling the core on each element of the
+  input sequence in a loop, carrying the state through::
+
+      state = initial_state
+      for t in range(len(input_sequence)):
+         outputs, state = core(input_sequence[t], state)
+
+  A *static* unroll replaces a loop with its body repeated multiple
+  times when executed inside ``jax.jit``::
+
+      state = initial_state
+      outputs0, state = core(input_sequence[0], state)
+      outputs1, state = core(input_sequence[1], state)
+      outputs2, state = core(input_sequence[2], state)
+      ...
+
+  See :func:`dynamic_unroll` for a loop-preserving unroll function.
+
+  Args:
+    core: An :class:`RNNCore` to unroll.
+    input_sequence: An arbitrarily nested structure of tensors of shape
+      ``[T, ...]`` where ``T`` is the number of time steps.
+    initial_state: An initial state of the given core.
+
+  Returns:
+    A tuple with two elements:
+      * **output_sequence** - An arbitrarily nested structure of tensors
+        of shape ``[T, ...]``.
+      * **final_state** - Core state at time step ``T``.
+  """
+  output_sequence = []
+  num_steps = jax.tree_leaves(input_sequence)[0].shape[0]
+  state = initial_state
+  for t in range(num_steps):
+    inputs = jax.tree_map(lambda x, _t=t: x[_t], input_sequence)
+    outputs, state = core(inputs, state)
+    output_sequence.append(outputs)
+
+  # Stack outputs along the time dimension.
+  output_sequence = jax.tree_multimap(
+      lambda *args: jnp.stack(args),
+      *output_sequence)
+  return output_sequence, state
+
+
+def dynamic_unroll(core, input_sequence, initial_state):
+  """Performs a dynamic unroll of an RNN.
+
+  An *unroll* corresponds to calling the core on each element of the
+  input sequence in a loop, carrying the state through::
+
+      state = initial_state
+      for t in range(len(input_sequence)):
+         outputs, state = core(input_sequence[t], state)
+
+  A *dynamic* unroll preserves the loop structure when executed inside
+  ``jax.jit``. See :func:`static_unroll` for an unroll function which
+  replaces a loop with its body repeated multiple times.
+
+  Args:
+    core: An :class:`RNNCore` to unroll.
+    input_sequence: An arbitrarily nested structure of tensors of shape
+      ``[T, ...]`` where ``T`` is the number of time steps.
+    initial_state: initial state of the given core.
+
+  Returns:
+    A tuple with two elements:
+      * **output_sequence** - An arbitrarily nested structure of tensors
+        of shape ``[T, ...]``.
+      * **final_state** - Core state at time step ``T``.
+  """
+  # Swap the input and output of core.
+  def scan_f(prev_state, inputs):
+    outputs, next_state = core(inputs, prev_state)
+    return next_state, outputs
+  final_state, output_sequence = jax.lax.scan(
+      scan_f,
+      initial_state,
+      input_sequence)
+  return output_sequence, final_state
+
+
+def add_batch(nest, batch_size):
+  broadcast = lambda x: jnp.broadcast_to(x, (batch_size,) + x.shape)
+  return jax.tree_map(broadcast, nest)
 
 
 class VanillaRNN(RNNCore):

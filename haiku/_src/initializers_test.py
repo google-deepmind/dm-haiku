@@ -60,6 +60,9 @@ class InitializersTest(absltest.TestCase):
         initializers.UniformScaling(as_np_f64(2.0)),
         initializers.TruncatedNormal(),
         initializers.Orthogonal(),
+        initializers.Identity(),
+        initializers.Identity(an_np_f64(2.0)),
+
 
         # Users are supposed to be able to use these.
         jnp.zeros,
@@ -114,7 +117,18 @@ class InitializersTest(absltest.TestCase):
     self.assertEqual(generated.shape, shape)
     self.assertEqual(generated.dtype, jnp.float32)
 
+  @test_utils.transform_and_run
+  def test_identity2D(self):
+    init = initializers.Identity()
+    expected = jnp.eye(3, 3)
+    self.assertEqual(init((3, 3)), expected)
 
-if __name__ == "__main__":
+  @test_utils.transform_and_run
+  def test_identity4D(self):
+    init = initializers.Identity()
+    expected = jnp.eye(3, 3, (4, 4))
+    self.assertEqual(init((4, 4, 3, 3)), expected)
+
+  if __name__ == "__main__":
   config.update("jax_enable_x64", True)
   absltest.main()

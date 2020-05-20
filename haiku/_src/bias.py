@@ -15,67 +15,74 @@
 # ==============================================================================
 """Bias module."""
 
-from typing import Optional, Sequence, Union
+import types
+from typing import Optional, Sequence
 
 from haiku._src import base
 from haiku._src import module
 from haiku._src import utils
+from haiku._src.typing import Shape, FloatLike  # pylint: disable=g-multiple-import
 import jax.numpy as jnp
 
-FloatLike = Union[float, jnp.ndarray]
-ShapeLike = Sequence[Optional[int]]
+# If you are forking replace this block with `import haiku as hk`.
+hk = types.ModuleType("haiku")
+hk.get_parameter = base.get_parameter
+hk.Initializer = base.Initializer
+hk.Module = module.Module
+del base, module
 
 
-class Bias(module.Module):
-  """Bias module.
+class Bias(hk.Module):
+  """Adds a bias to inputs.
 
   Example Usage:
 
-      >>> N, H, W, C = 1, 2, 3, 4
-      >>> x = jnp.ones([N, H, W, C])
-
-      >>> scalar_bias = hk.Bias(bias_dims=[])
-      >>> scalar_bias_output = scalar_bias(x)
-      >>> assert scalar_bias.bias_shape == ()
+  >>> N, H, W, C = 1, 2, 3, 4
+  >>> x = jnp.ones([N, H, W, C])
+  >>> scalar_bias = hk.Bias(bias_dims=[])
+  >>> scalar_bias_output = scalar_bias(x)
+  >>> assert scalar_bias.bias_shape == ()
 
   Create a bias over all non-minibatch dimensions:
 
-      >>> all_bias = hk.Bias()
-      >>> all_bias_output = all_bias(x)
-      >>> assert all_bias.bias_shape == (H, W, C)
+  >>> all_bias = hk.Bias()
+  >>> all_bias_output = all_bias(x)
+  >>> assert all_bias.bias_shape == (H, W, C)
 
   Create a bias over the last non-minibatch dimension:
 
-      >>> last_bias = hk.Bias(bias_dims=[-1])
-      >>> last_bias_output = last_bias(x)
-      >>> assert last_bias.bias_shape == (C,)
+  >>> last_bias = hk.Bias(bias_dims=[-1])
+  >>> last_bias_output = last_bias(x)
+  >>> assert last_bias.bias_shape == (C,)
 
   Create a bias over the first non-minibatch dimension:
 
-      >>> first_bias = hk.Bias(bias_dims=[1])
-      >>> first_bias_output = first_bias(x)
-      >>> assert first_bias.bias_shape == (H, 1, 1)
+  >>> first_bias = hk.Bias(bias_dims=[1])
+  >>> first_bias_output = first_bias(x)
+  >>> assert first_bias.bias_shape == (H, 1, 1)
 
   Subtract and later add the same learned bias:
 
-      >>> bias = hk.Bias()
-      >>> h1 = bias(x, multiplier=-1)
-      >>> h2 = bias(x)
-      >>> h3 = bias(x, multiplier=-1)
-      >>> reconstructed_x = bias(h3)
-      >>> assert jnp.sum(x == reconstructed_x)
+  >>> bias = hk.Bias()
+  >>> h1 = bias(x, multiplier=-1)
+  >>> h2 = bias(x)
+  >>> h3 = bias(x, multiplier=-1)
+  >>> reconstructed_x = bias(h3)
+  >>> assert (x == reconstructed_x).all()
   """
 
-  def __init__(self,
-               output_size: Optional[Union[int, ShapeLike]] = None,
-               bias_dims: Optional[Sequence[int]] = None,
-               b_init: Optional[base.Initializer] = None,
-               name: Optional[str] = None):
-    """Constructs a `Bias` module that supports broadcasting.
+  def __init__(
+      self,
+      output_size: Optional[Shape] = None,
+      bias_dims: Optional[Sequence[int]] = None,
+      b_init: Optional[hk.Initializer] = None,
+      name: Optional[str] = None,
+  ):
+    """Constructs a ``Bias`` module that supports broadcasting.
 
     Args:
       output_size: Output size (output shape without batch dimension). If
-        `output_size` is left as `None`, the size will be directly inferred by
+        ``output_size`` is left as `None`, the size will be directly inferred by
         the input.
       bias_dims: Sequence of which dimensions to retain from the input shape
         when constructing the bias. The remaining dimensions will be broadcast
@@ -84,47 +91,48 @@ class Bias(module.Module):
       b_init: Optional initializer for the bias. Default to zeros.
       name: Name of the module.
     """
-    super(Bias, self).__init__(name=name)
+    super().__init__(name=name)
     self.output_size = output_size
     self.bias_dims = bias_dims
     self.b_init = b_init or jnp.zeros
+    self.bias_shape = None
 
-  def __call__(self, inputs: jnp.ndarray, multiplier: FloatLike = None):
-    """Adds bias to `inputs` and optionally multiplies by `multiplier`.
+  def __call__(
+      self,
+      inputs: jnp.ndarray,
+      multiplier: FloatLike = None,
+  ) -> jnp.ndarray:
+    """Adds bias to ``inputs`` and optionally multiplies by ``multiplier``.
 
     Args:
-      inputs: A Tensor of size `[batch_size, input_size1, ...]`.
+      inputs: A Tensor of size ``[batch_size, input_size1, ...]``.
       multiplier: A scalar or Tensor which the bias term is multiplied by before
-        adding it to `inputs`. Anything which works in the expression `bias *
-        multiplier` is acceptable here. This may be useful if you want to add a
+        adding it to ``inputs``. Anything which works in the expression ``bias *
+        multiplier`` is acceptable here. This may be useful if you want to add a
         bias in one place and subtract the same bias in another place via
-        `multiplier=-1`.
+        ``multiplier=-1``.
 
     Returns:
-      A Tensor of size `[batch_size, input_size1, ...]`.
+      A Tensor of size ``[batch_size, input_size1, ...]``.
     """
     utils.assert_minimum_rank(inputs, 2)
+    if self.output_size is not None and self.output_size != inputs.shape[1:]:
+      raise ValueError(
+          f"Input shape must be {(-1,) + self.output_size} not {inputs.shape}")
 
-    input_shape = inputs.shape
-    self.bias_shape = calculate_bias_shape(input_shape, self.bias_dims)
+    self.bias_shape = calculate_bias_shape(inputs.shape, self.bias_dims)
+    self.input_size = inputs.shape[1:]
 
-    input_size = input_shape[1:]
-    if self.output_size is not None and self.output_size != input_size:
-      raise ValueError("Input shape must be {} not {}".format(
-          (-1,) + self.output_size, input_shape))
-
-    self.input_size = input_size
-    b = base.get_parameter("b", self.bias_shape, inputs.dtype, init=self.b_init)
+    b = hk.get_parameter("b", self.bias_shape, inputs.dtype, init=self.b_init)
     b = jnp.broadcast_to(b, inputs.shape)
 
     if multiplier is not None:
-      return inputs + (b * multiplier)
-    else:
-      return inputs + b
+      b = b * multiplier
+
+    return inputs + b
 
 
-def calculate_bias_shape(input_shape: ShapeLike,
-                         bias_dims: Sequence[int]):
+def calculate_bias_shape(input_shape: Shape, bias_dims: Sequence[int]):
   """Calculate `bias_shape` based on the `input_shape` and `bias_dims`.
 
   Args:

@@ -16,7 +16,7 @@
 """Haiku types."""
 
 import typing
-from typing import Any, Callable, Mapping, Sequence, Union
+from typing import Any, Callable, Mapping, Sequence, Tuple, Union
 import jax.numpy as jnp
 
 # pytype: disable=module-attr
@@ -29,13 +29,14 @@ except AttributeError:
 
 Shape = Sequence[int]
 ShapeLike = Union[int, Shape]
+FloatLike = Union[float, jnp.ndarray]
 DType = Any
 ParamName = str
 Initializer = Callable[[Shape, DType], jnp.ndarray]
 Params = Mapping[str, Mapping[ParamName, jnp.ndarray]]
 State = Mapping[str, Mapping[str, jnp.ndarray]]
-Padding = Callable[[int], Sequence[int]]
-Paddings = Union[Padding, Sequence[Padding]]
+PadFn = Callable[[int], Tuple[int, int]]
+PadFnOrFns = Union[PadFn, Sequence[PadFn]]
 
 # Missing JAX types.
 PRNGKey = jnp.ndarray  # pylint: disable=invalid-name

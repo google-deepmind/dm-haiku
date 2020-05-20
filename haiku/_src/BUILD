@@ -65,6 +65,7 @@ hk_py_library(
     deps = [
         ":base",
         ":module",
+        ":typing",
         ":utils",
         # pip: jax
     ],
@@ -172,6 +173,7 @@ hk_py_library(
         ":base",
         ":initializers",
         ":module",
+        ":typing",
         ":utils",
         # pip: jax
         # pip: numpy
@@ -228,6 +230,7 @@ hk_py_library(
         ":initializers",
         ":module",
         ":pad",
+        ":typing",
         ":utils",
         # pip: jax
         # pip: numpy

@@ -15,43 +15,44 @@
 # ==============================================================================
 """Padding module for Haiku."""
 
-from typing import Sequence, Union
+from typing import Sequence, Union, Tuple
 
 from haiku._src import utils
-from haiku._src.typing import Paddings
+from haiku._src.typing import PadFnOrFns
 
 
-def valid(effective_kernel_size: int):  # pylint: disable=unused-argument
+def valid(effective_kernel_size: int) -> Tuple[int, int]:
   """No padding."""
+  del effective_kernel_size
   return (0, 0)
 
 
-def same(effective_kernel_size: int):
+def same(effective_kernel_size: int) -> Tuple[int, int]:
   """Pads such that the output size matches input size for stride=1."""
   return ((effective_kernel_size - 1) // 2, effective_kernel_size // 2)
 
 
-def full(effective_kernel_size: int):
+def full(effective_kernel_size: int) -> Tuple[int, int]:
   """Maximal padding whilst not convolving over just padded elements."""
   return (effective_kernel_size - 1, effective_kernel_size - 1)
 
 
-def causal(effective_kernel_size: int):
+def causal(effective_kernel_size: int) -> Tuple[int, int]:
   """Pre-padding such that output has no dependence on the future."""
   return (effective_kernel_size - 1, 0)
 
 
-def reverse_causal(effective_kernel_size: int):
+def reverse_causal(effective_kernel_size: int) -> Tuple[int, int]:
   """Post-padding such that output has no dependence on the past."""
   return (0, effective_kernel_size - 1)
 
 
 def create(
-    padding: Paddings,
+    padding: PadFnOrFns,
     kernel: Union[int, Sequence[int]],
     rate: Union[int, Sequence[int]],
     n: int,
-):
+) -> Sequence[Tuple[int, int]]:
   """Generates the padding required for a given padding algorithm.
 
   Args:
@@ -68,8 +69,8 @@ def create(
     n: the number of spatial dimensions.
 
   Returns:
-    A list of length n containing the padding for each element. These are of
-    the form [pad_before, pad_after].
+    A sequence of length n containing the padding for each element. These are of
+    the form ``[pad_before, pad_after]``.
   """
   # The effective kernel size includes any holes/gaps introduced by the
   # dilation rate. It's equal to kernel_size when rate == 1.

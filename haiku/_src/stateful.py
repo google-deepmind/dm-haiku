@@ -17,16 +17,17 @@
 
 import collections
 import functools
-from typing import Any, Mapping, MutableMapping
+from typing import Any, Mapping, MutableMapping, Optional, Tuple, TypeVar
 
 from haiku._src import base
 import jax
 
 InternalState = collections.namedtuple("InternalState", "params,state,rng")
 Bundle = Mapping[str, Mapping[str, Any]]
+T = TypeVar("T")
 
 
-def copy_structure(bundle: Bundle) -> Bundle:
+def copy_structure(bundle: T) -> T:
   return jax.tree_map(lambda x: x, bundle)
 
 
@@ -37,7 +38,7 @@ def internal_state() -> InternalState:
     rng = rng.internal_state
   return InternalState(params=copy_structure(frame.params),
                        state=copy_structure(frame.state),
-                       rng=rng)
+                       rng=copy_structure(rng))
 
 
 def update_recursive(dst: MutableMapping[Any, Any], src: Mapping[Any, Any]):
@@ -46,7 +47,9 @@ def update_recursive(dst: MutableMapping[Any, Any], src: Mapping[Any, Any]):
       dst.setdefault(k, {})
       update_recursive(dst[k], v)
     else:
-      dst[k] = v
+      if v is not None:
+        # NOTE: We only expect `None` values thanks to `difference`.
+        dst[k] = v
 
 
 def update_internal_state(state: InternalState):
@@ -60,6 +63,7 @@ def update_internal_state(state: InternalState):
 
 
 def temporary_internal_state(state: InternalState):
+  state = copy_structure(state)
   rng = state.rng
   if rng is not None:
     rng = base.PRNGSequence(rng)
@@ -180,10 +184,12 @@ def value_and_grad(fun, argnums=0, has_aux=False, holomorphic=False):
 
   @functools.wraps(fun)
   def stateful_fun(*args, **kwargs):
-    with temporary_internal_state(kwargs.pop("hk_state")):
+    state_in = kwargs.pop("hk_state")
+    with temporary_internal_state(state_in):
       out = fun(*args, **kwargs)
       out, aux = (out if has_aux else (out, None))
-      return out, (aux, internal_state())
+      state_out = difference(state_in, internal_state())
+      return out, (aux, state_out)
 
   grad_fun = jax.value_and_grad(stateful_fun, argnums=argnums,
                                 has_aux=True, holomorphic=holomorphic)
@@ -201,6 +207,111 @@ def value_and_grad(fun, argnums=0, has_aux=False, holomorphic=False):
   return wrapper
 
 
+class Box:
+  """A pytree leaf that acts as a box."""
+
+  def __init__(self, value):
+    self.value = value
+
+TwoLevelMapping = Mapping[Any, Mapping[Any, Any]]
+TwoLevelMappingToBox = Mapping[Any, Mapping[Any, Box]]
+
+
+def box_and_fill_missing(
+    a: TwoLevelMapping,
+    b: TwoLevelMapping,
+) -> Tuple[TwoLevelMappingToBox, TwoLevelMappingToBox]:
+  """Returns boxed two level mappings with the same structure.
+
+  It is assumed that ``a`` is a subset of ``b``.
+
+  Args:
+    a: A two level mapping (e.g. Haiku parameters or state).
+    b: A two level mapping (e.g. Haiku parameters or state).
+
+  Returns:
+    A pair of two level mappings with ``Box`` wrapped leaves (suitable for use
+    with ``jax.tree_*``). The mappings have the contents of ``a`` and ``b``
+    respectively. Both mappings have the structure from ``b``. Any missing
+    elements are set to ``Box(None)``.
+  """
+  out_a = {k: {} for k in b}
+  out_b = {k: {} for k in b}
+  for k1, v1 in b.items():
+    for k2 in v1:
+      out_b[k1][k2] = Box(b[k1][k2])
+      if k1 in a and k2 in a[k1]:
+        out_a[k1][k2] = Box(a[k1][k2])
+      else:
+        out_a[k1][k2] = Box(None)
+  return out_a, out_b
+
+
+def difference(before: InternalState, after: InternalState) -> InternalState:
+  """Returns an InternalState object with unchanged items set to ``None``.
+
+  Note that to determine what values have changed we compare them by identity
+  not by value. This is only reasonable to do if `difference` is used to compare
+  state *inside* a JAX transform (e.g. comparing the arguments passed into JIT
+  with the values that you are about to return from it).
+
+  This function never produces false negatives (e.g. we will never incorrectly
+  say that a piece of state is unchanged when it has), however it may produce
+  false positives. One well known case is if a value is traced by an inner JAX
+  transform but unchanged, the identity of the Python object will differ from
+  the value passed into the outer function, but the value will not have changed.
+  In this case `difference` will say that the value has changed. For example if
+  the following change happened inside a function whose state was being diffed
+  we would defensively say that ``u`` had changed value even though it had only
+  changed Python identity:
+
+  >>> u = hk.get_state("u", [], init=jnp.ones)
+  >>> u, _ = jax.jit(lambda a: a, a ** 2)(u)
+  >>> hk.set_state("u", u)
+
+  Args:
+    before: state before.
+    after: state after.
+
+  Returns:
+    The difference between before and after, with any values that have the same
+    identity before and after set to `None`.
+  """
+
+  def if_changed(is_new, box_a, box_b):
+    if box_a.value is None or is_new(box_a.value, box_b.value):
+      return box_b.value
+    else:
+      return None
+
+  # params
+  is_new_param = lambda a, b: a is not b
+  params_before, params_after = box_and_fill_missing(before.params,
+                                                     after.params)
+  params_after = jax.tree_multimap(functools.partial(if_changed, is_new_param),
+                                   params_before, params_after)
+
+  # state
+  def is_new_state(a: base.StatePair, b: base.StatePair):
+    return a.initial is not b.initial or a.current is not b.current
+
+  state_before, state_after = box_and_fill_missing(before.state, after.state)
+  state_after = jax.tree_multimap(functools.partial(if_changed, is_new_state),
+                                  state_before, state_after)
+
+  # rng
+  def is_new_rng(a: Optional[base.PRNGSequenceState],
+                 b: Optional[base.PRNGSequenceState]):
+    if a is None:
+      return True
+    assert len(a) == 2 and len(b) == 2
+    return a[0] is not b[0] or a[1] is not b[1]
+
+  rng = after.rng if is_new_rng(before.rng, after.rng) else None
+
+  return InternalState(params_after, state_after, rng)
+
+
 def thread_hk_state_in_kwargs(dec_fun):
   """Equivalent to jax.{} but passing Haiku state.""".format(dec_fun.__name__)
 
@@ -214,9 +325,10 @@ def thread_hk_state_in_kwargs(dec_fun):
 
     @functools.wraps(fun)
     def stateful_fun(*args, **kwargs):
-      with temporary_internal_state(kwargs.pop("hk_state")):
+      state_in = kwargs.pop("hk_state")
+      with temporary_internal_state(state_in):
         out = fun(*args, **kwargs)
-        return out, internal_state()
+        return out, difference(state_in, internal_state())
 
     dec_stateful_fun = dec_fun(stateful_fun, *dec_args, **dec_kwargs)
 
@@ -242,6 +354,7 @@ def stateful_branch(branch_fun):
     state, operand = operand
     with temporary_internal_state(state):
       out = branch_fun(operand)
+      # TODO(tomhennigan) Return difference of state in/out here.
       return out, internal_state()
   return new_branch_fun
 

@@ -16,16 +16,16 @@
 """Haiku recurrent core."""
 
 import abc
+from typing import Optional, Sequence
 from haiku._src import base
 from haiku._src import basic
 from haiku._src import conv
 from haiku._src import initializers
 from haiku._src import module
+from haiku._src import typing
 import jax
 import jax.nn
 import jax.numpy as jnp
-
-# TODO(slebedev): Add type annotations.
 
 
 class RNNCore(module.Module):
@@ -57,7 +57,7 @@ class RNNCore(module.Module):
     """
 
   @abc.abstractmethod
-  def initial_state(self, batch_size):
+  def initial_state(self, batch_size: Optional[int]):
     """Constructs an initial state for this core.
 
     Args:
@@ -155,7 +155,7 @@ def dynamic_unroll(core, input_sequence, initial_state):
   return output_sequence, final_state
 
 
-def add_batch(nest, batch_size):
+def add_batch(nest, batch_size: Optional[int]):
   broadcast = lambda x: jnp.broadcast_to(x, (batch_size,) + x.shape)
   return jax.tree_map(broadcast, nest)
 
@@ -171,7 +171,7 @@ class VanillaRNN(RNNCore):
      h_t = \operatorname{ReLU}(w_i x_t + b_i + w_h h_{t-1} + b_h)
   """
 
-  def __init__(self, hidden_size, name=None):
+  def __init__(self, hidden_size: int, name: Optional[str] = None):
     """Constructs a vanilla RNN core.
 
     Args:
@@ -188,7 +188,7 @@ class VanillaRNN(RNNCore):
     outputs = jax.nn.relu(in2h + h2h)
     return outputs, outputs
 
-  def initial_state(self, batch_size):
+  def initial_state(self, batch_size: Optional[int]):
     state = jnp.zeros([self.hidden_size])
     if batch_size is not None:
       state = add_batch(state, batch_size)
@@ -223,7 +223,7 @@ class LSTM(RNNCore):
       the beginning of the training.
   """
 
-  def __init__(self, hidden_size, name=None):
+  def __init__(self, hidden_size: int, name: Optional[str] = None):
     """Constructs an LSTM.
 
     Args:
@@ -247,7 +247,7 @@ class LSTM(RNNCore):
     h = jax.nn.sigmoid(o) * jnp.tanh(c)
     return h, (h, c)
 
-  def initial_state(self, batch_size):
+  def initial_state(self, batch_size: Optional[int]):
     state = (jnp.zeros([self.hidden_size]), jnp.zeros([self.hidden_size]))
     if batch_size is not None:
       state = add_batch(state, batch_size)
@@ -284,11 +284,11 @@ class ConvNDLSTM(RNNCore):
   """
 
   def __init__(self,
-               num_spatial_dims,
-               input_shape,
-               output_channels,
-               kernel_shape,
-               name=None):
+               num_spatial_dims: int,
+               input_shape: typing.Shape,
+               output_channels: int,
+               kernel_shape: typing.ShapeLike,
+               name: Optional[str] = None):
     """Constructs a convolutional LSTM.
 
     Args:
@@ -328,7 +328,7 @@ class ConvNDLSTM(RNNCore):
     h = jax.nn.sigmoid(o) * jnp.tanh(c)
     return h, (h, c)
 
-  def initial_state(self, batch_size):
+  def initial_state(self, batch_size: Optional[int]):
     state = (jnp.zeros(list(self.input_shape) + [self.output_channels]),
              jnp.zeros(list(self.input_shape) + [self.output_channels]))
     if batch_size is not None:
@@ -339,7 +339,11 @@ class ConvNDLSTM(RNNCore):
 class Conv1DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
   __doc__ = ConvNDLSTM.__doc__.replace("``num_spatial_dims``", "1")
 
-  def __init__(self, input_shape, output_channels, kernel_shape, name=None):
+  def __init__(self,
+               input_shape: typing.Shape,
+               output_channels: int,
+               kernel_shape: typing.ShapeLike,
+               name: Optional[str] = None):
     """Constructs a 1-D convolutional LSTM.
 
     Args:
@@ -361,7 +365,11 @@ class Conv1DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
 class Conv2DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
   __doc__ = ConvNDLSTM.__doc__.replace("``num_spatial_dims``", "2")
 
-  def __init__(self, input_shape, output_channels, kernel_shape, name=None):
+  def __init__(self,
+               input_shape: typing.Shape,
+               output_channels: int,
+               kernel_shape: typing.ShapeLike,
+               name: Optional[str] = None):
     """Constructs a 2-D convolutional LSTM.
 
     Args:
@@ -383,7 +391,11 @@ class Conv2DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
 class Conv3DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
   __doc__ = ConvNDLSTM.__doc__.replace("``num_spatial_dims``", "3")
 
-  def __init__(self, input_shape, output_channels, kernel_shape, name=None):
+  def __init__(self,
+               input_shape: typing.Shape,
+               output_channels: int,
+               kernel_shape: typing.ShapeLike,
+               name: Optional[str] = None):
     """Constructs a 3-D convolutional LSTM.
 
     Args:
@@ -427,11 +439,11 @@ class GRU(RNNCore):
   """
 
   def __init__(self,
-               hidden_size,
-               w_i_init: initializers.Initializer = None,
-               w_h_init: initializers.Initializer = None,
-               b_init: initializers.Initializer = None,
-               name=None):
+               hidden_size: int,
+               w_i_init: Optional[typing.Initializer] = None,
+               w_h_init: Optional[typing.Initializer] = None,
+               b_init: Optional[typing.Initializer] = None,
+               name: Optional[str] = None):
     super().__init__(name=name)
     self.hidden_size = hidden_size
     self._w_i_init = w_i_init or initializers.VarianceScaling()
@@ -469,7 +481,7 @@ class GRU(RNNCore):
     next_state = (1 - z) * state + z * a
     return next_state, next_state
 
-  def initial_state(self, batch_size):
+  def initial_state(self, batch_size: Optional[int]):
     state = jnp.zeros([self.hidden_size])
     if batch_size is not None:
       state = add_batch(state, batch_size)
@@ -486,7 +498,7 @@ class IdentityCore(RNNCore):
   def __call__(self, inputs, state):
     return inputs, state
 
-  def initial_state(self, batch_size):
+  def initial_state(self, batch_size: Optional[int]):
     return ()
 
 
@@ -513,7 +525,7 @@ class ResetCore(RNNCore):
   with the state structure.
   """
 
-  def __init__(self, core, name=None):
+  def __init__(self, core: RNNCore, name: Optional[str] = None):
     super().__init__(name=name)
     self._core = core
 
@@ -593,14 +605,14 @@ class ResetCore(RNNCore):
     state = jax.tree_multimap(jnp.where, should_reset, initial_state, state)
     return self._core(inputs, state)
 
-  def initial_state(self, batch_size):
+  def initial_state(self, batch_size: Optional[int]):
     return self._core.initial_state(batch_size)
 
 
 class _DeepRNN(RNNCore):
   """Underlying implementation of DeepRNN with skip connections."""
 
-  def __init__(self, layers, skip_connections, name=None):
+  def __init__(self, layers, skip_connections, name: Optional[str] = None):
     super().__init__(name=name)
     self._layers = layers
     self._skip_connections = skip_connections
@@ -636,7 +648,7 @@ class _DeepRNN(RNNCore):
 
     return output, tuple(next_states)
 
-  def initial_state(self, batch_size):
+  def initial_state(self, batch_size: Optional[int]):
     return tuple(
         layer.initial_state(batch_size)
         for layer in self._layers
@@ -656,11 +668,12 @@ class DeepRNN(_DeepRNN):
   If no layers are `RNNCore`s, the state is an empty tuple.
   """
 
-  def __init__(self, layers, name=None):
+  def __init__(self, layers, name: Optional[str] = None):
     super().__init__(layers, skip_connections=False, name=name)
 
 
-def deep_rnn_with_skip_connections(layers, name=None):
+def deep_rnn_with_skip_connections(layers: Sequence[RNNCore],
+                                   name: Optional[str] = None) -> RNNCore:
   """Constructs a DeepRNN with skip connections.
 
   Skip connections alter the dependency structure within a `DeepRNN`.

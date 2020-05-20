@@ -476,6 +476,7 @@ hk_py_library(
         ":conv",
         ":initializers",
         ":module",
+        ":typing",
         # pip: jax
     ],
 )

@@ -126,8 +126,8 @@ class InitializersTest(absltest.TestCase):
   @test_utils.transform_and_run
   def test_identity4D(self):
     init = initializers.Identity()
-    expected = jnp.eye(num_rows=shape[-2], num_columns=shape[-1],
-                       dtype=dtype).broacast_to(shape[:-2] + shape[-2:])
+    expected = jnp.eye(num_rows=3, num_columns=3,
+                       dtype=dtype).broacast_to((4, 4, 3, 3))
     self.assertEqual(init((4, 4, 3, 3)), expected)
 
   @test_utils.transform_and_run

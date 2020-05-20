@@ -138,5 +138,5 @@ class InitializersTest(absltest.TestCase):
       init(shape, jnp.float32)
 
   if __name__ == "__main__":
-  config.update("jax_enable_x64", True)
-  absltest.main()
+    config.update("jax_enable_x64", True)
+    absltest.main()

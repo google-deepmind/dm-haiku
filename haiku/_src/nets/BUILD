@@ -38,6 +38,7 @@ hk_py_library(
     deps = [
         "//haiku/_src:base",
         "//haiku/_src:basic",
+        "//haiku/_src:initializers",
         "//haiku/_src:module",
         # pip: jax
     ],

@@ -64,6 +64,7 @@ hk_py_library(
     srcs = ["bias.py"],
     deps = [
         ":base",
+        ":initializers",
         ":module",
         ":typing",
         ":utils",
@@ -146,6 +147,7 @@ hk_py_library(
     srcs = ["batch_norm.py"],
     deps = [
         ":base",
+        ":initializers",
         ":module",
         ":moving_averages",
         ":utils",

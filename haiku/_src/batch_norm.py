@@ -19,6 +19,7 @@ import types
 from typing import Optional, Sequence
 
 from haiku._src import base
+from haiku._src import initializers
 from haiku._src import module
 from haiku._src import moving_averages
 from haiku._src import utils
@@ -29,10 +30,10 @@ import numpy as np
 # If you are forking replace this with `import haiku as hk`.
 hk = types.ModuleType("haiku")
 hk.get_parameter = base.get_parameter
-hk.Initializer = base.Initializer
+hk.initializers = initializers
 hk.Module = module.Module
 hk.ExponentialMovingAverage = moving_averages.ExponentialMovingAverage
-del base, module, moving_averages
+del base, initializers, module, moving_averages
 
 
 class BatchNorm(hk.Module):
@@ -64,8 +65,8 @@ class BatchNorm(hk.Module):
       create_offset: bool,
       decay_rate: float,
       eps: float = 1e-5,
-      scale_init: Optional[hk.Initializer] = None,
-      offset_init: Optional[hk.Initializer] = None,
+      scale_init: Optional[hk.initializers.Initializer] = None,
+      offset_init: Optional[hk.initializers.Initializer] = None,
       axis: Optional[Sequence[int]] = None,
       cross_replica_axis: Optional[str] = None,
       data_format: str = "channels_last",

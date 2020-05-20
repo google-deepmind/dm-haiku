@@ -428,9 +428,9 @@ class GRU(RNNCore):
 
   def __init__(self,
                hidden_size,
-               w_i_init: base.Initializer = None,
-               w_h_init: base.Initializer = None,
-               b_init: base.Initializer = None,
+               w_i_init: initializers.Initializer = None,
+               w_h_init: initializers.Initializer = None,
+               b_init: initializers.Initializer = None,
                name=None):
     super().__init__(name=name)
     self.hidden_size = hidden_size

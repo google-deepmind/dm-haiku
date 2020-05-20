@@ -19,6 +19,7 @@ import types
 from typing import Optional, Sequence
 
 from haiku._src import base
+from haiku._src import initializers
 from haiku._src import module
 from haiku._src import utils
 from haiku._src.typing import Shape, FloatLike  # pylint: disable=g-multiple-import
@@ -27,7 +28,7 @@ import jax.numpy as jnp
 # If you are forking replace this block with `import haiku as hk`.
 hk = types.ModuleType("haiku")
 hk.get_parameter = base.get_parameter
-hk.Initializer = base.Initializer
+hk.initializers = initializers
 hk.Module = module.Module
 del base, module
 
@@ -75,7 +76,7 @@ class Bias(hk.Module):
       self,
       output_size: Optional[Shape] = None,
       bias_dims: Optional[Sequence[int]] = None,
-      b_init: Optional[hk.Initializer] = None,
+      b_init: Optional[hk.initializers.Initializer] = None,
       name: Optional[str] = None,
   ):
     """Constructs a ``Bias`` module that supports broadcasting.

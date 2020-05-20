@@ -20,6 +20,7 @@ from typing import Callable, Iterable, Optional
 
 from haiku._src import base
 from haiku._src import basic
+from haiku._src import initializers
 from haiku._src import module
 import jax
 import jax.numpy as jnp
@@ -27,7 +28,7 @@ import jax.numpy as jnp
 # If forking replace this block with `import haiku as hk`.
 hk = types.ModuleType("haiku")
 hk.Module = module.Module
-hk.Initializer = base.Initializer
+hk.initializers = initializers
 hk.get_parameter = base.get_parameter
 hk.PRNGSequence = base.PRNGSequence
 hk.Linear = basic.Linear
@@ -41,8 +42,8 @@ class MLP(hk.Module):
   def __init__(
       self,
       output_sizes: Iterable[int],
-      w_init: Optional[hk.Initializer] = None,
-      b_init: Optional[hk.Initializer] = None,
+      w_init: Optional[hk.initializers.Initializer] = None,
+      b_init: Optional[hk.initializers.Initializer] = None,
       with_bias: bool = True,
       activation: Callable[[jnp.ndarray], jnp.ndarray] = jax.nn.relu,
       activate_final: bool = False,

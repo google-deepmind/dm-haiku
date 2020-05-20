@@ -272,10 +272,8 @@ class Identity(Initializer):
     if len(shape) < 2:
       raise ValueError('Identity initializer requires at least a 2D shape.')
     elif len(shape) == 2:
-      initializer = jnp.eye(num_rows=shape[0], num_columns=shape[1], dtype=dtype)
+      initializer = jnp.eye(shape[0], shape[1], dtype=dtype)
     else:
-      initializer = jnp.eye(
-        num_rows=shape[-2],
-        num_columns=shape[-1],
-        dtype=dtype).broacast_to(shape[:-2] + shape[-2:])
+      identity = jnp.eye(shape[-2], shape[-1], dtype=dtype)
+      initializer = jnp.broadcast_to(identity, shape[:-2] + shape[-2:])
     return self.gain * initializer

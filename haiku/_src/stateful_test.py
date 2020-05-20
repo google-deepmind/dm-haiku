@@ -16,6 +16,7 @@
 """Tests for haiku._src.stateful."""
 
 from absl.testing import absltest
+from absl.testing import parameterized
 from haiku._src import base
 from haiku._src import module
 from haiku._src import stateful
@@ -27,7 +28,7 @@ import jax.numpy as jnp
 import numpy as np
 
 
-class StatefulTest(absltest.TestCase):
+class StatefulTest(parameterized.TestCase):
 
   @test_utils.transform_and_run
   def test_grad(self):
@@ -170,6 +171,52 @@ class StatefulTest(absltest.TestCase):
     x = jnp.array(3.)
     with self.assertRaises(ValueError, msg="Use jax.cond() instead"):
       stateful.cond(x == 2, x, lambda x: x**2, x, lambda x: (x + 1)**2)
+
+  @test_utils.transform_and_run
+  def test_difference_empty(self):
+    before = stateful.internal_state()
+    after = stateful.internal_state()
+    self.assertEmpty(jax.tree_leaves(stateful.difference(before, after)))
+
+  @parameterized.parameters(base.get_parameter, base.get_state)
+  @test_utils.transform_and_run(run_apply=False)
+  def test_difference_new(self, get_x):
+    get_x("a", [], init=jnp.zeros)
+    before = stateful.internal_state()
+    b = get_x("b", [], init=jnp.zeros)
+    after = stateful.internal_state()
+    diff = stateful.difference(before, after)
+    if get_x == base.get_state:
+      self.assertEmpty(diff.params)
+      self.assertEqual(diff.state, {"~": {"a": None,
+                                          "b": base.StatePair(b, b)}})
+    else:
+      self.assertEqual(diff.params, {"~": {"a": None, "b": b}})
+      self.assertEmpty(diff.state)
+    self.assertIsNone(diff.rng)
+
+  @test_utils.transform_and_run(run_apply=False)
+  def test_difference_update_state(self):
+    base.get_state("a", [], init=jnp.zeros)
+    base.get_state("b", [], init=jnp.zeros)
+    before = stateful.internal_state()
+    base.set_state("b", jnp.ones([]))
+    after = stateful.internal_state()
+    diff = stateful.difference(before, after)
+    self.assertEmpty(diff.params)
+    self.assertEqual(diff.state, {"~": {"a": None,
+                                        "b": base.StatePair(0., 1.)}})
+    self.assertIsNone(diff.rng)
+
+  @test_utils.transform_and_run(run_apply=False)
+  def test_difference_rng(self):
+    before = stateful.internal_state()
+    base.next_rng_key()
+    after = stateful.internal_state()
+    diff = stateful.difference(before, after)
+    self.assertEmpty(diff.params)
+    self.assertEmpty(diff.state)
+    self.assertIsNotNone(diff.rng)
 
 
 def _callback_prim(forward, backward):

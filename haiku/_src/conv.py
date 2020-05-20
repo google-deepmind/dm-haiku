@@ -15,176 +15,201 @@
 # ==============================================================================
 """Convolutional Haiku modules."""
 
+import types
+from typing import Optional, Sequence, Union, Tuple
+
 from haiku._src import base
 from haiku._src import initializers
 from haiku._src import module
 from haiku._src import pad
 from haiku._src import utils
+from haiku._src.typing import PadFnOrFns
 from jax import lax
 import jax.numpy as jnp
 import numpy as np
 
+# If you are forking replace this with `import haiku as hk`.
+hk = types.ModuleType("haiku")
+hk.initializers = initializers
+hk.pad = pad
+hk.get_parameter = base.get_parameter
+hk.Module = module.Module
+del base, module, initializers, pad
 
-def to_dimension_numbers(num_spatial_dims: int, channels_last: bool,
-                         transpose: bool) -> lax.ConvDimensionNumbers:
+
+def to_dimension_numbers(
+    num_spatial_dims: int,
+    channels_last: bool,
+    transpose: bool,
+) -> lax.ConvDimensionNumbers:
   """Create a `lax.ConvDimensionNumbers` for the given inputs."""
   num_dims = num_spatial_dims + 2
-  image_dn = [0]
+
   if channels_last:
-    image_dn.append(num_dims-1)
-    spatial_dims = range(1, num_dims-1)
+    spatial_dims = tuple(range(1, num_dims - 1))
+    image_dn = (0, num_dims - 1) + spatial_dims
   else:
-    image_dn.append(1)
-    spatial_dims = range(2, num_dims)
-  image_dn = image_dn + list(spatial_dims)
+    spatial_dims = tuple(range(2, num_dims))
+    image_dn = (0, 1) + spatial_dims
 
   if transpose:
-    kernel_dn = [num_dims-2, num_dims-1]
+    kernel_dn = (num_dims - 2, num_dims - 1) + tuple(range(num_dims - 2))
   else:
-    kernel_dn = [num_dims - 1, num_dims - 2]
-  kernel_dn = kernel_dn + list(range(num_dims - 2))
+    kernel_dn = (num_dims - 1, num_dims - 2) + tuple(range(num_dims - 2))
 
-  return lax.ConvDimensionNumbers(
-      tuple(image_dn), tuple(kernel_dn), tuple(image_dn))
+  return lax.ConvDimensionNumbers(lhs_spec=image_dn, rhs_spec=kernel_dn,
+                                  out_spec=image_dn)
 
 
-class ConvND(module.Module):
-  """A general N-dimensional convolutional module."""
+class ConvND(hk.Module):
+  """General N-dimensional convolutional."""
 
-  def __init__(self,
-               num_spatial_dims,
-               output_channels,
-               kernel_shape,
-               stride=1,
-               rate=1,
-               padding="SAME",
-               with_bias=True,
-               w_init=None,
-               b_init=None,
-               data_format="channels_last",
-               mask=None,
-               name=None):
-    """Constructs a `ConvND` module.
+  def __init__(
+      self,
+      num_spatial_dims: int,
+      output_channels: int,
+      kernel_shape: Union[int, Sequence[int]],
+      stride: Union[int, Sequence[int]] = 1,
+      rate: Union[int, Sequence[int]] = 1,
+      padding: Union[str, Sequence[Tuple[int, int]], PadFnOrFns] = "SAME",
+      with_bias: bool = True,
+      w_init: Optional[hk.initializers.Initializer] = None,
+      b_init: Optional[hk.initializers.Initializer] = None,
+      data_format: str = "channels_last",
+      mask: Optional[jnp.ndarray] = None,
+      name: Optional[str] = None,
+  ):
+    """Initializes the module.
 
     Args:
       num_spatial_dims: The number of spatial dimensions of the input.
       output_channels: Number of output channels.
       kernel_shape: The shape of the kernel. Either an integer or a sequence of
-        length `num_spatial_dims`.
+        length ``num_spatial_dims``.
       stride: Optional stride for the kernel. Either an integer or a sequence of
-        length `num_spatial_dims`. Defaults to 1.
+        length ``num_spatial_dims``. Defaults to 1.
       rate: Optional kernel dilation rate. Either an integer or a sequence of
-        length `num_spatial_dims`. 1 corresponds to standard ND convolution,
-        `rate > 1` corresponds to dilated convolution. Defaults to 1.
-      padding: Optional padding algorithm. Either "VALID" or "SAME" or
-        a callable or sequence of callables of size `num_spatial_dims`. Any
-        callables must take a single integer argument equal to the effective
-        kernel size and return a list of two integers representing the padding
-        before and after. See haiku.pad.* for more details and example
-        functions. Defaults to "SAME". See:
+        length ``num_spatial_dims``. 1 corresponds to standard ND convolution,
+        ``rate > 1`` corresponds to dilated convolution. Defaults to 1.
+      padding: Optional padding algorithm. Either ``VALID`` or ``SAME`` or a
+        sequence of n ``(low, high)`` integer pairs that give the padding to
+        apply before and after each spatial dimension. or a callable or sequence
+        of callables of size ``num_spatial_dims``. Any callables must take a
+        single integer argument equal to the effective kernel size and return a
+        sequence of two integers representing the padding before and after. See
+        ``haiku.pad.*`` for more details and example functions. Defaults to
+        ``SAME``. See:
         https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
       with_bias: Whether to add a bias. By default, true.
       w_init: Optional weight initialization. By default, truncated normal.
       b_init: Optional bias initialization. By default, zeros.
       data_format: The data format of the input.  Can be either
-        `channels_first`, `channels_last`, `N...C` or `NC...`. By default,
-        `channels_last`.
+        ``channels_first``, ``channels_last``, ``N...C`` or ``NC...``. By
+        default, ``channels_last``.
       mask: Optional mask of the weights.
       name: The name of the module.
     """
-    super(ConvND, self).__init__(name=name)
-
+    super().__init__(name=name)
     if num_spatial_dims <= 0:
       raise ValueError(
           "We only support convolution operations for `num_spatial_dims` "
           f"greater than 0, received num_spatial_dims={num_spatial_dims}.")
-    self._num_spatial_dims = num_spatial_dims
-    self._output_channels = output_channels
-    self._kernel_shape = utils.replicate(kernel_shape, num_spatial_dims,
-                                         "kernel_shape")
-    self._with_bias = with_bias
-    self._stride = utils.replicate(stride, num_spatial_dims, "strides")
-    self._w_init = w_init
-    self._b_init = b_init or jnp.zeros
-    self._mask = mask
-    self._lhs_dilation = utils.replicate(1, num_spatial_dims, "lhs_dilation")
-    self._kernel_dilation = utils.replicate(rate, num_spatial_dims,
-                                            "kernel_dilation")
-    self._data_format = data_format
-    self._channel_index = utils.get_channel_index(data_format)
-    self._dn = to_dimension_numbers(num_spatial_dims,
-                                    channels_last=(self._channel_index == -1),
-                                    transpose=False)
+
+    self.num_spatial_dims = num_spatial_dims
+    self.output_channels = output_channels
+    self.kernel_shape = (
+        utils.replicate(kernel_shape, num_spatial_dims, "kernel_shape"))
+    self.with_bias = with_bias
+    self.stride = utils.replicate(stride, num_spatial_dims, "strides")
+    self.w_init = w_init
+    self.b_init = b_init or jnp.zeros
+    self.mask = mask
+    self.lhs_dilation = utils.replicate(1, num_spatial_dims, "lhs_dilation")
+    self.kernel_dilation = (
+        utils.replicate(rate, num_spatial_dims, "kernel_dilation"))
+    self.data_format = data_format
+    self.channel_index = utils.get_channel_index(data_format)
+    self.dimension_numbers = to_dimension_numbers(
+        num_spatial_dims, channels_last=(self.channel_index == -1),
+        transpose=False)
 
     if isinstance(padding, str):
-      self._padding = padding.upper()
+      self.padding = padding.upper()
     else:
-      self._padding = pad.create(
-          padding=padding,
-          kernel=self._kernel_shape,
-          rate=self._kernel_dilation,
-          n=self._num_spatial_dims)
+      self.padding = hk.pad.create(padding=padding,
+                                   kernel=self.kernel_shape,
+                                   rate=self.kernel_dilation,
+                                   n=self.num_spatial_dims)
 
-  def __call__(self, inputs):
-    """Connects `ConvND` layer.
+  def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:
+    """Connects ``ConvND`` layer.
 
     Args:
-      inputs: A rank-N+2 array with shape [N, spatial_dims, C].
+      inputs: A rank-N+2 array with shape ``[N, spatial_dims, C]``.
 
     Returns:
-      A rank-N+2 array with shape [N, spatial_dims, output_channels].
+      A rank-N+2 array with shape ``[N, spatial_dims, output_channels]``.
     """
-    if len(inputs.shape) != self._num_spatial_dims + 2:
-      raise ValueError("Input to ConvND needs to have rank {}, but input "
-                       "has shape {}.".format(
-                           self._num_spatial_dims + 2, inputs.shape))
-    weight_shape = self._kernel_shape + (inputs.shape[self._channel_index],
-                                         self._output_channels)
+    required_rank = self.num_spatial_dims + 2
+    if inputs.ndim != required_rank:
+      raise ValueError(f"Input to ConvND needs to have rank {required_rank}, "
+                       f"but input has shape {inputs.shape}.")
 
-    fan_in_shape = np.prod(weight_shape[:-1])
-    stddev = 1. / np.sqrt(fan_in_shape)
-    w_init = self._w_init or initializers.TruncatedNormal(stddev=stddev)
-    w = base.get_parameter("w", weight_shape, inputs.dtype, init=w_init)
+    w_shape = self.kernel_shape + (inputs.shape[self.channel_index],
+                                   self.output_channels)
 
-    if self._mask is not None:
-      if self._mask.shape != w.shape:
-        raise ValueError("Mask needs to have the same shape as weights. "
-                         "Shapes are: {}, {}".format(self._mask.shape, w.shape))
-      w *= self._mask
-    result = lax.conv_general_dilated(
-        inputs,
-        w,
-        self._stride,
-        self._padding,
-        lhs_dilation=self._lhs_dilation,
-        rhs_dilation=self._kernel_dilation,
-        dimension_numbers=self._dn)
-    if self._with_bias:
-      if self._channel_index == -1:
-        bias_shape = (self._output_channels,)
+    if self.mask is not None and self.mask.shape != w_shape:
+      raise ValueError("Mask needs to have the same shape as weights. "
+                       f"Shapes are: {self.mask.shape}, {w_shape}")
+
+    w_init = self.w_init
+    if w_init is None:
+      fan_in_shape = np.prod(w_shape[:-1])
+      stddev = 1. / np.sqrt(fan_in_shape)
+      w_init = hk.initializers.TruncatedNormal(stddev=stddev)
+    w = hk.get_parameter("w", w_shape, inputs.dtype, init=w_init)
+
+    if self.mask is not None:
+      w *= self.mask
+
+    out = lax.conv_general_dilated(inputs,
+                                   w,
+                                   window_strides=self.stride,
+                                   padding=self.padding,
+                                   lhs_dilation=self.lhs_dilation,
+                                   rhs_dilation=self.kernel_dilation,
+                                   dimension_numbers=self.dimension_numbers)
+
+    if self.with_bias:
+      if self.channel_index == -1:
+        bias_shape = (self.output_channels,)
       else:
-        bias_shape = (self._output_channels,) + (1,)*self._num_spatial_dims
-      b = base.get_parameter("b", bias_shape, inputs.dtype, init=self._b_init)
-      result = result + jnp.broadcast_to(b, result.shape)
-    return result
+        bias_shape = (self.output_channels,) + (1,) * self.num_spatial_dims
+      b = hk.get_parameter("b", bias_shape, inputs.dtype, init=self.b_init)
+      b = jnp.broadcast_to(b, out.shape)
+      out = out + b
+
+    return out
 
 
 class Conv1D(ConvND):
-  """Conv1D module."""
+  """One dimensional convolution."""
 
-  def __init__(self,
-               output_channels,
-               kernel_shape,
-               stride=1,
-               rate=1,
-               padding="SAME",
-               with_bias=True,
-               w_init=None,
-               b_init=None,
-               data_format="NWC",
-               mask=None,
-               name=None):
-    """Initializes a Conv1D module.
+  def __init__(
+      self,
+      output_channels: int,
+      kernel_shape: Union[int, Sequence[int]],
+      stride: Union[int, Sequence[int]] = 1,
+      rate: Union[int, Sequence[int]] = 1,
+      padding: Union[str, Sequence[Tuple[int, int]], PadFnOrFns] = "SAME",
+      with_bias: bool = True,
+      w_init: Optional[hk.initializers.Initializer] = None,
+      b_init: Optional[hk.initializers.Initializer] = None,
+      data_format: str = "NWC",
+      mask: Optional[jnp.ndarray] = None,
+      name: Optional[str] = None,
+  ):
+    """Initializes the module.
 
     Args:
       output_channels: Number of output channels.
@@ -194,23 +219,23 @@ class Conv1D(ConvND):
         length 1. Defaults to 1.
       rate: Optional kernel dilation rate. Either an integer or a sequence of
         length 1. 1 corresponds to standard ND convolution,
-        `rate > 1` corresponds to dilated convolution. Defaults to 1.
-      padding: Optional padding algorithm. Either "VALID" or "SAME" or
+        ``rate > 1`` corresponds to dilated convolution. Defaults to 1.
+      padding: Optional padding algorithm. Either ``VALID`` or ``SAME`` or
         a callable or sequence of callables of length 1. Any callables must
         take a single integer argument equal to the effective kernel size and
         return a list of two integers representing the padding before and after.
         See haiku.pad.* for more details and example functions.
-        Defaults to "SAME". See:
+        Defaults to ``SAME``. See:
         https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
       with_bias: Whether to add a bias. By default, true.
       w_init: Optional weight initialization. By default, truncated normal.
       b_init: Optional bias initialization. By default, zeros.
-      data_format: The data format of the input. Either `NWC` or `NCW`. By
-        default, `NWC`.
+      data_format: The data format of the input. Either ``NWC`` or ``NCW``. By
+        default, ``NWC``.
       mask: Optional mask of the weights.
       name: The name of the module.
     """
-    super(Conv1D, self).__init__(
+    super().__init__(
         num_spatial_dims=1,
         output_channels=output_channels,
         kernel_shape=kernel_shape,
@@ -226,21 +251,23 @@ class Conv1D(ConvND):
 
 
 class Conv2D(ConvND):
-  """Conv2D module."""
+  """Two dimensional convolution."""
 
-  def __init__(self,
-               output_channels,
-               kernel_shape,
-               stride=1,
-               rate=1,
-               padding="SAME",
-               with_bias=True,
-               w_init=None,
-               b_init=None,
-               data_format="NHWC",
-               mask=None,
-               name=None):
-    """Initializes a Conv2D module.
+  def __init__(
+      self,
+      output_channels: int,
+      kernel_shape: Union[int, Sequence[int]],
+      stride: Union[int, Sequence[int]] = 1,
+      rate: Union[int, Sequence[int]] = 1,
+      padding: Union[str, Sequence[Tuple[int, int]], PadFnOrFns] = "SAME",
+      with_bias: bool = True,
+      w_init: Optional[hk.initializers.Initializer] = None,
+      b_init: Optional[hk.initializers.Initializer] = None,
+      data_format: str = "NHWC",
+      mask: Optional[jnp.ndarray] = None,
+      name: Optional[str] = None,
+  ):
+    """Initializes the module.
 
     Args:
       output_channels: Number of output channels.
@@ -250,23 +277,23 @@ class Conv2D(ConvND):
         length 2. Defaults to 1.
       rate: Optional kernel dilation rate. Either an integer or a sequence of
         length 2. 1 corresponds to standard ND convolution,
-        `rate > 1` corresponds to dilated convolution. Defaults to 1.
-      padding: Optional padding algorithm. Either "VALID" or "SAME" or
+        ``rate > 1`` corresponds to dilated convolution. Defaults to 1.
+      padding: Optional padding algorithm. Either ``VALID`` or ``SAME`` or
         a callable or sequence of callables of length 2. Any callables must
         take a single integer argument equal to the effective kernel size and
         return a list of two integers representing the padding before and after.
         See haiku.pad.* for more details and example functions.
-        Defaults to "SAME". See:
+        Defaults to ``SAME``. See:
         https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
       with_bias: Whether to add a bias. By default, true.
       w_init: Optional weight initialization. By default, truncated normal.
       b_init: Optional bias initialization. By default, zeros.
-      data_format: The data format of the input. Either `NHWC` or `NCHW`. By
-        default, `NHWC`.
+      data_format: The data format of the input. Either ``NHWC`` or ``NCHW``. By
+        default, ``NHWC``.
       mask: Optional mask of the weights.
       name: The name of the module.
     """
-    super(Conv2D, self).__init__(
+    super().__init__(
         num_spatial_dims=2,
         output_channels=output_channels,
         kernel_shape=kernel_shape,
@@ -282,21 +309,23 @@ class Conv2D(ConvND):
 
 
 class Conv3D(ConvND):
-  """Conv3D module."""
+  """Three dimensional convolution."""
 
-  def __init__(self,
-               output_channels,
-               kernel_shape,
-               stride=1,
-               rate=1,
-               padding="SAME",
-               with_bias=True,
-               w_init=None,
-               b_init=None,
-               data_format="NDHWC",
-               mask=None,
-               name=None):
-    """Initializes a Conv3D module.
+  def __init__(
+      self,
+      output_channels: int,
+      kernel_shape: Union[int, Sequence[int]],
+      stride: Union[int, Sequence[int]] = 1,
+      rate: Union[int, Sequence[int]] = 1,
+      padding: Union[str, Sequence[Tuple[int, int]], PadFnOrFns] = "SAME",
+      with_bias: bool = True,
+      w_init: Optional[hk.initializers.Initializer] = None,
+      b_init: Optional[hk.initializers.Initializer] = None,
+      data_format: str = "NDHWC",
+      mask: Optional[jnp.ndarray] = None,
+      name: Optional[str] = None,
+  ):
+    """Initializes the module.
 
     Args:
       output_channels: Number of output channels.
@@ -307,22 +336,22 @@ class Conv3D(ConvND):
       rate: Optional kernel dilation rate. Either an integer or a sequence of
         length 3. 1 corresponds to standard ND convolution,
         `rate > 1` corresponds to dilated convolution. Defaults to 1.
-      padding: Optional padding algorithm. Either "VALID" or "SAME" or
+      padding: Optional padding algorithm. Either ``VALID`` or ``SAME`` or
         a callable or sequence of callables of length 3. Any callables must
         take a single integer argument equal to the effective kernel size and
         return a list of two integers representing the padding before and after.
         See haiku.pad.* for more details and example functions.
-        Defaults to "SAME". See:
+        Defaults to ``SAME``. See:
         https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
       with_bias: Whether to add a bias. By default, true.
       w_init: Optional weight initialization. By default, truncated normal.
       b_init: Optional bias initialization. By default, zeros.
-      data_format: The data format of the input. Either `NDHWC` or `NCDHW`. By
-        default, `NDHWC`.
+      data_format: The data format of the input. Either ``NDHWC`` or ``NCDHW``.
+        By default, ``NDHWC``.
       mask: Optional mask of the weights.
       name: The name of the module.
     """
-    super(Conv3D, self).__init__(
+    super().__init__(
         num_spatial_dims=3,
         output_channels=output_channels,
         kernel_shape=kernel_shape,
@@ -337,30 +366,32 @@ class Conv3D(ConvND):
         name=name)
 
 
-class ConvNDTranspose(module.Module):
-  """ConvNDTranspose module."""
+class ConvNDTranspose(hk.Module):
+  """General n-dimensional transposed convolution (aka. deconvolution)."""
 
-  def __init__(self,
-               num_spatial_dims,
-               output_channels,
-               kernel_shape,
-               stride=1,
-               padding="SAME",
-               with_bias=True,
-               w_init=None,
-               b_init=None,
-               data_format="channels_last",
-               mask=None,
-               name=None):
-    """Initializes a Conv2DTranspose module.
+  def __init__(
+      self,
+      num_spatial_dims: int,
+      output_channels: int,
+      kernel_shape: Union[int, Sequence[int]],
+      stride: Union[int, Sequence[int]] = 1,
+      padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
+      with_bias: bool = True,
+      w_init: Optional[hk.initializers.Initializer] = None,
+      b_init: Optional[hk.initializers.Initializer] = None,
+      data_format: str = "channels_last",
+      mask: Optional[jnp.ndarray] = None,
+      name: str = None,
+  ):
+    """Initializes the module.
 
     Args:
       num_spatial_dims: The number of spatial dimensions of the input.
       output_channels: Number of output channels.
       kernel_shape: The shape of the kernel. Either an integer or a sequence of
-        length `num_spatial_dims`.
+        length ``num_spatial_dims``.
       stride: Optional stride for the kernel. Either an integer or a sequence of
-        length `num_spatial_dims`. Defaults to 1.
+        length ``num_spatial_dims``. Defaults to 1.
       padding: Optional padding algorithm. Either "VALID" or "SAME".
         Defaults to "SAME". See:
         https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
@@ -368,93 +399,101 @@ class ConvNDTranspose(module.Module):
       w_init: Optional weight initialization. By default, truncated normal.
       b_init: Optional bias initialization. By default, zeros.
       data_format: The data format of the input. Can be either
-        `channels_first`, `channels_last`, `N...C` or `NC...`. By default,
-        `channels_last`.
+        ``channels_first``, ``channels_last``, ``N...C`` or ``NC...``. By
+        default, ``channels_last``.
       mask: Optional mask of the weights.
       name: The name of the module.
     """
-    super(ConvNDTranspose, self).__init__(name=name)
+    super().__init__(name=name)
 
     if num_spatial_dims <= 0:
       raise ValueError(
           "We only support convolution operations for `num_spatial_dims` "
           f"greater than 0, received num_spatial_dims={num_spatial_dims}.")
-    self._num_spatial_dims = num_spatial_dims
-    self._output_channels = output_channels
-    self._kernel_shape = utils.replicate(kernel_shape, num_spatial_dims,
-                                         "kernel_shape")
-    self._with_bias = with_bias
-    self._stride = utils.replicate(stride, num_spatial_dims, "strides")
-    self._w_init = w_init
-    self._b_init = b_init or jnp.zeros
-    self._mask = mask
-    self._padding = padding
 
-    self._data_format = data_format
-    self._channel_index = utils.get_channel_index(data_format)
-    self._dn = to_dimension_numbers(num_spatial_dims,
-                                    channels_last=(self._channel_index == -1),
-                                    transpose=True)
+    self.num_spatial_dims = num_spatial_dims
+    self.output_channels = output_channels
+    self.kernel_shape = (
+        utils.replicate(kernel_shape, num_spatial_dims, "kernel_shape"))
+    self.with_bias = with_bias
+    self.stride = utils.replicate(stride, num_spatial_dims, "strides")
+    self.w_init = w_init
+    self.b_init = b_init or jnp.zeros
+    self.mask = mask
+    # TODO(tomhennigan) Make use of hk.pad.create here?
+    self.padding = padding
+    self.data_format = data_format
+    self.channel_index = utils.get_channel_index(data_format)
+    self.dimension_numbers = to_dimension_numbers(
+        num_spatial_dims, channels_last=(self.channel_index == -1),
+        transpose=True)
 
-  def __call__(self, inputs):
-    """Connects Conv2DTranspose layer.
+  def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:
+    """Computes the transposed convolution of the input.
 
     Args:
-      inputs: A rank-N+2 array with shape [N, spatial_dims, C].
+      inputs: A rank-N+2 array with shape ``[N, spatial_dims, C]``.
 
     Returns:
-      A rank-N+2 array with shape [N, spatial_dims, output_channels].
+      A rank-N+2 array with shape ``[N, spatial_dims, output_channels]``.
     """
-    if len(inputs.shape) != self._num_spatial_dims + 2:
-      raise ValueError("Input to ConvND needs to have rank {}, but input "
-                       "has shape {}.".format(
-                           self._num_spatial_dims + 2, inputs.shape))
+    required_rank = self.num_spatial_dims + 2
+    if inputs.ndim != required_rank:
+      raise ValueError(f"Input to ConvND needs to have rank {required_rank}, "
+                       f"but input has shape {inputs.shape}.")
 
-    input_channels = inputs.shape[self._channel_index]
-    weight_shape = self._kernel_shape + (self._output_channels, input_channels)
-    fan_in_shape = self._kernel_shape + (input_channels,)
+    input_channels = inputs.shape[self.channel_index]
+    w_shape = self.kernel_shape + (self.output_channels, input_channels)
 
-    stddev = 1. / np.sqrt(np.prod(fan_in_shape))
-    w_init = self._w_init or initializers.TruncatedNormal(stddev=stddev)
-    w = base.get_parameter("w", weight_shape, inputs.dtype, init=w_init)
+    if self.mask is not None and self.mask.shape != w_shape:
+      raise ValueError("Mask needs to have the same shape as weights. "
+                       f"Shapes are: {self.mask.shape}, {w_shape}")
 
-    if self._mask is not None:
-      if self._mask.shape != w.shape:
-        raise ValueError("Mask needs to have the same shape as weights. "
-                         "Shapes are: {}, {}".format(self._mask.shape, w.shape))
-      w *= self._mask
+    w_init = self.w_init
+    if w_init is None:
+      fan_in_shape = self.kernel_shape + (input_channels,)
+      stddev = 1. / np.sqrt(np.prod(fan_in_shape))
+      w_init = hk.initializers.TruncatedNormal(stddev=stddev)
+    w = hk.get_parameter("w", w_shape, inputs.dtype, init=w_init)
 
-    result = lax.conv_transpose(
-        inputs,
-        w,
-        self._stride,
-        self._padding,
-        dimension_numbers=self._dn)
-    if self._with_bias:
-      if self._channel_index == -1:
-        bias_shape = (self._output_channels,)
+    if self.mask is not None:
+      w = w * self.mask
+
+    out = lax.conv_transpose(inputs,
+                             w,
+                             strides=self.stride,
+                             padding=self.padding,
+                             dimension_numbers=self.dimension_numbers)
+
+    if self.with_bias:
+      if self.channel_index == -1:
+        bias_shape = (self.output_channels,)
       else:
-        bias_shape = (self._output_channels,) + (1,)*self._num_spatial_dims
-      b = base.get_parameter("b", bias_shape, init=self._b_init)
-      result = result + jnp.broadcast_to(b, result.shape)
-    return result
+        bias_shape = (self.output_channels,) + (1,) * self.num_spatial_dims
+      b = hk.get_parameter("b", bias_shape, init=self.b_init)
+      b = jnp.broadcast_to(b, out.shape)
+      out = out + b
+
+    return out
 
 
 class Conv1DTranspose(ConvNDTranspose):
-  """Conv1DTranspose module."""
+  """One dimensional transposed convolution (aka. deconvolution)."""
 
-  def __init__(self,
-               output_channels,
-               kernel_shape,
-               stride=1,
-               padding="SAME",
-               with_bias=True,
-               w_init=None,
-               b_init=None,
-               data_format="NWC",
-               mask=None,
-               name=None):
-    """Initializes a Conv1DTranspose module.
+  def __init__(
+      self,
+      output_channels: int,
+      kernel_shape: Union[int, Sequence[int]],
+      stride: Union[int, Sequence[int]] = 1,
+      padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
+      with_bias: bool = True,
+      w_init: Optional[hk.initializers.Initializer] = None,
+      b_init: Optional[hk.initializers.Initializer] = None,
+      data_format: str = "NWC",
+      mask: Optional[jnp.ndarray] = None,
+      name: Optional[str] = None,
+  ):
+    """Initializes the module.
 
     Args:
       output_channels: Number of output channels.
@@ -462,18 +501,18 @@ class Conv1DTranspose(ConvNDTranspose):
         length 1.
       stride: Optional stride for the kernel. Either an integer or a sequence of
         length 1. Defaults to 1.
-      padding: Optional padding algorithm. Either "VALID" or "SAME".
-        Defaults to "SAME". See:
+      padding: Optional padding algorithm. Either ``VALID`` or ``SAME``.
+        Defaults to ``SAME``. See:
         https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
       with_bias: Whether to add a bias. By default, true.
       w_init: Optional weight initialization. By default, truncated normal.
       b_init: Optional bias initialization. By default, zeros.
-      data_format: The data format of the input. Either `NWC` or `NCW`. By
-        default, `NWC`.
+      data_format: The data format of the input. Either ``NWC`` or ``NCW``. By
+        default, ``NWC``.
       mask: Optional mask of the weights.
       name: The name of the module.
     """
-    super(Conv1DTranspose, self).__init__(
+    super().__init__(
         num_spatial_dims=1,
         output_channels=output_channels,
         kernel_shape=kernel_shape,
@@ -488,20 +527,22 @@ class Conv1DTranspose(ConvNDTranspose):
 
 
 class Conv2DTranspose(ConvNDTranspose):
-  """Conv2DTranspose module."""
+  """Two dimensional transposed convolution (aka. deconvolution)."""
 
-  def __init__(self,
-               output_channels,
-               kernel_shape,
-               stride=1,
-               padding="SAME",
-               with_bias=True,
-               w_init=None,
-               b_init=None,
-               data_format="NHWC",
-               mask=None,
-               name=None):
-    """Initializes a Conv2DTranspose module.
+  def __init__(
+      self,
+      output_channels: int,
+      kernel_shape: Union[int, Sequence[int]],
+      stride: Union[int, Sequence[int]] = 1,
+      padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
+      with_bias: bool = True,
+      w_init: Optional[hk.initializers.Initializer] = None,
+      b_init: Optional[hk.initializers.Initializer] = None,
+      data_format: str = "NHWC",
+      mask: Optional[jnp.ndarray] = None,
+      name: Optional[str] = None,
+  ):
+    """Initializes the module.
 
     Args:
       output_channels: Number of output channels.
@@ -509,18 +550,18 @@ class Conv2DTranspose(ConvNDTranspose):
         length 2.
       stride: Optional stride for the kernel. Either an integer or a sequence of
         length 2. Defaults to 1.
-      padding: Optional padding algorithm. Either "VALID" or "SAME".
-        Defaults to "SAME". See:
+      padding: Optional padding algorithm. Either ``VALID`` or ``SAME``.
+        Defaults to ``SAME``. See:
         https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
       with_bias: Whether to add a bias. By default, true.
       w_init: Optional weight initialization. By default, truncated normal.
       b_init: Optional bias initialization. By default, zeros.
-      data_format: The data format of the input. Either `NHWC` or `NCHW`. By
-        default, `NHWC`.
+      data_format: The data format of the input. Either ``NHWC`` or ``NCHW``. By
+        default, ``NHWC``.
       mask: Optional mask of the weights.
       name: The name of the module.
     """
-    super(Conv2DTranspose, self).__init__(
+    super().__init__(
         num_spatial_dims=2,
         output_channels=output_channels,
         kernel_shape=kernel_shape,
@@ -535,20 +576,22 @@ class Conv2DTranspose(ConvNDTranspose):
 
 
 class Conv3DTranspose(ConvNDTranspose):
-  """Conv3DTranspose module."""
+  """Three dimensional transposed convolution (aka. deconvolution)."""
 
-  def __init__(self,
-               output_channels,
-               kernel_shape,
-               stride=1,
-               padding="SAME",
-               with_bias=True,
-               w_init=None,
-               b_init=None,
-               data_format="NDHWC",
-               mask=None,
-               name=None):
-    """Initializes a Conv3DTranspose module.
+  def __init__(
+      self,
+      output_channels: int,
+      kernel_shape: Union[int, Sequence[int]],
+      stride: Union[int, Sequence[int]] = 1,
+      padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
+      with_bias: bool = True,
+      w_init: Optional[hk.initializers.Initializer] = None,
+      b_init: Optional[hk.initializers.Initializer] = None,
+      data_format: str = "NDHWC",
+      mask: Optional[jnp.ndarray] = None,
+      name: Optional[str] = None,
+  ):
+    """Initializes the module.
 
     Args:
       output_channels: Number of output channels.
@@ -556,18 +599,18 @@ class Conv3DTranspose(ConvNDTranspose):
         length 3.
       stride: Optional stride for the kernel. Either an integer or a sequence of
         length 3. Defaults to 1.
-      padding: Optional padding algorithm. Either "VALID" or "SAME".
-        Defaults to "SAME". See:
+      padding: Optional padding algorithm. Either ``VALID`` or ``SAME``.
+        Defaults to ``SAME``. See:
         https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
       with_bias: Whether to add a bias. By default, true.
       w_init: Optional weight initialization. By default, truncated normal.
       b_init: Optional bias initialization. By default, zeros.
-      data_format: The data format of the input. Either `NDHWC` or `NCDHW`. By
-        default, `NDHWC`.
+      data_format: The data format of the input. Either ``NDHWC`` or ``NCDHW``.
+        By default, ``NDHWC``.
       mask: Optional mask of the weights.
       name: The name of the module.
     """
-    super(Conv3DTranspose, self).__init__(
+    super().__init__(
         num_spatial_dims=3,
         output_channels=output_channels,
         kernel_shape=kernel_shape,

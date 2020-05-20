@@ -15,6 +15,8 @@
 # ==============================================================================
 """Haiku implementation of VQ-VAE https://arxiv.org/abs/1711.00937."""
 
+import types
+
 from haiku._src import base
 from haiku._src import initializers
 from haiku._src import module
@@ -24,9 +26,19 @@ from haiku._src.typing import DType
 import jax
 import jax.numpy as jnp
 
+# If forking replace this with `import haiku as hk`.
+hk = types.ModuleType("haiku")
+hk.get_parameter = base.get_parameter
+hk.get_state = base.get_state
+hk.set_state = base.set_state
+hk.initializers = initializers
+hk.ExponentialMovingAverage = moving_averages.ExponentialMovingAverage
+hk.Module = module.Module
+del base, initializers, module, moving_averages
 
-class VectorQuantizer(module.Module):
-  """Sonnet module representing the VQ-VAE layer.
+
+class VectorQuantizer(hk.Module):
+  """Haiku module representing the VQ-VAE layer.
 
   Implements the algorithm presented in
   "Neural Discrete Representation Learning" by van den Oord et al.
@@ -50,12 +62,14 @@ class VectorQuantizer(module.Module):
       equation 4 in the paper - this variable is Beta).
   """
 
-  def __init__(self,
-               embedding_dim: int,
-               num_embeddings: int,
-               commitment_cost: float,
-               dtype: DType = jnp.float32,
-               name: str = None):
+  def __init__(
+      self,
+      embedding_dim: int,
+      num_embeddings: int,
+      commitment_cost: float,
+      dtype: DType = jnp.float32,
+      name: str = None,
+  ):
     """Initializes a VQ-VAE module.
 
     Args:
@@ -67,15 +81,15 @@ class VectorQuantizer(module.Module):
       dtype: dtype for the embeddings variable, defaults to tf.float32.
       name: name of the module.
     """
-    super(VectorQuantizer, self).__init__(name=name)
+    super().__init__(name=name)
     self.embedding_dim = embedding_dim
     self.num_embeddings = num_embeddings
     self.commitment_cost = commitment_cost
 
     embedding_shape = [embedding_dim, num_embeddings]
-    initializer = initializers.VarianceScaling(distribution='uniform')
-    self.embeddings = base.get_parameter('embeddings', embedding_shape, dtype,
-                                         init=initializer)
+    initializer = hk.initializers.VarianceScaling(distribution="uniform")
+    self.embeddings = hk.get_parameter("embeddings", embedding_shape, dtype,
+                                       init=initializer)
 
   def __call__(self, inputs, is_training):
     """Connects the module to some inputs.
@@ -125,12 +139,12 @@ class VectorQuantizer(module.Module):
     perplexity = jnp.exp(-jnp.sum(avg_probs * jnp.log(avg_probs + 1e-10)))
 
     return {
-        'quantize': quantized,
-        'loss': loss,
-        'perplexity': perplexity,
-        'encodings': encodings,
-        'encoding_indices': encoding_indices,
-        'distances': distances,
+        "quantize": quantized,
+        "loss": loss,
+        "perplexity": perplexity,
+        "encodings": encodings,
+        "encoding_indices": encoding_indices,
+        "distances": distances,
     }
 
   def quantize(self, encoding_indices):
@@ -139,11 +153,11 @@ class VectorQuantizer(module.Module):
     return w[encoding_indices]
 
 
-class VectorQuantizerEMA(module.Module):
-  """Sonnet module representing the VQ-VAE layer.
+class VectorQuantizerEMA(hk.Module):
+  """Haiku module representing the VQ-VAE layer.
 
   Implements a slightly modified version of the algorithm presented in
-  'Neural Discrete Representation Learning' by van den Oord et al.
+  "Neural Discrete Representation Learning" by van den Oord et al.
   https://arxiv.org/abs/1711.00937
 
   The difference between VectorQuantizerEMA and VectorQuantizer is that
@@ -173,14 +187,16 @@ class VectorQuantizerEMA(module.Module):
     epsilon: small float constant to avoid numerical instability.
   """
 
-  def __init__(self,
-               embedding_dim,
-               num_embeddings,
-               commitment_cost,
-               decay,
-               epsilon: float = 1e-5,
-               dtype: DType = jnp.float32,
-               name: str = None):
+  def __init__(
+      self,
+      embedding_dim,
+      num_embeddings,
+      commitment_cost,
+      decay,
+      epsilon: float = 1e-5,
+      dtype: DType = jnp.float32,
+      name: str = None,
+  ):
     """Initializes a VQ-VAE EMA module.
 
     Args:
@@ -196,31 +212,31 @@ class VectorQuantizerEMA(module.Module):
       dtype: dtype for the embeddings variable, defaults to tf.float32.
       name: name of the module.
     """
-    super(VectorQuantizerEMA, self).__init__(name=name)
+    super().__init__(name=name)
+    if not 0 <= decay <= 1:
+      raise ValueError("decay must be in range [0, 1]")
+
     self.embedding_dim = embedding_dim
     self.num_embeddings = num_embeddings
-    if not 0 <= decay <= 1:
-      raise ValueError('decay must be in range [0, 1]')
     self.decay = decay
     self.commitment_cost = commitment_cost
     self.epsilon = epsilon
 
     embedding_shape = [embedding_dim, num_embeddings]
-    initializer = initializers.VarianceScaling(distribution='uniform')
-    embeddings = base.get_state('embeddings', embedding_shape, dtype,
-                                init=initializer)
+    initializer = hk.initializers.VarianceScaling(distribution="uniform")
+    embeddings = hk.get_state("embeddings", embedding_shape, dtype,
+                              init=initializer)
 
-    self.ema_cluster_size = moving_averages.ExponentialMovingAverage(
-        decay=self.decay, name='ema_cluster_size')
+    self.ema_cluster_size = hk.ExponentialMovingAverage(decay=self.decay,
+                                                        name="ema_cluster_size")
     self.ema_cluster_size.initialize(jnp.zeros([num_embeddings], dtype=dtype))
 
-    self.ema_dw = moving_averages.ExponentialMovingAverage(
-        decay=self.decay, name='ema_dw')
+    self.ema_dw = hk.ExponentialMovingAverage(decay=self.decay, name="ema_dw")
     self.ema_dw.initialize(embeddings)
 
   @property
   def embeddings(self):
-    return base.get_state('embeddings')
+    return hk.get_state("embeddings")
 
   def __call__(self, inputs, is_training):
     """Connects the module to some inputs.
@@ -278,7 +294,7 @@ class VectorQuantizerEMA(module.Module):
       normalised_updated_ema_w = (
           updated_ema_dw / jnp.reshape(updated_ema_cluster_size, [1, -1]))
 
-      base.set_state('embeddings', normalised_updated_ema_w)
+      hk.set_state("embeddings", normalised_updated_ema_w)
       loss = self.commitment_cost * e_latent_loss
 
     else:
@@ -290,12 +306,12 @@ class VectorQuantizerEMA(module.Module):
     perplexity = jnp.exp(-jnp.sum(avg_probs * jnp.log(avg_probs + 1e-10)))
 
     return {
-        'quantize': quantized,
-        'loss': loss,
-        'perplexity': perplexity,
-        'encodings': encodings,
-        'encoding_indices': encoding_indices,
-        'distances': distances,
+        "quantize": quantized,
+        "loss": loss,
+        "perplexity": perplexity,
+        "encodings": encodings,
+        "encoding_indices": encoding_indices,
+        "distances": distances,
     }
 
   def quantize(self, encoding_indices):

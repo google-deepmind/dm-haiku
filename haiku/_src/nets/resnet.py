@@ -34,7 +34,8 @@ class BottleNeckBlockV1(module.Module):
                stride: Union[int, Sequence[int]],
                use_projection: bool,
                bn_config: Mapping[str, float],
-               name: Optional[str] = None):
+               bottleneck: bool = True,
+               name: Optional[str] = "bottle_neck_block_v1"):
     super().__init__(name=name)
     self._use_projection = use_projection
 
@@ -54,15 +55,16 @@ class BottleNeckBlockV1(module.Module):
       self._proj_batchnorm = batch_norm.BatchNorm(name="shortcut_batchnorm",
                                                   **bn_config)
 
-    conv_0 = conv.Conv2D(output_channels=channels // 4,
-                         kernel_shape=1,
+    channel_div = 4 if bottleneck else 1
+    conv_0 = conv.Conv2D(output_channels=channels // channel_div,
+                         kernel_shape=1 if bottleneck else 3,
                          stride=1,
                          with_bias=False,
                          padding="SAME",
                          name="conv_0")
     bn_0 = batch_norm.BatchNorm(name="batchnorm_0", **bn_config)
 
-    conv_1 = conv.Conv2D(output_channels=channels // 4,
+    conv_1 = conv.Conv2D(output_channels=channels // channel_div,
                          kernel_shape=3,
                          stride=stride,
                          with_bias=False,
@@ -70,18 +72,21 @@ class BottleNeckBlockV1(module.Module):
                          name="conv_1")
 
     bn_1 = batch_norm.BatchNorm(name="batchnorm_1", **bn_config)
+    layers = ((conv_0, bn_0), (conv_1, bn_1))
 
-    conv_2 = conv.Conv2D(output_channels=channels,
-                         kernel_shape=1,
-                         stride=1,
-                         with_bias=False,
-                         padding="SAME",
-                         name="conv_2")
+    if bottleneck:
+      conv_2 = conv.Conv2D(output_channels=channels,
+                           kernel_shape=1,
+                           stride=1,
+                           with_bias=False,
+                           padding="SAME",
+                           name="conv_2")
 
-    bn_2 = batch_norm.BatchNorm(name="batchnorm_2", scale_init=jnp.zeros,
-                                **bn_config)
+      bn_2 = batch_norm.BatchNorm(name="batchnorm_2", scale_init=jnp.zeros,
+                                  **bn_config)
+      layers = layers + ((conv_2, bn_2),)
 
-    self._layers = ((conv_0, bn_0), (conv_1, bn_1), (conv_2, bn_2))
+    self._layers = layers
 
   def __call__(self, inputs, is_training):
     x = shortcut = inputs
@@ -93,7 +98,7 @@ class BottleNeckBlockV1(module.Module):
     for i, (conv_i, bn_i) in enumerate(self._layers):
       x = conv_i(x)
       x = bn_i(x, is_training=is_training)
-      if i < 2:  # Don't apply relu on last layer
+      if i < len(self._layers) - 1:  # Don't apply relu on last layer
         x = jax.nn.relu(x)
 
     return jax.nn.relu(x + shortcut)
@@ -107,7 +112,8 @@ class BottleNeckBlockV2(module.Module):
                stride: Union[int, Sequence[int]],
                use_projection: bool,
                bn_config: Mapping[str, float],
-               name: Optional[str] = None):
+               bottleneck: bool = True,
+               name: Optional[str] = "bottle_neck_block_v2"):
     super().__init__(name=name)
     self._use_projection = use_projection
 
@@ -123,8 +129,9 @@ class BottleNeckBlockV2(module.Module):
                                     padding="SAME",
                                     name="shortcut_conv")
 
-    conv_0 = conv.Conv2D(output_channels=channels // 4,
-                         kernel_shape=1,
+    channel_div = 4 if bottleneck else 1
+    conv_0 = conv.Conv2D(output_channels=channels // channel_div,
+                         kernel_shape=1 if bottleneck else 3,
                          stride=1,
                          with_bias=False,
                          padding="SAME",
@@ -132,7 +139,7 @@ class BottleNeckBlockV2(module.Module):
 
     bn_0 = batch_norm.BatchNorm(name="batchnorm_0", **bn_config)
 
-    conv_1 = conv.Conv2D(output_channels=channels // 4,
+    conv_1 = conv.Conv2D(output_channels=channels // channel_div,
                          kernel_shape=3,
                          stride=stride,
                          with_bias=False,
@@ -140,19 +147,22 @@ class BottleNeckBlockV2(module.Module):
                          name="conv_1")
 
     bn_1 = batch_norm.BatchNorm(name="batchnorm_1", **bn_config)
+    layers = ((conv_0, bn_0), (conv_1, bn_1))
 
-    conv_2 = conv.Conv2D(output_channels=channels,
-                         kernel_shape=1,
-                         stride=1,
-                         with_bias=False,
-                         padding="SAME",
-                         name="conv_2")
+    if bottleneck:
+      conv_2 = conv.Conv2D(output_channels=channels,
+                           kernel_shape=1,
+                           stride=1,
+                           with_bias=False,
+                           padding="SAME",
+                           name="conv_2")
 
-    # NOTE: Some implementations of ResNet50 v2 suggest initializing gamma/scale
-    # here to zeros.
-    bn_2 = batch_norm.BatchNorm(name="batchnorm_2", **bn_config)
+      # NOTE: Some implementations of ResNet50 v2 suggest initializing
+      # gamma/scale here to zeros.
+      bn_2 = batch_norm.BatchNorm(name="batchnorm_2", **bn_config)
+      layers = layers + ((conv_2, bn_2),)
 
-    self._layers = ((conv_0, bn_0), (conv_1, bn_1), (conv_2, bn_2))
+    self._layers = layers
 
   def __call__(self, inputs, is_training):
     x = shortcut = inputs
@@ -176,6 +186,7 @@ class BlockGroup(module.Module):
                stride: Union[int, Sequence[int]],
                bn_config: Mapping[str, float],
                resnet_v2: bool = False,
+               bottleneck: bool = True,
                name: Optional[str] = None):
     super().__init__(name=name)
 
@@ -187,6 +198,7 @@ class BlockGroup(module.Module):
           block_cls(channels=channels,
                     stride=(1 if i else stride),
                     use_projection=(i == 0),
+                    bottleneck=bottleneck,
                     bn_config=bn_config,
                     name="block_%d" % (i)))
 
@@ -210,6 +222,7 @@ class ResNet(module.Module):
                num_classes: int,
                bn_config: Optional[Mapping[str, float]] = None,
                resnet_v2: bool = False,
+               bottleneck: bool = True,
                channels_per_group: Sequence[int] = (256, 512, 1024, 2048),
                name: Optional[str] = None):
     """Constructs a ResNet model.
@@ -223,6 +236,7 @@ class ResNet(module.Module):
         `0.9` and `eps` is `1e-5`.
       resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults to
         False.
+       bottleneck: Whether the block should bottleneck or not.
       channels_per_group: A sequence of length 4 that indicates the number
         of channels used for each block in each group.
       name: Name of the module.
@@ -260,6 +274,7 @@ class ResNet(module.Module):
                      stride=strides[i],
                      bn_config=bn_config,
                      resnet_v2=resnet_v2,
+                     bottleneck=bottleneck,
                      name="block_group_%d" % (i)))
 
     if self._resnet_v2:
@@ -288,6 +303,58 @@ class ResNet(module.Module):
       x = jax.nn.relu(x)
     x = jnp.mean(x, axis=[1, 2])
     return self._logits(x)
+
+
+class ResNet18(ResNet):
+  """ResNet18."""
+
+  def __init__(self,
+               num_classes: int,
+               bn_config: Optional[Mapping[str, float]] = None,
+               resnet_v2: bool = False,
+               name: Optional[str] = None):
+    """Constructs a ResNet model.
+
+    Args:
+      num_classes: The number of classes to classify the inputs into.
+      bn_config: A dictionary of two elements, `decay_rate` and `eps` to be
+        passed on to the `BatchNorm` layers.
+      resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults
+        to False.
+      name: Name of the module.
+    """
+    super().__init__(blocks_per_group=(2, 2, 2, 2),
+                     num_classes=num_classes,
+                     bn_config=bn_config,
+                     resnet_v2=resnet_v2,
+                     bottleneck=False,
+                     name=name)
+
+
+class ResNet34(ResNet):
+  """ResNet34."""
+
+  def __init__(self,
+               num_classes: int,
+               bn_config: Optional[Mapping[str, float]] = None,
+               resnet_v2: bool = False,
+               name: Optional[str] = None):
+    """Constructs a ResNet model.
+
+    Args:
+      num_classes: The number of classes to classify the inputs into.
+      bn_config: A dictionary of two elements, `decay_rate` and `eps` to be
+        passed on to the `BatchNorm` layers.
+      resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults
+        to False.
+      name: Name of the module.
+    """
+    super().__init__(blocks_per_group=(3, 4, 6, 3),
+                     num_classes=num_classes,
+                     bn_config=bn_config,
+                     resnet_v2=resnet_v2,
+                     bottleneck=False,
+                     name=name)
 
 
 class ResNet50(ResNet):

@@ -454,6 +454,18 @@ ResNet
 .. autoclass:: ResNet
    :members:
 
+ResNet18
+~~~~~~~~
+
+.. autoclass:: ResNet18
+   :members:
+
+ResNet34
+~~~~~~~~
+
+.. autoclass:: ResNet34
+   :members:
+
 ResNet50
 ~~~~~~~~
 

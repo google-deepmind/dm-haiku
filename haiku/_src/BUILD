@@ -64,7 +64,9 @@ hk_py_library(
     srcs = ["bias.py"],
     deps = [
         ":base",
+        ":initializers",
         ":module",
+        ":typing",
         ":utils",
         # pip: jax
     ],
@@ -145,6 +147,7 @@ hk_py_library(
     srcs = ["batch_norm.py"],
     deps = [
         ":base",
+        ":initializers",
         ":module",
         ":moving_averages",
         ":utils",
@@ -172,6 +175,7 @@ hk_py_library(
         ":base",
         ":initializers",
         ":module",
+        ":typing",
         ":utils",
         # pip: jax
         # pip: numpy
@@ -210,10 +214,12 @@ hk_py_test(
     deps = [
         ":dot",
         ":module",
+        ":named_call",
         ":test_utils",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
+        # pip: mock
         # pip: tree
     ],
 )
@@ -226,6 +232,7 @@ hk_py_library(
         ":initializers",
         ":module",
         ":pad",
+        ":typing",
         ":utils",
         # pip: jax
         # pip: numpy
@@ -469,6 +476,7 @@ hk_py_library(
         ":conv",
         ":initializers",
         ":module",
+        ":typing",
         # pip: jax
     ],
 )

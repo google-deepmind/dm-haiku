@@ -16,85 +16,179 @@
 """Haiku recurrent core."""
 
 import abc
+from typing import Optional, Sequence
 from haiku._src import base
 from haiku._src import basic
 from haiku._src import conv
 from haiku._src import initializers
 from haiku._src import module
+from haiku._src import typing
 import jax
 import jax.nn
 import jax.numpy as jnp
 
 
-def add_batch(nest, batch_size):
+class RNNCore(module.Module):
+  """Base class for RNN cores.
+
+  This class defines the basic functionality that every core should
+  implement: :meth:`initial_state`, used to construct an example of the
+  core state; and :meth:`__call__` which applies the core parameterized
+  by a previous state to an input.
+
+  Cores may be used with :func:`dynamic_unroll` and
+  :func:`static_unroll` to iteratively construct an output sequence from
+  the given input sequence.
+  """
+
+  @abc.abstractmethod
+  def __call__(self, inputs, prev_state):
+    """Run one step of the RNN.
+
+    Args:
+      inputs: An arbitrarily nested structure.
+      prev_state: Previous core state.
+
+    Returns:
+      A tuple with two elements:
+      * **outputs** - An arbitrarily nested structure.
+      * **next_state** - Next core state, must be of the same shape as the
+        previous one.
+    """
+
+  @abc.abstractmethod
+  def initial_state(self, batch_size: Optional[int]):
+    """Constructs an initial state for this core.
+
+    Args:
+      batch_size: Optional int or an integral scalar tensor representing
+        batch size. If None, the core may either fail or (experimentally)
+        return an initial state without a batch dimension.
+
+    Returns:
+      Arbitrarily nested initial state for this core.
+    """
+
+
+def static_unroll(core, input_sequence, initial_state):
+  """Performs a static unroll of an RNN.
+
+  An *unroll* corresponds to calling the core on each element of the
+  input sequence in a loop, carrying the state through::
+
+      state = initial_state
+      for t in range(len(input_sequence)):
+         outputs, state = core(input_sequence[t], state)
+
+  A *static* unroll replaces a loop with its body repeated multiple
+  times when executed inside ``jax.jit``::
+
+      state = initial_state
+      outputs0, state = core(input_sequence[0], state)
+      outputs1, state = core(input_sequence[1], state)
+      outputs2, state = core(input_sequence[2], state)
+      ...
+
+  See :func:`dynamic_unroll` for a loop-preserving unroll function.
+
+  Args:
+    core: An :class:`RNNCore` to unroll.
+    input_sequence: An arbitrarily nested structure of tensors of shape
+      ``[T, ...]`` where ``T`` is the number of time steps.
+    initial_state: An initial state of the given core.
+
+  Returns:
+    A tuple with two elements:
+      * **output_sequence** - An arbitrarily nested structure of tensors
+        of shape ``[T, ...]``.
+      * **final_state** - Core state at time step ``T``.
+  """
+  output_sequence = []
+  num_steps = jax.tree_leaves(input_sequence)[0].shape[0]
+  state = initial_state
+  for t in range(num_steps):
+    inputs = jax.tree_map(lambda x, _t=t: x[_t], input_sequence)
+    outputs, state = core(inputs, state)
+    output_sequence.append(outputs)
+
+  # Stack outputs along the time dimension.
+  output_sequence = jax.tree_multimap(
+      lambda *args: jnp.stack(args),
+      *output_sequence)
+  return output_sequence, state
+
+
+def dynamic_unroll(core, input_sequence, initial_state):
+  """Performs a dynamic unroll of an RNN.
+
+  An *unroll* corresponds to calling the core on each element of the
+  input sequence in a loop, carrying the state through::
+
+      state = initial_state
+      for t in range(len(input_sequence)):
+         outputs, state = core(input_sequence[t], state)
+
+  A *dynamic* unroll preserves the loop structure when executed inside
+  ``jax.jit``. See :func:`static_unroll` for an unroll function which
+  replaces a loop with its body repeated multiple times.
+
+  Args:
+    core: An :class:`RNNCore` to unroll.
+    input_sequence: An arbitrarily nested structure of tensors of shape
+      ``[T, ...]`` where ``T`` is the number of time steps.
+    initial_state: initial state of the given core.
+
+  Returns:
+    A tuple with two elements:
+      * **output_sequence** - An arbitrarily nested structure of tensors
+        of shape ``[T, ...]``.
+      * **final_state** - Core state at time step ``T``.
+  """
+  # Swap the input and output of core.
+  def scan_f(prev_state, inputs):
+    outputs, next_state = core(inputs, prev_state)
+    return next_state, outputs
+  final_state, output_sequence = jax.lax.scan(
+      scan_f,
+      initial_state,
+      input_sequence)
+  return output_sequence, final_state
+
+
+def add_batch(nest, batch_size: Optional[int]):
   broadcast = lambda x: jnp.broadcast_to(x, (batch_size,) + x.shape)
   return jax.tree_map(broadcast, nest)
 
 
-def static_unroll(core, inputs, state):
-  """Unroll core over inputs, starting from state."""
-  outs = []
-  num_steps = jax.tree_leaves(inputs)[0].shape[0]
-  for t in range(num_steps):
-    next_input = jax.tree_map(lambda x, t=t: x[t], inputs)
-    out, state = core(next_input, state)
-    outs.append(out)
-  return jnp.stack(outs), state
+class VanillaRNN(RNNCore):
+  r"""Basic fully-connected RNN core.
 
+  Given :math:`x_t` and the previous hidden state :math:`h_{t-1}` the
+  core computes
 
-def dynamic_unroll(core, inputs, state):
-  """Unroll core over inputs, starting from state."""
-  # Swap the input and output of core.
-  def scan_f(prev_state, next_input):
-    out, next_state = core(next_input, prev_state)
-    return next_state, out
-  state, outs = jax.lax.scan(scan_f, state, inputs)
-  return outs, state
+  .. math::
 
-
-class RNNCore(module.Module, metaclass=abc.ABCMeta):
-  """Base class for RNN cores.
-
-  Cores can be dynamically unrolled with jax.lax.scan().
+     h_t = \operatorname{ReLU}(w_i x_t + b_i + w_h h_{t-1} + b_h)
   """
 
-  @abc.abstractmethod
-  def __call__(self, inputs, state):
-    """Run one step of the RNN.
+  def __init__(self, hidden_size: int, name: Optional[str] = None):
+    """Constructs a vanilla RNN core.
 
     Args:
-      inputs: Arbitrary nest of inputs.
-      state: Previous core state.
-    Returns:
-      Tuple of (output, next_state).
+      hidden_size: Hidden layer size.
+      name: Name of the module.
     """
-
-  @abc.abstractmethod
-  def initial_state(self, batch_size):
-    """Construct an initial state for the core.
-
-    Args:
-      batch_size: Specifies the batch size of the initial state. Cores may
-        experimentally support returning an initial state without a batch
-        dimension if batch_size is None.
-    """
-
-
-class VanillaRNN(RNNCore):
-  """Vanilla RNN."""
-
-  def __init__(self, hidden_size, name=None):
     super().__init__(name=name)
     self.hidden_size = hidden_size
 
-  def __call__(self, inputs, state):
+  def __call__(self, inputs, prev_state):
+    # TODO(slebedev): Consider dropping one of the biases.
     in2h = basic.Linear(self.hidden_size)(inputs)
-    h2h = basic.Linear(self.hidden_size)(state)
-    output = jax.nn.relu(in2h + h2h)
-    new_h = output
-    return output, new_h
+    h2h = basic.Linear(self.hidden_size)(prev_state)
+    outputs = jax.nn.relu(in2h + h2h)
+    return outputs, outputs
 
-  def initial_state(self, batch_size):
+  def initial_state(self, batch_size: Optional[int]):
     state = jnp.zeros([self.hidden_size])
     if batch_size is not None:
       state = add_batch(state, batch_size)
@@ -102,23 +196,50 @@ class VanillaRNN(RNNCore):
 
 
 class LSTM(RNNCore):
-  """LSTM.
+  r"""Long short-term memory (LSTM) RNN core.
 
-  Following :cite:`jozefowicz2015empirical`, we add a constant
-  bias of 1 to the forget gate in order to reduce the scale of forgetting in
-  the beginning of the training.
+  The implementation is based on :cite:`zaremba2014recurrent`. Given
+  :math:`x_t` and the previous state :math:`(h_{t-1}, c_{t-1})` the core
+  computes
+
+  .. math::
+
+     \begin{array}{ll}
+     i_t = \sigma(W_{ii} x_t + W_{hi} h_{t-1} + b_i) \\
+     f_t = \sigma(W_{if} x_t + W_{hf} h_{t-1} + b_f) \\
+     g_t = \tanh(W_{ig} x_t + W_{hg} h_{t-1} + b_g) \\
+     o_t = \sigma(W_{io} x_t + W_{ho} h_{t-1} + b_o) \\
+     c_t = f_t c_{t-1} + i_t g_t \\
+     h_t = o_t \tanh(c_t)
+     \end{array}
+
+  where :math:`i_t`, :math:`f_t`, :math:`o_t` are input, forget and
+  output gate activations, and :math:`g_t` is a vector of cell updates.
+
+  Notes:
+    Forget gate initialization:
+      Following :cite:`jozefowicz2015empirical` we add 1.0 to :math:`b_f`
+      after initialization in order to reduce the scale of forgetting in
+      the beginning of the training.
   """
 
-  def __init__(self, hidden_size, name=None):
+  def __init__(self, hidden_size: int, name: Optional[str] = None):
+    """Constructs an LSTM.
+
+    Args:
+      hidden_size: Hidden layer size.
+      name: Name of the module.
+    """
     super().__init__(name=name)
     self.hidden_size = hidden_size
 
-  def __call__(self, inputs, state):
+  def __call__(self, inputs, prev_state):
     if len(inputs.shape) > 2 or not inputs.shape:
       raise ValueError("LSTM input must be rank-1 or rank-2.")
-    prev_h, prev_c = state
+    prev_h, prev_c = prev_state
     x_and_h = jnp.concatenate([inputs, prev_h], axis=-1)
     gated = basic.Linear(4 * self.hidden_size)(x_and_h)
+    # TODO(slebedev): Consider aligning the order of gates with Sonnet.
     # i = input, g = cell_gate, f = forget_gate, o = output_gate
     i, g, f, o = jnp.split(gated, indices_or_sections=4, axis=-1)
     f = jax.nn.sigmoid(f + 1)  # Forget bias, as in sonnet.
@@ -126,7 +247,7 @@ class LSTM(RNNCore):
     h = jax.nn.sigmoid(o) * jnp.tanh(c)
     return h, (h, c)
 
-  def initial_state(self, batch_size):
+  def initial_state(self, batch_size: Optional[int]):
     state = (jnp.zeros([self.hidden_size]), jnp.zeros([self.hidden_size]))
     if batch_size is not None:
       state = add_batch(state, batch_size)
@@ -134,21 +255,51 @@ class LSTM(RNNCore):
 
 
 class ConvNDLSTM(RNNCore):
-  """N-D convolutional LSTM.
+  r"""``num_spatial_dims``-D convolutional LSTM.
 
-  The implementation is based on https://arxiv.org/abs/1506.04214.
+  The implementation is based on :cite:`xingjian2015convolutional`.
+  Given :math:`x_t` and the previous state :math:`(h_{t-1}, c_{t-1})`
+  the core computes
 
-  Following :cite:`jozefowicz2015empirical`, we add a constant
-  bias of 1 to the forget gate in order to reduce the scale of forgetting in
-  the beginning of the training.
+  .. math::
+
+     \begin{array}{ll}
+     i_t = \sigma(W_{ii} * x_t + W_{hi} * h_{t-1} + b_i) \\
+     f_t = \sigma(W_{if} * x_t + W_{hf} * h_{t-1} + b_f) \\
+     g_t = \tanh(W_{ig} * x_t + W_{hg} * h_{t-1} + b_g) \\
+     o_t = \sigma(W_{io} * x_t + W_{ho} * h_{t-1} + b_o) \\
+     c_t = f_t c_{t-1} + i_t g_t \\
+     h_t = o_t \tanh(c_t)
+     \end{array}
+
+  where :math:`*` denotes the convolution operator; :math:`i_t`,
+  :math:`f_t`, :math:`o_t` are input, forget and output gate activations,
+  and :math:`g_t` is a vector of cell updates.
+
+  Notes:
+    Forget gate initialization:
+      Following :cite:`jozefowicz2015empirical` we add 1.0 to :math:`b_f`
+      after initialization in order to reduce the scale of forgetting in
+      the beginning of the training.
   """
 
   def __init__(self,
-               num_spatial_dims,
-               input_shape,
-               output_channels,
-               kernel_shape,
-               name=None):
+               num_spatial_dims: int,
+               input_shape: typing.Shape,
+               output_channels: int,
+               kernel_shape: typing.ShapeLike,
+               name: Optional[str] = None):
+    """Constructs a convolutional LSTM.
+
+    Args:
+      num_spatial_dims: Number of spatial dimensions of the input.
+      input_shape: Shape of the inputs excluding batch size.
+      output_channels: Number of output channels.
+      kernel_shape: Sequence of kernel sizes (of length ``num_spatial_dims``),
+        or an int. ``kernel_shape`` will be expanded to define a kernel size in
+        all dimensions.
+      name: Name of the module.
+    """
     super().__init__(name=name)
     self._num_spatial_dims = num_spatial_dims
     self.input_shape = input_shape
@@ -177,7 +328,7 @@ class ConvNDLSTM(RNNCore):
     h = jax.nn.sigmoid(o) * jnp.tanh(c)
     return h, (h, c)
 
-  def initial_state(self, batch_size):
+  def initial_state(self, batch_size: Optional[int]):
     state = (jnp.zeros(list(self.input_shape) + [self.output_channels]),
              jnp.zeros(list(self.input_shape) + [self.output_channels]))
     if batch_size is not None:
@@ -185,11 +336,24 @@ class ConvNDLSTM(RNNCore):
     return state
 
 
-class Conv1DLSTM(ConvNDLSTM):
-  """Conv1D module."""
+class Conv1DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
+  __doc__ = ConvNDLSTM.__doc__.replace("``num_spatial_dims``", "1")
 
-  def __init__(self, input_shape, output_channels, kernel_shape, name=None):
-    """Initializes a Conv1DLSTM module. See superclass for documentation."""
+  def __init__(self,
+               input_shape: typing.Shape,
+               output_channels: int,
+               kernel_shape: typing.ShapeLike,
+               name: Optional[str] = None):
+    """Constructs a 1-D convolutional LSTM.
+
+    Args:
+      input_shape: Shape of the inputs excluding batch size.
+      output_channels: Number of output channels.
+      kernel_shape: Sequence of kernel sizes (of length 1), or an int.
+        ``kernel_shape`` will be expanded to define a kernel size in all
+        dimensions.
+      name: Name of the module.
+    """
     super().__init__(
         num_spatial_dims=1,
         input_shape=input_shape,
@@ -198,11 +362,24 @@ class Conv1DLSTM(ConvNDLSTM):
         name=name)
 
 
-class Conv2DLSTM(ConvNDLSTM):
-  """Conv2D module."""
+class Conv2DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
+  __doc__ = ConvNDLSTM.__doc__.replace("``num_spatial_dims``", "2")
 
-  def __init__(self, input_shape, output_channels, kernel_shape, name=None):
-    """Initializes a Conv2DLSTM module. See superclass for documentation."""
+  def __init__(self,
+               input_shape: typing.Shape,
+               output_channels: int,
+               kernel_shape: typing.ShapeLike,
+               name: Optional[str] = None):
+    """Constructs a 2-D convolutional LSTM.
+
+    Args:
+      input_shape: Shape of the inputs excluding batch size.
+      output_channels: Number of output channels.
+      kernel_shape: Sequence of kernel sizes (of length 2), or an int.
+        ``kernel_shape`` will be expanded to define a kernel size in all
+        dimensions.
+      name: Name of the module.
+    """
     super().__init__(
         num_spatial_dims=2,
         input_shape=input_shape,
@@ -211,11 +388,24 @@ class Conv2DLSTM(ConvNDLSTM):
         name=name)
 
 
-class Conv3DLSTM(ConvNDLSTM):
-  """Conv3D module."""
+class Conv3DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
+  __doc__ = ConvNDLSTM.__doc__.replace("``num_spatial_dims``", "3")
 
-  def __init__(self, input_shape, output_channels, kernel_shape, name=None):
-    """Initializes a Conv3DLSTM module. See superclass for documentation."""
+  def __init__(self,
+               input_shape: typing.Shape,
+               output_channels: int,
+               kernel_shape: typing.ShapeLike,
+               name: Optional[str] = None):
+    """Constructs a 3-D convolutional LSTM.
+
+    Args:
+      input_shape: Shape of the inputs excluding batch size.
+      output_channels: Number of output channels.
+      kernel_shape: Sequence of kernel sizes (of length 3), or an int.
+        ``kernel_shape`` will be expanded to define a kernel size in all
+        dimensions.
+      name: Name of the module.
+    """
     super().__init__(
         num_spatial_dims=3,
         input_shape=input_shape,
@@ -249,11 +439,11 @@ class GRU(RNNCore):
   """
 
   def __init__(self,
-               hidden_size,
-               w_i_init: base.Initializer = None,
-               w_h_init: base.Initializer = None,
-               b_init: base.Initializer = None,
-               name=None):
+               hidden_size: int,
+               w_i_init: Optional[typing.Initializer] = None,
+               w_h_init: Optional[typing.Initializer] = None,
+               b_init: Optional[typing.Initializer] = None,
+               name: Optional[str] = None):
     super().__init__(name=name)
     self.hidden_size = hidden_size
     self._w_i_init = w_i_init or initializers.VarianceScaling()
@@ -291,7 +481,7 @@ class GRU(RNNCore):
     next_state = (1 - z) * state + z * a
     return next_state, next_state
 
-  def initial_state(self, batch_size):
+  def initial_state(self, batch_size: Optional[int]):
     state = jnp.zeros([self.hidden_size])
     if batch_size is not None:
       state = add_batch(state, batch_size)
@@ -308,7 +498,7 @@ class IdentityCore(RNNCore):
   def __call__(self, inputs, state):
     return inputs, state
 
-  def initial_state(self, batch_size):
+  def initial_state(self, batch_size: Optional[int]):
     return ()
 
 
@@ -335,7 +525,7 @@ class ResetCore(RNNCore):
   with the state structure.
   """
 
-  def __init__(self, core, name=None):
+  def __init__(self, core: RNNCore, name: Optional[str] = None):
     super().__init__(name=name)
     self._core = core
 
@@ -415,14 +605,14 @@ class ResetCore(RNNCore):
     state = jax.tree_multimap(jnp.where, should_reset, initial_state, state)
     return self._core(inputs, state)
 
-  def initial_state(self, batch_size):
+  def initial_state(self, batch_size: Optional[int]):
     return self._core.initial_state(batch_size)
 
 
 class _DeepRNN(RNNCore):
   """Underlying implementation of DeepRNN with skip connections."""
 
-  def __init__(self, layers, skip_connections, name=None):
+  def __init__(self, layers, skip_connections, name: Optional[str] = None):
     super().__init__(name=name)
     self._layers = layers
     self._skip_connections = skip_connections
@@ -458,7 +648,7 @@ class _DeepRNN(RNNCore):
 
     return output, tuple(next_states)
 
-  def initial_state(self, batch_size):
+  def initial_state(self, batch_size: Optional[int]):
     return tuple(
         layer.initial_state(batch_size)
         for layer in self._layers
@@ -478,11 +668,12 @@ class DeepRNN(_DeepRNN):
   If no layers are `RNNCore`s, the state is an empty tuple.
   """
 
-  def __init__(self, layers, name=None):
+  def __init__(self, layers, name: Optional[str] = None):
     super().__init__(layers, skip_connections=False, name=name)
 
 
-def deep_rnn_with_skip_connections(layers, name=None):
+def deep_rnn_with_skip_connections(layers: Sequence[RNNCore],
+                                   name: Optional[str] = None) -> RNNCore:
   """Constructs a DeepRNN with skip connections.
 
   Skip connections alter the dependency structure within a `DeepRNN`.

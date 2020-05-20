@@ -20,15 +20,12 @@ from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import named_call
 import jax
-from jax.interpreters import xla
 
 
 class NamedCallTest(parameterized.TestCase):
 
   @parameterized.parameters(jax.jit, jax.grad, jax.vmap, jax.remat)
   def test_jax_transforms(self, transform):
-    if not hasattr(xla.xb, 'parameter'):
-      self.skipTest('Need Jaxlib version > 0.1.45')
     f = jax.numpy.sum
     x = jax.numpy.array([1.])
 
@@ -38,8 +35,6 @@ class NamedCallTest(parameterized.TestCase):
     self.assertEqual(unnamed_out, named_out)
 
   def test_static_argnums(self):
-    if not hasattr(xla.xb, 'parameter'):
-      self.skipTest('Need Jaxlib version > 0.1.45')
     f = named_call.stateful_named_call(lambda x, y: y if x else None,
                                        name='test')
     f = jax.jit(f, static_argnums=(0,))
@@ -47,13 +42,25 @@ class NamedCallTest(parameterized.TestCase):
     self.assertEqual(out, 5)
 
   def test_partial_eval(self):
-    if not hasattr(xla.xb, 'parameter'):
-      self.skipTest('Need Jaxlib version > 0.1.45')
     f = named_call.stateful_named_call(lambda x, y: y if x else None,
                                        name='test')
     f = jax.jit(functools.partial(f, True))
     out = f(5)
     self.assertEqual(out, 5)
+
+  def test_non_jaxtype_arg(self):
+    # For the test to fail without the invalid JaxType filter we need to pass
+    # in a valid JaxType that forces the invalid Jaxtype to be raised to an
+    # abstract value.
+    def f(not_a_jaxtype, a_jaxtype):
+      # then Jax needs to try and evaluate the abstractified non-JaxType
+      if not_a_jaxtype:
+        return a_jaxtype
+      return 0
+
+    f = named_call.stateful_named_call(f, name='test')
+    out = jax.jit(f, static_argnums=(0,))('not a Jaxtype', 1)
+    self.assertEqual(out, 1)
 
 if __name__ == '__main__':
   absltest.main()

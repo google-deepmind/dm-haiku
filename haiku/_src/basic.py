@@ -127,8 +127,8 @@ class Linear(module.Module):
   def __init__(self,
                output_size: int,
                with_bias: bool = True,
-               w_init: Optional[base.Initializer] = None,
-               b_init: Optional[base.Initializer] = None,
+               w_init: Optional[initializers.Initializer] = None,
+               b_init: Optional[initializers.Initializer] = None,
                name: Optional[str] = None):
     """Constructs the Linear module.
 

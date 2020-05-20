@@ -96,7 +96,13 @@ def _named_call(fun: Callable[..., Any], *, name: str) -> Callable[..., Any]:
     f = lu.wrap_init(fun)
     flat_args, in_tree = jax.tree_flatten((args, kwargs))
     flat_f, out_tree = api.flatten_fun(f, in_tree)
+
+    # Hide any args that are not a valid JaxType by partially applying flat_f
+    dyn_argnums = [i for (i, x) in enumerate(flat_args)
+                   if jax.api._valid_jaxtype(x)]  # pylint: disable=protected-access
+    part_flat_f, dyn_args = jax.argnums_partial(flat_f, dyn_argnums, flat_args)
+
     # Call f with a custom XLA subcomputation via named_call & unflatten result.
-    out_flat = named_call_p.bind(flat_f, *flat_args, name=name)
+    out_flat = named_call_p.bind(part_flat_f, *dyn_args, name=name)
     return jax.tree_unflatten(out_tree(), out_flat)
   return named_fun

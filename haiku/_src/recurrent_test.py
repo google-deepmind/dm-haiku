@@ -28,6 +28,23 @@ import numpy as np
 import tree
 
 
+class DuplicateCore(recurrent.RNNCore):
+  """A wrapper which duplicates the outputs of the wrapped :class:`RNNCore`."""
+
+  def __init__(self, base_core: recurrent.RNNCore):
+    super().__init__()
+    self.base_core = base_core
+
+  def __call__(self, inputs, prev_state):
+    """See base class."""
+    outputs, next_state = self.base_core(inputs, prev_state)
+    return [outputs, outputs], next_state
+
+  def initial_state(self, batch_size):
+    """See base class."""
+    return self.base_core.initial_state(batch_size)
+
+
 class RecurrentTest(parameterized.TestCase):
 
   def test_add_batch(self):
@@ -67,6 +84,17 @@ class RecurrentTest(parameterized.TestCase):
     batch_size = seqs.shape[1]
     out, _ = unroll(core, seqs, core.initial_state(batch_size))
     self.assertEqual(out.shape, (4, 8, 4))
+
+  @parameterized.parameters(recurrent.dynamic_unroll, recurrent.static_unroll)
+  @test_utils.transform_and_run
+  def test_core_unroll_nested(self, unroll):
+    seqs = make_sequence([4, 8, 1])
+    batch_size = seqs.shape[1]
+    core = DuplicateCore(recurrent.VanillaRNN(hidden_size=4))
+    outs, _ = unroll(core, seqs, core.initial_state(batch_size))
+    self.assertLen(outs, 2)
+    for out in outs:
+      self.assertEqual(out.shape, (4, 8, 4))
 
 
 class LSTMTest(absltest.TestCase):

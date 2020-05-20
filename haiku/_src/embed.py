@@ -16,12 +16,22 @@
 """Modules for performing embedding lookups in Haiku."""
 
 import enum
+import types
+from typing import Optional
 
 from haiku._src import base
-from haiku._src import basic
+from haiku._src import initializers
 from haiku._src import module
-import haiku._src.initializers as hk_init
+import jax
 import jax.numpy as jnp
+
+# If you are forking replace this with `import haiku as hk`.
+hk = types.ModuleType("haiku")
+hk.get_parameter = base.get_parameter
+hk.Module = module.Module
+hk.initializers = initializers
+hk.Initializer = base.Initializer
+del base, module, initializers
 
 
 class EmbedLookupStyle(enum.Enum):
@@ -30,16 +40,19 @@ class EmbedLookupStyle(enum.Enum):
   ONE_HOT = 2
 
 
-class Embed(module.Module):
+class Embed(hk.Module):
   """Module for embedding tokens in a low-dimensional space."""
 
-  def __init__(self,
-               vocab_size=None,
-               embed_dim=None,
-               embedding_matrix=None,
-               w_init=None,
-               lookup_style=EmbedLookupStyle.ARRAY_INDEX.name,
-               name=None):
+  def __init__(
+      self,
+      vocab_size: Optional[int] = None,
+      embed_dim: Optional[int] = None,
+      embedding_matrix: Optional[jnp.ndarray] = None,
+      w_init: Optional[hk.Initializer] = None,
+      # TODO(tomhennigan) Support EmbedLookupStyle or string.
+      lookup_style: str = EmbedLookupStyle.ARRAY_INDEX.name,
+      name: Optional[str] = None,
+  ):
     """Constructs an Embed module.
 
     Args:
@@ -71,7 +84,7 @@ class Embed(module.Module):
         supplied, or if embedding_matrix is supplied and embed_dim or vocab_size
         is not consistent with the supplied matrix.
     """
-    super(Embed, self).__init__(name=name)
+    super().__init__(name=name)
     if embedding_matrix is None and not (vocab_size and embed_dim):
       raise ValueError(
           "hk.Embed must be supplied either with an initial `embedding_matrix` "
@@ -80,27 +93,30 @@ class Embed(module.Module):
       embedding_matrix = jnp.asarray(embedding_matrix)
       if vocab_size and embedding_matrix.shape[0] != vocab_size:
         raise ValueError(
-            "An `embedding_matrix` was supplied but the `vocab_size` of {vs} "
-            "was not consistent with its shape {emb_shape}.".format(
-                vs=vocab_size, emb_shape=embedding_matrix.shape))
+            "An `embedding_matrix` was supplied but the `vocab_size` of "
+            f"{vocab_size} was not consistent with its shape "
+            f"{embedding_matrix.shape}.")
       if embed_dim and embedding_matrix.shape[1] != embed_dim:
         raise ValueError(
-            "An `embedding_matrix` was supplied but the `embed_dim` of {ed} "
-            "was not consistent with its shape {emb_shape}.".format(
-                ed=embed_dim, emb_shape=embedding_matrix.shape))
-      self._embedding = base.get_parameter(
-          "embeddings", shape=embedding_matrix.shape,
-          init=lambda _, __: embedding_matrix)
+            "An `embedding_matrix` was supplied but the `embed_dim` of "
+            f"{embed_dim} was not consistent with its shape "
+            f"{embedding_matrix.shape}.")
+      self.embeddings = hk.get_parameter("embeddings", embedding_matrix.shape,
+                                         init=lambda _, __: embedding_matrix)
     else:
-      w_init = w_init or hk_init.TruncatedNormal()
-      self._embedding = base.get_parameter(
-          "embeddings", shape=[vocab_size, embed_dim], init=w_init)
+      w_init = w_init or hk.initializers.TruncatedNormal()
+      self.embeddings = hk.get_parameter("embeddings", [vocab_size, embed_dim],
+                                         init=w_init)
 
-    self._vocab_size = vocab_size or embedding_matrix.shape[0]
-    self._embed_dim = embed_dim or embedding_matrix.shape[1]
-    self._lookup_style = lookup_style
+    self.vocab_size = vocab_size or embedding_matrix.shape[0]
+    self.embed_dim = embed_dim or embedding_matrix.shape[1]
+    self.lookup_style = lookup_style
 
-  def __call__(self, ids, lookup_style=None):
+  def __call__(
+      self,
+      ids: jnp.ndarray,
+      lookup_style: Optional[str] = None,
+  ) -> jnp.ndarray:
     """Lookup embeddings.
 
     Looks up an embedding vector for each value in `ids`. All ids must be within
@@ -117,33 +133,19 @@ class Embed(module.Module):
       ValueError: If lookup_style is not an enum in EmbedLookupStyle or if `ids`
         is not an integer array.
     """
-    lookup_style = lookup_style or self._lookup_style
+    lookup_style = lookup_style or self.lookup_style
+    # TODO(tomhennigan) Consider removing asarray here.
     ids = jnp.asarray(ids)
     if not jnp.issubdtype(ids.dtype, jnp.integer):
       raise ValueError("hk.Embed's __call__ method must take an array of "
                        "integer dtype but was called with an array of "
-                       "{dtype}".format(dtype=ids.dtype))
+                       f"{ids.dtype}")
 
     if lookup_style == EmbedLookupStyle.ARRAY_INDEX.name:
-      return self._embedding[ids]
+      return self.embeddings[ids]
     elif lookup_style == EmbedLookupStyle.ONE_HOT.name:
-      one_hot_ids = basic.one_hot(ids, self._vocab_size)[..., None]
-      return (self._embedding * one_hot_ids).sum(axis=-2)
+      one_hot_ids = jax.nn.one_hot(ids, self.vocab_size)[..., None]
+      return (self.embeddings * one_hot_ids).sum(axis=-2)
     else:
       raise ValueError(
-          "{s} is not a valid enum in EmbedLookupStyle.".format(s=lookup_style))
-
-  @property
-  def vocab_size(self):
-    """Size of input vocabulary."""
-    return self._vocab_size
-
-  @property
-  def embed_dim(self):
-    """Size of embedding vectors."""
-    return self._embed_dim
-
-  @property
-  def embeddings(self):
-    """Returns the Variable containing embeddings."""
-    return self._embedding
+          f"{lookup_style} is not a valid enum in EmbedLookupStyle.")

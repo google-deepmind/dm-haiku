@@ -20,13 +20,17 @@ from haiku._src.nets.mobilenetv1 import MobileNetV1
 from haiku._src.nets.resnet import ResNet
 from haiku._src.nets.resnet import ResNet101
 from haiku._src.nets.resnet import ResNet152
+from haiku._src.nets.resnet import ResNet18
 from haiku._src.nets.resnet import ResNet200
+from haiku._src.nets.resnet import ResNet34
 from haiku._src.nets.resnet import ResNet50
 from haiku._src.nets.vqvae import VectorQuantizer
 from haiku._src.nets.vqvae import VectorQuantizerEMA
 
 __all__ = (
     "ResNet",
+    "ResNet18",
+    "ResNet34",
     "ResNet50",
     "ResNet101",
     "ResNet152",

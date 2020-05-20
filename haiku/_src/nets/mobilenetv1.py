@@ -25,6 +25,7 @@ The average pooling is currently done via a mean, and returns (N, 1, 1, 1024).
 If something different is desired, replace with AvgPool.
 """
 
+import types
 from typing import Optional, Sequence
 
 from haiku._src import basic
@@ -37,62 +38,78 @@ from haiku._src import reshape
 import jax
 import jax.numpy as jnp
 
+# If forking replace this block with `import haiku as hk`.
+hk = types.ModuleType("haiku")
+hk.Module = module.Module
+hk.BatchNorm = batch_norm.BatchNorm
+hk.Conv2D = conv.Conv2D
+hk.DepthwiseConv2D = depthwise_conv.DepthwiseConv2D
+hk.Flatten = reshape.Flatten
+hk.Linear = basic.Linear
+del basic, batch_norm, conv, depthwise_conv, module, reshape
 
-class MobileNetV1Block(module.Module):
+
+class MobileNetV1Block(hk.Module):
   """Block for MobileNetV1."""
 
-  def __init__(self,
-               channels: int,
-               stride: int,
-               use_bn: bool = True,
-               name: Optional[str] = None):
-    super(MobileNetV1Block, self).__init__(name=name)
-    self._channels = channels
-    self._stride = stride
-    self._use_bn = use_bn
-    self._with_bias = not use_bn
+  def __init__(
+      self,
+      channels: int,
+      stride: int,
+      use_bn: bool = True,
+      name: Optional[str] = None,
+  ):
+    super().__init__(name=name)
+    self.channels = channels
+    self.stride = stride
+    self.use_bn = use_bn
+    self.with_bias = not use_bn
 
-  def __call__(self, inputs, is_training):
-    dwc_layer = depthwise_conv.DepthwiseConv2D(1, 3,
-                                               stride=self._stride,
-                                               padding=((1, 1), (1, 1)),
-                                               with_bias=self._with_bias,
-                                               name="depthwise_conv")
-    pwc_layer = conv.Conv2D(self._channels,
-                            (1, 1),
-                            stride=1,
-                            padding="VALID",
-                            with_bias=self._with_bias,
-                            name="pointwise_conv")
+  def __call__(self, inputs: jnp.ndarray, is_training: bool) -> jnp.ndarray:
+    depthwise = hk.DepthwiseConv2D(
+        channel_multiplier=1,
+        kernel_shape=3,
+        stride=self.stride,
+        padding=((1, 1), (1, 1)),
+        with_bias=self.with_bias,
+        name="depthwise_conv")
 
-    net = inputs
-    net = dwc_layer(net)
-    if self._use_bn:
-      bn = batch_norm.BatchNorm(
-          create_scale=True, create_offset=True, decay_rate=0.999)
-      net = bn(net, is_training)
-    net = jax.nn.relu(net)
-    net = pwc_layer(net)
-    if self._use_bn:
-      bn = batch_norm.BatchNorm(
-          create_scale=True, create_offset=True, decay_rate=0.999)
-      net = bn(net, is_training)
-    net = jax.nn.relu(net)
-    return net
+    pointwise = hk.Conv2D(
+        output_channels=self.channels,
+        kernel_shape=(1, 1),
+        stride=1,
+        padding="VALID",
+        with_bias=self.with_bias,
+        name="pointwise_conv")
+
+    out = depthwise(inputs)
+    if self.use_bn:
+      bn1 = hk.BatchNorm(create_scale=True, create_offset=True,
+                         decay_rate=0.999)
+      out = bn1(out, is_training)
+    out = jax.nn.relu(out)
+    out = pointwise(out)
+    if self.use_bn:
+      bn2 = hk.BatchNorm(create_scale=True, create_offset=True,
+                         decay_rate=0.999)
+      out = bn2(out, is_training)
+    out = jax.nn.relu(out)
+    return out
 
 
-class MobileNetV1(module.Module):
+class MobileNetV1(hk.Module):
   """MobileNetV1 model."""
   # TODO(jordanhoffmann) add width multiplier
 
-  def __init__(self,
-               strides: Sequence[int] = (1, 2, 1, 2, 1, 2, 1,
-                                         1, 1, 1, 1, 2, 1),
-               channels: Sequence[int] = (64, 128, 128, 256, 256, 512, 512,
-                                          512, 512, 512, 512, 1024, 1024),
-               num_classes: int = 1000,
-               use_bn: bool = True,
-               name: Optional[str] = None):
+  def __init__(
+      self,
+      strides: Sequence[int] = (1, 2, 1, 2, 1, 2, 1, 1, 1, 1, 1, 2, 1),
+      channels: Sequence[int] = (64, 128, 128, 256, 256, 512, 512,
+                                 512, 512, 512, 512, 1024, 1024),
+      num_classes: int = 1000,
+      use_bn: bool = True,
+      name: Optional[str] = None,
+  ):
     """Constructs a MobileNetV1 model.
 
     Args:
@@ -105,33 +122,35 @@ class MobileNetV1(module.Module):
               true, biases are not used. When false, biases are used.
       name: Name of the module.
     """
-    super(MobileNetV1, self).__init__(name=name)
+    super().__init__(name=name)
     if len(strides) != len(channels):
-      raise ValueError(
-          "`strides` and `channels` must have the same length."
-          )
-    self._strides = strides
-    self._channels = channels
-    self._use_bn = use_bn
-    self._with_bias = not use_bn
-    self._num_classes = num_classes
+      raise ValueError("`strides` and `channels` must have the same length.")
 
-  def __call__(self, inputs, is_training):
-    initial_conv = conv.Conv2D(32, (3, 3),
-                               stride=2,
-                               padding="VALID",
-                               with_bias=self._with_bias)
-    net = initial_conv(inputs)
-    if self._use_bn:
-      bn = batch_norm.BatchNorm(
-          create_scale=True, create_offset=True, decay_rate=0.999)
-      net = bn(net, is_training)
-    net = jax.nn.relu(net)
-    for i in range(len(self._strides)):
-      net = MobileNetV1Block(self._channels[i],
-                             self._strides[i],
-                             self._use_bn)(net, is_training)
-    net = jnp.mean(net, axis=(1, 2))
-    net = reshape.Flatten()(net)
-    net = basic.Linear(self._num_classes, name="logits")(net)
-    return net
+    self.strides = strides
+    self.channels = channels
+    self.use_bn = use_bn
+    self.with_bias = not use_bn
+    self.num_classes = num_classes
+
+  def __call__(self, inputs: jnp.ndarray, is_training: bool) -> jnp.ndarray:
+    initial_conv = hk.Conv2D(
+        output_channels=32,
+        kernel_shape=(3, 3),
+        stride=2,
+        padding="VALID",
+        with_bias=self.with_bias)
+
+    out = initial_conv(inputs)
+    if self.use_bn:
+      bn = hk.BatchNorm(create_scale=True, create_offset=True, decay_rate=0.999)
+      out = bn(out, is_training)
+    out = jax.nn.relu(out)
+    for i in range(len(self.strides)):
+      block = MobileNetV1Block(self.channels[i],
+                               self.strides[i],
+                               self.use_bn)
+      out = block(out, is_training)
+    out = jnp.mean(out, axis=(1, 2))
+    out = hk.Flatten()(out)
+    out = hk.Linear(self.num_classes, name="logits")(out)
+    return out

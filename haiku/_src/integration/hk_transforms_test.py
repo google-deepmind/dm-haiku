@@ -24,7 +24,6 @@ from haiku._src import test_utils
 from haiku._src.integration import descriptors
 from haiku._src.typing import DType, Shape  # pylint: disable=g-multiple-import
 import jax
-from jax.interpreters import xla
 import jax.numpy as jnp
 import numpy as np
 
@@ -117,9 +116,6 @@ class HaikuTransformsTest(parameterized.TestCase):
       shape: Shape,
       dtype: DType,
   ):
-    if not hasattr(xla.xb, 'parameter'):
-      self.skipTest('Need Jaxlib version > 0.1.45')
-
     rng = jax.random.PRNGKey(42)
     if jnp.issubdtype(dtype, jnp.integer):
       x = jax.random.randint(rng, shape, 0, np.prod(shape), dtype)

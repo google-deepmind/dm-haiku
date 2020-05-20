@@ -25,6 +25,8 @@ import jax
 import jax.nn
 import jax.numpy as jnp
 
+# TODO(slebedev): Add type annotations.
+
 
 class RNNCore(module.Module):
   """Base class for RNN cores.
@@ -159,18 +161,32 @@ def add_batch(nest, batch_size):
 
 
 class VanillaRNN(RNNCore):
-  """Vanilla RNN."""
+  r"""Basic fully-connected RNN core.
+
+  Given :math:`x_t` and the previous hidden state :math:`h_{t-1}` the
+  core computes
+
+  .. math::
+
+     h_t = \operatorname{ReLU}(w_i x_t + b_i + w_h h_{t-1} + b_h)
+  """
 
   def __init__(self, hidden_size, name=None):
+    """Constructs a vanilla RNN core.
+
+    Args:
+      hidden_size: Hidden layer size.
+      name: Name of the module.
+    """
     super().__init__(name=name)
     self.hidden_size = hidden_size
 
-  def __call__(self, inputs, state):
+  def __call__(self, inputs, prev_state):
+    # TODO(slebedev): Consider dropping one of the biases.
     in2h = basic.Linear(self.hidden_size)(inputs)
-    h2h = basic.Linear(self.hidden_size)(state)
-    output = jax.nn.relu(in2h + h2h)
-    new_h = output
-    return output, new_h
+    h2h = basic.Linear(self.hidden_size)(prev_state)
+    outputs = jax.nn.relu(in2h + h2h)
+    return outputs, outputs
 
   def initial_state(self, batch_size):
     state = jnp.zeros([self.hidden_size])
@@ -180,23 +196,50 @@ class VanillaRNN(RNNCore):
 
 
 class LSTM(RNNCore):
-  """LSTM.
+  r"""Long short-term memory (LSTM) RNN core.
 
-  Following :cite:`jozefowicz2015empirical`, we add a constant
-  bias of 1 to the forget gate in order to reduce the scale of forgetting in
-  the beginning of the training.
+  The implementation is based on :cite:`zaremba2014recurrent`. Given
+  :math:`x_t` and the previous state :math:`(h_{t-1}, c_{t-1})` the core
+  computes
+
+  .. math::
+
+     \begin{array}{ll}
+     i_t = \sigma(W_{ii} x_t + W_{hi} h_{t-1} + b_i) \\
+     f_t = \sigma(W_{if} x_t + W_{hf} h_{t-1} + b_f) \\
+     g_t = \tanh(W_{ig} x_t + W_{hg} h_{t-1} + b_g) \\
+     o_t = \sigma(W_{io} x_t + W_{ho} h_{t-1} + b_o) \\
+     c_t = f_t c_{t-1} + i_t g_t \\
+     h_t = o_t \tanh(c_t)
+     \end{array}
+
+  where :math:`i_t`, :math:`f_t`, :math:`o_t` are input, forget and
+  output gate activations, and :math:`g_t` is a vector of cell updates.
+
+  Notes:
+    Forget gate initialization:
+      Following :cite:`jozefowicz2015empirical` we add 1.0 to :math:`b_f`
+      after initialization in order to reduce the scale of forgetting in
+      the beginning of the training.
   """
 
   def __init__(self, hidden_size, name=None):
+    """Constructs an LSTM.
+
+    Args:
+      hidden_size: Hidden layer size.
+      name: Name of the module.
+    """
     super().__init__(name=name)
     self.hidden_size = hidden_size
 
-  def __call__(self, inputs, state):
+  def __call__(self, inputs, prev_state):
     if len(inputs.shape) > 2 or not inputs.shape:
       raise ValueError("LSTM input must be rank-1 or rank-2.")
-    prev_h, prev_c = state
+    prev_h, prev_c = prev_state
     x_and_h = jnp.concatenate([inputs, prev_h], axis=-1)
     gated = basic.Linear(4 * self.hidden_size)(x_and_h)
+    # TODO(slebedev): Consider aligning the order of gates with Sonnet.
     # i = input, g = cell_gate, f = forget_gate, o = output_gate
     i, g, f, o = jnp.split(gated, indices_or_sections=4, axis=-1)
     f = jax.nn.sigmoid(f + 1)  # Forget bias, as in sonnet.
@@ -212,13 +255,32 @@ class LSTM(RNNCore):
 
 
 class ConvNDLSTM(RNNCore):
-  """N-D convolutional LSTM.
+  r"""``num_spatial_dims``-D convolutional LSTM.
 
-  The implementation is based on https://arxiv.org/abs/1506.04214.
+  The implementation is based on :cite:`xingjian2015convolutional`.
+  Given :math:`x_t` and the previous state :math:`(h_{t-1}, c_{t-1})`
+  the core computes
 
-  Following :cite:`jozefowicz2015empirical`, we add a constant
-  bias of 1 to the forget gate in order to reduce the scale of forgetting in
-  the beginning of the training.
+  .. math::
+
+     \begin{array}{ll}
+     i_t = \sigma(W_{ii} * x_t + W_{hi} * h_{t-1} + b_i) \\
+     f_t = \sigma(W_{if} * x_t + W_{hf} * h_{t-1} + b_f) \\
+     g_t = \tanh(W_{ig} * x_t + W_{hg} * h_{t-1} + b_g) \\
+     o_t = \sigma(W_{io} * x_t + W_{ho} * h_{t-1} + b_o) \\
+     c_t = f_t c_{t-1} + i_t g_t \\
+     h_t = o_t \tanh(c_t)
+     \end{array}
+
+  where :math:`*` denotes the convolution operator; :math:`i_t`,
+  :math:`f_t`, :math:`o_t` are input, forget and output gate activations,
+  and :math:`g_t` is a vector of cell updates.
+
+  Notes:
+    Forget gate initialization:
+      Following :cite:`jozefowicz2015empirical` we add 1.0 to :math:`b_f`
+      after initialization in order to reduce the scale of forgetting in
+      the beginning of the training.
   """
 
   def __init__(self,
@@ -227,6 +289,17 @@ class ConvNDLSTM(RNNCore):
                output_channels,
                kernel_shape,
                name=None):
+    """Constructs a convolutional LSTM.
+
+    Args:
+      num_spatial_dims: Number of spatial dimensions of the input.
+      input_shape: Shape of the inputs excluding batch size.
+      output_channels: Number of output channels.
+      kernel_shape: Sequence of kernel sizes (of length ``num_spatial_dims``),
+        or an int. ``kernel_shape`` will be expanded to define a kernel size in
+        all dimensions.
+      name: Name of the module.
+    """
     super().__init__(name=name)
     self._num_spatial_dims = num_spatial_dims
     self.input_shape = input_shape
@@ -263,11 +336,20 @@ class ConvNDLSTM(RNNCore):
     return state
 
 
-class Conv1DLSTM(ConvNDLSTM):
-  """Conv1D module."""
+class Conv1DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
+  __doc__ = ConvNDLSTM.__doc__.replace("``num_spatial_dims``", "1")
 
   def __init__(self, input_shape, output_channels, kernel_shape, name=None):
-    """Initializes a Conv1DLSTM module. See superclass for documentation."""
+    """Constructs a 1-D convolutional LSTM.
+
+    Args:
+      input_shape: Shape of the inputs excluding batch size.
+      output_channels: Number of output channels.
+      kernel_shape: Sequence of kernel sizes (of length 1), or an int.
+        ``kernel_shape`` will be expanded to define a kernel size in all
+        dimensions.
+      name: Name of the module.
+    """
     super().__init__(
         num_spatial_dims=1,
         input_shape=input_shape,
@@ -276,11 +358,20 @@ class Conv1DLSTM(ConvNDLSTM):
         name=name)
 
 
-class Conv2DLSTM(ConvNDLSTM):
-  """Conv2D module."""
+class Conv2DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
+  __doc__ = ConvNDLSTM.__doc__.replace("``num_spatial_dims``", "2")
 
   def __init__(self, input_shape, output_channels, kernel_shape, name=None):
-    """Initializes a Conv2DLSTM module. See superclass for documentation."""
+    """Constructs a 2-D convolutional LSTM.
+
+    Args:
+      input_shape: Shape of the inputs excluding batch size.
+      output_channels: Number of output channels.
+      kernel_shape: Sequence of kernel sizes (of length 2), or an int.
+        ``kernel_shape`` will be expanded to define a kernel size in all
+        dimensions.
+      name: Name of the module.
+    """
     super().__init__(
         num_spatial_dims=2,
         input_shape=input_shape,
@@ -289,11 +380,20 @@ class Conv2DLSTM(ConvNDLSTM):
         name=name)
 
 
-class Conv3DLSTM(ConvNDLSTM):
-  """Conv3D module."""
+class Conv3DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
+  __doc__ = ConvNDLSTM.__doc__.replace("``num_spatial_dims``", "3")
 
   def __init__(self, input_shape, output_channels, kernel_shape, name=None):
-    """Initializes a Conv3DLSTM module. See superclass for documentation."""
+    """Constructs a 3-D convolutional LSTM.
+
+    Args:
+      input_shape: Shape of the inputs excluding batch size.
+      output_channels: Number of output channels.
+      kernel_shape: Sequence of kernel sizes (of length 3), or an int.
+        ``kernel_shape`` will be expanded to define a kernel size in all
+        dimensions.
+      name: Name of the module.
+    """
     super().__init__(
         num_spatial_dims=3,
         input_shape=input_shape,

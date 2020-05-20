@@ -277,6 +277,5 @@ class Identity(Initializer):
       initializer = jnp.eye(
         num_rows=shape[-2],
         num_columns=shape[-1],
-        batch_shape=shape[:-2],
-        dtype=dtype)
+        dtype=dtype).broacast_to(shape[:-2] + shape[-2:])
     return self.gain * initializer

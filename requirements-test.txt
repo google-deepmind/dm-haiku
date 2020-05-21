@@ -3,3 +3,4 @@ dill
 mock>=3.0.5
 pytest-xdist
 virtualenv
+dm-tree>=0.1.1

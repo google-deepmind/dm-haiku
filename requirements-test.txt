@@ -1,6 +1,5 @@
 cloudpickle>=1.2.2
+dill
 mock>=3.0.5
-tensorflow-datasets>1
-docutils
 pytest-xdist
 virtualenv

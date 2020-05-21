@@ -31,7 +31,6 @@ from jax.experimental import optix
 import jax.numpy as jnp
 import numpy as np
 import rlax
-from six.moves import queue
 
 
 # The IMPALA paper sums losses, rather than taking the mean.

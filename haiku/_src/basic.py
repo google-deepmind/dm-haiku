@@ -25,7 +25,6 @@ import jax
 import jax.nn
 import jax.numpy as jnp
 import numpy as np
-import tree
 
 
 # Utility and activation functions.
@@ -167,17 +166,16 @@ class Linear(module.Module):
 
 
 def ndim_at_least(x, num_dims):
-  if x is None:
-    return False
-  x = jnp.asarray(x)
+  if not isinstance(x, jnp.ndarray):
+    x = jnp.asarray(x)
   return len(x.shape) >= num_dims
 
 
 def arbitrary_mergeable_leaf(min_num_dims, args, kwargs):
-  for a in tree.flatten(args):
+  for a in jax.tree_leaves(args):
     if ndim_at_least(a, min_num_dims):
       return a
-  for k in tree.flatten(kwargs):
+  for k in jax.tree_leaves(kwargs):
     if ndim_at_least(k, min_num_dims):
       return k
   # Couldn't find a satisfactory leaf.
@@ -195,13 +193,11 @@ def merge_leading_dims(x, num_dims):
 
 
 def split_leading_dim(x, to_dim):
-  if x is None:
-    return None
   new_shape = to_dim + x.shape[1:]
   return jnp.reshape(x, new_shape)
 
 
-class BatchApply(object):
+class BatchApply:
   """Temporarily merges leading dimensions of input tensors.
 
   Merges the leading dimensions of a tensor into a single dimension, runs the
@@ -235,10 +231,10 @@ class BatchApply(object):
       raise ValueError(msg.format(self.num_dims))
     merge = lambda x: merge_leading_dims(x, self.num_dims)
     split = lambda x: split_leading_dim(x, example.shape[:self.num_dims])
-    args = tree.map_structure(merge, args)
-    kwargs = tree.map_structure(merge, kwargs)
+    args = jax.tree_map(merge, args)
+    kwargs = jax.tree_map(merge, kwargs)
     outputs = self._f(*args, **kwargs)
-    return tree.map_structure(split, outputs)
+    return jax.tree_map(split, outputs)
 
 
 def expand_apply(f, axis=0):
@@ -246,9 +242,9 @@ def expand_apply(f, axis=0):
 
   Syntactic sugar for::
 
-      ins = tree.map_structure(lambda t: np.expand_dims(t, axis=axis), ins)
+      ins = jax.tree_util.tree_map(lambda t: np.expand_dims(t, axis=axis), ins)
       out = f(ins)
-      out = tree.map_structure(lambda t: np.squeeze(t, axis=axis), out)
+      out = jax.tree_util.tree_map(lambda t: np.squeeze(t, axis=axis), out)
 
   This may be useful for applying a function built for ``[Time, Batch, ...]``
   arrays to a single timestep.
@@ -266,10 +262,10 @@ def expand_apply(f, axis=0):
   @functools.wraps(f)
   def wrapper(*args, **kwargs):
     expand = lambda t: jnp.expand_dims(t, axis=axis)
-    args = tree.map_structure(expand, args)
-    kwargs = tree.map_structure(expand, kwargs)
+    args = jax.tree_map(expand, args)
+    kwargs = jax.tree_map(expand, kwargs)
     outputs = f(*args, **kwargs)
-    return tree.map_structure(lambda t: jnp.squeeze(t, axis=axis), outputs)
+    return jax.tree_map(lambda t: jnp.squeeze(t, axis=axis), outputs)
 
   return wrapper
 

@@ -39,8 +39,6 @@ hk_py_binary(
     srcs = ["mnist_pruning.py"],
     deps = [
         # pip: absl:app
-        # pip: absl/flags
-        # pip: absl/logging
         "//haiku",
         # pip: jax
         # pip: jax:optix

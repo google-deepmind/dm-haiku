@@ -99,7 +99,6 @@ hk_py_test(
         ":common",
         ":descriptors",
         # pip: absl/testing:absltest
-        # pip: absl/testing:parameterized
         "//haiku/_src:test_utils",
         "//haiku/_src:typing",
         # pip: jax
@@ -115,7 +114,6 @@ hk_py_test(
         ":common",
         ":descriptors",
         # pip: absl/testing:absltest
-        # pip: absl/testing:parameterized
         "//haiku/_src:test_utils",
         "//haiku/_src:typing",
         # pip: jax

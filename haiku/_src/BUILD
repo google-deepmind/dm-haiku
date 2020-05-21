@@ -76,12 +76,10 @@ hk_py_test(
     name = "bias_test",
     srcs = ["bias_test.py"],
     deps = [
-        ":base",
         ":bias",
         ":test_utils",
         ":transform",
         # pip: absl/testing:absltest
-        # pip: absl/testing:parameterized
         # pip: jax
         # pip: numpy
     ],
@@ -132,7 +130,6 @@ hk_py_test(
     deps = [
         ":base",
         ":basic",
-        ":initializers",
         ":test_utils",
         ":transform",
         # pip: absl/testing:absltest
@@ -186,7 +183,6 @@ hk_py_test(
     name = "depthwise_conv_test",
     srcs = ["depthwise_conv_test.py"],
     deps = [
-        ":base",
         ":depthwise_conv",
         ":initializers",
         ":transform",
@@ -220,7 +216,6 @@ hk_py_test(
         # pip: absl/testing:parameterized
         # pip: jax
         # pip: mock
-        # pip: tree
     ],
 )
 
@@ -243,7 +238,6 @@ hk_py_test(
     name = "conv_test",
     srcs = ["conv_test.py"],
     deps = [
-        ":base",
         ":conv",
         ":initializers",
         ":test_utils",
@@ -384,7 +378,6 @@ hk_py_test(
         ":initializers",
         ":test_utils",
         # pip: absl/testing:absltest
-        # pip: absl/testing:parameterized
         # pip: jax
         # pip: numpy
     ],
@@ -433,7 +426,6 @@ hk_py_test(
     name = "moving_averages_test",
     srcs = ["moving_averages_test.py"],
     deps = [
-        ":base",
         ":basic",
         ":moving_averages",
         ":test_utils",
@@ -486,7 +478,6 @@ hk_py_test(
     timeout = "long",
     srcs = ["recurrent_test.py"],
     deps = [
-        ":base",
         ":basic",
         ":recurrent",
         ":test_utils",
@@ -503,7 +494,6 @@ hk_py_test(
     name = "spectral_norm_test",
     srcs = ["spectral_norm_test.py"],
     deps = [
-        ":base",
         ":basic",
         ":spectral_norm",
         ":test_utils",
@@ -577,7 +567,6 @@ hk_py_test(
     name = "reshape_test",
     srcs = ["reshape_test.py"],
     deps = [
-        ":base",
         ":reshape",
         ":test_utils",
         ":transform",

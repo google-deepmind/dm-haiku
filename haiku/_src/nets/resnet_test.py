@@ -33,9 +33,9 @@ class ResnetTest(parameterized.TestCase):
                           resnet_v2=resnet_v2,
                           bottleneck=bottleneck)
 
-    logits = model(image, is_training=True)
-    self.assertIsNotNone(logits)
-    self.assertEqual(logits.shape, (2, 10))
+    for is_training in (True, False):
+      logits = model(image, is_training=is_training)
+      self.assertEqual(logits.shape, (2, 10))
 
   @parameterized.parameters(3, 5)
   @test_utils.transform_and_run

@@ -118,6 +118,7 @@ hk_py_library(
         ":base",
         ":initializers",
         ":module",
+        ":typing",
         # pip: jax
         # pip: numpy
         # pip: tree

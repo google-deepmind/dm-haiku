@@ -404,6 +404,7 @@ hk_py_library(
     srcs = ["layer_norm.py"],
     deps = [
         ":base",
+        ":initializers",
         ":module",
         ":utils",
         # pip: jax

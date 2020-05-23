@@ -16,29 +16,41 @@
 """Layer Norm."""
 
 import collections
+import types
+from typing import Optional, Sequence, Union
 
 from haiku._src import base
+from haiku._src import initializers
 from haiku._src import module
 from haiku._src import utils
 import jax
 import jax.numpy as jnp
 import numpy as np
 
+# If you are forking replace this with `import haiku as hk`.
+hk = types.ModuleType("haiku")
+hk.get_parameter = base.get_parameter
+hk.initializers = initializers
+hk.Module = module.Module
+del base, module, initializers
 
-class LayerNorm(module.Module):
+
+class LayerNorm(hk.Module):
   """LayerNorm module.
 
   See: https://arxiv.org/abs/1607.06450.
   """
 
-  def __init__(self,
-               axis,
-               create_scale,
-               create_offset,
-               eps=1e-5,
-               scale_init=None,
-               offset_init=None,
-               name=None):
+  def __init__(
+      self,
+      axis: Union[int, Sequence[int], slice],
+      create_scale: bool,
+      create_offset: bool,
+      eps: float = 1e-5,
+      scale_init: Optional[hk.initializers.Initializer] = None,
+      offset_init: Optional[hk.initializers.Initializer] = None,
+      name: Optional[str] = None,
+  ):
     """Constructs a LayerNorm module.
 
     Args:
@@ -54,120 +66,124 @@ class LayerNorm(module.Module):
       offset_init: Optional initializer for bias (aka offset). By default, zero.
       name: The module name.
     """
-    super(LayerNorm, self).__init__(name=name)
+    super().__init__(name=name)
+    if not create_scale and scale_init is not None:
+      raise ValueError("Cannot set `scale_init` if `create_scale=False`.")
+    if not create_offset and offset_init is not None:
+      raise ValueError("Cannot set `offset_init` if `create_offset=False`.")
+
     if isinstance(axis, slice):
-      self._axis = axis
+      self.axis = axis
     elif isinstance(axis, int):
-      self._axis = (axis,)
+      self.axis = (axis,)
     elif (isinstance(axis, collections.Iterable) and
           all(isinstance(ax, int) for ax in axis)):
-      self._axis = tuple(axis)
+      self.axis = tuple(axis)
     else:
       raise ValueError("`axis` should be an int, slice or iterable of ints.")
 
-    self._eps = eps
+    self.eps = eps
+    self.create_scale = create_scale
+    self.create_offset = create_offset
+    self.scale_init = scale_init or jnp.ones
+    self.offset_init = offset_init or jnp.zeros
 
-    self._create_scale = create_scale
-    self._create_offset = create_offset
-
-    if self._create_scale:
-      self._scale_init = scale_init or jnp.ones
-    elif scale_init is not None:
-      raise ValueError("Cannot set `scale_init` if `create_scale=False`.")
-    if self._create_offset:
-      self._offset_init = offset_init or jnp.zeros
-    elif offset_init is not None:
-      raise ValueError("Cannot set `offset_init` if `create_offset=False`.")
-
-  def __call__(self, inputs, scale=None, offset=None):
+  def __call__(
+      self,
+      inputs: jnp.ndarray,
+      scale: Optional[jnp.ndarray] = None,
+      offset: Optional[jnp.ndarray] = None,
+  ) -> jnp.ndarray:
     """Connects the layer norm.
 
     Args:
       inputs: An array, where the data format is [N, ..., C].
       scale: An array up to n-D. The shape of this tensor must be broadcastable
-        to the shape of `inputs`. This is the scale applied to the normalized
+        to the shape of ``inputs``. This is the scale applied to the normalized
         inputs. This cannot be passed in if the module was constructed with
-        `create_scale=True`.
+        ``create_scale=True``.
       offset: An array up to n-D. The shape of this tensor must be broadcastable
-        to the shape of `inputs`. This is the offset applied to the normalized
+        to the shape of ``inputs``. This is the offset applied to the normalized
         inputs. This cannot be passed in if the module was constructed with
-        `create_offset=True`.
+        ``create_offset=True``.
 
     Returns:
       The array, normalized.
     """
-    if isinstance(self._axis, slice):
-      axes = tuple(range(len(inputs.shape)))
-      axis = axes[self._axis]
-    else:
-      axis = self._axis
+    if self.create_scale and  scale is not None:
+      raise ValueError(
+          "Cannot pass `scale` at call time if `create_scale=True`.")
+    if self.create_offset and offset is not None:
+      raise ValueError(
+          "Cannot pass `offset` at call time if `create_offset=True`.")
 
-    m = jnp.mean(inputs, axis=axis, keepdims=True)
+    axis = self.axis
+    if isinstance(axis, slice):
+      axis = tuple(range(inputs.ndim)[axis])
+
+    mean = jnp.mean(inputs, axis=axis, keepdims=True)
     variance = jnp.var(inputs, axis=axis, keepdims=True)
+
     param_shape = inputs.shape[-1:]
-    if self._create_scale:
-      if scale is not None:
-        raise ValueError(
-            "Cannot pass `scale` at call time if `create_scale=True`.")
-      scale = base.get_parameter("scale", param_shape, init=self._scale_init)
+    if self.create_scale:
+      scale = hk.get_parameter("scale", param_shape, init=self.scale_init)
     elif scale is None:
       scale = np.array(1., dtype=inputs.dtype)
 
-    if self._create_offset:
-      if offset is not None:
-        raise ValueError(
-            "Cannot pass `offset` at call time if `create_offset=True`.")
-      offset = base.get_parameter("offset", param_shape, init=self._offset_init)
+    if self.create_offset:
+      offset = hk.get_parameter("offset", param_shape, init=self.offset_init)
     elif offset is None:
       offset = np.array(0., dtype=inputs.dtype)
 
     scale = jnp.broadcast_to(scale, inputs.shape)
     offset = jnp.broadcast_to(offset, inputs.shape)
-    m = jnp.broadcast_to(m, inputs.shape)
+    mean = jnp.broadcast_to(mean, inputs.shape)
 
-    inv = scale * jax.lax.rsqrt(variance + self._eps)
-    return inv * (inputs - m) + offset
+    inv = scale * jax.lax.rsqrt(variance + self.eps)
+    return inv * (inputs - mean) + offset
 
 
 class InstanceNorm(LayerNorm):
   """Normalizes inputs along the spatial dimensions.
 
-  See :class:`LayerNorm` for more details.
+  See :class:``LayerNorm`` for more details.
   """
 
-  def __init__(self,
-               create_scale,
-               create_offset,
-               eps=1e-5,
-               scale_init=None,
-               offset_init=None,
-               data_format="channels_last",
-               name=None):
-    """Constructs an `InstanceNorm` module.
+  def __init__(
+      self,
+      create_scale: bool,
+      create_offset: bool,
+      eps: float = 1e-5,
+      scale_init: Optional[hk.initializers.Initializer] = None,
+      offset_init: Optional[hk.initializers.Initializer] = None,
+      data_format: str = "channels_last",
+      name: Optional[str] = None,
+  ):
+    """Constructs an ``InstanceNorm`` module.
 
     This method creates a module which normalizes over the spatial dimensions.
 
     Args:
-      create_scale: `bool` representing whether to create a trainable scale
+      create_scale: ``bool`` representing whether to create a trainable scale
         per channel applied after the normalization.
-      create_offset: `bool` representing whether to create a trainable offset
+      create_offset: ``bool`` representing whether to create a trainable offset
         per channel applied after normalization and scaling.
       eps: Small epsilon to avoid division by zero variance. Defaults to
-        `1e-5`.
+        ``1e-5``.
       scale_init: Optional initializer for the scale variable. Can only be set
-        if `create_scale=True`. By default scale is initialized to `1`.
+        if ``create_scale=True``. By default scale is initialized to ``1``.
       offset_init: Optional initializer for the offset variable. Can only be set
-        if `create_offset=True`. By default offset is initialized to `0`.
+        if ``create_offset=True``. By default offset is initialized to ``0``.
       data_format: The data format of the input. Can be either
-        `channels_first`, `channels_last`, `N...C` or `NC...`. By
-        default it is `channels_last`.
+        ``channels_first``, ``channels_last``, ``N...C`` or ``NC...``. By
+        default it is ``channels_last``.
       name: Name of the module.
     """
     if utils.get_channel_index(data_format) == 1:
       axis = slice(2, None)
     else:  # channel_index = -1
       axis = slice(1, -1)
-    super(InstanceNorm, self).__init__(
+    super().__init__(
         axis=axis,
         create_scale=create_scale,
         create_offset=create_offset,

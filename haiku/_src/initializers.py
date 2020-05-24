@@ -15,11 +15,20 @@
 # ==============================================================================
 """Haiku initializers."""
 
+import types
+
 from haiku._src import base
 from haiku._src.typing import Initializer, Shape, DType  # pylint: disable=g-multiple-import
 import jax
 import jax.numpy as jnp
 import numpy as np
+
+# If forking replace this block with `import haiku as hk`.
+hk = types.ModuleType('haiku')
+hk.next_rng_key = base.next_rng_key
+hk.initializers = types.ModuleType('haiku.initializers')
+hk.initializers.Initializer = Initializer
+del base
 
 
 def _compute_fans(shape):
@@ -39,7 +48,7 @@ def _compute_fans(shape):
   return fan_in, fan_out
 
 
-class Constant(Initializer):
+class Constant(hk.initializers.Initializer):
   """Initializes with a constant."""
 
   def __init__(self, constant):
@@ -48,13 +57,13 @@ class Constant(Initializer):
     Args:
       constant: Constant to initialize with.
     """
-    self._constant = constant
+    self.constant = constant
 
   def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
-    return jnp.broadcast_to(self._constant, shape).astype(dtype)
+    return jnp.broadcast_to(self.constant, shape).astype(dtype)
 
 
-class RandomNormal(Initializer):
+class RandomNormal(hk.initializers.Initializer):
   """Initializes by sampling from a normal distribution."""
 
   def __init__(self, stddev=1., mean=0.):
@@ -64,16 +73,16 @@ class RandomNormal(Initializer):
       stddev: The standard deviation of the normal distribution to sample from.
       mean: The mean of the normal distribution to sample from.
     """
-    self._stddev = stddev
-    self._mean = mean
+    self.stddev = stddev
+    self.mean = mean
 
   def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
-    m = jax.lax.convert_element_type(self._mean, dtype)
-    s = jax.lax.convert_element_type(self._stddev, dtype)
-    return m + s * jax.random.normal(base.next_rng_key(), shape, dtype)
+    m = jax.lax.convert_element_type(self.mean, dtype)
+    s = jax.lax.convert_element_type(self.stddev, dtype)
+    return m + s * jax.random.normal(hk.next_rng_key(), shape, dtype)
 
 
-class TruncatedNormal(Initializer):
+class TruncatedNormal(hk.initializers.Initializer):
   """Initializes by sampling from a truncated normal distribution."""
 
   def __init__(self, stddev=1., mean=0.):
@@ -90,12 +99,12 @@ class TruncatedNormal(Initializer):
   def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
     m = jax.lax.convert_element_type(self.mean, dtype)
     s = jax.lax.convert_element_type(self.stddev, dtype)
-    unscaled = jax.random.truncated_normal(base.next_rng_key(), -2., 2., shape,
+    unscaled = jax.random.truncated_normal(hk.next_rng_key(), -2., 2., shape,
                                            dtype)
     return s * unscaled + m
 
 
-class RandomUniform(Initializer):
+class RandomUniform(hk.initializers.Initializer):
   """Initializes by sampling from a uniform distribution."""
 
   def __init__(self, minval=0., maxval=1.):
@@ -109,11 +118,11 @@ class RandomUniform(Initializer):
     self.maxval = maxval
 
   def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
-    return jax.random.uniform(base.next_rng_key(), shape, dtype, self.minval,
+    return jax.random.uniform(hk.next_rng_key(), shape, dtype, self.minval,
                               self.maxval)
 
 
-class VarianceScaling(Initializer):
+class VarianceScaling(hk.initializers.Initializer):
   """Initializer which adapts its scale to the shape of the initialized array.
 
   The initializer first computes the scaling factor ``s = scale / n``, where n
@@ -162,28 +171,28 @@ class VarianceScaling(Initializer):
     distribution = distribution.lower()
     if distribution not in {'normal', 'truncated_normal', 'uniform'}:
       raise ValueError('Invalid `distribution` argument:', distribution)
-    self._scale = scale
-    self._mode = mode
-    self._distribution = distribution
+    self.scale = scale
+    self.mode = mode
+    self.distribution = distribution
 
   def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
-    scale = self._scale
+    scale = self.scale
     fan_in, fan_out = _compute_fans(shape)
-    if self._mode == 'fan_in':
+    if self.mode == 'fan_in':
       scale /= max(1.0, fan_in)
-    elif self._mode == 'fan_out':
+    elif self.mode == 'fan_out':
       scale /= max(1.0, fan_out)
     else:
       scale /= max(1.0, (fan_in + fan_out) / 2.0)
 
-    if self._distribution == 'truncated_normal':
+    if self.distribution == 'truncated_normal':
       stddev = np.sqrt(scale)
       # Adjust stddev for truncation.
       # Constant from scipy.stats.truncnorm.std(a=-2, b=2, loc=0., scale=1.)
       distribution_stddev = np.asarray(.87962566103423978, dtype=dtype)
       stddev = stddev / distribution_stddev
       return TruncatedNormal(stddev=stddev)(shape, dtype)
-    elif self._distribution == 'normal':
+    elif self.distribution == 'normal':
       stddev = np.sqrt(scale)
       return RandomNormal(stddev=stddev)(shape, dtype)
     else:
@@ -191,7 +200,7 @@ class VarianceScaling(Initializer):
       return RandomUniform(minval=-limit, maxval=limit)(shape, dtype)
 
 
-class UniformScaling(Initializer):
+class UniformScaling(hk.initializers.Initializer):
   """Uniform scaling initializer.
 
   Initializes by sampling from a uniform distribution, but with the variance
@@ -205,15 +214,15 @@ class UniformScaling(Initializer):
     Args:
       scale: Scale to multiply the upper limit of the uniform distribution by.
     """
-    self._scale = scale
+    self.scale = scale
 
   def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
     input_size = np.product(shape[:-1])
-    max_val = np.sqrt(3 / input_size) * self._scale
+    max_val = np.sqrt(3 / input_size) * self.scale
     return RandomUniform(-max_val, max_val)(shape, dtype)
 
 
-class Orthogonal(Initializer):
+class Orthogonal(hk.initializers.Initializer):
   """Uniform scaling initializer."""
 
   def __init__(self, scale=1.0, axis=-1):
@@ -245,7 +254,7 @@ class Orthogonal(Initializer):
     n_rows = shape[self.axis]
     n_cols = np.prod(shape) // n_rows
     matrix_shape = (n_rows, n_cols) if n_rows > n_cols else (n_cols, n_rows)
-    norm_dst = jax.random.normal(base.next_rng_key(), matrix_shape, dtype)
+    norm_dst = jax.random.normal(hk.next_rng_key(), matrix_shape, dtype)
     q_mat, r_mat = jnp.linalg.qr(norm_dst)
     # Enforce Q is uniformly distributed
     q_mat *= jnp.sign(jnp.diag(r_mat))

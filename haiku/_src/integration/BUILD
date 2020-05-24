@@ -149,3 +149,15 @@ hk_py_test(
         # pip: jax
     ],
 )
+
+hk_py_test(
+    name = "shim_hk_test",
+    srcs = ["shim_hk_test.py"],
+    gpu = False,
+    tpu = False,
+    deps = [
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        "//haiku",
+    ],
+)

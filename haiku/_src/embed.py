@@ -30,7 +30,6 @@ hk = types.ModuleType("haiku")
 hk.get_parameter = base.get_parameter
 hk.Module = module.Module
 hk.initializers = initializers
-hk.Initializer = base.Initializer
 del base, module, initializers
 
 
@@ -48,7 +47,7 @@ class Embed(hk.Module):
       vocab_size: Optional[int] = None,
       embed_dim: Optional[int] = None,
       embedding_matrix: Optional[jnp.ndarray] = None,
-      w_init: Optional[hk.Initializer] = None,
+      w_init: Optional[hk.initializers.Initializer] = None,
       # TODO(tomhennigan) Support EmbedLookupStyle or string.
       lookup_style: str = EmbedLookupStyle.ARRAY_INDEX.name,
       name: Optional[str] = None,

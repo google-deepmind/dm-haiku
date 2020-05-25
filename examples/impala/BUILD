@@ -89,7 +89,6 @@ hk_py_library(
         # pip: jax:optix
         # pip: numpy
         # pip: rlax
-        # pip: six
     ],
 )
 

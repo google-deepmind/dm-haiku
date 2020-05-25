@@ -1,5 +1,6 @@
 git+git://github.com/deepmind/bsuite.git
 git+git://github.com/deepmind/rlax.git
 dm-env>=1.2
+dm-tree>=0.1.1
 tensorflow>=2.1.0
 tensorflow-datasets>=2.0.0

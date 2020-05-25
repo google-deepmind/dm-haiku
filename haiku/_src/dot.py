@@ -24,7 +24,13 @@ from typing import NamedTuple, List, Optional
 from haiku._src import data_structures
 from haiku._src import module
 import jax
-import tree
+
+# Import tree if available, but only throw error at runtime.
+# Permits us to drop dm-tree from deps.
+try:
+  import tree  # pylint: disable=g-import-not-at-top
+except ImportError as e:
+  tree = None
 
 
 graph_stack = data_structures.ThreadLocalStack()
@@ -191,6 +197,8 @@ def _scaled_font_size(depth: int) -> int:
 
 def _graph_to_dot(graph: Graph, args, outputs):
   """Converts from an internal graph IR to 'dot' format."""
+  if tree is None:
+    raise ImportError('hk.experimental.to_dot requires dm-tree>=0.1.1.')
 
   def format_path(path):
     if isinstance(outputs, tuple):

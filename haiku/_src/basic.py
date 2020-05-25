@@ -286,6 +286,10 @@ def dropout(rng: PRNGKey, rate: float, x: jnp.ndarray) -> jnp.ndarray:
   """
   if rate < 0 or rate >= 1:
     raise ValueError("rate must be in [0, 1).")
+
+  if rate == 0.0:
+    return x
+
   keep_rate = 1.0 - rate
   keep = jax.random.bernoulli(rng, keep_rate, shape=x.shape)
   return keep * x / keep_rate

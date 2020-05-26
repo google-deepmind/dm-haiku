@@ -1,0 +1,6 @@
+{
+  "module": [
+    "Sequential(layers=[])"
+  ],
+  "input": "f32[8, 2, 2]"
+}

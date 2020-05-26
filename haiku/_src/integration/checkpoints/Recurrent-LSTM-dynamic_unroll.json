@@ -1,0 +1,14 @@
+{
+  "module": [
+    "LSTM(hidden_size=1)"
+  ],
+  "input": "f32[8, 128]",
+  "param_size": 520,
+  "param_bytes": 2080,
+  "params": {
+    "lstm/linear": {
+      "b": "f32[4]",
+      "w": "f32[129, 4]"
+    }
+  }
+}

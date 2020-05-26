@@ -166,9 +166,6 @@ def with_name_scope(method_name, unbound_method):
 _VALID_IDENTIFIER_R = re.compile(r"^[a-zA-Z_]([a-zA-Z0-9_])*$")
 valid_identifier = lambda name: bool(_VALID_IDENTIFIER_R.match(name))
 
-_CAMEL_TO_SNAKE_R = re.compile(r"((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))")
-camel_to_snake = lambda value: _CAMEL_TO_SNAKE_R.sub(r"_\1", value).lower()
-
 
 class Module(object, metaclass=ModuleMetaclass):
   """Base class for Haiku modules.
@@ -210,7 +207,7 @@ class Module(object, metaclass=ModuleMetaclass):
         current instance is converted to ``lower_snake_case`` and used instead.
     """
     if name is None:
-      name = camel_to_snake(type(self).__name__)
+      name = utils.camel_to_snake(type(self).__name__)
     if not valid_identifier(name):
       raise ValueError(
           "'{}' is not a valid module name (must be a valid Python identifier)"

@@ -1,0 +1,137 @@
+{
+  "module": [
+    "MobileNetV1(strides=(1, 1, 1), channels=(16, 32, 64))"
+  ],
+  "input": "f32[8, 64, 64, 2]",
+  "param_size": 69816,
+  "param_bytes": 279264,
+  "params": {
+    "mobile_net_v1/batch_norm": {
+      "offset": "f32[1, 1, 1, 32]",
+      "scale": "f32[1, 1, 1, 32]"
+    },
+    "mobile_net_v1/conv2_d": {
+      "w": "f32[3, 3, 2, 32]"
+    },
+    "mobile_net_v1/logits": {
+      "b": "f32[1000]",
+      "w": "f32[64, 1000]"
+    },
+    "mobile_net_v1/mobile_net_v1_block/batch_norm": {
+      "offset": "f32[1, 1, 1, 32]",
+      "scale": "f32[1, 1, 1, 32]"
+    },
+    "mobile_net_v1/mobile_net_v1_block/batch_norm_1": {
+      "offset": "f32[1, 1, 1, 16]",
+      "scale": "f32[1, 1, 1, 16]"
+    },
+    "mobile_net_v1/mobile_net_v1_block/depthwise_conv": {
+      "w": "f32[3, 3, 1, 32]"
+    },
+    "mobile_net_v1/mobile_net_v1_block/pointwise_conv": {
+      "w": "f32[1, 1, 32, 16]"
+    },
+    "mobile_net_v1/mobile_net_v1_block_1/batch_norm": {
+      "offset": "f32[1, 1, 1, 16]",
+      "scale": "f32[1, 1, 1, 16]"
+    },
+    "mobile_net_v1/mobile_net_v1_block_1/batch_norm_1": {
+      "offset": "f32[1, 1, 1, 32]",
+      "scale": "f32[1, 1, 1, 32]"
+    },
+    "mobile_net_v1/mobile_net_v1_block_1/depthwise_conv": {
+      "w": "f32[3, 3, 1, 16]"
+    },
+    "mobile_net_v1/mobile_net_v1_block_1/pointwise_conv": {
+      "w": "f32[1, 1, 16, 32]"
+    },
+    "mobile_net_v1/mobile_net_v1_block_2/batch_norm": {
+      "offset": "f32[1, 1, 1, 32]",
+      "scale": "f32[1, 1, 1, 32]"
+    },
+    "mobile_net_v1/mobile_net_v1_block_2/batch_norm_1": {
+      "offset": "f32[1, 1, 1, 64]",
+      "scale": "f32[1, 1, 1, 64]"
+    },
+    "mobile_net_v1/mobile_net_v1_block_2/depthwise_conv": {
+      "w": "f32[3, 3, 1, 32]"
+    },
+    "mobile_net_v1/mobile_net_v1_block_2/pointwise_conv": {
+      "w": "f32[1, 1, 32, 64]"
+    }
+  },
+  "state_size": 910,
+  "state_bytes": 3640,
+  "state": {
+    "mobile_net_v1/batch_norm/~/mean_ema": {
+      "average": "f32[1, 1, 1, 32]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 32]"
+    },
+    "mobile_net_v1/batch_norm/~/var_ema": {
+      "average": "f32[1, 1, 1, 32]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 32]"
+    },
+    "mobile_net_v1/mobile_net_v1_block/batch_norm/~/mean_ema": {
+      "average": "f32[1, 1, 1, 32]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 32]"
+    },
+    "mobile_net_v1/mobile_net_v1_block/batch_norm/~/var_ema": {
+      "average": "f32[1, 1, 1, 32]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 32]"
+    },
+    "mobile_net_v1/mobile_net_v1_block/batch_norm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 16]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 16]"
+    },
+    "mobile_net_v1/mobile_net_v1_block/batch_norm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 16]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 16]"
+    },
+    "mobile_net_v1/mobile_net_v1_block_1/batch_norm/~/mean_ema": {
+      "average": "f32[1, 1, 1, 16]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 16]"
+    },
+    "mobile_net_v1/mobile_net_v1_block_1/batch_norm/~/var_ema": {
+      "average": "f32[1, 1, 1, 16]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 16]"
+    },
+    "mobile_net_v1/mobile_net_v1_block_1/batch_norm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 32]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 32]"
+    },
+    "mobile_net_v1/mobile_net_v1_block_1/batch_norm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 32]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 32]"
+    },
+    "mobile_net_v1/mobile_net_v1_block_2/batch_norm/~/mean_ema": {
+      "average": "f32[1, 1, 1, 32]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 32]"
+    },
+    "mobile_net_v1/mobile_net_v1_block_2/batch_norm/~/var_ema": {
+      "average": "f32[1, 1, 1, 32]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 32]"
+    },
+    "mobile_net_v1/mobile_net_v1_block_2/batch_norm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 64]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 64]"
+    },
+    "mobile_net_v1/mobile_net_v1_block_2/batch_norm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 64]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 64]"
+    }
+  }
+}

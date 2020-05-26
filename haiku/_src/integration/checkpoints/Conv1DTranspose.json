@@ -1,0 +1,14 @@
+{
+  "module": [
+    "Conv1DTranspose(output_channels=3, kernel_shape=3)"
+  ],
+  "input": "f32[8, 2, 2]",
+  "param_size": 21,
+  "param_bytes": 84,
+  "params": {
+    "conv1_d_transpose": {
+      "b": "f32[3]",
+      "w": "f32[3, 3, 2]"
+    }
+  }
+}

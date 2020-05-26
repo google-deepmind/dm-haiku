@@ -1,4 +1,4 @@
-load("//haiku/_src:build_defs.bzl", "hk_py_library", "hk_py_test")
+load("//haiku/_src:build_defs.bzl", "hk_py_binary", "hk_py_library", "hk_py_test")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -101,6 +101,48 @@ hk_py_test(
         # pip: absl/testing:absltest
         "//haiku/_src:test_utils",
         "//haiku/_src:typing",
+        # pip: jax
+    ],
+)
+
+hk_py_binary(
+    name = "checkpoint_generate",
+    srcs = ["checkpoint_generate.py"],
+    deps = [
+        ":checkpoint_utils",
+        ":descriptors",
+        # pip: absl:app
+        # pip: absl/flags
+        "//haiku/_src:utils",
+    ],
+)
+
+hk_py_library(
+    name = "checkpoint_utils",
+    srcs = ["checkpoint_utils.py"],
+    deps = [
+        ":descriptors",
+        "//haiku",
+        "//haiku/_src:utils",
+        # pip: jax
+    ],
+)
+
+hk_py_test(
+    name = "checkpoint_test",
+    srcs = ["checkpoint_test.py"],
+    data = glob(["checkpoints/**"]),
+    gpu = False,
+    tpu = False,
+    deps = [
+        ":checkpoint_utils",
+        ":common",
+        ":descriptors",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        "//haiku/_src:test_utils",
+        "//haiku/_src:typing",
+        "//haiku/_src:utils",
         # pip: jax
     ],
 )

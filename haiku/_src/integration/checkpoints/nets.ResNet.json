@@ -1,0 +1,919 @@
+{
+  "module": [
+    "ResNet(blocks_per_group=(3, 4, 6, 3), num_classes=1000)"
+  ],
+  "input": "f32[8, 3, 3, 2]",
+  "param_size": 25553896,
+  "param_bytes": 102215584,
+  "params": {
+    "res_net/~/block_group_0/~/block_0/~/batchnorm_0": {
+      "offset": "f32[1, 1, 1, 64]",
+      "scale": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/block_group_0/~/block_0/~/batchnorm_1": {
+      "offset": "f32[1, 1, 1, 64]",
+      "scale": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/block_group_0/~/block_0/~/batchnorm_2": {
+      "offset": "f32[1, 1, 1, 256]",
+      "scale": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_0/~/block_0/~/conv_0": {
+      "w": "f32[1, 1, 64, 64]"
+    },
+    "res_net/~/block_group_0/~/block_0/~/conv_1": {
+      "w": "f32[3, 3, 64, 64]"
+    },
+    "res_net/~/block_group_0/~/block_0/~/conv_2": {
+      "w": "f32[1, 1, 64, 256]"
+    },
+    "res_net/~/block_group_0/~/block_0/~/shortcut_batchnorm": {
+      "offset": "f32[1, 1, 1, 256]",
+      "scale": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_0/~/block_0/~/shortcut_conv": {
+      "w": "f32[1, 1, 64, 256]"
+    },
+    "res_net/~/block_group_0/~/block_1/~/batchnorm_0": {
+      "offset": "f32[1, 1, 1, 64]",
+      "scale": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/block_group_0/~/block_1/~/batchnorm_1": {
+      "offset": "f32[1, 1, 1, 64]",
+      "scale": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/block_group_0/~/block_1/~/batchnorm_2": {
+      "offset": "f32[1, 1, 1, 256]",
+      "scale": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_0/~/block_1/~/conv_0": {
+      "w": "f32[1, 1, 256, 64]"
+    },
+    "res_net/~/block_group_0/~/block_1/~/conv_1": {
+      "w": "f32[3, 3, 64, 64]"
+    },
+    "res_net/~/block_group_0/~/block_1/~/conv_2": {
+      "w": "f32[1, 1, 64, 256]"
+    },
+    "res_net/~/block_group_0/~/block_2/~/batchnorm_0": {
+      "offset": "f32[1, 1, 1, 64]",
+      "scale": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/block_group_0/~/block_2/~/batchnorm_1": {
+      "offset": "f32[1, 1, 1, 64]",
+      "scale": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/block_group_0/~/block_2/~/batchnorm_2": {
+      "offset": "f32[1, 1, 1, 256]",
+      "scale": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_0/~/block_2/~/conv_0": {
+      "w": "f32[1, 1, 256, 64]"
+    },
+    "res_net/~/block_group_0/~/block_2/~/conv_1": {
+      "w": "f32[3, 3, 64, 64]"
+    },
+    "res_net/~/block_group_0/~/block_2/~/conv_2": {
+      "w": "f32[1, 1, 64, 256]"
+    },
+    "res_net/~/block_group_1/~/block_0/~/batchnorm_0": {
+      "offset": "f32[1, 1, 1, 128]",
+      "scale": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_0/~/batchnorm_1": {
+      "offset": "f32[1, 1, 1, 128]",
+      "scale": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_0/~/batchnorm_2": {
+      "offset": "f32[1, 1, 1, 512]",
+      "scale": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_1/~/block_0/~/conv_0": {
+      "w": "f32[1, 1, 256, 128]"
+    },
+    "res_net/~/block_group_1/~/block_0/~/conv_1": {
+      "w": "f32[3, 3, 128, 128]"
+    },
+    "res_net/~/block_group_1/~/block_0/~/conv_2": {
+      "w": "f32[1, 1, 128, 512]"
+    },
+    "res_net/~/block_group_1/~/block_0/~/shortcut_batchnorm": {
+      "offset": "f32[1, 1, 1, 512]",
+      "scale": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_1/~/block_0/~/shortcut_conv": {
+      "w": "f32[1, 1, 256, 512]"
+    },
+    "res_net/~/block_group_1/~/block_1/~/batchnorm_0": {
+      "offset": "f32[1, 1, 1, 128]",
+      "scale": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_1/~/batchnorm_1": {
+      "offset": "f32[1, 1, 1, 128]",
+      "scale": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_1/~/batchnorm_2": {
+      "offset": "f32[1, 1, 1, 512]",
+      "scale": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_1/~/block_1/~/conv_0": {
+      "w": "f32[1, 1, 512, 128]"
+    },
+    "res_net/~/block_group_1/~/block_1/~/conv_1": {
+      "w": "f32[3, 3, 128, 128]"
+    },
+    "res_net/~/block_group_1/~/block_1/~/conv_2": {
+      "w": "f32[1, 1, 128, 512]"
+    },
+    "res_net/~/block_group_1/~/block_2/~/batchnorm_0": {
+      "offset": "f32[1, 1, 1, 128]",
+      "scale": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_2/~/batchnorm_1": {
+      "offset": "f32[1, 1, 1, 128]",
+      "scale": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_2/~/batchnorm_2": {
+      "offset": "f32[1, 1, 1, 512]",
+      "scale": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_1/~/block_2/~/conv_0": {
+      "w": "f32[1, 1, 512, 128]"
+    },
+    "res_net/~/block_group_1/~/block_2/~/conv_1": {
+      "w": "f32[3, 3, 128, 128]"
+    },
+    "res_net/~/block_group_1/~/block_2/~/conv_2": {
+      "w": "f32[1, 1, 128, 512]"
+    },
+    "res_net/~/block_group_1/~/block_3/~/batchnorm_0": {
+      "offset": "f32[1, 1, 1, 128]",
+      "scale": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_3/~/batchnorm_1": {
+      "offset": "f32[1, 1, 1, 128]",
+      "scale": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_3/~/batchnorm_2": {
+      "offset": "f32[1, 1, 1, 512]",
+      "scale": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_1/~/block_3/~/conv_0": {
+      "w": "f32[1, 1, 512, 128]"
+    },
+    "res_net/~/block_group_1/~/block_3/~/conv_1": {
+      "w": "f32[3, 3, 128, 128]"
+    },
+    "res_net/~/block_group_1/~/block_3/~/conv_2": {
+      "w": "f32[1, 1, 128, 512]"
+    },
+    "res_net/~/block_group_2/~/block_0/~/batchnorm_0": {
+      "offset": "f32[1, 1, 1, 256]",
+      "scale": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_0/~/batchnorm_1": {
+      "offset": "f32[1, 1, 1, 256]",
+      "scale": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_0/~/batchnorm_2": {
+      "offset": "f32[1, 1, 1, 1024]",
+      "scale": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_0/~/conv_0": {
+      "w": "f32[1, 1, 512, 256]"
+    },
+    "res_net/~/block_group_2/~/block_0/~/conv_1": {
+      "w": "f32[3, 3, 256, 256]"
+    },
+    "res_net/~/block_group_2/~/block_0/~/conv_2": {
+      "w": "f32[1, 1, 256, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_0/~/shortcut_batchnorm": {
+      "offset": "f32[1, 1, 1, 1024]",
+      "scale": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_0/~/shortcut_conv": {
+      "w": "f32[1, 1, 512, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_1/~/batchnorm_0": {
+      "offset": "f32[1, 1, 1, 256]",
+      "scale": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_1/~/batchnorm_1": {
+      "offset": "f32[1, 1, 1, 256]",
+      "scale": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_1/~/batchnorm_2": {
+      "offset": "f32[1, 1, 1, 1024]",
+      "scale": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_1/~/conv_0": {
+      "w": "f32[1, 1, 1024, 256]"
+    },
+    "res_net/~/block_group_2/~/block_1/~/conv_1": {
+      "w": "f32[3, 3, 256, 256]"
+    },
+    "res_net/~/block_group_2/~/block_1/~/conv_2": {
+      "w": "f32[1, 1, 256, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_2/~/batchnorm_0": {
+      "offset": "f32[1, 1, 1, 256]",
+      "scale": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_2/~/batchnorm_1": {
+      "offset": "f32[1, 1, 1, 256]",
+      "scale": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_2/~/batchnorm_2": {
+      "offset": "f32[1, 1, 1, 1024]",
+      "scale": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_2/~/conv_0": {
+      "w": "f32[1, 1, 1024, 256]"
+    },
+    "res_net/~/block_group_2/~/block_2/~/conv_1": {
+      "w": "f32[3, 3, 256, 256]"
+    },
+    "res_net/~/block_group_2/~/block_2/~/conv_2": {
+      "w": "f32[1, 1, 256, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_3/~/batchnorm_0": {
+      "offset": "f32[1, 1, 1, 256]",
+      "scale": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_3/~/batchnorm_1": {
+      "offset": "f32[1, 1, 1, 256]",
+      "scale": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_3/~/batchnorm_2": {
+      "offset": "f32[1, 1, 1, 1024]",
+      "scale": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_3/~/conv_0": {
+      "w": "f32[1, 1, 1024, 256]"
+    },
+    "res_net/~/block_group_2/~/block_3/~/conv_1": {
+      "w": "f32[3, 3, 256, 256]"
+    },
+    "res_net/~/block_group_2/~/block_3/~/conv_2": {
+      "w": "f32[1, 1, 256, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_4/~/batchnorm_0": {
+      "offset": "f32[1, 1, 1, 256]",
+      "scale": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_4/~/batchnorm_1": {
+      "offset": "f32[1, 1, 1, 256]",
+      "scale": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_4/~/batchnorm_2": {
+      "offset": "f32[1, 1, 1, 1024]",
+      "scale": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_4/~/conv_0": {
+      "w": "f32[1, 1, 1024, 256]"
+    },
+    "res_net/~/block_group_2/~/block_4/~/conv_1": {
+      "w": "f32[3, 3, 256, 256]"
+    },
+    "res_net/~/block_group_2/~/block_4/~/conv_2": {
+      "w": "f32[1, 1, 256, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_5/~/batchnorm_0": {
+      "offset": "f32[1, 1, 1, 256]",
+      "scale": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_5/~/batchnorm_1": {
+      "offset": "f32[1, 1, 1, 256]",
+      "scale": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_5/~/batchnorm_2": {
+      "offset": "f32[1, 1, 1, 1024]",
+      "scale": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_5/~/conv_0": {
+      "w": "f32[1, 1, 1024, 256]"
+    },
+    "res_net/~/block_group_2/~/block_5/~/conv_1": {
+      "w": "f32[3, 3, 256, 256]"
+    },
+    "res_net/~/block_group_2/~/block_5/~/conv_2": {
+      "w": "f32[1, 1, 256, 1024]"
+    },
+    "res_net/~/block_group_3/~/block_0/~/batchnorm_0": {
+      "offset": "f32[1, 1, 1, 512]",
+      "scale": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_3/~/block_0/~/batchnorm_1": {
+      "offset": "f32[1, 1, 1, 512]",
+      "scale": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_3/~/block_0/~/batchnorm_2": {
+      "offset": "f32[1, 1, 1, 2048]",
+      "scale": "f32[1, 1, 1, 2048]"
+    },
+    "res_net/~/block_group_3/~/block_0/~/conv_0": {
+      "w": "f32[1, 1, 1024, 512]"
+    },
+    "res_net/~/block_group_3/~/block_0/~/conv_1": {
+      "w": "f32[3, 3, 512, 512]"
+    },
+    "res_net/~/block_group_3/~/block_0/~/conv_2": {
+      "w": "f32[1, 1, 512, 2048]"
+    },
+    "res_net/~/block_group_3/~/block_0/~/shortcut_batchnorm": {
+      "offset": "f32[1, 1, 1, 2048]",
+      "scale": "f32[1, 1, 1, 2048]"
+    },
+    "res_net/~/block_group_3/~/block_0/~/shortcut_conv": {
+      "w": "f32[1, 1, 1024, 2048]"
+    },
+    "res_net/~/block_group_3/~/block_1/~/batchnorm_0": {
+      "offset": "f32[1, 1, 1, 512]",
+      "scale": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_3/~/block_1/~/batchnorm_1": {
+      "offset": "f32[1, 1, 1, 512]",
+      "scale": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_3/~/block_1/~/batchnorm_2": {
+      "offset": "f32[1, 1, 1, 2048]",
+      "scale": "f32[1, 1, 1, 2048]"
+    },
+    "res_net/~/block_group_3/~/block_1/~/conv_0": {
+      "w": "f32[1, 1, 2048, 512]"
+    },
+    "res_net/~/block_group_3/~/block_1/~/conv_1": {
+      "w": "f32[3, 3, 512, 512]"
+    },
+    "res_net/~/block_group_3/~/block_1/~/conv_2": {
+      "w": "f32[1, 1, 512, 2048]"
+    },
+    "res_net/~/block_group_3/~/block_2/~/batchnorm_0": {
+      "offset": "f32[1, 1, 1, 512]",
+      "scale": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_3/~/block_2/~/batchnorm_1": {
+      "offset": "f32[1, 1, 1, 512]",
+      "scale": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_3/~/block_2/~/batchnorm_2": {
+      "offset": "f32[1, 1, 1, 2048]",
+      "scale": "f32[1, 1, 1, 2048]"
+    },
+    "res_net/~/block_group_3/~/block_2/~/conv_0": {
+      "w": "f32[1, 1, 2048, 512]"
+    },
+    "res_net/~/block_group_3/~/block_2/~/conv_1": {
+      "w": "f32[3, 3, 512, 512]"
+    },
+    "res_net/~/block_group_3/~/block_2/~/conv_2": {
+      "w": "f32[1, 1, 512, 2048]"
+    },
+    "res_net/~/initial_batchnorm": {
+      "offset": "f32[1, 1, 1, 64]",
+      "scale": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/initial_conv": {
+      "w": "f32[7, 7, 2, 64]"
+    },
+    "res_net/~/logits": {
+      "b": "f32[1000]",
+      "w": "f32[2048, 1000]"
+    }
+  },
+  "state_size": 106346,
+  "state_bytes": 425384,
+  "state": {
+    "res_net/~/block_group_0/~/block_0/~/batchnorm_0/~/mean_ema": {
+      "average": "f32[1, 1, 1, 64]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/block_group_0/~/block_0/~/batchnorm_0/~/var_ema": {
+      "average": "f32[1, 1, 1, 64]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/block_group_0/~/block_0/~/batchnorm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 64]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/block_group_0/~/block_0/~/batchnorm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 64]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/block_group_0/~/block_0/~/batchnorm_2/~/mean_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_0/~/block_0/~/batchnorm_2/~/var_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_0/~/block_0/~/shortcut_batchnorm/~/mean_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_0/~/block_0/~/shortcut_batchnorm/~/var_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_0/~/block_1/~/batchnorm_0/~/mean_ema": {
+      "average": "f32[1, 1, 1, 64]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/block_group_0/~/block_1/~/batchnorm_0/~/var_ema": {
+      "average": "f32[1, 1, 1, 64]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/block_group_0/~/block_1/~/batchnorm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 64]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/block_group_0/~/block_1/~/batchnorm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 64]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/block_group_0/~/block_1/~/batchnorm_2/~/mean_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_0/~/block_1/~/batchnorm_2/~/var_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_0/~/block_2/~/batchnorm_0/~/mean_ema": {
+      "average": "f32[1, 1, 1, 64]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/block_group_0/~/block_2/~/batchnorm_0/~/var_ema": {
+      "average": "f32[1, 1, 1, 64]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/block_group_0/~/block_2/~/batchnorm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 64]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/block_group_0/~/block_2/~/batchnorm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 64]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/block_group_0/~/block_2/~/batchnorm_2/~/mean_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_0/~/block_2/~/batchnorm_2/~/var_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_1/~/block_0/~/batchnorm_0/~/mean_ema": {
+      "average": "f32[1, 1, 1, 128]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_0/~/batchnorm_0/~/var_ema": {
+      "average": "f32[1, 1, 1, 128]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_0/~/batchnorm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 128]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_0/~/batchnorm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 128]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_0/~/batchnorm_2/~/mean_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_1/~/block_0/~/batchnorm_2/~/var_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_1/~/block_0/~/shortcut_batchnorm/~/mean_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_1/~/block_0/~/shortcut_batchnorm/~/var_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_1/~/block_1/~/batchnorm_0/~/mean_ema": {
+      "average": "f32[1, 1, 1, 128]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_1/~/batchnorm_0/~/var_ema": {
+      "average": "f32[1, 1, 1, 128]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_1/~/batchnorm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 128]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_1/~/batchnorm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 128]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_1/~/batchnorm_2/~/mean_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_1/~/block_1/~/batchnorm_2/~/var_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_1/~/block_2/~/batchnorm_0/~/mean_ema": {
+      "average": "f32[1, 1, 1, 128]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_2/~/batchnorm_0/~/var_ema": {
+      "average": "f32[1, 1, 1, 128]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_2/~/batchnorm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 128]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_2/~/batchnorm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 128]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_2/~/batchnorm_2/~/mean_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_1/~/block_2/~/batchnorm_2/~/var_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_1/~/block_3/~/batchnorm_0/~/mean_ema": {
+      "average": "f32[1, 1, 1, 128]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_3/~/batchnorm_0/~/var_ema": {
+      "average": "f32[1, 1, 1, 128]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_3/~/batchnorm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 128]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_3/~/batchnorm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 128]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 128]"
+    },
+    "res_net/~/block_group_1/~/block_3/~/batchnorm_2/~/mean_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_1/~/block_3/~/batchnorm_2/~/var_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_2/~/block_0/~/batchnorm_0/~/mean_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_0/~/batchnorm_0/~/var_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_0/~/batchnorm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_0/~/batchnorm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_0/~/batchnorm_2/~/mean_ema": {
+      "average": "f32[1, 1, 1, 1024]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_0/~/batchnorm_2/~/var_ema": {
+      "average": "f32[1, 1, 1, 1024]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_0/~/shortcut_batchnorm/~/mean_ema": {
+      "average": "f32[1, 1, 1, 1024]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_0/~/shortcut_batchnorm/~/var_ema": {
+      "average": "f32[1, 1, 1, 1024]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_1/~/batchnorm_0/~/mean_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_1/~/batchnorm_0/~/var_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_1/~/batchnorm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_1/~/batchnorm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_1/~/batchnorm_2/~/mean_ema": {
+      "average": "f32[1, 1, 1, 1024]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_1/~/batchnorm_2/~/var_ema": {
+      "average": "f32[1, 1, 1, 1024]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_2/~/batchnorm_0/~/mean_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_2/~/batchnorm_0/~/var_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_2/~/batchnorm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_2/~/batchnorm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_2/~/batchnorm_2/~/mean_ema": {
+      "average": "f32[1, 1, 1, 1024]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_2/~/batchnorm_2/~/var_ema": {
+      "average": "f32[1, 1, 1, 1024]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_3/~/batchnorm_0/~/mean_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_3/~/batchnorm_0/~/var_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_3/~/batchnorm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_3/~/batchnorm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_3/~/batchnorm_2/~/mean_ema": {
+      "average": "f32[1, 1, 1, 1024]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_3/~/batchnorm_2/~/var_ema": {
+      "average": "f32[1, 1, 1, 1024]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_4/~/batchnorm_0/~/mean_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_4/~/batchnorm_0/~/var_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_4/~/batchnorm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_4/~/batchnorm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_4/~/batchnorm_2/~/mean_ema": {
+      "average": "f32[1, 1, 1, 1024]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_4/~/batchnorm_2/~/var_ema": {
+      "average": "f32[1, 1, 1, 1024]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_5/~/batchnorm_0/~/mean_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_5/~/batchnorm_0/~/var_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_5/~/batchnorm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_5/~/batchnorm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 256]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 256]"
+    },
+    "res_net/~/block_group_2/~/block_5/~/batchnorm_2/~/mean_ema": {
+      "average": "f32[1, 1, 1, 1024]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_2/~/block_5/~/batchnorm_2/~/var_ema": {
+      "average": "f32[1, 1, 1, 1024]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 1024]"
+    },
+    "res_net/~/block_group_3/~/block_0/~/batchnorm_0/~/mean_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_3/~/block_0/~/batchnorm_0/~/var_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_3/~/block_0/~/batchnorm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_3/~/block_0/~/batchnorm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_3/~/block_0/~/batchnorm_2/~/mean_ema": {
+      "average": "f32[1, 1, 1, 2048]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 2048]"
+    },
+    "res_net/~/block_group_3/~/block_0/~/batchnorm_2/~/var_ema": {
+      "average": "f32[1, 1, 1, 2048]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 2048]"
+    },
+    "res_net/~/block_group_3/~/block_0/~/shortcut_batchnorm/~/mean_ema": {
+      "average": "f32[1, 1, 1, 2048]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 2048]"
+    },
+    "res_net/~/block_group_3/~/block_0/~/shortcut_batchnorm/~/var_ema": {
+      "average": "f32[1, 1, 1, 2048]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 2048]"
+    },
+    "res_net/~/block_group_3/~/block_1/~/batchnorm_0/~/mean_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_3/~/block_1/~/batchnorm_0/~/var_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_3/~/block_1/~/batchnorm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_3/~/block_1/~/batchnorm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_3/~/block_1/~/batchnorm_2/~/mean_ema": {
+      "average": "f32[1, 1, 1, 2048]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 2048]"
+    },
+    "res_net/~/block_group_3/~/block_1/~/batchnorm_2/~/var_ema": {
+      "average": "f32[1, 1, 1, 2048]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 2048]"
+    },
+    "res_net/~/block_group_3/~/block_2/~/batchnorm_0/~/mean_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_3/~/block_2/~/batchnorm_0/~/var_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_3/~/block_2/~/batchnorm_1/~/mean_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_3/~/block_2/~/batchnorm_1/~/var_ema": {
+      "average": "f32[1, 1, 1, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 512]"
+    },
+    "res_net/~/block_group_3/~/block_2/~/batchnorm_2/~/mean_ema": {
+      "average": "f32[1, 1, 1, 2048]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 2048]"
+    },
+    "res_net/~/block_group_3/~/block_2/~/batchnorm_2/~/var_ema": {
+      "average": "f32[1, 1, 1, 2048]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 2048]"
+    },
+    "res_net/~/initial_batchnorm/~/mean_ema": {
+      "average": "f32[1, 1, 1, 64]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 64]"
+    },
+    "res_net/~/initial_batchnorm/~/var_ema": {
+      "average": "f32[1, 1, 1, 64]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 64]"
+    }
+  }
+}

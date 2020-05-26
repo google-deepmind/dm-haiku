@@ -1,0 +1,13 @@
+{
+  "module": [
+    "Embed(vocab_size=6, embed_dim=12)"
+  ],
+  "input": "s32[8]",
+  "param_size": 72,
+  "param_bytes": 288,
+  "params": {
+    "embed": {
+      "embeddings": "f32[6, 12]"
+    }
+  }
+}

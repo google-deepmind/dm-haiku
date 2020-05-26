@@ -1,0 +1,6 @@
+{
+  "module": [
+    "ResetCore(core=DummyCore())"
+  ],
+  "input": "f32[8, 128]"
+}

@@ -15,7 +15,7 @@
 # ==============================================================================
 """Module descriptors programatically describe how to use modules."""
 
-from typing import Any, Callable, NamedTuple, Type
+from typing import Any, Callable, NamedTuple, Type, Sequence
 
 import haiku as hk
 from haiku._src.typing import Shape, DType  # pylint: disable=g-multiple-import
@@ -83,7 +83,7 @@ OPTIONAL_BATCH_MODULES = (
         shape=(BATCH_SIZE, 1)),
     ModuleDescriptor(
         name="Sequential",
-        create=lambda: hk.Sequential([lambda x: x]),
+        create=lambda: hk.Sequential([]),
         shape=(BATCH_SIZE, 2, 2)),
     ModuleDescriptor(
         name="nets.MLP",
@@ -258,6 +258,16 @@ def unroll_descriptors(descriptors, unroller):
 def module_type(module_fn: ModuleFn) -> Type[hk.Module]:
   f = hk.transform_with_state(lambda: type(unwrap(module_fn())))
   return f.apply(*f.init(jax.random.PRNGKey(42)), None)[0]
+
+
+def with_name(descriptors: Sequence[ModuleDescriptor]):
+  return [[n, n, c, s, d] for  n, c, s, d in descriptors]
+
+
+def to_file_name(descriptor: ModuleDescriptor):
+  n = descriptor.name
+  return n.replace(" ", "-").replace("(", "-").replace(")", "").replace(",", "")
+
 
 # Modules that require time then batch input.
 RECURRENT_MODULES = (

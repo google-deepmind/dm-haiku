@@ -240,3 +240,18 @@ def tree_bytes(tree) -> int:
     The total size in bytes of the array(s) in the input.
   """
   return sum(x.size * x.dtype.itemsize for x in jax.tree_leaves(tree))
+
+_CAMEL_TO_SNAKE_R = re.compile(r"((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))")
+camel_to_snake = lambda value: _CAMEL_TO_SNAKE_R.sub(r"_\1", value).lower()
+
+
+def simple_dtype(dtype) -> str:
+  if isinstance(dtype, type):
+    dtype = dtype(0).dtype
+  dtype = dtype.name
+  dtype = dtype.replace("complex", "c")
+  dtype = dtype.replace("double", "d")
+  dtype = dtype.replace("float", "f")
+  dtype = dtype.replace("uint", "u")
+  dtype = dtype.replace("int", "s")
+  return dtype

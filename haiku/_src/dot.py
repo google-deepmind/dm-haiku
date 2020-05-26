@@ -23,6 +23,7 @@ from typing import NamedTuple, List, Optional
 
 from haiku._src import data_structures
 from haiku._src import module
+from haiku._src import utils
 import jax
 
 # Import tree if available, but only throw error at runtime.
@@ -171,11 +172,7 @@ def _format_val(val):
   if not hasattr(val, 'shape'):
     return repr(val)
   shape = ','.join(map(str, val.shape))
-  dtype = val.dtype.name
-  dtype = dtype.replace('complex', 'c')
-  dtype = dtype.replace('float', 'f')
-  dtype = dtype.replace('uint', 'u')
-  dtype = dtype.replace('int', 's')
+  dtype = utils.simple_dtype(val.dtype)
   return f'{dtype}[{shape}]'
 
 

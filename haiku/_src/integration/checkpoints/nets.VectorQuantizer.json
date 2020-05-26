@@ -1,0 +1,13 @@
+{
+  "module": [
+    "VectorQuantizer(embedding_dim=64, num_embeddings=512, commitment_cost=0.25)"
+  ],
+  "input": "f32[8, 64]",
+  "param_size": 32768,
+  "param_bytes": 131072,
+  "params": {
+    "vector_quantizer": {
+      "embeddings": "f32[64, 512]"
+    }
+  }
+}

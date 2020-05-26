@@ -1,0 +1,28 @@
+{
+  "module": [
+    "VectorQuantizerEMA(",
+    "    embedding_dim=64,",
+    "    num_embeddings=512,",
+    "    commitment_cost=0.25,",
+    "    decay=0.9,",
+    ")"
+  ],
+  "input": "f32[8, 64]",
+  "state_size": 99330,
+  "state_bytes": 397320,
+  "state": {
+    "vector_quantizer_ema": {
+      "embeddings": "f32[64, 512]"
+    },
+    "vector_quantizer_ema/~/ema_cluster_size": {
+      "average": "f32[512]",
+      "counter": "s32[]",
+      "hidden": "f32[512]"
+    },
+    "vector_quantizer_ema/~/ema_dw": {
+      "average": "f32[64, 512]",
+      "counter": "s32[]",
+      "hidden": "f32[64, 512]"
+    }
+  }
+}

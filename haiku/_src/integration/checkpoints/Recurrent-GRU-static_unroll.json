@@ -1,0 +1,15 @@
+{
+  "module": [
+    "GRU(hidden_size=1)"
+  ],
+  "input": "f32[8, 128]",
+  "param_size": 390,
+  "param_bytes": 1560,
+  "params": {
+    "gru": {
+      "b": "f32[3]",
+      "w_h": "f32[1, 3]",
+      "w_i": "f32[128, 3]"
+    }
+  }
+}

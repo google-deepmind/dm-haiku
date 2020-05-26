@@ -1,0 +1,14 @@
+{
+  "module": [
+    "Conv3D(output_channels=3, kernel_shape=3)"
+  ],
+  "input": "f32[8, 2, 2, 2, 2]",
+  "param_size": 165,
+  "param_bytes": 660,
+  "params": {
+    "conv3_d": {
+      "b": "f32[3]",
+      "w": "f32[3, 3, 3, 2, 3]"
+    }
+  }
+}

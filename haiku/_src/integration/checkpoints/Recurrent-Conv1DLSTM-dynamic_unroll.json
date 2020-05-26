@@ -1,0 +1,18 @@
+{
+  "module": [
+    "Conv1DLSTM(input_shape=[2], output_channels=3, kernel_shape=3)"
+  ],
+  "input": "f32[8, 2, 2]",
+  "param_size": 204,
+  "param_bytes": 816,
+  "params": {
+    "conv1_dlstm/hidden_to_hidden": {
+      "b": "f32[12]",
+      "w": "f32[3, 3, 12]"
+    },
+    "conv1_dlstm/input_to_hidden": {
+      "b": "f32[12]",
+      "w": "f32[3, 2, 12]"
+    }
+  }
+}

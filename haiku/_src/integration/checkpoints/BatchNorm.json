@@ -1,0 +1,28 @@
+{
+  "module": [
+    "BatchNorm(create_scale=True, create_offset=True, decay_rate=0.9)"
+  ],
+  "input": "f32[8, 2, 2, 3]",
+  "param_size": 6,
+  "param_bytes": 24,
+  "params": {
+    "batch_norm": {
+      "offset": "f32[1, 1, 1, 3]",
+      "scale": "f32[1, 1, 1, 3]"
+    }
+  },
+  "state_size": 14,
+  "state_bytes": 56,
+  "state": {
+    "batch_norm/~/mean_ema": {
+      "average": "f32[1, 1, 1, 3]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 3]"
+    },
+    "batch_norm/~/var_ema": {
+      "average": "f32[1, 1, 1, 3]",
+      "counter": "s32[]",
+      "hidden": "f32[1, 1, 1, 3]"
+    }
+  }
+}

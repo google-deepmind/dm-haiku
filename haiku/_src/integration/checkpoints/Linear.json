@@ -1,0 +1,14 @@
+{
+  "module": [
+    "Linear(output_size=10)"
+  ],
+  "input": "f32[8, 1]",
+  "param_size": 20,
+  "param_bytes": 80,
+  "params": {
+    "linear": {
+      "b": "f32[10]",
+      "w": "f32[1, 10]"
+    }
+  }
+}

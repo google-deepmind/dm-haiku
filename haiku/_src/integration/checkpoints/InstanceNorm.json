@@ -1,0 +1,14 @@
+{
+  "module": [
+    "InstanceNorm(create_scale=True, create_offset=True)"
+  ],
+  "input": "f32[8, 3, 2]",
+  "param_size": 4,
+  "param_bytes": 16,
+  "params": {
+    "instance_norm": {
+      "offset": "f32[2]",
+      "scale": "f32[2]"
+    }
+  }
+}

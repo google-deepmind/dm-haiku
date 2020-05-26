@@ -1,0 +1,22 @@
+{
+  "module": [
+    "MLP(output_sizes=[3, 4, 5])"
+  ],
+  "input": "f32[8, 3]",
+  "param_size": 53,
+  "param_bytes": 212,
+  "params": {
+    "mlp/~/linear_0": {
+      "b": "f32[3]",
+      "w": "f32[3, 3]"
+    },
+    "mlp/~/linear_1": {
+      "b": "f32[4]",
+      "w": "f32[3, 4]"
+    },
+    "mlp/~/linear_2": {
+      "b": "f32[5]",
+      "w": "f32[4, 5]"
+    }
+  }
+}

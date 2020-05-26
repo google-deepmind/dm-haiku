@@ -1,0 +1,6 @@
+{
+  "module": [
+    "IdentityCore()"
+  ],
+  "input": "f32[8, 128]"
+}

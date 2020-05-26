@@ -1,0 +1,14 @@
+{
+  "module": [
+    "SpectralNorm()"
+  ],
+  "input": "f32[8, 3, 2]",
+  "state_size": 3,
+  "state_bytes": 12,
+  "state": {
+    "spectral_norm": {
+      "sigma": "f32[]",
+      "u0": "f32[1, 2]"
+    }
+  }
+}

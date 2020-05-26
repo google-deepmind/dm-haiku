@@ -1,0 +1,13 @@
+{
+  "module": [
+    "Bias()"
+  ],
+  "input": "f32[8, 3, 3, 3]",
+  "param_size": 27,
+  "param_bytes": 108,
+  "params": {
+    "bias": {
+      "b": "f32[3, 3, 3]"
+    }
+  }
+}

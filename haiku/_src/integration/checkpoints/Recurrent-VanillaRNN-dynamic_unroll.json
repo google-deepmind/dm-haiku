@@ -1,0 +1,18 @@
+{
+  "module": [
+    "VanillaRNN(hidden_size=8)"
+  ],
+  "input": "f32[8, 128]",
+  "param_size": 1104,
+  "param_bytes": 4416,
+  "params": {
+    "vanilla_rnn/linear": {
+      "b": "f32[8]",
+      "w": "f32[128, 8]"
+    },
+    "vanilla_rnn/linear_1": {
+      "b": "f32[8]",
+      "w": "f32[8, 8]"
+    }
+  }
+}

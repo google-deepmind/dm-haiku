@@ -70,6 +70,7 @@ from haiku._src.recurrent import dynamic_unroll
 from haiku._src.recurrent import GRU
 from haiku._src.recurrent import IdentityCore
 from haiku._src.recurrent import LSTM
+from haiku._src.recurrent import LSTMState
 from haiku._src.recurrent import ResetCore
 from haiku._src.recurrent import RNNCore
 from haiku._src.recurrent import static_unroll
@@ -121,6 +122,7 @@ __all__ = (
     "IdentityCore",
     "InstanceNorm",
     "LSTM",
+    "LSTMState",
     "LayerNorm",
     "Linear",
     "MaxPool",

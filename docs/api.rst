@@ -19,6 +19,8 @@ Transforming Functions
 Type Hints
 ~~~~~~~~~~
 
+.. autoclass:: LSTMState
+
 .. autoclass:: Params
 
 .. autoclass:: State

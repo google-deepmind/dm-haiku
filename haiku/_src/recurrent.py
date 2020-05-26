@@ -16,7 +16,8 @@
 """Haiku recurrent core."""
 
 import abc
-from typing import Optional, Sequence
+from typing import NamedTuple, Optional, Sequence, Tuple
+
 from haiku._src import base
 from haiku._src import basic
 from haiku._src import conv
@@ -195,6 +196,12 @@ class VanillaRNN(RNNCore):
     return state
 
 
+class LSTMState(NamedTuple):
+  """An LSTM core state consists of hidden and cell vectors."""
+  hidden: jnp.ndarray
+  cell: jnp.ndarray
+
+
 class LSTM(RNNCore):
   r"""Long short-term memory (LSTM) RNN core.
 
@@ -233,22 +240,26 @@ class LSTM(RNNCore):
     super().__init__(name=name)
     self.hidden_size = hidden_size
 
-  def __call__(self, inputs, prev_state):
+  def __call__(
+      self,
+      inputs: jnp.ndarray,
+      prev_state: LSTMState,
+  ) -> Tuple[jnp.ndarray, LSTMState]:
     if len(inputs.shape) > 2 or not inputs.shape:
       raise ValueError("LSTM input must be rank-1 or rank-2.")
-    prev_h, prev_c = prev_state
-    x_and_h = jnp.concatenate([inputs, prev_h], axis=-1)
+    x_and_h = jnp.concatenate([inputs, prev_state.hidden], axis=-1)
     gated = basic.Linear(4 * self.hidden_size)(x_and_h)
     # TODO(slebedev): Consider aligning the order of gates with Sonnet.
     # i = input, g = cell_gate, f = forget_gate, o = output_gate
     i, g, f, o = jnp.split(gated, indices_or_sections=4, axis=-1)
     f = jax.nn.sigmoid(f + 1)  # Forget bias, as in sonnet.
-    c = f * prev_c + jax.nn.sigmoid(i) * jnp.tanh(g)
+    c = f * prev_state.cell + jax.nn.sigmoid(i) * jnp.tanh(g)
     h = jax.nn.sigmoid(o) * jnp.tanh(c)
-    return h, (h, c)
+    return h, LSTMState(h, c)
 
-  def initial_state(self, batch_size: Optional[int]):
-    state = (jnp.zeros([self.hidden_size]), jnp.zeros([self.hidden_size]))
+  def initial_state(self, batch_size: Optional[int]) -> LSTMState:
+    state = LSTMState(hidden=jnp.zeros([self.hidden_size]),
+                      cell=jnp.zeros([self.hidden_size]))
     if batch_size is not None:
       state = add_batch(state, batch_size)
     return state

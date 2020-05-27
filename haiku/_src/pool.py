@@ -15,11 +15,18 @@
 # ==============================================================================
 """Pooling Haiku modules."""
 
+import types
 from typing import Optional
+
 from haiku._src import module
 from haiku._src.typing import Shape, ShapeLike  # pylint: disable=g-multiple-import
 from jax import lax
 import jax.numpy as jnp
+
+# If you are forking replace this block with `import haiku as hk`.
+hk = types.ModuleType("haiku")
+hk.Module = module.Module
+del module
 
 
 def _infer_shape(
@@ -92,7 +99,7 @@ def avg_pool(
   Raises:
     ValueError: If the padding is not VALID.
   """
-  if padding not in ["SAME", "VALID"]:
+  if padding not in ("SAME", "VALID"):
     raise ValueError(f"Invalid padding '{padding}', must be 'SAME' or 'VALID'.")
 
   window_shape = _infer_shape(value, window_shape, channel_axis)
@@ -107,14 +114,12 @@ def avg_pool(
     # Count the number of valid entries at each input point, then use that for
     # computing average. Assumes that any two arrays of same shape will be
     # padded the same.
-    # TODO(tycai): This mask is computed at runtime. Give option to bake it
-    # in as a constant instead.
     window_counts = lax.reduce_window(jnp.ones_like(value), *reduce_window_args)
     assert pooled.shape == window_counts.shape
     return pooled / window_counts
 
 
-class MaxPool(module.Module):
+class MaxPool(hk.Module):
   """Max pool.
 
   Equivalent to partial application of `hk.max_pool`.
@@ -137,8 +142,7 @@ class MaxPool(module.Module):
       channel_axis: Axis of the spatial channels for which pooling is skipped.
       name: String name for the module.
     """
-    super(MaxPool, self).__init__(name=name)
-
+    super().__init__(name=name)
     self.window_shape = window_shape
     self.strides = strides
     self.padding = padding
@@ -149,7 +153,7 @@ class MaxPool(module.Module):
                     self.padding, self.channel_axis)
 
 
-class AvgPool(module.Module):
+class AvgPool(hk.Module):
   """Average pool.
 
   Equivalent to partial application of `hk.avg_pool`.
@@ -172,8 +176,7 @@ class AvgPool(module.Module):
       channel_axis: Axis of the spatial channels for which pooling is skipped.
       name: String name for the module.
     """
-    super(AvgPool, self).__init__(name=name)
-
+    super().__init__(name=name)
     self.window_shape = window_shape
     self.strides = strides
     self.padding = padding

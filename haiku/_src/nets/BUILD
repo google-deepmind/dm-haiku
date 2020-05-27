@@ -28,6 +28,7 @@ hk_py_test(
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         "//haiku/_src:test_utils",
+        "//haiku/_src:transform",
         # pip: jax
     ],
 )

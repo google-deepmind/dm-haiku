@@ -102,16 +102,16 @@ class BlockV1(hk.Module):
 
     self.layers = layers
 
-  def __call__(self, inputs, is_training):
+  def __call__(self, inputs, is_training, test_local_stats):
     out = shortcut = inputs
 
     if self.use_projection:
       shortcut = self.proj_conv(shortcut)
-      shortcut = self.proj_batchnorm(shortcut, is_training=is_training)
+      shortcut = self.proj_batchnorm(shortcut, is_training, test_local_stats)
 
     for i, (conv_i, bn_i) in enumerate(self.layers):
       out = conv_i(out)
-      out = bn_i(out, is_training=is_training)
+      out = bn_i(out, is_training, test_local_stats)
       if i < len(self.layers) - 1:  # Don't apply relu on last layer
         out = jax.nn.relu(out)
 
@@ -184,11 +184,11 @@ class BlockV2(hk.Module):
 
     self.layers = layers
 
-  def __call__(self, inputs, is_training):
+  def __call__(self, inputs, is_training, test_local_stats):
     x = shortcut = inputs
 
     for i, (conv_i, bn_i) in enumerate(self.layers):
-      x = bn_i(x, is_training=is_training)
+      x = bn_i(x, is_training, test_local_stats)
       x = jax.nn.relu(x)
       if i == 0 and self.use_projection:
         shortcut = self.proj_conv(x)
@@ -224,10 +224,10 @@ class BlockGroup(hk.Module):
                     bn_config=bn_config,
                     name="block_%d" % (i)))
 
-  def __call__(self, inputs, is_training):
+  def __call__(self, inputs, is_training, test_local_stats):
     out = inputs
     for block in self.blocks:
-      out = block(out, is_training=is_training)
+      out = block(out, is_training, test_local_stats)
     return out
 
 
@@ -307,11 +307,11 @@ class ResNet(hk.Module):
 
     self.logits = hk.Linear(num_classes, w_init=jnp.zeros, name="logits")
 
-  def __call__(self, inputs, is_training):
+  def __call__(self, inputs, is_training, test_local_stats=False):
     out = inputs
     out = self.initial_conv(out)
     if not self.resnet_v2:
-      out = self.initial_batchnorm(out, is_training=is_training)
+      out = self.initial_batchnorm(out, is_training, test_local_stats)
       out = jax.nn.relu(out)
 
     out = hk.max_pool(out,
@@ -320,10 +320,10 @@ class ResNet(hk.Module):
                       padding="SAME")
 
     for block_group in self.block_groups:
-      out = block_group(out, is_training)
+      out = block_group(out, is_training, test_local_stats)
 
     if self.resnet_v2:
-      out = self.final_batchnorm(out, is_training=is_training)
+      out = self.final_batchnorm(out, is_training, test_local_stats)
       out = jax.nn.relu(out)
     out = jnp.mean(out, axis=[1, 2])
     return self.logits(out)

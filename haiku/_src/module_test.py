@@ -16,8 +16,11 @@
 """Tests for haiku._src.module."""
 
 import contextlib
+from typing import Callable, Optional, Sequence
+
 from absl.testing import absltest
 from absl.testing import parameterized
+import dataclasses
 from haiku._src import base
 from haiku._src import module
 from haiku._src import test_utils
@@ -295,6 +298,26 @@ class ModuleTest(parameterized.TestCase):
         self.assertEqual(parent.child1(), c1)
         self.assertEqual(parent.child2(), c2)
 
+  @parameterized.parameters(None, "mlp")
+  def test_dataclass(self, name):
+    with base.new_context() as ctx:
+      output_sizes = [300, 100, 10]
+      if name is None:
+        mlp = DataMLP(output_sizes)
+      else:
+        mlp = DataMLP(output_sizes, name="mlp")
+      mlp(jnp.ones([1, 28 * 28]))
+      params = ctx.collect_params()
+      if name is None:
+        module_names = ["data_mlp/linear", "data_mlp/linear_1",
+                        "data_mlp/linear_2"]
+      else:
+        module_names = ["mlp/linear", "mlp/linear_1", "mlp/linear_2"]
+      self.assertEqual(list(params.keys()), module_names)
+      for module_name, output_size in zip(module_names, output_sizes):
+        self.assertEqual(params[module_name]["w"].shape[-1], output_size)
+        self.assertEqual(params[module_name]["b"].shape[-1], output_size)
+
 
 class CapturesModule(module.Module):
 
@@ -370,6 +393,33 @@ class TransparentModule(module.Module):
   def __call__(self):
     return ScalarModule()()
 
+
+@dataclasses.dataclass
+class DataLinear(module.Module):
+
+  output_size: int
+  name: Optional[str] = None
+
+  def __call__(self, x):
+    j, k = x.shape[-1], self.output_size
+    w = base.get_parameter("w", [j, k], init=jnp.ones)
+    b = base.get_parameter("b", [k], init=jnp.zeros)
+    return x @ w + b
+
+
+@dataclasses.dataclass
+class DataMLP(module.Module):
+
+  output_sizes: Sequence[int]
+  activation: Callable[[jnp.ndarray], jnp.ndarray] = jax.nn.relu
+  name: Optional[str] = None
+
+  def __call__(self, x):
+    for i, output_size in enumerate(self.output_sizes):
+      if i > 0:
+        x = self.activation(x)
+      x = DataLinear(output_size, name="linear")(x)
+    return x
 
 if __name__ == "__main__":
   absltest.main()

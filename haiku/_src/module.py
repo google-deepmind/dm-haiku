@@ -207,7 +207,11 @@ class Module(object, metaclass=ModuleMetaclass):
         current instance is converted to ``lower_snake_case`` and used instead.
     """
     if name is None:
-      name = utils.camel_to_snake(type(self).__name__)
+      if hasattr(self, "name") and self.name is not None:
+        # Attribute assigned by @dataclass constructor.
+        name = self.name
+      else:
+        name = utils.camel_to_snake(type(self).__name__)
     if not valid_identifier(name):
       raise ValueError(
           "'{}' is not a valid module name (must be a valid Python identifier)"
@@ -215,6 +219,9 @@ class Module(object, metaclass=ModuleMetaclass):
     self._submodules = set()
     self.module_name = unique_and_canonical_name(name)
     self.name = self.module_name.split("/")[-1]
+
+  # Support @dataclass annotated modules.
+  __post_init__ = __init__
 
   def params_dict(self) -> Mapping[base.ParamName, jnp.array]:
     """Returns parameters keyed by name for this module and submodules."""

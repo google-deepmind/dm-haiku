@@ -107,6 +107,7 @@ hk_py_test(
         ":transform",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
+        # pip: dataclasses
         # pip: jax
     ],
 )

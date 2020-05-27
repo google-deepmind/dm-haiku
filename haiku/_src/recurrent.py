@@ -16,6 +16,7 @@
 """Haiku recurrent core."""
 
 import abc
+import types
 from typing import NamedTuple, Optional, Sequence, Tuple
 
 from haiku._src import base
@@ -28,8 +29,17 @@ import jax
 import jax.nn
 import jax.numpy as jnp
 
+# If you are forking replace this with `import haiku as hk`.
+hk = types.ModuleType("haiku")
+hk.initializers = initializers
+hk.Linear = basic.Linear
+hk.ConvND = conv.ConvND
+hk.get_parameter = base.get_parameter
+hk.Module = module.Module
+del base, basic, conv, initializers, module
 
-class RNNCore(module.Module):
+
+class RNNCore(hk.Module):
   """Base class for RNN cores.
 
   This class defines the basic functionality that every core should
@@ -184,10 +194,10 @@ class VanillaRNN(RNNCore):
 
   def __call__(self, inputs, prev_state):
     # TODO(slebedev): Consider dropping one of the biases.
-    in2h = basic.Linear(self.hidden_size)(inputs)
-    h2h = basic.Linear(self.hidden_size)(prev_state)
-    outputs = jax.nn.relu(in2h + h2h)
-    return outputs, outputs
+    input_to_hidden = hk.Linear(self.hidden_size)
+    hidden_to_hidden = hk.Linear(self.hidden_size)
+    out = jax.nn.relu(input_to_hidden(inputs) + hidden_to_hidden(prev_state))
+    return out, out
 
   def initial_state(self, batch_size: Optional[int]):
     state = jnp.zeros([self.hidden_size])
@@ -248,7 +258,7 @@ class LSTM(RNNCore):
     if len(inputs.shape) > 2 or not inputs.shape:
       raise ValueError("LSTM input must be rank-1 or rank-2.")
     x_and_h = jnp.concatenate([inputs, prev_state.hidden], axis=-1)
-    gated = basic.Linear(4 * self.hidden_size)(x_and_h)
+    gated = hk.Linear(4 * self.hidden_size)(x_and_h)
     # TODO(slebedev): Consider aligning the order of gates with Sonnet.
     # i = input, g = cell_gate, f = forget_gate, o = output_gate
     i, g, f, o = jnp.split(gated, indices_or_sections=4, axis=-1)
@@ -294,12 +304,14 @@ class ConvNDLSTM(RNNCore):
       the beginning of the training.
   """
 
-  def __init__(self,
-               num_spatial_dims: int,
-               input_shape: typing.Shape,
-               output_channels: int,
-               kernel_shape: typing.ShapeLike,
-               name: Optional[str] = None):
+  def __init__(
+      self,
+      num_spatial_dims: int,
+      input_shape: typing.Shape,
+      output_channels: int,
+      kernel_shape: typing.ShapeLike,
+      name: Optional[str] = None,
+  ):
     """Constructs a convolutional LSTM.
 
     Args:
@@ -312,36 +324,39 @@ class ConvNDLSTM(RNNCore):
       name: Name of the module.
     """
     super().__init__(name=name)
-    self._num_spatial_dims = num_spatial_dims
-    self.input_shape = input_shape
+    self.num_spatial_dims = num_spatial_dims
+    self.input_shape = tuple(input_shape)
     self.output_channels = output_channels
     self.kernel_shape = kernel_shape
 
-  def __call__(self, inputs, state):
-    prev_h, prev_c = state
+  def __call__(
+      self,
+      inputs,
+      state: LSTMState,
+  ) -> Tuple[jnp.ndarray, LSTMState]:
+    input_to_hidden = hk.ConvND(
+        num_spatial_dims=self.num_spatial_dims,
+        output_channels=4 * self.output_channels,
+        kernel_shape=self.kernel_shape,
+        name="input_to_hidden")
 
-    gates = conv.ConvND(
-        num_spatial_dims=self._num_spatial_dims,
-        output_channels=4*self.output_channels,
+    hidden_to_hidden = hk.ConvND(
+        num_spatial_dims=self.num_spatial_dims,
+        output_channels=4 * self.output_channels,
         kernel_shape=self.kernel_shape,
-        name="input_to_hidden")(
-            inputs)
-    gates += conv.ConvND(
-        num_spatial_dims=self._num_spatial_dims,
-        output_channels=4*self.output_channels,
-        kernel_shape=self.kernel_shape,
-        name="hidden_to_hidden")(
-            prev_h)
+        name="hidden_to_hidden")
+
+    gates = input_to_hidden(inputs) + hidden_to_hidden(state.hidden)
     i, g, f, o = jnp.split(gates, indices_or_sections=4, axis=-1)
 
     f = jax.nn.sigmoid(f + 1)
-    c = f * prev_c + jax.nn.sigmoid(i) * jnp.tanh(g)
+    c = f * state.cell + jax.nn.sigmoid(i) * jnp.tanh(g)
     h = jax.nn.sigmoid(o) * jnp.tanh(c)
-    return h, (h, c)
+    return h, LSTMState(h, c)
 
-  def initial_state(self, batch_size: Optional[int]):
-    state = (jnp.zeros(list(self.input_shape) + [self.output_channels]),
-             jnp.zeros(list(self.input_shape) + [self.output_channels]))
+  def initial_state(self, batch_size: Optional[int]) -> LSTMState:
+    shape = self.input_shape + (self.output_channels,)
+    state = LSTMState(jnp.zeros(shape), jnp.zeros(shape))
     if batch_size is not None:
       state = add_batch(state, batch_size)
     return state
@@ -350,11 +365,13 @@ class ConvNDLSTM(RNNCore):
 class Conv1DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
   __doc__ = ConvNDLSTM.__doc__.replace("``num_spatial_dims``", "1")
 
-  def __init__(self,
-               input_shape: typing.Shape,
-               output_channels: int,
-               kernel_shape: typing.ShapeLike,
-               name: Optional[str] = None):
+  def __init__(
+      self,
+      input_shape: typing.Shape,
+      output_channels: int,
+      kernel_shape: typing.ShapeLike,
+      name: Optional[str] = None,
+  ):
     """Constructs a 1-D convolutional LSTM.
 
     Args:
@@ -376,11 +393,13 @@ class Conv1DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
 class Conv2DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
   __doc__ = ConvNDLSTM.__doc__.replace("``num_spatial_dims``", "2")
 
-  def __init__(self,
-               input_shape: typing.Shape,
-               output_channels: int,
-               kernel_shape: typing.ShapeLike,
-               name: Optional[str] = None):
+  def __init__(
+      self,
+      input_shape: typing.Shape,
+      output_channels: int,
+      kernel_shape: typing.ShapeLike,
+      name: Optional[str] = None,
+  ):
     """Constructs a 2-D convolutional LSTM.
 
     Args:
@@ -402,11 +421,13 @@ class Conv2DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
 class Conv3DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
   __doc__ = ConvNDLSTM.__doc__.replace("``num_spatial_dims``", "3")
 
-  def __init__(self,
-               input_shape: typing.Shape,
-               output_channels: int,
-               kernel_shape: typing.ShapeLike,
-               name: Optional[str] = None):
+  def __init__(
+      self,
+      input_shape: typing.Shape,
+      output_channels: int,
+      kernel_shape: typing.ShapeLike,
+      name: Optional[str] = None,
+  ):
     """Constructs a 3-D convolutional LSTM.
 
     Args:
@@ -449,33 +470,31 @@ class GRU(RNNCore):
   TODO(tycai): Make policy decision/benchmark performance for GRU variants.
   """
 
-  def __init__(self,
-               hidden_size: int,
-               w_i_init: Optional[typing.Initializer] = None,
-               w_h_init: Optional[typing.Initializer] = None,
-               b_init: Optional[typing.Initializer] = None,
-               name: Optional[str] = None):
+  def __init__(
+      self,
+      hidden_size: int,
+      w_i_init: Optional[hk.initializers.Initializer] = None,
+      w_h_init: Optional[hk.initializers.Initializer] = None,
+      b_init: Optional[hk.initializers.Initializer] = None,
+      name: Optional[str] = None,
+  ):
     super().__init__(name=name)
     self.hidden_size = hidden_size
-    self._w_i_init = w_i_init or initializers.VarianceScaling()
-    self._w_h_init = w_h_init or initializers.VarianceScaling()
-    self._b_init = b_init or jnp.zeros
+    self.w_i_init = w_i_init or hk.initializers.VarianceScaling()
+    self.w_h_init = w_h_init or hk.initializers.VarianceScaling()
+    self.b_init = b_init or jnp.zeros
 
   def __call__(self, inputs, state):
-    if len(inputs.shape) > 2 or not inputs.shape:
+    if inputs.ndim not in (1, 2):
       raise ValueError("GRU input must be rank-1 or rank-2.")
 
     input_size = inputs.shape[-1]
     hidden_size = self.hidden_size
-    w_i = base.get_parameter(
-        name="w_i", shape=[input_size, 3 * hidden_size], init=self._w_i_init)
-    w_h = base.get_parameter(
-        name="w_h", shape=[hidden_size, 3 * hidden_size], init=self._w_h_init)
-    b = base.get_parameter(
-        name="b",
-        shape=[3 * hidden_size],
-        dtype=inputs.dtype,
-        init=self._b_init)
+    w_i = hk.get_parameter("w_i", [input_size, 3 * hidden_size],
+                           init=self.w_i_init)
+    w_h = hk.get_parameter("w_h", [hidden_size, 3 * hidden_size],
+                           init=self.w_h_init)
+    b = hk.get_parameter("b", [3 * hidden_size], inputs.dtype, init=self.b_init)
     w_h_z, w_h_a = jnp.split(w_h, indices_or_sections=[2 * hidden_size], axis=1)
     b_z, b_a = jnp.split(b, indices_or_sections=[2 * hidden_size], axis=0)
 
@@ -538,7 +557,7 @@ class ResetCore(RNNCore):
 
   def __init__(self, core: RNNCore, name: Optional[str] = None):
     super().__init__(name=name)
-    self._core = core
+    self.core = core
 
   def __call__(self, inputs, state):
     """Run one step of the wrapped core, handling state reset.
@@ -614,10 +633,10 @@ class ResetCore(RNNCore):
     initial_state = jax.tree_multimap(
         lambda s, i: i.astype(s.dtype), state, self.initial_state(batch_size))
     state = jax.tree_multimap(jnp.where, should_reset, initial_state, state)
-    return self._core(inputs, state)
+    return self.core(inputs, state)
 
   def initial_state(self, batch_size: Optional[int]):
-    return self._core.initial_state(batch_size)
+    return self.core.initial_state(batch_size)
 
 
 class _DeepRNN(RNNCore):
@@ -625,8 +644,8 @@ class _DeepRNN(RNNCore):
 
   def __init__(self, layers, skip_connections, name: Optional[str] = None):
     super().__init__(name=name)
-    self._layers = layers
-    self._skip_connections = skip_connections
+    self.layers = layers
+    self.skip_connections = skip_connections
 
     if skip_connections:
       for layer in layers:
@@ -640,8 +659,8 @@ class _DeepRNN(RNNCore):
     outputs = []
     state_idx = 0
     concat = lambda *args: jnp.concatenate(args, axis=-1)
-    for idx, layer in enumerate(self._layers):
-      if self._skip_connections and idx > 0:
+    for idx, layer in enumerate(self.layers):
+      if self.skip_connections and idx > 0:
         current_inputs = jax.tree_multimap(concat, inputs, current_inputs)
 
       if isinstance(layer, RNNCore):
@@ -652,17 +671,17 @@ class _DeepRNN(RNNCore):
       else:
         current_inputs = layer(current_inputs)
 
-    if self._skip_connections:
-      output = jax.tree_multimap(concat, *outputs)
+    if self.skip_connections:
+      out = jax.tree_multimap(concat, *outputs)
     else:
-      output = current_inputs
+      out = current_inputs
 
-    return output, tuple(next_states)
+    return out, tuple(next_states)
 
   def initial_state(self, batch_size: Optional[int]):
     return tuple(
         layer.initial_state(batch_size)
-        for layer in self._layers
+        for layer in self.layers
         if isinstance(layer, RNNCore))
 
 

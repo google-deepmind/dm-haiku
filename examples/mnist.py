@@ -65,7 +65,7 @@ def main(_):
   def loss(params: hk.Params, batch: Batch) -> jnp.ndarray:
     """Compute the loss of the network, including L2."""
     logits = net.apply(params, batch)
-    labels = hk.one_hot(batch["label"], 10)
+    labels = jax.nn.one_hot(batch["label"], 10)
 
     l2_loss = 0.5 * sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(params))
     softmax_xent = -jnp.sum(labels * jax.nn.log_softmax(logits))

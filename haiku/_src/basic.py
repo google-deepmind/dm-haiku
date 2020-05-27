@@ -29,11 +29,13 @@ import numpy as np
 
 
 # Utility and activation functions.
-def one_hot(indices, num_classes, dtype=jnp.float32):
+def one_hot(x, num_classes, dtype=jnp.float32):
   """Returns a one-hot version of indices.
 
+  DEPRECATED: Use ``jax.nn.one_hot(x, num_classes).astype(dtype)`` instead.
+
   Args:
-    indices: A tensor of indices.
+    x: A tensor of indices.
     num_classes: Number of classes in the one-hot dimension.
     dtype: The dtype.
 
@@ -41,9 +43,7 @@ def one_hot(indices, num_classes, dtype=jnp.float32):
     The one-hot tensor. If indices' shape is [A, B, ...], shape is
       [A, B, ... num_classes].
   """
-
-  return jnp.array(
-      indices[..., jnp.newaxis] == jnp.arange(num_classes), dtype=dtype)
+  return jax.nn.one_hot(x, num_classes).astype(dtype)
 
 
 def multinomial(rng, logits, num_samples):

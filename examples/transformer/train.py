@@ -99,7 +99,7 @@ def lm_loss_fn(forward_fn,
                is_training: bool = True) -> jnp.ndarray:
   """Compute the loss on data wrt params."""
   logits = forward_fn(params, rng, data, is_training)
-  targets = hk.one_hot(data['target'], vocab_size)
+  targets = jax.nn.one_hot(data['target'], vocab_size)
   assert logits.shape == targets.shape
 
   mask = jnp.greater(data['obs'], 0)

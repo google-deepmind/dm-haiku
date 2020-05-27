@@ -111,7 +111,7 @@ def loss_fn(
 ) -> Tuple[jnp.ndarray, hk.State]:
   """Computes a regularized loss for the given batch."""
   logits, state = forward.apply(params, state, None, batch, is_training=True)
-  labels = hk.one_hot(batch['labels'], 1000)
+  labels = jax.nn.one_hot(batch['labels'], 1000)
   cat_loss = jnp.mean(softmax_cross_entropy(logits=logits, labels=labels))
   l2_params = [p for ((mod_name, _), p) in tree.flatten_with_path(params)
                if 'batchnorm' not in mod_name]

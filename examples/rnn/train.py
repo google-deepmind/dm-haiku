@@ -60,7 +60,7 @@ class TrainingState(NamedTuple):
 def make_network() -> hk.RNNCore:
   """Defines the network architecture."""
   model = hk.DeepRNN([
-      lambda x: hk.one_hot(x, num_classes=dataset.NUM_CHARS),
+      lambda x: jax.nn.one_hot(x, num_classes=dataset.NUM_CHARS),
       hk.LSTM(FLAGS.hidden_size),
       jax.nn.relu,
       hk.LSTM(FLAGS.hidden_size),
@@ -82,7 +82,7 @@ def sequence_loss(batch: dataset.Batch) -> jnp.ndarray:
   initial_state = core.initial_state(batch_size)
   logits, _ = hk.dynamic_unroll(core, batch['input'], initial_state)
   log_probs = jax.nn.log_softmax(logits)
-  one_hot_labels = hk.one_hot(batch['target'], num_classes=logits.shape[-1])
+  one_hot_labels = jax.nn.one_hot(batch['target'], num_classes=logits.shape[-1])
   return -jnp.sum(one_hot_labels * log_probs) / (sequence_length * batch_size)
 
 

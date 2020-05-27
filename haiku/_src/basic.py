@@ -16,6 +16,7 @@
 """Basic Haiku modules and functions."""
 
 import functools
+import types
 from typing import Any, Callable, Iterable, Optional, Type
 
 from haiku._src import base
@@ -23,9 +24,15 @@ from haiku._src import initializers
 from haiku._src import module
 from haiku._src.typing import PRNGKey
 import jax
-import jax.nn
 import jax.numpy as jnp
 import numpy as np
+
+# If you are forking replace this block with `import haiku as hk`.
+hk = types.ModuleType("haiku")
+hk.get_parameter = base.get_parameter
+hk.initializers = initializers
+hk.Module = module.Module
+del base, module, initializers
 
 
 # Utility and activation functions.
@@ -77,59 +84,59 @@ def multinomial(rng, logits, num_samples):
 
 
 # Common modules.
-class Sequential(module.Module):
+class Sequential(hk.Module):
   """Sequentially calls the given list of layers.
 
-  Note that `Sequential` is limited in the range of possible architectures
-  it can handle. This is a deliberate design decision; `Sequential` is only
+  Note that ``Sequential`` is limited in the range of possible architectures
+  it can handle. This is a deliberate design decision; ``Sequential`` is only
   meant to be used for the simple case of fusing together modules/ops where
   the input of a particular module/op is the output of the previous one.
 
   Another restriction is that it is not possible to have extra arguments in the
-  `__call__` method that are passed to the constituents of the module - for
-  example, if there is a `BatchNorm` module in `Sequential` and the user wishes
-  to switch the `is_training` flag. If this is the desired use case, the
-  recommended solution is to subclass `snt.Module` and implement `__call__`:
+  ``__call__`` method that are passed to the constituents of the module - for
+  example, if there is a ``BatchNorm`` module in ``Sequential`` and the user
+  wishes to switch the ``is_training`` flag. If this is the desired use case,
+  the recommended solution is to subclass :class:`Module` and implement
+  ``__call__``:
 
       >>> class CustomModule(hk.Module):
-      ...   def __init__(self, name=None):
-      ...     super().__init__(name=name)
-      ...     self.conv2d = hk.Conv2D(32, 4, 2)
-      ...     self.bn = hk.BatchNorm(True, True, 0.9)
-      ...
-      ...   def __call__(self, inputs, is_training):
-      ...     outputs = self.conv2d(inputs)
-      ...     outputs = self.bn(outputs, is_training=is_training)
-      ...     outputs = jax.nn.relu(outputs)
-      ...     return outputs
+      ...   def __call__(self, x, is_training):
+      ...     x = hk.Conv2D(32, 4, 2)(x)
+      ...     x = hk.BatchNorm(True, True, 0.9)(x, is_training)
+      ...     x = jax.nn.relu(x)
+      ...     return x
   """
 
-  def __init__(self,
-               layers: Iterable[Callable[..., Any]] = None,
-               name: Optional[str] = None):
-    super(Sequential, self).__init__(name=name)
-    self.layers = layers
+  def __init__(
+      self,
+      layers: Iterable[Callable[..., Any]],
+      name: Optional[str] = None,
+  ):
+    super().__init__(name=name)
+    self.layers = tuple(layers)
 
   def __call__(self, inputs, *args, **kwargs):
     """Connects all layers. *args and **kwargs are passed to the first layer."""
-    outputs = inputs
+    out = inputs
     for i, layer in enumerate(self.layers):
       if i == 0:
-        outputs = layer(outputs, *args, **kwargs)
+        out = layer(out, *args, **kwargs)
       else:
-        outputs = layer(outputs)
-    return outputs
+        out = layer(out)
+    return out
 
 
-class Linear(module.Module):
+class Linear(hk.Module):
   """Linear module."""
 
-  def __init__(self,
-               output_size: int,
-               with_bias: bool = True,
-               w_init: Optional[initializers.Initializer] = None,
-               b_init: Optional[initializers.Initializer] = None,
-               name: Optional[str] = None):
+  def __init__(
+      self,
+      output_size: int,
+      with_bias: bool = True,
+      w_init: Optional[hk.initializers.Initializer] = None,
+      b_init: Optional[hk.initializers.Initializer] = None,
+      name: Optional[str] = None,
+  ):
     """Constructs the Linear module.
 
     Args:
@@ -141,28 +148,34 @@ class Linear(module.Module):
       b_init: Optional initializer for bias. By default, zero.
       name: Name of the module.
     """
-    super(Linear, self).__init__(name=name)
+    super().__init__(name=name)
     self.input_size = None
     self.output_size = output_size
     self.with_bias = with_bias
     self.w_init = w_init
     self.b_init = b_init or jnp.zeros
 
-  def __call__(self, inputs):
+  def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:
     if not inputs.shape:
       raise ValueError("Input must not be scalar.")
 
-    self.input_size = inputs.shape[-1]
-    default_stddev = 1. / np.sqrt(self.input_size)
-    w_init = self.w_init or initializers.TruncatedNormal(stddev=default_stddev)
+    input_size = self.input_size = inputs.shape[-1]
+    output_size = self.output_size
+    dtype = inputs.dtype
 
-    w = base.get_parameter("w", [self.input_size, self.output_size],
-                           inputs.dtype, init=w_init)
+    w_init = self.w_init
+    if w_init is None:
+      stddev = 1. / np.sqrt(self.input_size)
+      w_init = hk.initializers.TruncatedNormal(stddev=stddev)
+    w = hk.get_parameter("w", [input_size, output_size], dtype, init=w_init)
+
     out = jnp.dot(inputs, w)
+
     if self.with_bias:
-      b = base.get_parameter("b", [self.output_size], inputs.dtype,
-                             init=self.b_init)
-      out += jnp.broadcast_to(b, out.shape)
+      b = hk.get_parameter("b", [self.output_size], dtype, init=self.b_init)
+      b = jnp.broadcast_to(b, out.shape)
+      out = out + b
+
     return out
 
 
@@ -295,7 +308,7 @@ def dropout(rng: PRNGKey, rate: float, x: jnp.ndarray) -> jnp.ndarray:
   return keep * x / keep_rate
 
 
-class CallableModule(module.Module):
+class CallableModule(hk.Module):
 
   def __call__(self, *args, **kwargs) -> Any:
     raise NotImplementedError

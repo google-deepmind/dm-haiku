@@ -67,7 +67,7 @@ def statefulify(fun: Callable[..., Any],
     """Explictly returns the changed Haiku state after fun has been executed."""
     with stateful.temporary_internal_state(state):
       out = fun(*args, **kwargs)
-      return out, stateful.internal_state()
+      return out, stateful.difference(state, stateful.internal_state())
   return stateful_fun
 
 

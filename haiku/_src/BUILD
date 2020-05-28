@@ -587,7 +587,6 @@ hk_py_library(
     deps = [
         ":base",
         # pip: jax
-        # pip: pudb
     ],
 )
 

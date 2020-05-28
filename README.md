@@ -252,21 +252,23 @@ def forward_fn(x):
   model = MyLinear(10)
   return model(x)
 
-# Turn `forward_fn` into an object with `init` and `apply` methods.
+# Turn `forward_fn` into an object with `init` and `apply` methods. Note that
+# if your model uses `hk.next_rng_key`, it will need to be transformed using:
+# `hk.transform(f, apply_rng=True)` instead.
 forward = hk.transform(forward_fn)
 
 x = jnp.ones([1, 1])
 
-# When we run `forward.init`, Haiku will run `forward(x)` and collect initial
+# When we run `forward.init`, Haiku will run `forward_fn(x)` and collect initial
 # parameter values. Haiku requires you pass a RNG key to `init`, since parameters
 # are typically initialized randomly:
 key = hk.PRNGSequence(42)
 params = forward.init(next(key), x)
 
-# When we run `forward.apply`, Haiku will run `forward(x)` and inject parameter
-# values from the `params` that are passed as the first argument. We do not require
-# an RNG key by default since models are deterministic. You can (of course!) change
-# this using `hk.transform(f, apply_rng=True)` if you prefer:
+# When we run `forward.apply`, Haiku will run `forward_fn(x)` and inject parameter
+# values from the `params` that are passed as the first argument.  Note that
+# models transformed using `hk.transform(f, apply_rng=True)` must be called
+# with an additional `rng` argument: `forward.apply(params, rng, x)`.
 y = forward.apply(params, x)
 ```
 

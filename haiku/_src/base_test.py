@@ -329,6 +329,12 @@ class BaseTest(parameterized.TestCase):
     self.assertNotEqual(without_decorator_out, expected_output)
     self.assertEqual(with_decorator_out, expected_output)
 
+  def test_with_rng_no_transform(self):
+    with self.assertRaisesRegex(ValueError,
+                                "must be used as part of an `hk.transform`"):
+      with base.with_rng(jax.random.PRNGKey(428)):
+        pass
+
   def test_new_context(self):
     with base.new_context() as ctx:
       pass

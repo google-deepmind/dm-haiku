@@ -723,4 +723,5 @@ def with_rng(key: PRNGKey):
   Returns:
     Context manager under which the given sequence is active.
   """
+  assert_context("with_rng")
   return current_frame().rng_stack(PRNGSequence(key))

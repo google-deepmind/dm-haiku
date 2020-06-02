@@ -569,6 +569,11 @@ def next_rng_key() -> PRNGKey:
     APIs such as ``jax.random.uniform``.
   """
   assert_context("next_rng_key")
+  return next_rng_key_internal()
+
+
+# NOTE: Split for monkey patching in random.py.
+def next_rng_key_internal() -> PRNGKey:
   rng_seq = rng_seq_or_fail()
   return next(rng_seq)
 

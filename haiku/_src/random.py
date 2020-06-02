@@ -30,15 +30,15 @@ def count_hk_rngs_requested():
   # TODO(tomhennigan): Don't include keys returned under a `with_rng` context.
   # TODO(tomhennigan): Optimize use of keys within a `with_rng` heading as well.
   count = [0]
-  orig_next_rng_key = base.next_rng_key
+  orig_next_rng_key = base.next_rng_key_internal
   def counting_next_rng_key(*a, **k):
     count[0] += 1
     return orig_next_rng_key(*a, **k)
   try:
-    base.next_rng_key = counting_next_rng_key
+    base.next_rng_key_internal = counting_next_rng_key
     yield lambda: count[0]
   finally:
-    base.next_rng_key = orig_next_rng_key
+    base.next_rng_key_internal = orig_next_rng_key
 
 
 def optimize_rng_use(fun):

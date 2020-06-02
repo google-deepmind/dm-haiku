@@ -15,10 +15,18 @@
 # ==============================================================================
 """Reshaping Haiku modules."""
 
+import types
+from typing import Optional
+
 from haiku._src import module
 from haiku._src.typing import Shape
 import jax.numpy as jnp
 import numpy as np
+
+# If you are forking replace this block with `import haiku as hk`.
+hk = types.ModuleType("haiku")
+hk.Module = module.Module
+del module
 
 
 def _infer_shape(output_shape, dimensions):
@@ -43,7 +51,7 @@ def _infer_shape(output_shape, dimensions):
   return tuple(v)
 
 
-class Reshape(module.Module):
+class Reshape(hk.Module):
   """Reshapes input Tensor, preserving the batch dimension.
 
   For example, given an input tensor with shape ``[B, H, W, C, D]``::
@@ -70,7 +78,12 @@ class Reshape(module.Module):
       >>> assert mod(x).shape == (B, H, W, C, 1, D)
   """
 
-  def __init__(self, output_shape: Shape, preserve_dims=1, name=None):
+  def __init__(
+      self,
+      output_shape: Shape,
+      preserve_dims: int = 1,
+      name: Optional[str] = None,
+  ):
     """Constructs a ``Reshape`` module.
 
     Args:
@@ -85,27 +98,25 @@ class Reshape(module.Module):
     Raises:
       ValueError: If ``preserve_dims`` is not positive.
     """
-    super(Reshape, self).__init__(name=name)
-
+    super().__init__(name=name)
     if preserve_dims <= 0:
       raise ValueError("Argument preserve_dims should be >= 1.")
-
     if output_shape.count(-1) > 1:
       raise ValueError("-1 can only occur once in `output_shape`.")
 
-    self._output_shape = tuple(output_shape)
-    self._preserve_dims = preserve_dims
+    self.output_shape = tuple(output_shape)
+    self.preserve_dims = preserve_dims
 
   def __call__(self, inputs):
-    if inputs.ndim <= self._preserve_dims:
+    if inputs.ndim <= self.preserve_dims:
       return inputs
 
-    if -1 in self._output_shape:
-      reshaped_shape = _infer_shape(self._output_shape,
-                                    inputs.shape[self._preserve_dims:])
+    if -1 in self.output_shape:
+      reshaped_shape = _infer_shape(self.output_shape,
+                                    inputs.shape[self.preserve_dims:])
     else:
-      reshaped_shape = self._output_shape
-    shape = inputs.shape[:self._preserve_dims] + reshaped_shape
+      reshaped_shape = self.output_shape
+    shape = inputs.shape[:self.preserve_dims] + reshaped_shape
     return jnp.reshape(inputs, shape)
 
 
@@ -128,8 +139,12 @@ class Flatten(Reshape):
   (3,)
   """
 
-  def __init__(self, preserve_dims=1, name=None):
-    super(Flatten, self).__init__(
+  def __init__(
+      self,
+      preserve_dims: int = 1,
+      name: Optional[str] = None,
+  ):
+    super().__init__(
         output_shape=(-1,),
         preserve_dims=preserve_dims,
         name=name)

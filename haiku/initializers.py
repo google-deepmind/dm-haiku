@@ -29,11 +29,11 @@ from haiku._src.typing import Initializer
 __all__ = (
     "Constant",
     "Orthogonal",
+    "Identity",
     "Initializer",
     "RandomNormal",
     "RandomUniform",
     "TruncatedNormal",
     "UniformScaling",
     "VarianceScaling",
-    "Identity"
 )

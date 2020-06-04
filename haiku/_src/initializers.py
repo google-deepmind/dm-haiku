@@ -258,13 +258,15 @@ class Orthogonal(Initializer):
 
 class Identity(Initializer):
   """Initializer that generates the identity matrix.
+
   Constructs a 2D identity matrix or batches of these.
   """
 
   def __init__(self, gain: float = 1.0):
     """Constructs an identity initializer.
+
     Args:
-        gain: Multiplicative factor to apply to the identity matrix.
+      gain: Multiplicative factor to apply to the identity matrix.
     """
     self.gain = gain
 

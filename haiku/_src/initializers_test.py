@@ -134,6 +134,6 @@ class InitializersTest(absltest.TestCase):
         ValueError, "Identity initializer requires at least a 2D shape."):
       init(shape, jnp.float32)
 
-  if __name__ == "__main__":
-    config.update("jax_enable_x64", True)
-    absltest.main()
+if __name__ == "__main__":
+  config.update("jax_enable_x64", True)
+  absltest.main()

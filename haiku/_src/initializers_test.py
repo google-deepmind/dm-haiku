@@ -15,15 +15,19 @@
 # ==============================================================================
 """Tests for haiku._src.initializers."""
 
+import itertools as it
+
 from absl.testing import absltest
+from absl.testing import parameterized
 from haiku._src import initializers
 from haiku._src import test_utils
+import jax
 from jax.config import config
 import jax.numpy as jnp
 import numpy as np
 
 
-class InitializersTest(absltest.TestCase):
+class InitializersTest(parameterized.TestCase):
 
   @test_utils.transform_and_run
   def test_initializers(self):
@@ -60,6 +64,8 @@ class InitializersTest(absltest.TestCase):
         initializers.UniformScaling(as_np_f64(2.0)),
         initializers.TruncatedNormal(),
         initializers.Orthogonal(),
+        initializers.Identity(),
+        initializers.Identity(as_np_f64(2.0)),
 
         # Users are supposed to be able to use these.
         jnp.zeros,
@@ -114,6 +120,36 @@ class InitializersTest(absltest.TestCase):
     self.assertEqual(generated.shape, shape)
     self.assertEqual(generated.dtype, jnp.float32)
 
+  @test_utils.transform_and_run
+  def test_identity_identity(self):
+    init = initializers.Identity()
+    shape = (42, 20)
+    generated = init(shape, jnp.float32)
+    self.assertEqual(generated.shape, shape)
+    self.assertEqual(generated.dtype, jnp.float32)
+
+    key = jax.random.PRNGKey(42)
+    some_matrix = jax.random.normal(key, (62, 42), jnp.float32)
+    np.testing.assert_allclose(some_matrix @ generated, some_matrix[:, :20],
+                               rtol=1e-2)
+
+  @test_utils.transform_and_run
+  def test_identity_invalid_shape(self):
+    init = initializers.Identity()
+    shape = (20,)
+    with self.assertRaisesRegex(ValueError, "requires at least a 2D shape."):
+      init(shape, jnp.float32)
+
+  @parameterized.parameters(
+      *it.product([(4, 5), (3, 3), (3, 4, 5), (6, 2, 3, 3)],
+                  [3, 1],
+                  [jnp.float32, jnp.int32]))
+  def testRange(self, shape, gain, dtype):
+    init = initializers.Identity(gain)
+    value = init(shape, dtype)
+    self.assertEqual(value.shape, shape)
+    np.testing.assert_almost_equal(value.mean(), gain / shape[-1], decimal=4)
+    np.testing.assert_almost_equal(value.max(), gain, decimal=4)
 
 if __name__ == "__main__":
   config.update("jax_enable_x64", True)

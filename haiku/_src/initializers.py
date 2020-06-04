@@ -16,6 +16,7 @@
 """Haiku initializers."""
 
 import types
+from typing import Union
 
 from haiku._src import base
 from haiku._src.typing import Initializer, Shape, DType  # pylint: disable=g-multiple-import
@@ -263,3 +264,29 @@ class Orthogonal(hk.initializers.Initializer):
     q_mat = jnp.reshape(q_mat, (n_rows,) + tuple(np.delete(shape, self.axis)))
     q_mat = jnp.moveaxis(q_mat, 0, self.axis)
     return jax.lax.convert_element_type(self.scale, dtype) * q_mat
+
+
+class Identity(Initializer):
+  """Initializer that generates the identity matrix.
+
+  Constructs a 2D identity matrix or batches of these.
+  """
+
+  def __init__(self, gain: Union[float, jnp.ndarray] = 1.0):
+    """Constructs an identity initializer.
+
+    Args:
+        gain: Multiplicative factor to apply to the identity matrix.
+    """
+    self.gain = gain
+
+  def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
+    shape = tuple(shape)
+    if len(shape) < 2:
+      raise ValueError('Identity initializer requires at least a 2D shape.')
+
+    eye = jnp.eye(shape[-2], shape[-1], dtype=dtype)
+    if eye.shape != shape:
+      eye = jnp.broadcast_to(eye, shape)
+    gain = jax.lax.convert_element_type(self.gain, dtype)
+    return gain * eye

@@ -360,6 +360,12 @@ Constant
 .. autoclass:: Constant
    :members:
 
+Identity
+~~~~~~~~
+
+.. autoclass:: Identity
+   :members:
+
 Orthogonal
 ~~~~~~~~~~
 

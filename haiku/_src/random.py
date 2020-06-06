@@ -56,7 +56,7 @@ def optimize_rng_use(fun):
   Haiku will pre-allocate exactly enough RNGs for ``f`` to be evaluated by
   splitting the input key once and only once. For large models (unlike this
   example) this can lead to a significant reduction in compilation time for
-  ``init``::
+  ``init``:
 
   >>> def f(x):
   ...   net = hk.nets.MLP([300, 100, 10])

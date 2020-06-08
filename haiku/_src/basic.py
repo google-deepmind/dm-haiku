@@ -332,7 +332,7 @@ def to_module(f: Callable[..., Any]) -> Type[CallableModule]:
     f: The function to convert.
 
   Returns:
-    A module class which runs runs `f` when called.
+    A module class which runs `f` when called.
   """
 
   class ToModuleWrapper(CallableModule):

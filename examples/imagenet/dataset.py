@@ -18,11 +18,14 @@
 import enum
 from typing import Generator, Mapping, Optional, Sequence, Text, Tuple
 
+import jax
 import numpy as np
 import tensorflow.compat.v2 as tf
 import tensorflow_datasets as tfds
 
 Batch = Mapping[Text, np.ndarray]
+MEAN_RGB = (0.485 * 255, 0.456 * 255, 0.406 * 255)
+STDDEV_RGB = (0.229 * 255, 0.224 * 255, 0.225 * 255)
 
 
 class Split(enum.Enum):
@@ -47,25 +50,21 @@ class Split(enum.Enum):
 def load(
     split: Split,
     *,
+    is_training: bool,
     batch_dims: Sequence[int],
     bfloat16: bool = False,
 ) -> Generator[Batch, None, None]:
   """Loads the given split of the dataset."""
-  # NOTE: Imagenet did not release labels for the test split used in the
-  # competition, so it has been typical at DeepMind to consider the VALID
-  # split the TEST split and to reserve 10k images from TRAIN for VALID.
-  if split in (Split.TRAIN, Split.TRAIN_AND_VALID, Split.VALID):
-    tfds_split = tfds.Split.TRAIN
+  if is_training:
+    start, end = _shard(split, jax.host_id(), jax.host_count())
   else:
-    assert split == Split.TEST
-    tfds_split = tfds.Split.VALIDATION
-
-  is_training = split in (Split.TRAIN, Split.TRAIN_AND_VALID)
-  total_batch_size = np.prod(batch_dims)
-
+    start, end = _shard(split, 0, 1)
+  tfds_split = tfds.core.ReadInstruction(_to_tfds_split(split),
+                                         from_=start, to=end, unit='abs')
   ds = tfds.load('imagenet2012:5.*.*', split=tfds_split,
-                 decoders={'image': tfds.decode.SkipDecoding()},
-                 shuffle_files=is_training)
+                 decoders={'image': tfds.decode.SkipDecoding()})
+
+  total_batch_size = np.prod(batch_dims)
 
   options = ds.options()
   options.experimental_threading.private_threadpool_size = 48
@@ -74,8 +73,9 @@ def load(
     options.experimental_deterministic = False
 
   if is_training:
-    if split == Split.TRAIN:
-      ds = ds.skip(Split.VALID.num_examples)
+    if jax.host_count() > 1:
+      # Only cache if we are reading a subset of the dataset.
+      ds = ds.cache()
     ds = ds.repeat()
     ds = ds.shuffle(buffer_size=10 * total_batch_size, seed=0)
 
@@ -83,12 +83,10 @@ def load(
     if split.num_examples % total_batch_size != 0:
       raise ValueError(f'Test/valid must be divisible by {total_batch_size}')
 
-    if split == Split.VALID:
-      ds = ds.take(split.num_examples)
-
   def preprocess(example):
-    dtype = tf.bfloat16 if bfloat16 else tf.float32
-    image = _preprocess_image(example['image'], is_training, dtype)
+    image = _preprocess_image(example['image'], is_training)
+    if bfloat16:
+      image = tf.cast(image, tf.bfloat16)
     label = tf.cast(example['label'], tf.int32)
     return {'images': image, 'labels': label}
 
@@ -102,31 +100,55 @@ def load(
   yield from tfds.as_numpy(ds)
 
 
+def _to_tfds_split(split: Split) -> tfds.Split:
+  """Returns the TFDS split appropriately sharded."""
+  # NOTE: Imagenet did not release labels for the test split used in the
+  # competition, so it has been typical at DeepMind to consider the VALID
+  # split the TEST split and to reserve 10k images from TRAIN for VALID.
+  if split in (Split.TRAIN, Split.TRAIN_AND_VALID, Split.VALID):
+    return tfds.Split.TRAIN
+  else:
+    assert split == Split.TEST
+    return tfds.Split.VALIDATION
+
+
+def _shard(split: Split, shard_index: int, num_shards: int) -> Tuple[int, int]:
+  """Returns [start, end) for the given shard index."""
+  assert shard_index < num_shards
+  arange = np.arange(split.num_examples)
+  shard_range = np.array_split(arange, num_shards)[shard_index]
+  start, end = shard_range[0], (shard_range[-1] + 1)
+  if split == Split.TRAIN:
+    # Note that our TRAIN=TFDS_TRAIN[10000:] and VALID=TFDS_TRAIN[:10000].
+    offset = Split.VALID.num_examples
+    start += offset
+    end += offset
+  return start, end
+
+
 def _preprocess_image(
     image_bytes: tf.Tensor,
     is_training: bool,
-    dtype: tf.DType,
 ) -> tf.Tensor:
-  """Preprocesses the given image."""
+  """Returns processed and resized images."""
   if is_training:
     image = _decode_and_random_crop(image_bytes)
     image = tf.image.random_flip_left_right(image)
   else:
     image = _decode_and_center_crop(image_bytes)
-  image = tf.image.convert_image_dtype(image, dtype=dtype)
-  image = _normalize_image(image,
-                           mean=(0.485, 0.456, 0.406),
-                           stddev=(0.229, 0.224, 0.225))
-  # TODO(tomhennigan) Update to TF2 symbol and test for equivalence.
-  image = tf.compat.v1.image.resize_bicubic([image], [224, 224])[0]
-  image = tf.reshape(image, [224, 224, 3])
+  assert image.dtype == tf.uint8
+  # NOTE: Bicubic resize (1) casts uint8 to float32 and (2) resizes without
+  # clamping overshoots. This means values returned will be outside the range
+  # [0.0, 255.0] (e.g. we have observed outputs in the range [-51.1, 336.6]).
+  image = tf.image.resize(image, [224, 224], tf.image.ResizeMethod.BICUBIC)
+  image = _normalize_image(image)
   return image
 
 
-def _normalize_image(image, *, mean, stddev):
+def _normalize_image(image: tf.Tensor) -> tf.Tensor:
   """Normalize the image to zero mean and unit variance."""
-  image -= tf.constant(mean, shape=[1, 1, 3], dtype=image.dtype)
-  image /= tf.constant(stddev, shape=[1, 1, 3], dtype=image.dtype)
+  image -= tf.constant(MEAN_RGB, shape=[1, 1, 3], dtype=image.dtype)
+  image /= tf.constant(STDDEV_RGB, shape=[1, 1, 3], dtype=image.dtype)
   return image
 
 

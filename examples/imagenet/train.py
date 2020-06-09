@@ -38,10 +38,11 @@ flags.DEFINE_float('model_bn_decay', 0.9, help='')
 flags.DEFINE_bool('model_resnet_v2', True, help='')
 flags.DEFINE_float('optimizer_momentum', 0.9, help='')
 flags.DEFINE_bool('optimizer_use_nesterov', True, help='')
-flags.DEFINE_integer('train_device_batch_size', 32, help='')
+flags.DEFINE_integer('train_device_batch_size', 128, help='')
 flags.DEFINE_integer('train_eval_every', -1, help='')
 flags.DEFINE_integer('train_init_random_seed', 42, help='')
 flags.DEFINE_integer('train_log_every', 1000, help='')
+flags.DEFINE_float('train_smoothing', .1, lower_bound=0, upper_bound=1, help='')
 flags.DEFINE_enum('train_split', 'TRAIN_AND_VALID', SPLITS, help='')
 flags.DEFINE_float('train_weight_decay', 1e-4, help='')
 FLAGS = flags.FLAGS
@@ -104,6 +105,15 @@ def softmax_cross_entropy(
   return -jnp.sum(labels * jax.nn.log_softmax(logits), axis=-1)
 
 
+def smooth_labels(
+    labels: jnp.ndarray,
+    smoothing: jnp.ndarray,
+) -> jnp.ndarray:
+  smooth_positives = 1. - smoothing
+  smooth_negatives = smoothing / 1000
+  return smooth_positives * labels + smooth_negatives
+
+
 def loss_fn(
     params: hk.Params,
     state: hk.State,
@@ -112,6 +122,8 @@ def loss_fn(
   """Computes a regularized loss for the given batch."""
   logits, state = forward.apply(params, state, None, batch, is_training=True)
   labels = jax.nn.one_hot(batch['labels'], 1000)
+  if FLAGS.train_smoothing:
+    labels = smooth_labels(labels, FLAGS.train_smoothing)
   cat_loss = jnp.mean(softmax_cross_entropy(logits=logits, labels=labels))
   l2_params = [p for ((mod_name, _), p) in tree.flatten_with_path(params)
                if 'batchnorm' not in mod_name]
@@ -180,7 +192,9 @@ def evaluate(
   # Params/state are sharded per-device during training. We just need the copy
   # from the first device (since we do not pmap evaluation at the moment).
   params, state = jax.tree_map(lambda x: x[0], (params, state))
-  test_dataset = dataset.load(split, batch_dims=[FLAGS.eval_batch_size])
+  test_dataset = dataset.load(split,
+                              is_training=False,
+                              batch_dims=[FLAGS.eval_batch_size])
   correct = jnp.array(0)
   total = 0
   for batch in test_dataset:
@@ -191,14 +205,16 @@ def evaluate(
 
 @contextlib.contextmanager
 def time_activity(activity_name: str):
-  logging.info(f'[Timing] {activity_name} start.')
+  logging.info('[Timing] %s start.', activity_name)
   yield
-  logging.info(f'[Timing] {activity_name} finished.')
+  logging.info('[Timing] %s finished.', activity_name)
 
 
 def main(argv):
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
+
+  FLAGS.alsologtostderr = True
 
   train_split = dataset.Split.from_string(FLAGS.train_split)
   eval_split = dataset.Split.from_string(FLAGS.eval_split)
@@ -212,6 +228,7 @@ def main(argv):
   local_device_count = jax.local_device_count()
   train_dataset = dataset.load(
       train_split,
+      is_training=True,
       batch_dims=[local_device_count, FLAGS.train_device_batch_size])
 
   # For initialization we need the same random key on each device.
@@ -235,18 +252,19 @@ def main(argv):
       if eval_every > 0 and step_num and step_num % eval_every == 0:
         with time_activity('eval during train'):
           eval_scalars = evaluate(eval_split, params, state)
-        logging.info(f'[Eval {step_num}/{num_train_steps}] {eval_scalars}')
+        logging.info('[Eval %s/%s] %s', step_num, num_train_steps, eval_scalars)
 
       # Log progress at fixed intervals.
       if step_num and step_num % log_every == 0:
         train_scalars = jax.tree_map(lambda v: np.mean(v).item(),
                                      jax.device_get(train_scalars))
-        logging.info(f'[Train {step_num}/{num_train_steps}] {train_scalars}')
+        logging.info('[Train %s/%s] %s',
+                     step_num, num_train_steps, train_scalars)
 
   # Once training has finished we run eval one more time to get final results.
   with time_activity('final eval'):
     eval_scalars = evaluate(eval_split, params, state)
-  logging.info(f'[Eval FINAL]: {eval_scalars}')
+  logging.info('[Eval FINAL]: %s', eval_scalars)
 
 if __name__ == '__main__':
   app.run(main)

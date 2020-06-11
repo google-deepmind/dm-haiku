@@ -73,7 +73,7 @@ def statefulify(fun: Callable[..., Any],
 
 def stateful_named_call(fun: Callable[..., Any], *,
                         name: str) -> Callable[..., Any]:
-  """A version of named_call that handles Haiku state."""
+  """Wraps a function in a name_scope and maintains Haiku state."""
   @functools.wraps(fun)
   def wrapper(*args, **kwargs):
     if base.inside_transform():

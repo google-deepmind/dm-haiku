@@ -611,6 +611,11 @@ ParamContext
 
 .. autoclass:: ParamContext
 
+named_call
+~~~~~~~~~~
+
+.. autofunction:: named_call
+
 optimize_rng_use
 ~~~~~~~~~~~~~~~~
 

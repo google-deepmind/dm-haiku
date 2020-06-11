@@ -206,9 +206,9 @@ class BlockGroup(hk.Module):
       num_blocks: int,
       stride: Union[int, Sequence[int]],
       bn_config: Mapping[str, float],
-      resnet_v2: bool = False,
-      bottleneck: bool = True,
-      use_projection: bool = True,
+      resnet_v2: bool,
+      bottleneck: bool,
+      use_projection: bool,
       name: Optional[str] = None,
   ):
     super().__init__(name=name)
@@ -239,6 +239,10 @@ def check_length(length, value, name):
 
 class ResNet(hk.Module):
   """ResNet model."""
+
+  BlockGroup = BlockGroup  # pylint: disable=invalid-name
+  BlockV1 = BlockV1  # pylint: disable=invalid-name
+  BlockV2 = BlockV2  # pylint: disable=invalid-name
 
   def __init__(
       self,

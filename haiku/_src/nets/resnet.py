@@ -248,7 +248,7 @@ class ResNet(hk.Module):
       resnet_v2: bool = False,
       bottleneck: bool = True,
       channels_per_group: Sequence[int] = (256, 512, 1024, 2048),
-      use_projection: bool = True,
+      use_projection: Sequence[bool] = (True, True, True, True),
       name: Optional[str] = None,
   ):
     """Constructs a ResNet model.
@@ -265,7 +265,8 @@ class ResNet(hk.Module):
        bottleneck: Whether the block should bottleneck or not. Defaults to True.
       channels_per_group: A sequence of length 4 that indicates the number
         of channels used for each block in each group.
-      use_projection: The first residual block uses projection if True.
+      use_projection: A sequence of length 4 that indicates whether each
+        residual block should use projection.
       name: Name of the module.
     """
     super().__init__(name=name)
@@ -303,7 +304,7 @@ class ResNet(hk.Module):
                      bn_config=bn_config,
                      resnet_v2=resnet_v2,
                      bottleneck=bottleneck,
-                     use_projection=(i > 0 or use_projection),
+                     use_projection=use_projection[i],
                      name="block_group_%d" % (i)))
 
     if self.resnet_v2:
@@ -357,7 +358,7 @@ class ResNet18(ResNet):
                      resnet_v2=resnet_v2,
                      bottleneck=False,
                      channels_per_group=(64, 128, 256, 512),
-                     use_projection=False,
+                     use_projection=(False, True, True, True),
                      name=name)
 
 
@@ -385,7 +386,7 @@ class ResNet34(ResNet):
                      resnet_v2=resnet_v2,
                      bottleneck=False,
                      channels_per_group=(64, 128, 256, 512),
-                     use_projection=False,
+                     use_projection=(False, True, True, True),
                      name=name)
 
 

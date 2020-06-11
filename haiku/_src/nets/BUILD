@@ -27,6 +27,7 @@ hk_py_test(
         ":resnet",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
+        "//haiku",
         "//haiku/_src:test_utils",
         "//haiku/_src:transform",
         # pip: jax

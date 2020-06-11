@@ -208,6 +208,7 @@ class BlockGroup(hk.Module):
       bn_config: Mapping[str, float],
       resnet_v2: bool = False,
       bottleneck: bool = True,
+      use_projection: bool = True,
       name: Optional[str] = None,
   ):
     super().__init__(name=name)
@@ -219,7 +220,7 @@ class BlockGroup(hk.Module):
       self.blocks.append(
           block_cls(channels=channels,
                     stride=(1 if i else stride),
-                    use_projection=(i == 0),
+                    use_projection=(i == 0 and use_projection),
                     bottleneck=bottleneck,
                     bn_config=bn_config,
                     name="block_%d" % (i)))
@@ -247,6 +248,7 @@ class ResNet(hk.Module):
       resnet_v2: bool = False,
       bottleneck: bool = True,
       channels_per_group: Sequence[int] = (256, 512, 1024, 2048),
+      use_projection: bool = True,
       name: Optional[str] = None,
   ):
     """Constructs a ResNet model.
@@ -263,6 +265,7 @@ class ResNet(hk.Module):
        bottleneck: Whether the block should bottleneck or not. Defaults to True.
       channels_per_group: A sequence of length 4 that indicates the number
         of channels used for each block in each group.
+      use_projection: The first residual block uses projection if True.
       name: Name of the module.
     """
     super().__init__(name=name)
@@ -300,6 +303,7 @@ class ResNet(hk.Module):
                      bn_config=bn_config,
                      resnet_v2=resnet_v2,
                      bottleneck=bottleneck,
+                     use_projection=(i > 0 or use_projection),
                      name="block_group_%d" % (i)))
 
     if self.resnet_v2:
@@ -352,6 +356,8 @@ class ResNet18(ResNet):
                      bn_config=bn_config,
                      resnet_v2=resnet_v2,
                      bottleneck=False,
+                     channels_per_group=(64, 128, 256, 512),
+                     use_projection=False,
                      name=name)
 
 
@@ -378,6 +384,8 @@ class ResNet34(ResNet):
                      bn_config=bn_config,
                      resnet_v2=resnet_v2,
                      bottleneck=False,
+                     channels_per_group=(64, 128, 256, 512),
+                     use_projection=False,
                      name=name)
 
 

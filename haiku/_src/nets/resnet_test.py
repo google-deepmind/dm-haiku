@@ -17,11 +17,18 @@
 
 from absl.testing import absltest
 from absl.testing import parameterized
+import haiku as hk
 from haiku._src import test_utils
 from haiku._src import transform
 from haiku._src.nets import resnet
 import jax
 import jax.numpy as jnp
+
+
+_RESNETS = ["ResNet{}".format(i) for i in (18, 34, 50, 101, 152, 200)]
+_RESNET_NUM_PARAMS = [int(i * 1e6)
+                      for i in (11.7, 21.8, 25.6, 44.5, 60.2, 64.7)]
+_RESNET_HAS_PROJECTION = [False, False, True, True, True, True]
 
 
 class ResnetTest(parameterized.TestCase):
@@ -74,6 +81,45 @@ class ResnetTest(parameterized.TestCase):
             list_length)):
       resnet.ResNet([1, 1, 1, 1], 10, {"decay_rate": 0.9, "eps": 1e-5},
                     channels_per_group=channel_list)
+
+  @test_utils.combined_named_parameters(
+      [(i, (getattr(resnet, i), n))
+       for i, n in zip(_RESNETS, _RESNET_NUM_PARAMS)],
+      test_utils.named_bools("resnet_v2"),
+  )
+  def test_num_params(self, resnet_class_and_num_params, resnet_v2):
+    resnet_class, expected_num_params = resnet_class_and_num_params
+    def model_func(img):
+      model = resnet_class(1000, resnet_v2=resnet_v2)
+      return model(img, is_training=True)
+
+    model = hk.transform_with_state(model_func)
+    image = jnp.ones([2, 64, 64, 3])
+    rng = jax.random.PRNGKey(0)
+    params, _ = model.init(rng, image)
+    num_params = sum(jnp.prod(p.shape).item() for p in jax.tree_leaves(params))
+    self.assertGreater(num_params, int(0.998 * expected_num_params))
+    self.assertLess(num_params, int(1.002 * expected_num_params))
+
+  @test_utils.combined_named_parameters(
+      [(i, (getattr(resnet, i), p))
+       for i, p in zip(_RESNETS, _RESNET_HAS_PROJECTION)],
+      test_utils.named_bools("resnet_v2"),
+  )
+  @test_utils.transform_and_run
+  def test_has_projection(self, resnet_class_and_has_projection, resnet_v2):
+    resnet_class, has_projection = resnet_class_and_has_projection
+    model = resnet_class(1000, resnet_v2=resnet_v2)
+    for i, block_group in enumerate(model.block_groups):
+      if i == 0:
+        self.assertEqual(hasattr(block_group.blocks[0], "proj_conv"),
+                         has_projection)
+      else:
+        self.assertTrue(hasattr(block_group.blocks[0], "proj_conv"))
+
+      for block in block_group.blocks[1:]:
+        self.assertFalse(hasattr(block, "proj_conv"))
+
 
 if __name__ == "__main__":
   absltest.main()

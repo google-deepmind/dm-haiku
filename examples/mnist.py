@@ -61,7 +61,6 @@ def main(_):
   opt = optix.adam(1e-3)
 
   # Training loss (cross-entropy).
-  @jax.jit
   def loss(params: hk.Params, batch: Batch) -> jnp.ndarray:
     """Compute the loss of the network, including L2."""
     logits = net.apply(params, batch)

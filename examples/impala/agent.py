@@ -23,6 +23,7 @@ import haiku as hk
 from examples.impala import util
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 AgentOutput = collections.namedtuple("AgentOutput",
                                      ["policy_logits", "values", "action"])
@@ -60,7 +61,7 @@ class Agent:
   @functools.partial(jax.jit, static_argnums=0)
   def initial_params(self, rng_key):
     """Initializes the agent params given the RNG key."""
-    dummy_inputs = jax.tree_map(lambda t: jnp.zeros(t.shape, t.dtype),
+    dummy_inputs = jax.tree_map(lambda t: np.zeros(t.shape, t.dtype),
                                 self._obs_spec)
     dummy_inputs = util.preprocess_step(dm_env.restart(dummy_inputs))
     dummy_inputs = jax.tree_map(lambda t: t[None, None, ...], dummy_inputs)

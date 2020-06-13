@@ -63,6 +63,7 @@ hk_py_library(
         # pip: dm_env
         "//haiku",
         # pip: jax
+        # pip: numpy
     ],
 )
 

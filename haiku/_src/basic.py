@@ -202,7 +202,7 @@ def merge_leading_dims(x, num_dims):
   if not ndim_at_least(x, num_dims):
     return x
 
-  new_shape = (jnp.prod(x.shape[:num_dims]),) + x.shape[num_dims:]
+  new_shape = (np.prod(x.shape[:num_dims]),) + x.shape[num_dims:]
   return jnp.reshape(x, new_shape)
 
 

@@ -29,7 +29,7 @@ T = TypeVar("T")
 
 
 def transform_and_run(f=None, seed: Optional[int] = 42, run_apply: bool = True):
-  """Transforms the given function and runs init then (optionally) apply.
+  r"""Transforms the given function and runs init then (optionally) apply.
 
   Equivalent to:
 
@@ -65,7 +65,8 @@ def transform_and_run(f=None, seed: Optional[int] = 42, run_apply: bool = True):
     run_apply: Whether to run apply as well as init. Defaults to true.
 
   Returns:
-    A function that transforms f and runs `init` and optionally `apply`.
+    A function that :func:`~haiku.transform`\ s ``f`` and runs ``init`` and
+    optionally ``apply``.
   """
   if f is None:
     return functools.partial(transform_and_run, seed=seed, run_apply=run_apply)

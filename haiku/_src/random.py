@@ -46,17 +46,17 @@ def optimize_rng_use(fun):
 
   Our strategy here is to use abstract interpretation to run your function
   twice, the first time we use ``jax.eval_shape`` to avoid spending any flops
-  and simply observe how many times you call :fun:`next_rng_key`. We then run
-  your function again, but this time we reserve enough RNG keys ahead of time
-  such that we only need to call ``jax.random.split`` once.
+  and simply observe how many times you call :func:`~haiku.next_rng_key`. We
+  then run your function again, but this time we reserve enough RNG keys ahead
+  of time such that we only need to call ``jax.random.split`` once.
 
   In the following example, we need three random samples for our weight
-  matricies in our 3 layer MLP. To draw these samples we use :fun:`next_rng_key`
-  which will split a new key for each sample. By using ``optimize_rng_use``
-  Haiku will pre-allocate exactly enough RNGs for ``f`` to be evaluated by
-  splitting the input key once and only once. For large models (unlike this
-  example) this can lead to a significant reduction in compilation time for
-  ``init``:
+  matricies in our 3 layer MLP. To draw these samples we use
+  :func:`~haiku.next_rng_key` which will split a new key for each sample. By
+  using :func:`optimize_rng_use` Haiku will pre-allocate exactly enough RNGs for
+  ``f`` to be evaluated by splitting the input key once and only once. For large
+  models (unlike this example) this can lead to a significant reduction in
+  compilation time for ``init``:
 
   >>> def f(x):
   ...   net = hk.nets.MLP([300, 100, 10])

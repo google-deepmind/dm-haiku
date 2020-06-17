@@ -73,11 +73,11 @@ def temporary_internal_state(state: InternalState):
 
 
 def grad(fun, argnums=0, has_aux=False, holomorphic=False):
-  """Creates a function which evaluates the gradient of `fun`.
+  r"""Creates a function which evaluates the gradient of ``fun``.
 
   NOTE: You only need this in a very specific case that you want to take a
-  gradient **inside** a `hk.transform`ed function and the function you are
-  differentiating uses `hk.set_state`. For example:
+  gradient **inside** a :func:`transform`\ ed function and the function you are
+  differentiating uses :func:`set_state`. For example:
 
   >>> class MyModule(hk.Module):
   ...   def __call__(self, x):
@@ -97,24 +97,24 @@ def grad(fun, argnums=0, has_aux=False, holomorphic=False):
 
   Args:
     fun: Function to be differentiated. Its arguments at positions specified by
-      `argnums` should be arrays, scalars, or standard Python containers. It
-      should return a scalar (which includes arrays with shape `()` but not
-      arrays with shape `(1,)` etc.)
+      ``argnums`` should be arrays, scalars, or standard Python containers. It
+      should return a scalar (which includes arrays with shape ``()`` but not
+      arrays with shape ``(1,)`` etc.)
     argnums: Optional, integer or tuple of integers. Specifies which positional
       argument(s) to differentiate with respect to (default 0).
-    has_aux: Optional, bool. Indicates whether `fun` returns a pair where the
+    has_aux: Optional, bool. Indicates whether ``fun`` returns a pair where the
       first element is considered the output of the mathematical function to be
       differentiated and the second element is auxiliary data. Default False.
-    holomorphic: Optional, bool. Indicates whether `fun` is promised to be
+    holomorphic: Optional, bool. Indicates whether ``fun`` is promised to be
       holomorphic. Default False.
 
   Returns:
-    A function with the same arguments as `fun`, that evaluates the gradient of
-    `fun`. If `argnums` is an integer then the gradient has the same shape and
-    type as the positional argument indicated by that integer. If argnums is a
-    tuple of integers, the gradient is a tuple of values with the same shapes
-    and types as the corresponding arguments. If `has_aux` is True then a pair
-    of (gradient, auxiliary_data) is returned.
+    A function with the same arguments as ``fun``, that evaluates the gradient
+    of ``fun``. If `argnums` is an integer then the gradient has the same shape
+    and type as the positional argument indicated by that integer. If argnums is
+    a tuple of integers, the gradient is a tuple of values with the same shapes
+    and types as the corresponding arguments. If ``has_aux`` is True then a pair
+    of ``gradient, auxiliary_data`` is returned.
 
   For example:
 
@@ -137,11 +137,11 @@ def grad(fun, argnums=0, has_aux=False, holomorphic=False):
 
 
 def value_and_grad(fun, argnums=0, has_aux=False, holomorphic=False):
-  """Creates a function which evaluates both `fun` and the gradient of `fun`.
+  r"""Creates a function which evaluates both ``fun`` and the grad of ``fun``.
 
   NOTE: You only need this in a very specific case that you want to take a
-  gradient **inside** a `hk.transform`ed function and the function you are
-  differentiating uses `hk.set_state`. For example:
+  gradient **inside** a :func:`transform`\ ed function and the function you are
+  differentiating uses :func:`set_state`. For example:
 
   >>> class MyModule(hk.Module):
   ...   def __call__(self, x):
@@ -159,24 +159,24 @@ def value_and_grad(fun, argnums=0, has_aux=False, holomorphic=False):
 
   Args:
     fun: Function to be differentiated. Its arguments at positions specified by
-      `argnums` should be arrays, scalars, or standard Python containers. It
-      should return a scalar (which includes arrays with shape `()` but not
-      arrays with shape `(1,)` etc.)
+      ``argnums`` should be arrays, scalars, or standard Python containers. It
+      should return a scalar (which includes arrays with shape ``()`` but not
+      arrays with shape ``(1,)`` etc.)
     argnums: Optional, integer or tuple of integers. Specifies which positional
       argument(s) to differentiate with respect to (default 0).
-    has_aux: Optional, bool. Indicates whether `fun` returns a pair where the
+    has_aux: Optional, bool. Indicates whether ``fun`` returns a pair where the
      first element is considered the output of the mathematical function to be
      differentiated and the second element is auxiliary data. Default False.
-    holomorphic: Optional, bool. Indicates whether `fun` is promised to be
+    holomorphic: Optional, bool. Indicates whether ``fun`` is promised to be
       holomorphic. Default False.
 
   Returns:
-    A function with the same arguments as `fun` that evaluates both `fun` and
-    the gradient of `fun` and returns them as a pair (a two-element tuple). If
-    `argnums` is an integer then the gradient has the same shape and type as the
-    positional argument indicated by that integer. If argnums is a tuple of
-    integers, the gradient is a tuple of values with the same shapes and types
-    as the corresponding arguments.
+    A function with the same arguments as ``fun`` that evaluates both ``fun``
+    and the gradient of ``fun`` and returns them as a pair (a two-element
+    tuple). If ``argnums`` is an integer then the gradient has the same shape
+    and type as the positional argument indicated by that integer. If argnums is
+    a tuple of integers, the gradient is a tuple of values with the same shapes
+    and types as the corresponding arguments.
   """
   if not base.inside_transform():
     raise ValueError("hk.grad() should not be used outside of hk.transform(). "
@@ -316,7 +316,7 @@ def thread_hk_state_in_kwargs(dec_fun):
   """Equivalent to jax.{} but passing Haiku state.""".format(dec_fun.__name__)
 
   def wrapped_dec_fun(fun, *dec_args, **dec_kwargs):
-    """Decorates a modified version of `fun` that passes haiku state."""
+    """Decorates a modified version of ``fun`` that passes Haiku state."""
 
     if not base.inside_transform():
       raise ValueError(
@@ -360,7 +360,7 @@ def stateful_branch(branch_fun):
 
 
 def cond(pred, true_operand, true_fun, false_operand, false_fun):
-  """Equivalent to `jax.lax.cond` but with Haiku state threaded in and out."""
+  """Equivalent to ``jax.lax.cond`` but with Haiku state threaded in and out."""
   if not base.inside_transform():
     raise ValueError("hk.cond() should not be used outside of hk.transform(). "
                      "Use jax.cond() instead.")

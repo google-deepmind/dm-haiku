@@ -19,19 +19,15 @@ from absl.testing import absltest
 from haiku._src import test_utils
 from haiku._src.integration import common
 from haiku._src.integration import descriptors
-from haiku._src.typing import DType, Shape  # pylint: disable=g-multiple-import
 import jax.numpy as jnp
+
+ModuleFn = descriptors.ModuleFn
 
 
 class Bfloat16Test(common.DTypeTestCase):
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
-  def test_bfloat16(
-      self,
-      module_fn: descriptors.ModuleFn,
-      shape: Shape,
-      dtype: DType,
-  ):
+  def test_bfloat16(self, module_fn: descriptors.ModuleFn, shape, dtype):
     self.assert_dtype(jnp.bfloat16, module_fn, shape, dtype)
 
 if __name__ == '__main__':

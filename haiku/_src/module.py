@@ -174,7 +174,7 @@ class Module(object, metaclass=ModuleMetaclass):
   Modules typically define one or more "forward" methods (e.g. ``__call__``)
   which apply operations combining user input and module parameters.
 
-  Modules must be initialized inside a `hk.transform` call.
+  Modules must be initialized inside a :func:`transform` call.
 
   For example:
 
@@ -223,7 +223,7 @@ class Module(object, metaclass=ModuleMetaclass):
   # Support @dataclass annotated modules.
   __post_init__ = __init__
 
-  def params_dict(self) -> Mapping[base.ParamName, jnp.array]:
+  def params_dict(self) -> Mapping[str, jnp.array]:
     """Returns parameters keyed by name for this module and submodules."""
     if not base.frame_stack:
       raise ValueError(
@@ -247,11 +247,12 @@ def transparent(method: T) -> T:
 
   By default, all variables and modules created in a method are scoped by the
   module and method names. This is undesirable in some cases. Any method
-  decorated with ``transparent`` will create variables and modules in the scope
-  in which it was called.
+  decorated with :func:`transparent` will create variables and modules in the
+  scope in which it was called.
 
   Args:
     method: the method to wrap.
+
   Returns:
     The method, with a flag indicating no name scope wrapping should occur.
   """

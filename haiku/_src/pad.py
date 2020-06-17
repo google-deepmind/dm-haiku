@@ -15,10 +15,16 @@
 # ==============================================================================
 """Padding module for Haiku."""
 
-from typing import Sequence, Union, Tuple
+import types
+from typing import Callable, Sequence, Union, Tuple
 
 from haiku._src import utils
-from haiku._src.typing import PadFnOrFns
+
+PadFn = Callable[[int], Tuple[int, int]]
+
+hk = types.ModuleType("haiku")
+hk.pad = types.ModuleType("haiku.pad")
+hk.pad.PadFn = PadFn
 
 
 def valid(effective_kernel_size: int) -> Tuple[int, int]:
@@ -48,7 +54,7 @@ def reverse_causal(effective_kernel_size: int) -> Tuple[int, int]:
 
 
 def create(
-    padding: PadFnOrFns,
+    padding: Union[hk.pad.PadFn, Sequence[hk.pad.PadFn]],
     kernel: Union[int, Sequence[int]],
     rate: Union[int, Sequence[int]],
     n: int,
@@ -60,12 +66,12 @@ def create(
       integer representing the effective kernel size (kernel size when the rate
       is 1) and return a list of two integers representing the padding before
       and padding after for that dimension.
-    kernel: int or list of ints of length n. The size of the kernel for each
+    kernel: int or list of ints of length ``n``. The size of the kernel for each
       dimension. If it is an int it will be replicated for the non channel and
       batch dimensions.
-    rate: int or list of ints of length n. The dilation rate for each dimension.
-      If it is an int it will be replicated for the non channel and batch
-      dimensions.
+    rate: int or list of ints of length ``n``. The dilation rate for each
+      dimension. If it is an int it will be replicated for the non channel and
+      batch dimensions.
     n: the number of spatial dimensions.
 
   Returns:

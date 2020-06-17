@@ -23,7 +23,6 @@ from haiku._src import initializers
 from haiku._src import module
 from haiku._src import pad
 from haiku._src import utils
-from haiku._src.typing import PadFnOrFns
 from jax import lax
 import jax.numpy as jnp
 import numpy as np
@@ -71,7 +70,8 @@ class ConvND(hk.Module):
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
       rate: Union[int, Sequence[int]] = 1,
-      padding: Union[str, Sequence[Tuple[int, int]], PadFnOrFns] = "SAME",
+      padding: Union[str, Sequence[Tuple[int, int]], hk.pad.PadFn,
+                     Sequence[hk.pad.PadFn]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
@@ -201,7 +201,8 @@ class Conv1D(ConvND):
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
       rate: Union[int, Sequence[int]] = 1,
-      padding: Union[str, Sequence[Tuple[int, int]], PadFnOrFns] = "SAME",
+      padding: Union[str, Sequence[Tuple[int, int]], hk.pad.PadFn,
+                     Sequence[hk.pad.PadFn]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
@@ -259,7 +260,8 @@ class Conv2D(ConvND):
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
       rate: Union[int, Sequence[int]] = 1,
-      padding: Union[str, Sequence[Tuple[int, int]], PadFnOrFns] = "SAME",
+      padding: Union[str, Sequence[Tuple[int, int]], hk.pad.PadFn,
+                     Sequence[hk.pad.PadFn]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
@@ -317,7 +319,8 @@ class Conv3D(ConvND):
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
       rate: Union[int, Sequence[int]] = 1,
-      padding: Union[str, Sequence[Tuple[int, int]], PadFnOrFns] = "SAME",
+      padding: Union[str, Sequence[Tuple[int, int]], hk.pad.PadFn,
+                     Sequence[hk.pad.PadFn]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,

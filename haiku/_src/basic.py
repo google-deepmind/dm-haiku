@@ -58,12 +58,13 @@ def multinomial(rng, logits, num_samples):
 
   Args:
     rng: A JAX PRNGKey.
-    logits: Unnormalized log-probabilities, of shape [batch_size, categories] or
-      [categories].
+    logits: Unnormalized log-probabilities, of shape
+      ``[batch_size, categories]`` or ``[categories]``.
     num_samples: Number of samples to draw.
 
   Returns:
-    Chosen categories, of shape [batch_size, num_samples] or [num_samples].
+    Chosen categories, of shape ``[batch_size, num_samples]`` or
+    ``[num_samples]``.
   """
   # NOTE(tycai): Currently, tf.multinomial uses CDF for non-XLA CPU only.
   # We may want to switch to the Gumbel trick as used in XLA.
@@ -87,17 +88,18 @@ def multinomial(rng, logits, num_samples):
 class Sequential(hk.Module):
   """Sequentially calls the given list of layers.
 
-  Note that ``Sequential`` is limited in the range of possible architectures
-  it can handle. This is a deliberate design decision; ``Sequential`` is only
-  meant to be used for the simple case of fusing together modules/ops where
-  the input of a particular module/op is the output of the previous one.
+  Note that :class:`Sequential` is limited in the range of possible
+  architectures it can handle. This is a deliberate design decision;
+  :class:`Sequential` is only meant to be used for the simple case of fusing
+  together modules/ops where the input of a particular module/op is the output
+  of the previous one.
 
   Another restriction is that it is not possible to have extra arguments in the
-  ``__call__`` method that are passed to the constituents of the module - for
-  example, if there is a ``BatchNorm`` module in ``Sequential`` and the user
-  wishes to switch the ``is_training`` flag. If this is the desired use case,
-  the recommended solution is to subclass :class:`Module` and implement
-  ``__call__``:
+  :meth:`__call__` method that are passed to the constituents of the module -
+  for example, if there is a :class:`BatchNorm` module in :class:`Sequential`
+  and the user wishes to switch the ``is_training`` flag. If this is the desired
+  use case, the recommended solution is to subclass :class:`Module` and
+  implement ``__call__``:
 
       >>> class CustomModule(hk.Module):
       ...   def __call__(self, x, is_training):
@@ -116,7 +118,7 @@ class Sequential(hk.Module):
     self.layers = tuple(layers)
 
   def __call__(self, inputs, *args, **kwargs):
-    """Connects all layers. *args and **kwargs are passed to the first layer."""
+    """Calls all layers sequentially."""
     out = inputs
     for i, layer in enumerate(self.layers):
       if i == 0:
@@ -143,7 +145,7 @@ class Linear(hk.Module):
       output_size: Output dimensionality.
       with_bias: Whether to add a bias to the output.
       w_init: Optional initializer for weights. By default, uses random values
-        from truncated normal, with stddev `1 / sqrt(fan_in)`. See
+        from truncated normal, with stddev ``1 / sqrt(fan_in)``. See
         https://arxiv.org/abs/1502.03167v3.
       b_init: Optional initializer for bias. By default, zero.
       name: Name of the module.
@@ -156,6 +158,7 @@ class Linear(hk.Module):
     self.b_init = b_init or jnp.zeros
 
   def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:
+    """Computes a linear transform of the input."""
     if not inputs.shape:
       raise ValueError("Input must not be scalar.")
 
@@ -182,7 +185,7 @@ class Linear(hk.Module):
 def ndim_at_least(x, num_dims):
   if not isinstance(x, jnp.ndarray):
     x = jnp.asarray(x)
-  return len(x.shape) >= num_dims
+  return x.ndim >= num_dims
 
 
 def arbitrary_mergeable_leaf(min_num_dims, args, kwargs):
@@ -202,6 +205,7 @@ def merge_leading_dims(x, num_dims):
   if not ndim_at_least(x, num_dims):
     return x
 
+  # TODO(tomhennigan) Pass dtype here to account for empty slices.
   new_shape = (np.prod(x.shape[:num_dims]),) + x.shape[num_dims:]
   return jnp.reshape(x, new_shape)
 
@@ -212,7 +216,7 @@ def split_leading_dim(x, to_dim):
 
 
 class BatchApply:
-  """Temporarily merges leading dimensions of input tensors.
+  r"""Temporarily merges leading dimensions of input tensors.
 
   Merges the leading dimensions of a tensor into a single dimension, runs the
   given callable, then splits the leading dimension of the result to match the
@@ -222,14 +226,14 @@ class BatchApply:
   are passed unmodified.
 
   This may be useful for applying a module to each timestep of e.g. a
-  [Time, Batch, ...] array.
+  ``[Time, Batch, ...]`` array.
 
-  For some `f`s and platforms, this may be more efficient than `jax.vmap`,
-  especially when combined with other transformations like `jax.grad`.
+  For some ``f``\ s and platforms, this may be more efficient than ``jax.vmap``,
+  especially when combined with other transformations like ``jax.grad``.
   """
 
   def __init__(self, f, num_dims=2):
-    """Constructs a BatchApply module.
+    """Constructs a :class:`BatchApply` module.
 
     Args:
       f: The callable to be applied to the reshaped array.
@@ -241,8 +245,10 @@ class BatchApply:
   def __call__(self, *args, **kwargs):
     example = arbitrary_mergeable_leaf(self.num_dims, args, kwargs)
     if example is None:
-      msg = "BatchApply requires at least one input with ndim >= {}."
-      raise ValueError(msg.format(self.num_dims))
+      raise ValueError(
+          "BatchApply requires at least one input with ndim >= "
+          f"{self.num_dims}.")
+
     merge = lambda x: merge_leading_dims(x, self.num_dims)
     split = lambda x: split_leading_dim(x, example.shape[:self.num_dims])
     args = jax.tree_map(merge, args)
@@ -290,12 +296,13 @@ def dropout(rng: PRNGKey, rate: float, x: jnp.ndarray) -> jnp.ndarray:
   See: http://www.cs.toronto.edu/~hinton/absps/dropout.pdf
 
   Args:
-    rng: The RNGKey.
-    rate: Probability that each element of x is discarded. Must be a scalar in
-      the range `[0, 1)`.
+    rng: A JAX random key.
+    rate: Probability that each element of ``x`` is discarded. Must be a scalar
+    in the range ``[0, 1)``.
     x: The value to be dropped out.
+
   Returns:
-    x, but dropped out and scaled by 1 / (1 - rate).
+    x, but dropped out and scaled by ``1 / (1 - rate)``.
   """
   if rate < 0 or rate >= 1:
     raise ValueError("rate must be in [0, 1).")
@@ -332,7 +339,7 @@ def to_module(f: Callable[..., Any]) -> Type[CallableModule]:
     f: The function to convert.
 
   Returns:
-    A module class which runs `f` when called.
+    A module class which runs ``f`` when called.
   """
 
   class ToModuleWrapper(CallableModule):

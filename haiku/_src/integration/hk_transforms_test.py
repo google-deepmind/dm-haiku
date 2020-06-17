@@ -22,11 +22,11 @@ from absl.testing import parameterized
 import haiku as hk
 from haiku._src import test_utils
 from haiku._src.integration import descriptors
-from haiku._src.typing import DType, Shape  # pylint: disable=g-multiple-import
 import jax
 import jax.numpy as jnp
 import numpy as np
 
+ModuleFn = descriptors.ModuleFn
 DEFAULT_ATOL = 1e-5
 CUSTOM_ATOL = {hk.nets.ResNet: 0.05, hk.nets.MobileNetV1: 0.05,
                hk.BatchNorm: 1e-4}
@@ -36,13 +36,7 @@ class HaikuTransformsTest(parameterized.TestCase):
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES,
                                         test_utils.named_bools('init'))
-  def test_hk_jit(
-      self,
-      module_fn: descriptors.ModuleFn,
-      shape: Shape,
-      dtype: DType,
-      init: bool,
-  ):
+  def test_hk_jit(self, module_fn: ModuleFn, shape, dtype, init):
     rng = jax.random.PRNGKey(42)
     if jnp.issubdtype(dtype, jnp.integer):
       x = jax.random.randint(rng, shape, 0, np.prod(shape), dtype)
@@ -75,12 +69,7 @@ class HaikuTransformsTest(parameterized.TestCase):
   @test_utils.combined_named_parameters(
       # TODO(tomhennigan) Enable once grad for _scan_transpose implemented.
       set(descriptors.ALL_MODULES) - set(descriptors.RECURRENT_MODULES))
-  def test_hk_remat(
-      self,
-      module_fn: descriptors.ModuleFn,
-      shape: Shape,
-      dtype: DType,
-  ):
+  def test_hk_remat(self, module_fn: ModuleFn, shape, dtype):
     rng = jax.random.PRNGKey(42)
     if jnp.issubdtype(dtype, jnp.integer):
       x = jax.random.randint(rng, shape, 0, np.prod(shape), dtype)
@@ -110,12 +99,7 @@ class HaikuTransformsTest(parameterized.TestCase):
                       grad_hk_remat(params, state, rng, x))
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
-  def test_profiler_name_scopes(
-      self,
-      module_fn: descriptors.ModuleFn,
-      shape: Shape,
-      dtype: DType,
-  ):
+  def test_profiler_name_scopes(self, module_fn: ModuleFn, shape, dtype):
     rng = jax.random.PRNGKey(42)
     if jnp.issubdtype(dtype, jnp.integer):
       x = jax.random.randint(rng, shape, 0, np.prod(shape), dtype)
@@ -140,12 +124,7 @@ class HaikuTransformsTest(parameterized.TestCase):
     hk.experimental.profiler_name_scopes(enabled=False)
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
-  def test_optimize_rng_use_under_jit(
-      self,
-      module_fn: descriptors.ModuleFn,
-      shape: Shape,
-      dtype: DType,
-  ):
+  def test_optimize_rng_use_under_jit(self, module_fn: ModuleFn, shape, dtype):
     rng = jax.random.PRNGKey(42)
     if jnp.issubdtype(dtype, jnp.integer):
       x = jax.random.randint(rng, shape, 0, np.prod(shape), dtype)

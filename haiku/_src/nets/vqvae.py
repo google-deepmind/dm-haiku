@@ -16,12 +16,12 @@
 """Haiku implementation of VQ-VAE https://arxiv.org/abs/1711.00937."""
 
 import types
+from typing import Any
 
 from haiku._src import base
 from haiku._src import initializers
 from haiku._src import module
 from haiku._src import moving_averages
-from haiku._src.typing import DType
 
 import jax
 import jax.numpy as jnp
@@ -50,9 +50,9 @@ class VectorQuantizer(hk.Module):
 
   The output tensor will have the same shape as the input.
 
-  For example a tensor with shape [16, 32, 32, 64] will be reshaped into
-  [16384, 64] and all 16384 vectors (each of 64 dimensions)  will be quantized
-  independently.
+  For example a tensor with shape ``[16, 32, 32, 64]`` will be reshaped into
+  ``[16384, 64]`` and all ``16384`` vectors (each of ``64`` dimensions)  will be
+  quantized independently.
 
   Attributes:
     embedding_dim: integer representing the dimensionality of the tensors in the
@@ -67,7 +67,7 @@ class VectorQuantizer(hk.Module):
       embedding_dim: int,
       num_embeddings: int,
       commitment_cost: float,
-      dtype: DType = jnp.float32,
+      dtype: Any = jnp.float32,
       name: str = None,
   ):
     """Initializes a VQ-VAE module.
@@ -78,7 +78,7 @@ class VectorQuantizer(hk.Module):
       num_embeddings: number of vectors in the quantized space.
       commitment_cost: scalar which controls the weighting of the loss terms
         (see equation 4 in the paper - this variable is Beta).
-      dtype: dtype for the embeddings variable, defaults to tf.float32.
+      dtype: dtype for the embeddings variable, defaults to ``float32``.
       name: name of the module.
     """
     super().__init__(name=name)
@@ -95,19 +95,20 @@ class VectorQuantizer(hk.Module):
     """Connects the module to some inputs.
 
     Args:
-      inputs: Tensor, final dimension must be equal to embedding_dim. All other
-        leading dimensions will be flattened and treated as a large batch.
+      inputs: Tensor, final dimension must be equal to ``embedding_dim``. All
+        other leading dimensions will be flattened and treated as a large batch.
       is_training: boolean, whether this connection is to training data.
 
     Returns:
-      dict containing the following keys and values:
-        quantize: Tensor containing the quantized version of the input.
-        loss: Tensor containing the loss to optimize.
-        perplexity: Tensor containing the perplexity of the encodings.
-        encodings: Tensor containing the discrete encodings, ie which element
-        of the quantized space each input element was mapped to.
-        encoding_indices: Tensor containing the discrete encoding indices, ie
-        which element of the quantized space each input element was mapped to.
+      dict: Dictionary containing the following keys and values:
+        * ``quantize``: Tensor containing the quantized version of the input.
+        * ``loss``: Tensor containing the loss to optimize.
+        * ``perplexity``: Tensor containing the perplexity of the encodings.
+        * ``encodings``: Tensor containing the discrete encodings, ie which
+          element of the quantized space each input element was mapped to.
+        * ``encoding_indices``: Tensor containing the discrete encoding indices,
+          ie which element of the quantized space each input element was mapped
+          to.
     """
     flat_inputs = jnp.reshape(inputs, [-1, self.embedding_dim])
 
@@ -154,14 +155,15 @@ class VectorQuantizer(hk.Module):
 
 
 class VectorQuantizerEMA(hk.Module):
-  """Haiku module representing the VQ-VAE layer.
+  r"""Haiku module representing the VQ-VAE layer.
 
   Implements a slightly modified version of the algorithm presented in
   "Neural Discrete Representation Learning" by van den Oord et al.
   https://arxiv.org/abs/1711.00937
 
-  The difference between VectorQuantizerEMA and VectorQuantizer is that
-  this module uses exponential moving averages to update the embedding vectors
+  The difference between :class:`VectorQuantizerEMA` and
+  :class:`VectorQuantizer` is that this module uses
+  :class:`~haiku.ExponentialMovingAverage`\ s to update the embedding vectors
   instead of an auxiliary loss. This has the advantage that the embedding
   updates are independent of the choice of optimizer (SGD, RMSProp, Adam, K-Fac,
   ...) used for the encoder, decoder and other parts of the architecture. For
@@ -173,16 +175,16 @@ class VectorQuantizerEMA(hk.Module):
 
   The output tensor will have the same shape as the input.
 
-  For example a tensor with shape [16, 32, 32, 64] will be reshaped into
-  [16384, 64] and all 16384 vectors (each of 64 dimensions)  will be quantized
-  independently.
+  For example a tensor with shape ``[16, 32, 32, 64]`` will be reshaped into
+  ``[16384, 64]`` and all ``16384`` vectors (each of 64 dimensions)  will be
+  quantized independently.
 
   Attributes:
-    embedding_dim: integer representing the dimensionality of the tensors in the
-      quantized space. Inputs to the modules must be in this format as well.
+    embedding_dim: integer representing the dimensionality of the tensors in
+      the quantized space. Inputs to the modules must be in this format as well.
     num_embeddings: integer, the number of vectors in the quantized space.
-    commitment_cost: scalar which controls the weighting of the loss terms (see
-      equation 4 in the paper).
+    commitment_cost: scalar which controls the weighting of the loss terms
+      (see equation 4 in the paper).
     decay: float, decay for the moving averages.
     epsilon: small float constant to avoid numerical instability.
   """
@@ -194,7 +196,7 @@ class VectorQuantizerEMA(hk.Module):
       commitment_cost,
       decay,
       epsilon: float = 1e-5,
-      dtype: DType = jnp.float32,
+      dtype: Any = jnp.float32,
       name: str = None,
   ):
     """Initializes a VQ-VAE EMA module.
@@ -208,8 +210,8 @@ class VectorQuantizerEMA(hk.Module):
         (see equation 4 in the paper - this variable is Beta).
       decay: float between 0 and 1, controls the speed of the Exponential Moving
         Averages.
-      epsilon: small constant to aid numerical stability, default 1e-5.
-      dtype: dtype for the embeddings variable, defaults to tf.float32.
+      epsilon: small constant to aid numerical stability, default ``1e-5``.
+      dtype: dtype for the embeddings variable, defaults to ``float32``.
       name: name of the module.
     """
     super().__init__(name=name)
@@ -242,21 +244,22 @@ class VectorQuantizerEMA(hk.Module):
     """Connects the module to some inputs.
 
     Args:
-      inputs: Tensor, final dimension must be equal to embedding_dim. All other
-        leading dimensions will be flattened and treated as a large batch.
+      inputs: Tensor, final dimension must be equal to ``embedding_dim``. All
+        other leading dimensions will be flattened and treated as a large batch.
       is_training: boolean, whether this connection is to training data. When
-        this is set to False, the internal moving average statistics will not be
-        updated.
+        this is set to ``False``, the internal moving average statistics will
+        not be updated.
 
     Returns:
-      dict containing the following keys and values:
-        quantize: Tensor containing the quantized version of the input.
-        loss: Tensor containing the loss to optimize.
-        perplexity: Tensor containing the perplexity of the encodings.
-        encodings: Tensor containing the discrete encodings, ie which element
-        of the quantized space each input element was mapped to.
-        encoding_indices: Tensor containing the discrete encoding indices, ie
-        which element of the quantized space each input element was mapped to.
+      dict: Dictionary containing the following keys and values:
+        * ``quantize``: Tensor containing the quantized version of the input.
+        * ``loss``: Tensor containing the loss to optimize.
+        * ``perplexity``: Tensor containing the perplexity of the encodings.
+        * ``encodings``: Tensor containing the discrete encodings, ie which
+          element of the quantized space each input element was mapped to.
+        * ``encoding_indices``: Tensor containing the discrete encoding indices,
+          ie which element of the quantized space each input element was mapped
+          to.
     """
     flat_inputs = jnp.reshape(inputs, [-1, self.embedding_dim])
     embeddings = self.embeddings

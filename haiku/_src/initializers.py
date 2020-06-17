@@ -16,10 +16,10 @@
 """Haiku initializers."""
 
 import types
-from typing import Union
+from typing import Sequence, Union
 
 from haiku._src import base
-from haiku._src.typing import Initializer, Shape, DType  # pylint: disable=g-multiple-import
+from haiku._src.typing import Initializer
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -60,7 +60,7 @@ class Constant(hk.initializers.Initializer):
     """
     self.constant = constant
 
-  def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype) -> jnp.ndarray:
     return jnp.broadcast_to(self.constant, shape).astype(dtype)
 
 
@@ -68,7 +68,7 @@ class RandomNormal(hk.initializers.Initializer):
   """Initializes by sampling from a normal distribution."""
 
   def __init__(self, stddev=1., mean=0.):
-    """Constructs a RandomNormal initializer.
+    """Constructs a :class:`RandomNormal` initializer.
 
     Args:
       stddev: The standard deviation of the normal distribution to sample from.
@@ -77,7 +77,7 @@ class RandomNormal(hk.initializers.Initializer):
     self.stddev = stddev
     self.mean = mean
 
-  def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype) -> jnp.ndarray:
     m = jax.lax.convert_element_type(self.mean, dtype)
     s = jax.lax.convert_element_type(self.stddev, dtype)
     return m + s * jax.random.normal(hk.next_rng_key(), shape, dtype)
@@ -87,7 +87,7 @@ class TruncatedNormal(hk.initializers.Initializer):
   """Initializes by sampling from a truncated normal distribution."""
 
   def __init__(self, stddev=1., mean=0.):
-    """Constructs a RandomNormal initializer.
+    """Constructs a :class:`TruncatedNormal` initializer.
 
     Args:
       stddev: The standard deviation parameter of the truncated
@@ -97,7 +97,7 @@ class TruncatedNormal(hk.initializers.Initializer):
     self.stddev = stddev
     self.mean = mean
 
-  def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype) -> jnp.ndarray:
     m = jax.lax.convert_element_type(self.mean, dtype)
     s = jax.lax.convert_element_type(self.stddev, dtype)
     unscaled = jax.random.truncated_normal(hk.next_rng_key(), -2., 2., shape,
@@ -109,7 +109,7 @@ class RandomUniform(hk.initializers.Initializer):
   """Initializes by sampling from a uniform distribution."""
 
   def __init__(self, minval=0., maxval=1.):
-    """Constructs a RandomUniform initializer.
+    """Constructs a :class:`RandomUniform` initializer.
 
     Args:
       minval: The lower limit of the uniform distribution.
@@ -118,7 +118,7 @@ class RandomUniform(hk.initializers.Initializer):
     self.minval = minval
     self.maxval = maxval
 
-  def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype) -> jnp.ndarray:
     return jax.random.uniform(hk.next_rng_key(), shape, dtype, self.minval,
                               self.maxval)
 
@@ -133,7 +133,7 @@ class VarianceScaling(hk.initializers.Initializer):
     - Number of output units, if ``mode = fan_out``.
     - Average of the numbers of input and output units, if ``mode = fan_avg``.
 
-  Then, with ``distribution="truncated_normal" or "normal"``,
+  Then, with ``distribution="truncated_normal"`` or ``"normal"``,
   samples are drawn from a distribution with a mean of zero and a standard
   deviation (after truncation, if used) ``stddev = sqrt(s)``.
 
@@ -147,17 +147,17 @@ class VarianceScaling(hk.initializers.Initializer):
   ==============  ==============================================================
   Name            Parameters
   ==============  ==============================================================
-  glorot_uniform  scale=1.0, mode=``fan_avg``, distribution=``uniform``
-  glorot_normal   scale=1.0, mode=``fan_avg``, distribution=``truncated_normal``
-  lecun_uniform   scale=1.0, mode=``fan_in``,  distribution=``uniform``
-  lecun_normal    scale=1.0, mode=``fan_in``,  distribution=``truncated_normal``
-  he_uniform      scale=2.0, mode=``fan_in``,  distribution=``uniform``
-  he_normal       scale=2.0, mode=``fan_in``,  distribution=``truncated_normal``
+  glorot_uniform  VarianceScaling(1.0, "fan_avg", "uniform")
+  glorot_normal   VarianceScaling(1.0, "fan_avg", "truncated_normal")
+  lecun_uniform   VarianceScaling(1.0, "fan_in",  "uniform")
+  lecun_normal    VarianceScaling(1.0, "fan_in",  "truncated_normal")
+  he_uniform      VarianceScaling(2.0, "fan_in",  "uniform")
+  he_normal       VarianceScaling(2.0, "fan_in",  "truncated_normal")
   ==============  ==============================================================
   """
 
   def __init__(self, scale=1.0, mode='fan_in', distribution='truncated_normal'):
-    """Constructs the VarianceScaling initializer.
+    """Constructs the :class:`VarianceScaling` initializer.
 
     Args:
       scale: Scale to multiply the variance by.
@@ -176,7 +176,7 @@ class VarianceScaling(hk.initializers.Initializer):
     self.mode = mode
     self.distribution = distribution
 
-  def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype) -> jnp.ndarray:
     scale = self.scale
     fan_in, fan_out = _compute_fans(shape)
     if self.mode == 'fan_in':
@@ -210,14 +210,14 @@ class UniformScaling(hk.initializers.Initializer):
   """
 
   def __init__(self, scale=1.0):
-    """Constructs the UniformScaling initializer.
+    """Constructs the :class:`UniformScaling` initializer.
 
     Args:
       scale: Scale to multiply the upper limit of the uniform distribution by.
     """
     self.scale = scale
 
-  def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype) -> jnp.ndarray:
     input_size = np.product(shape[:-1])
     max_val = np.sqrt(3 / input_size) * self.scale
     return RandomUniform(-max_val, max_val)(shape, dtype)
@@ -229,27 +229,27 @@ class Orthogonal(hk.initializers.Initializer):
   def __init__(self, scale=1.0, axis=-1):
     """Construct an initializer for uniformly distributed orthogonal matrices.
 
-    These matrices will be row-orthonormal along the access specified by `axis`.
-    If the rank of the weight is greater than 2, the shape will be flattened in
-    all other dimensions and then will be row-orthonormal along the final
-    dimension. Note that this only works if the `axis` dimension is larger,
-    otherwise the matrix will be transposed (equivalently, it will be column
-    orthonormal instead of row orthonormal).
-
-    Args:
-      scale: Scale factor.
-      axis (int): Which axis corresponds to the "output dimension" of the
-          tensor.
-    Returns:
-      An orthogonally initialized parameter.
+    These matrices will be row-orthonormal along the access specified by
+    ``axis``. If the rank of the weight is greater than 2, the shape will be
+    flattened in all other dimensions and then will be row-orthonormal along the
+    final dimension. Note that this only works if the ``axis`` dimension is
+    larger, otherwise the matrix will be transposed (equivalently, it will be
+    column orthonormal instead of row orthonormal).
 
     If the shape is not square, the matrices will have orthonormal rows or
     columns depending on which side is smaller.
+
+    Args:
+      scale: Scale factor.
+      axis: Which axis corresponds to the "output dimension" of the tensor.
+
+    Returns:
+      An orthogonally initialized parameter.
     """
     self.scale = scale
     self.axis = axis
 
-  def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype) -> jnp.ndarray:
     if len(shape) < 2:
       raise ValueError('Orthogonal initializer requires at least a 2D shape.')
     n_rows = shape[self.axis]
@@ -273,14 +273,14 @@ class Identity(Initializer):
   """
 
   def __init__(self, gain: Union[float, jnp.ndarray] = 1.0):
-    """Constructs an identity initializer.
+    """Constructs an :class:`Identity` initializer.
 
     Args:
-        gain: Multiplicative factor to apply to the identity matrix.
+      gain: Multiplicative factor to apply to the identity matrix.
     """
     self.gain = gain
 
-  def __call__(self, shape: Shape, dtype: DType) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype) -> jnp.ndarray:
     shape = tuple(shape)
     if len(shape) < 2:
       raise ValueError('Identity initializer requires at least a 2D shape.')

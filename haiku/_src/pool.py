@@ -16,10 +16,9 @@
 """Pooling Haiku modules."""
 
 import types
-from typing import Optional
+from typing import Optional, Sequence, Tuple, Union
 
 from haiku._src import module
-from haiku._src.typing import Shape, ShapeLike  # pylint: disable=g-multiple-import
 from jax import lax
 import jax.numpy as jnp
 
@@ -31,25 +30,26 @@ del module
 
 def _infer_shape(
     x: jnp.ndarray,
-    size: ShapeLike,
+    size: Union[int, Sequence[int]],
     channel_axis: Optional[int] = -1,
-) -> Shape:
+) -> Tuple[int, ...]:
   """Infer shape for pooling window or strides."""
   if isinstance(size, int):
     if channel_axis and not 0 <= abs(channel_axis) < x.ndim:
       raise ValueError(f"Invalid channel axis {channel_axis} for {x.shape}")
     if channel_axis and channel_axis < 0:
       channel_axis = x.ndim + channel_axis
-    return [1,] + [size if d != channel_axis else 1 for d in range(1, x.ndim)]
+    return (1,) + tuple(size if d != channel_axis else 1
+                        for d in range(1, x.ndim))
   else:
     assert x.ndim == len(size)
-    return size
+    return tuple(size)
 
 
 def max_pool(
     value: jnp.ndarray,
-    window_shape: ShapeLike,
-    strides: ShapeLike,
+    window_shape: Union[int, Sequence[int]],
+    strides: Union[int, Sequence[int]],
     padding: str,
     channel_axis: Optional[int] = -1,
 ) -> jnp.ndarray:
@@ -59,14 +59,14 @@ def max_pool(
     value: Value to pool.
     window_shape: Shape of the pooling window, an int or same rank as value.
     strides: Strides of the pooling window, an int or same rank as value.
-    padding: Padding algorithm. Either "VALID" or "SAME".
+    padding: Padding algorithm. Either ``VALID`` or ``SAME``.
     channel_axis: Axis of the spatial channels for which pooling is skipped,
-      used to infer `window_shape` or `strides` if they are an integer.
+      used to infer ``window_shape`` or ``strides`` if they are an integer.
 
   Returns:
     Pooled result. Same rank as value.
   """
-  if padding not in ["SAME", "VALID"]:
+  if padding not in ("SAME", "VALID"):
     raise ValueError(f"Invalid padding '{padding}', must be 'SAME' or 'VALID'.")
 
   window_shape = _infer_shape(value, window_shape, channel_axis)
@@ -78,8 +78,8 @@ def max_pool(
 
 def avg_pool(
     value: jnp.ndarray,
-    window_shape: ShapeLike,
-    strides: ShapeLike,
+    window_shape: Union[int, Sequence[int]],
+    strides: Union[int, Sequence[int]],
     padding: str,
     channel_axis: Optional[int] = -1,
 ) -> jnp.ndarray:
@@ -89,15 +89,15 @@ def avg_pool(
     value: Value to pool.
     window_shape: Shape of the pooling window, an int or same rank as value.
     strides: Strides of the pooling window, an int or same rank as value.
-    padding: Padding algorithm. Either "VALID" or "SAME".
+    padding: Padding algorithm. Either ``VALID`` or ``SAME``.
     channel_axis: Axis of the spatial channels for which pooling is skipped,
-      used to infer `window_shape` or `strides` if they are an integer.
+      used to infer ``window_shape`` or ``strides`` if they are an integer.
 
   Returns:
     Pooled result. Same rank as value.
 
   Raises:
-    ValueError: If the padding is not VALID.
+    ValueError: If the padding is not valid.
   """
   if padding not in ("SAME", "VALID"):
     raise ValueError(f"Invalid padding '{padding}', must be 'SAME' or 'VALID'.")
@@ -122,13 +122,13 @@ def avg_pool(
 class MaxPool(hk.Module):
   """Max pool.
 
-  Equivalent to partial application of `hk.max_pool`.
+  Equivalent to partial application of :func:`max_pool`.
   """
 
   def __init__(
       self,
-      window_shape: ShapeLike,
-      strides: ShapeLike,
+      window_shape: Union[int, Sequence[int]],
+      strides: Union[int, Sequence[int]],
       padding: str,
       channel_axis: Optional[int] = -1,
       name: Optional[str] = None,
@@ -136,9 +136,9 @@ class MaxPool(hk.Module):
     """Max pool.
 
     Args:
-      window_shape: Shape of window to pool over. Same rank as value or int.
-      strides: Strides for the window. Same rank as value or int.
-      padding: Padding algorithm. Either "VALID" or "SAME".
+      window_shape: Shape of window to pool over. Same rank as value or ``int``.
+      strides: Strides for the window. Same rank as value or ``int``.
+      padding: Padding algorithm. Either ``VALID`` or ``SAME``.
       channel_axis: Axis of the spatial channels for which pooling is skipped.
       name: String name for the module.
     """
@@ -156,13 +156,13 @@ class MaxPool(hk.Module):
 class AvgPool(hk.Module):
   """Average pool.
 
-  Equivalent to partial application of `hk.avg_pool`.
+  Equivalent to partial application of :func:`avg_pool`.
   """
 
   def __init__(
       self,
-      window_shape: ShapeLike,
-      strides: ShapeLike,
+      window_shape: Union[int, Sequence[int]],
+      strides: Union[int, Sequence[int]],
       padding: str,
       channel_axis: Optional[int] = -1,
       name: Optional[str] = None,
@@ -170,9 +170,9 @@ class AvgPool(hk.Module):
     """Average pool.
 
     Args:
-      window_shape: Shape of window to pool over. Same rank as value or int.
-      strides: Strides for the window. Same rank as value or int.
-      padding: Padding algorithm. Either "VALID" or "SAME".
+      window_shape: Shape of window to pool over. Same rank as value or ``int``.
+      strides: Strides for the window. Same rank as value or ``int``.
+      padding: Padding algorithm. Either ``VALID`` or ``SAME``.
       channel_axis: Axis of the spatial channels for which pooling is skipped.
       name: String name for the module.
     """

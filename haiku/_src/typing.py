@@ -16,28 +16,20 @@
 """Haiku types."""
 
 import typing
-from typing import Any, Callable, Mapping, Sequence, Tuple, Union
+from typing import Any, Callable, Mapping, Sequence
 import jax.numpy as jnp
 
 # pytype: disable=module-attr
 try:
   # Using PyType's experimental support for forward references.
-  Module = typing._ForwardRef('haiku.Module')  # pylint: disable=protected-access
+  Module = typing._ForwardRef("haiku.Module")  # pylint: disable=protected-access
 except AttributeError:
   Module = Any
 # pytype: enable=module-attr
 
-Shape = Sequence[int]
-ShapeLike = Union[int, Shape]
-FloatLike = Union[float, jnp.ndarray]
-DType = Any
-ParamName = str
-Initializer = Callable[[Shape, DType], jnp.ndarray]
-Params = Mapping[str, Mapping[ParamName, jnp.ndarray]]
+Initializer = Callable[[Sequence[int], Any], jnp.ndarray]
+Params = Mapping[str, Mapping[str, jnp.ndarray]]
 State = Mapping[str, Mapping[str, jnp.ndarray]]
-PadFn = Callable[[int], Tuple[int, int]]
-PadFnOrFns = Union[PadFn, Sequence[PadFn]]
 
 # Missing JAX types.
 PRNGKey = jnp.ndarray  # pylint: disable=invalid-name
-PRNGSeed = int

@@ -53,17 +53,17 @@ class MLP(hk.Module):
 
     Args:
       output_sizes: Sequence of layer sizes.
-      w_init: Initializer for Linear weights.
-      b_init: Initializer for Linear bias. Must be `None` if `with_bias` is
-        `False`.
+      w_init: Initializer for :class:`~haiku.Linear` weights.
+      b_init: Initializer for :class:`~haiku.Linear` bias. Must be ``None`` if
+        ``with_bias=False``.
       with_bias: Whether or not to apply a bias in each layer.
-      activation: Activation function to apply between linear layers. Defaults
-        to ReLU.
+      activation: Activation function to apply between :class:`~haiku.Linear`
+        layers. Defaults to ReLU.
       activate_final: Whether or not to activate the final layer of the MLP.
       name: Optional name for this module.
 
     Raises:
-      ValueError: If with_bias is False and b_init is not None.
+      ValueError: If ``with_bias`` is ``False`` and ``b_init`` is not ``None``.
     """
     if not with_bias and b_init is not None:
       raise ValueError("When with_bias=False b_init must not be set.")
@@ -92,12 +92,12 @@ class MLP(hk.Module):
     """Connects the module to some inputs.
 
     Args:
-      inputs: A Tensor of shape `[batch_size, input_size]`.
+      inputs: A Tensor of shape ``[batch_size, input_size]``.
       dropout_rate: Optional dropout rate.
       rng: Optional RNG key. Require when using dropout.
 
     Returns:
-      output: The output of the model of size `[batch_size, output_size]`.
+      The output of the model of size ``[batch_size, output_size]``.
     """
     if dropout_rate is not None and rng is None:
       raise ValueError("When using dropout an rng key must be passed.")

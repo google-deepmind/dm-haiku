@@ -15,12 +15,21 @@
 # ==============================================================================
 """Base Haiku module."""
 
+import types
 from typing import Any, Callable, Mapping, NamedTuple, Optional, Tuple, TypeVar, Union
 import warnings
 
 from haiku._src import analytics
 from haiku._src import base
-from haiku._src.typing import Params, State, PRNGKey, PRNGSeed  # pylint: disable=g-multiple-import
+from haiku._src import typing
+
+# If you are forking replace this with `import haiku as hk`.
+hk = types.ModuleType("haiku")
+hk.PRNGSequence = base.PRNGSequence
+hk.Params = typing.Params
+hk.State = typing.State
+PRNGKey = typing.PRNGKey
+del typing
 
 T = TypeVar("T")
 
@@ -37,7 +46,7 @@ class Transformed(NamedTuple):
   """
 
   # Args: [Optional[PRNGKey], ...]
-  init: Callable[..., Params]
+  init: Callable[..., hk.Params]
 
   # Args: [Params, Optional[PRNGKey], ...]
   apply: Callable[..., Any]
@@ -52,16 +61,16 @@ class TransformedWithState(NamedTuple):
   """
 
   # Args: [Optional[PRNGKey], ...]
-  init: Callable[..., Tuple[Params, State]]
+  init: Callable[..., Tuple[hk.Params, hk.State]]
 
-  # Args: [Params, State, Optional[PRNGKey], ...]
-  apply: Callable[..., Tuple[Any, State]]
+  # Args: [hk.Params, hk.State, Optional[PRNGKey], ...]
+  apply: Callable[..., Tuple[Any, hk.State]]
 
 
-def to_prng_sequence(rng, err_msg) -> Optional[base.PRNGSequence]:
+def to_prng_sequence(rng, err_msg) -> Optional[hk.PRNGSequence]:
   if rng is not None:
     try:
-      rng = base.PRNGSequence(rng)
+      rng = hk.PRNGSequence(rng)
     except Exception as e:
       raise ValueError(err_msg) from e
   return rng
@@ -81,18 +90,16 @@ APPLY_RNG_STATE_ERROR = RNG_ERROR_TPL.format(
 def without_state(f: TransformedWithState) -> Transformed:
   """Wraps a transformed tuple and ignores state in/out.
 
+  The example below is equivalent to ``f = hk.transform(f, apply_rng=True)``:
+
   >>> def f(x):
   ...   mod = hk.Linear(10)
   ...   return mod(x)
-
   >>> f = hk.without_state(hk.transform_with_state(f))
-  >>> # NOTE: This is equivalent to `f = hk.transform(f, apply_rng=True)`.
-
   >>> rng = jax.random.PRNGKey(42)
   >>> x = jnp.zeros([1, 1])
   >>> params = f.init(rng, x)
-  >>> out = f.apply(params, rng, x)
-  >>> out
+  >>> f.apply(params, rng, x)
   DeviceArray([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]], dtype=float32)
 
   Args:
@@ -150,11 +157,11 @@ def transform(f, *, apply_rng=False) -> Transformed:
       params = init(rng, *a, **k)
       out = apply(params, rng, *a, **k)
 
-  Note that the ``rng`` argument is typically not required for `apply` and
+  Note that the ``rng`` argument is typically not required for ``apply`` and
   passing ``None`` is accepted.
 
-  The first thing to do is to define a `Module`. A module encapsulates some
-  parameters and a computation on those parameters:
+  The first thing to do is to define a :class:`Module`. A module encapsulates
+  some parameters and a computation on those parameters:
 
   >>> class MyModule(hk.Module):
   ...   def __call__(self, x):
@@ -170,7 +177,6 @@ def transform(f, *, apply_rng=False) -> Transformed:
   ...   a = MyModule()
   ...   b = MyModule()
   ...   return a(x) + b(x)
-
   >>> f = hk.transform(f)
 
   To get the initial state of the module call ``init`` with an example input:
@@ -210,7 +216,7 @@ def transform(f, *, apply_rng=False) -> Transformed:
   analytics.log_once("transform")
 
   if not apply_rng:
-    warnings.warn("Apply_rng will soon be removed and defaulted to True",
+    warnings.warn("Aapply_rng will soon be removed and defaulted to True",
                   DeprecationWarning)
 
   pair = transform_with_state(f)
@@ -231,19 +237,18 @@ def transform_with_state(f) -> TransformedWithState:
       params, state = init(rng, *a, **k)
       out, state = apply(params, state, rng, *a, **k)
 
-  Note that the ``rng`` argument is typically not required for `apply` and
+  Note that the ``rng`` argument is typically not required for ``apply`` and
   passing ``None`` is accepted.
 
   This function is equivalent to :func:`transform`, however it allows you to
-  maintain and update internal state (e.g. moving averages in batch norm) via
-  :func:`get_state` and :func:`set_state`.
+  maintain and update internal state (e.g. :class:`ExponentialMovingAverage` in
+  :class:`BatchNorm`) via :func:`get_state` and :func:`set_state`:
 
   >>> def f():
   ...   counter = hk.get_state("counter", shape=[], dtype=jnp.int32,
   ...                          init=jnp.zeros)
   ...   hk.set_state("counter", counter + 1)
   ...   return counter
-
   >>> f = hk.transform_with_state(f)
 
   >>> params, state = f.init(None)
@@ -256,15 +261,16 @@ def transform_with_state(f) -> TransformedWithState:
     f: A function closing over :class:`Module` instances.
 
   Returns:
-    A :class:`TransformedWithState` tuple with `init` and `apply` properties.
+    A :class:`TransformedWithState` tuple with ``init`` and ``apply`` pure
+    functions.
   """
   analytics.log_once("transform_with_state")
 
   def init_fn(
-      rng: Optional[Union[PRNGKey, PRNGSeed]],
+      rng: Optional[Union[PRNGKey, int]],
       *args,
       **kwargs,
-  ) -> Tuple[Params, State]:
+  ) -> Tuple[hk.Params, hk.State]:
     """Initializes your function collecting parameters and state."""
     rng = to_prng_sequence(rng, err_msg=INIT_RNG_ERROR)
     with base.new_context(rng=rng) as ctx:
@@ -272,12 +278,12 @@ def transform_with_state(f) -> TransformedWithState:
     return ctx.collect_params(), ctx.collect_initial_state()
 
   def apply_fn(
-      params: Optional[Params],
-      state: Optional[State],
-      rng: Optional[Union[PRNGKey, PRNGSeed]],
+      params: Optional[hk.Params],
+      state: Optional[hk.State],
+      rng: Optional[Union[PRNGKey, int]],
       *args,
       **kwargs,
-  ) -> Tuple[Any, State]:
+  ) -> Tuple[Any, hk.State]:
     """Applies your function injecting parameters and state."""
     params = check_mapping("params", params)
     state = check_mapping("state", state)

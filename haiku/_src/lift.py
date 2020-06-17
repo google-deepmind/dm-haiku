@@ -40,18 +40,18 @@ def unpack_from_dict(src, prefix):
 # TODO(tycai): Accept state=True.
 # TODO(tycai): Make sure transformed functions have better names.
 class LiftingModule(module.Module):
-  """Lifts the given init function to a function in the current Haiku namespace.
+  r"""Lifts the given init function to a function in the current Haiku namespace.
 
-  During init, the returned callable will run the given `init_fn`, and include
+  During init, the returned callable will run the given ``init_fn``, and include
   the resulting params in the outer transform's dictionaries.
-  During apply, the returned callable will instead pull the relevant parameters
-  from the outer transform's dictionaries.
+  During ``apply``, the returned callable will instead pull the relevant
+  parameters from the outer transform's dictionaries.
 
-  Must be called inside hk.transform, and be passed the `init` member of a
-  `hk.Transformed`.
+  Must be called inside :func:`~haiku.transform`\ , and be passed the ``init``
+  member of a :class:`~haiku.Transformed`\ .
 
-  The user must ensure that the given `init` does not accidentally catch modules
-  from an outer `hk.transform` via functional closure.
+  The user must ensure that the given ``init`` does not accidentally catch
+  modules from an outer :func:`~haiku.transform` via functional closure.
 
   This is highly experimental and may be changed or removed at any time.
   """
@@ -60,7 +60,8 @@ class LiftingModule(module.Module):
     """Initializes the LiftingModule.
 
     Args:
-      init_fn: The init_fn from a hk.Transformed. Must not be stateful.
+      init_fn: The ``init_fn`` from a :class:`~haiku.Transformed`. Must not be
+        stateful.
       name: Module name.
     """
     super().__init__(name=name)

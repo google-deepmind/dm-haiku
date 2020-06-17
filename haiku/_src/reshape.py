@@ -16,10 +16,9 @@
 """Reshaping Haiku modules."""
 
 import types
-from typing import Optional
+from typing import Optional, Sequence
 
 from haiku._src import module
-from haiku._src.typing import Shape
 import jax.numpy as jnp
 import numpy as np
 
@@ -80,17 +79,17 @@ class Reshape(hk.Module):
 
   def __init__(
       self,
-      output_shape: Shape,
+      output_shape: Sequence[int],
       preserve_dims: int = 1,
       name: Optional[str] = None,
   ):
-    """Constructs a ``Reshape`` module.
+    """Constructs a :class:`Reshape` module.
 
     Args:
       output_shape: Shape to reshape the input tensor to while preserving its
-        first ``preserve_dims` dimensions. When the special value -1 appears in
-        ``output_shape`` the corresponding size is automatically inferred. Note
-        that -1 can only appear once in ``output_shape``.
+        first ``preserve_dims`` dimensions. When the special value ``-1``
+        appears in ``output_shape`` the corresponding size is automatically
+        inferred. Note that ``-1`` can only appear once in ``output_shape``.
         To flatten all non-batch dimensions use :class:`Flatten`.
       preserve_dims: Number of leading dimensions that will not be reshaped.
       name: Name of the module.
@@ -123,8 +122,8 @@ class Reshape(hk.Module):
 class Flatten(Reshape):
   """Flattens the input, preserving the batch dimension(s).
 
-  By default, Flatten combines all dimensions except the first.
-  Additional leading dimensions can be preserved by setting preserve_dims.
+  By default, :class:`Flatten` combines all dimensions except the first.
+  Additional leading dimensions can be preserved by setting ``preserve_dims``.
 
   >>> x = jnp.ones([3, 2, 4])
   >>> flat = hk.Flatten()

@@ -18,19 +18,15 @@
 import collections
 import contextlib
 from typing import (Callable, Iterator, Iterable, MutableMapping, NamedTuple,
-                    Optional, Set, Tuple, Union)
+                    Optional, Set, Tuple, Union, Any, Sequence)
 
 from haiku._src import data_structures
 from haiku._src.typing import (  # pylint: disable=g-multiple-import
-    Shape,
-    DType,
-    ParamName,
     Initializer,
     Params,
     State,
     Module,
     PRNGKey,
-    PRNGSeed,
 )
 import jax
 import jax.numpy as jnp
@@ -40,7 +36,7 @@ ThreadLocalStack = data_structures.ThreadLocalStack
 
 ModuleState = collections.namedtuple("ModuleState", ("module", "method_name"))
 StatePair = collections.namedtuple("StatePair", ("initial", "current"))
-MutableParams = MutableMapping[str, MutableMapping[ParamName, jnp.ndarray]]
+MutableParams = MutableMapping[str, MutableMapping[str, jnp.ndarray]]
 MutableState = MutableMapping[str, MutableMapping[str, StatePair]]
 
 # TODO(tomhennigan) Should creator_stack be part of frame?
@@ -150,7 +146,7 @@ def new_context(
     *,
     params: Optional[Params] = None,
     state: Optional[State] = None,
-    rng: Optional[Union[PRNGKey, PRNGSeed]] = None,
+    rng: Optional[Union[PRNGKey, int]] = None,
 ) -> HaikuContext:
   """Collects the results of hk.{get,set}_{parameter,state} calls.
 
@@ -235,9 +231,9 @@ def params_frozen():
 
 
 def get_parameter(
-    name: ParamName,
-    shape: Shape,
-    dtype: DType = jnp.float32,
+    name: str,
+    shape: Sequence[int],
+    dtype: Any = jnp.float32,
     init: Initializer = None,
 ) -> jnp.ndarray:
   """Creates or reuses a parameter for the given transformed function.
@@ -299,9 +295,9 @@ def get_parameter(
 
 
 def create_parameter(
-    full_name: ParamName,
-    shape: Shape,
-    dtype: DType = jnp.float32,
+    full_name: str,
+    shape: Sequence[int],
+    dtype: Any = jnp.float32,
     init: Initializer = None,
 ) -> jnp.ndarray:
   """Creates a parameter by running user defined creators then init.
@@ -342,13 +338,19 @@ def create_parameter(
 
 
 class ParamContext(NamedTuple):
-  """Read only state showing where parameters are being created."""
+  """Read only state showing where parameters are being created.
+
+  Attributes:
+    full_name: The full name of the given parameter (e.g. ``mlp/~/linear_0/w``).
+    module: The module that owns the current parameter, ``None`` if this
+      parameter exists outside any module.
+  """
   full_name: str
   module: Optional[Module]
 
-NextCreator = Callable[[Shape, DType, Initializer], jnp.ndarray]
-ParamCreator = Callable[[NextCreator, Shape, DType, Initializer, ParamContext],
-                        jnp.ndarray]
+NextCreator = Callable[[Sequence[int], Any, Initializer], jnp.ndarray]
+ParamCreator = Callable[
+    [NextCreator, Sequence[int], Any, Initializer, ParamContext], jnp.ndarray]
 
 
 def custom_creator(creator: ParamCreator):
@@ -377,7 +379,7 @@ def custom_creator(creator: ParamCreator):
 
 
 def run_custom_getters(
-    full_name: ParamName,
+    full_name: str,
     value: jnp.ndarray,
 ) -> jnp.ndarray:
   """Creates a parameter by running user defined creators then init.
@@ -413,7 +415,7 @@ def run_custom_getters(
 
   return next_getter(value)
 
-NextGetter = Callable[[ParamName, jnp.ndarray], jnp.ndarray]
+NextGetter = Callable[[str, jnp.ndarray], jnp.ndarray]
 ParamGetter = Callable[[NextGetter, jnp.ndarray, ParamContext], jnp.ndarray]
 
 
@@ -459,15 +461,15 @@ PRNGSequenceState = Tuple[PRNGKey, Iterable[PRNGKey]]
 
 
 class PRNGSequence(Iterator[PRNGKey]):
-  """Iterator of PRNGKeys.
+  """Iterator of JAX random keys.
 
   >>> seq = hk.PRNGSequence(42)  # OR pass a jax.random.PRNGKey
   >>> key1 = next(seq)
   >>> key2 = next(seq)
   >>> assert key1 is not key2
 
-  If you know how many keys you will want then you can use ``reserve`` to more
-  efficiently split the keys you need::
+  If you know how many keys you will want then you can use :meth:`reserve` to
+  more efficiently split the keys you need::
 
   >>> seq.reserve(4)
   >>> keys = [next(seq) for _ in range(4)]
@@ -475,6 +477,7 @@ class PRNGSequence(Iterator[PRNGKey]):
   __slots__ = ("_key", "_subkeys")
 
   def __init__(self, key_or_seed: Union[PRNGKey, int, PRNGSequenceState]):
+    """Creates a new :class:`PRNGSequence`."""
     if isinstance(key_or_seed, tuple):
       key, subkeys = key_or_seed
       assert_is_prng_key(key)
@@ -559,14 +562,14 @@ def reserve_rng_keys(num: int):
 
 
 def next_rng_key() -> PRNGKey:
-  """Returns a unique JAX RNG key split from the current global key.
+  """Returns a unique JAX random key split from the current global key.
 
   >>> key = hk.next_rng_key()
   >>> _ = jax.random.uniform(key, [])
 
   Returns:
-    A unique (within a transformed function) JAX rng key that can be used with
-    APIs such as ``jax.random.uniform``.
+    A unique (within a call to ``init`` or ``apply``) JAX rng key that can be
+    used with APIs such as ``jax.random.uniform``.
   """
   assert_context("next_rng_key")
   return next_rng_key_internal()
@@ -579,7 +582,7 @@ def next_rng_key_internal() -> PRNGKey:
 
 
 def next_rng_keys(num: int) -> Tuple[PRNGKey, ...]:
-  """Returns one or more JAX RNG key split from the current global key.
+  """Returns one or more JAX random key split from the current global key.
 
   >>> k1, k2 = hk.next_rng_keys(2)
   >>> assert (k1 != k2).all()
@@ -600,7 +603,7 @@ def next_rng_keys(num: int) -> Tuple[PRNGKey, ...]:
 
 
 def maybe_next_rng_key() -> Optional[PRNGKey]:
-  """`next_rng_key()` if random numbers are available, otherwise `None`."""
+  """:func:`next_rng_key` if random numbers are available, else ``None``."""
   assert_context("maybe_next_rng_key")
   rng_seq = current_frame().rng_stack.peek()
   return None if rng_seq is None else next(rng_seq)
@@ -613,10 +616,12 @@ def extract_state(state: MutableState, *, initial) -> State:
   return state
 
 
-def get_state(name: ParamName,
-              shape: Optional[Shape] = None,
-              dtype: Optional[DType] = jnp.float32,
-              init: Optional[Initializer] = None) -> jnp.ndarray:
+def get_state(
+    name: str,
+    shape: Optional[Sequence[int]] = None,
+    dtype: Any = jnp.float32,
+    init: Optional[Initializer] = None,
+) -> jnp.ndarray:
   """Gets the current value for state with an optional initializer.
 
   "State" can be used to represent mutable state in your network. The most
@@ -645,7 +650,7 @@ def get_state(name: ParamName,
     name: A name for the state.
     shape: The shape of the state.
     dtype: The dtype of the state.
-    init: A callable of shape, dtype to generate an initial value for the
+    init: A callable ``f(shape, dtype)`` that returns an initial value for the
       state.
 
   Returns:
@@ -669,7 +674,7 @@ def get_state(name: ParamName,
   return value.current
 
 
-def set_state(name: ParamName, value):
+def set_state(name: str, value):
   """Sets the current value for some state.
 
   See :func:`get_state`.
@@ -709,8 +714,8 @@ def with_rng(key: PRNGKey):
   """Provides a new sequence for :func:`next_rng_key` to draw from.
 
   When :func:`next_rng_key` is called, it draws a new key from the
-  ``PRNGSequence`` defined by the input key to the transformed function. This
-  context manager overrides the sequence for the duration of the scope.
+  :class:`PRNGSequence` defined by the input key to the transformed function.
+  This context manager overrides the sequence for the duration of the scope.
 
   >>> with hk.with_rng(jax.random.PRNGKey(428)):
   ...   s = jax.random.uniform(hk.next_rng_key(), ())

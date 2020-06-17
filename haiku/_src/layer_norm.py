@@ -60,8 +60,8 @@ class LayerNorm(hk.Module):
         per channel applied after the normalization.
       create_offset: Bool, defines whether to create a trainable offset
         per channel applied after normalization and scaling.
-      eps: Small epsilon to avoid division by zero variance. Defaults 1e-5, as
-        in the paper and Sonnet.
+      eps: Small epsilon to avoid division by zero variance. Defaults ``1e-5``,
+        as in the paper and Sonnet.
       scale_init: Optional initializer for gain (aka scale). By default, one.
       offset_init: Optional initializer for bias (aka offset). By default, zero.
       name: The module name.
@@ -97,7 +97,7 @@ class LayerNorm(hk.Module):
     """Connects the layer norm.
 
     Args:
-      inputs: An array, where the data format is [N, ..., C].
+      inputs: An array, where the data format is ``[N, ..., C]``.
       scale: An array up to n-D. The shape of this tensor must be broadcastable
         to the shape of ``inputs``. This is the scale applied to the normalized
         inputs. This cannot be passed in if the module was constructed with
@@ -146,7 +146,7 @@ class LayerNorm(hk.Module):
 class InstanceNorm(LayerNorm):
   """Normalizes inputs along the spatial dimensions.
 
-  See :class:``LayerNorm`` for more details.
+  See :class:`LayerNorm` for more details.
   """
 
   def __init__(
@@ -159,7 +159,7 @@ class InstanceNorm(LayerNorm):
       data_format: str = "channels_last",
       name: Optional[str] = None,
   ):
-    """Constructs an ``InstanceNorm`` module.
+    """Constructs an :class:`InstanceNorm` module.
 
     This method creates a module which normalizes over the spatial dimensions.
 

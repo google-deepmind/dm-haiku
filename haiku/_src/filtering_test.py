@@ -21,7 +21,6 @@ from absl.testing import absltest
 from haiku._src import basic
 from haiku._src import filtering
 from haiku._src import transform
-from haiku._src.typing import Params
 import jax
 import jax.numpy as jnp
 
@@ -29,7 +28,7 @@ import jax.numpy as jnp
 def jax_fn_with_filter(
     jax_fn: Callable[..., Any],
     f: Callable[..., Any],
-    predicate: filtering.Predicate,
+    predicate: Callable[[str, str, jnp.ndarray], bool],
     **jax_fn_kwargs) -> Callable[..., Any]:
   """Applies a jax functionn to a given function after modifying its signature.
 
@@ -71,7 +70,7 @@ def get_net(x):
   return jnp.mean(h)
 
 
-def get_names(params: Params) -> Set[str]:
+def get_names(params) -> Set[str]:
   names = set([])
   for path, module in params.items():
     for name in module.keys():
@@ -79,7 +78,7 @@ def get_names(params: Params) -> Set[str]:
   return names
 
 
-def to_set(params: Params) -> Set[Tuple[str, Sequence[float]]]:
+def to_set(params) -> Set[Tuple[str, Sequence[float]]]:
   entries = set([])
   for path, module in params.items():
     for key, value in module.items():

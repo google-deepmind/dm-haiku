@@ -22,7 +22,6 @@ from absl.testing import parameterized
 import haiku as hk
 from haiku._src import test_utils
 from haiku._src.integration import descriptors
-from haiku._src.typing import DType, Shape  # pylint: disable=g-multiple-import
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -39,12 +38,7 @@ CUSTOM_ATOL = {hk.nets.ResNet: 0.05, hk.nets.MobileNetV1: 0.05,
 class JaxTransformsTest(parameterized.TestCase):
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
-  def test_jit(
-      self,
-      module_fn: ModuleFn,
-      shape: Shape,
-      dtype: DType,
-  ):
+  def test_jit(self, module_fn: ModuleFn, shape, dtype):
     rng = jax.random.PRNGKey(42)
     if jnp.issubdtype(dtype, jnp.integer):
       x = jax.random.randint(rng, shape, 0, np.prod(shape), dtype)
@@ -71,12 +65,7 @@ class JaxTransformsTest(parameterized.TestCase):
                       jax.jit(f.apply)(params, state, rng, x))
 
   @test_utils.combined_named_parameters(descriptors.OPTIONAL_BATCH_MODULES)
-  def test_vmap(
-      self,
-      module_fn: ModuleFn,
-      shape: Shape,
-      dtype: DType,
-  ):
+  def test_vmap(self, module_fn: ModuleFn, shape, dtype):
     batch_size, shape = shape[0], shape[1:]
     rng = jax.random.PRNGKey(42)
     if jnp.issubdtype(dtype, jnp.integer):

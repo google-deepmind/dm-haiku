@@ -18,7 +18,6 @@
 from typing import Any, Callable, NamedTuple, Type, Sequence
 
 import haiku as hk
-from haiku._src.typing import Shape, DType  # pylint: disable=g-multiple-import
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -63,8 +62,8 @@ def unwrap(module):
 class ModuleDescriptor(NamedTuple):
   name: Any
   create: ModuleFn
-  shape: Shape
-  dtype: DType = jnp.float32
+  shape: Sequence[int]
+  dtype: Any = jnp.float32
 
 
 BATCH_SIZE = 8

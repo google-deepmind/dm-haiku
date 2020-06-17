@@ -17,14 +17,13 @@
 
 import abc
 import types
-from typing import NamedTuple, Optional, Sequence, Tuple
+from typing import Any, NamedTuple, Optional, Sequence, Tuple, Union
 
 from haiku._src import base
 from haiku._src import basic
 from haiku._src import conv
 from haiku._src import initializers
 from haiku._src import module
-from haiku._src import typing
 import jax
 import jax.nn
 import jax.numpy as jnp
@@ -47,13 +46,12 @@ class RNNCore(hk.Module):
   core state; and :meth:`__call__` which applies the core parameterized
   by a previous state to an input.
 
-  Cores may be used with :func:`dynamic_unroll` and
-  :func:`static_unroll` to iteratively construct an output sequence from
-  the given input sequence.
+  Cores may be used with :func:`dynamic_unroll` and :func:`static_unroll` to
+  iteratively construct an output sequence from the given input sequence.
   """
 
   @abc.abstractmethod
-  def __call__(self, inputs, prev_state):
+  def __call__(self, inputs, prev_state) -> Tuple[Any, Any]:
     """Run one step of the RNN.
 
     Args:
@@ -61,10 +59,9 @@ class RNNCore(hk.Module):
       prev_state: Previous core state.
 
     Returns:
-      A tuple with two elements:
-      * **outputs** - An arbitrarily nested structure.
-      * **next_state** - Next core state, must be of the same shape as the
-        previous one.
+      A tuple with two elements ``output, next_state``. ``output`` is an
+      arbitrarily nested structure. ``next_state`` is the next core state, this
+      must be the same shape as ``prev_state``.
     """
 
   @abc.abstractmethod
@@ -207,7 +204,12 @@ class VanillaRNN(RNNCore):
 
 
 class LSTMState(NamedTuple):
-  """An LSTM core state consists of hidden and cell vectors."""
+  """An LSTM core state consists of hidden and cell vectors.
+
+  Attributes:
+    hidden: Hidden state.
+    cell: Cell state.
+  """
   hidden: jnp.ndarray
   cell: jnp.ndarray
 
@@ -307,9 +309,9 @@ class ConvNDLSTM(RNNCore):
   def __init__(
       self,
       num_spatial_dims: int,
-      input_shape: typing.Shape,
+      input_shape: Sequence[int],
       output_channels: int,
-      kernel_shape: typing.ShapeLike,
+      kernel_shape: Union[int, Sequence[int]],
       name: Optional[str] = None,
   ):
     """Constructs a convolutional LSTM.
@@ -367,9 +369,9 @@ class Conv1DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
 
   def __init__(
       self,
-      input_shape: typing.Shape,
+      input_shape: Sequence[int],
       output_channels: int,
-      kernel_shape: typing.ShapeLike,
+      kernel_shape: Union[int, Sequence[int]],
       name: Optional[str] = None,
   ):
     """Constructs a 1-D convolutional LSTM.
@@ -395,9 +397,9 @@ class Conv2DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
 
   def __init__(
       self,
-      input_shape: typing.Shape,
+      input_shape: Sequence[int],
       output_channels: int,
-      kernel_shape: typing.ShapeLike,
+      kernel_shape: Union[int, Sequence[int]],
       name: Optional[str] = None,
   ):
     """Constructs a 2-D convolutional LSTM.
@@ -423,9 +425,9 @@ class Conv3DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
 
   def __init__(
       self,
-      input_shape: typing.Shape,
+      input_shape: Sequence[int],
       output_channels: int,
-      kernel_shape: typing.ShapeLike,
+      kernel_shape: Union[int, Sequence[int]],
       name: Optional[str] = None,
   ):
     """Constructs a 3-D convolutional LSTM.
@@ -546,13 +548,13 @@ def _validate_and_conform(should_reset, state):
 class ResetCore(RNNCore):
   """A wrapper for managing state resets during unrolls.
 
-  When unrolling an `RNNCore` on a batch of inputs sequences it may be necessary
-  to reset the core's state at different timesteps for different elements of the
-  batch. The `ResetCore` class enables this by taking a batch of `should_reset`
-  booleans in addition to the batch of inputs, and conditionally resetting the
-  core's state for individual elements of the batch. You may also reset
-  individual entries of the state by passing a `should_reset` nest compatible
-  with the state structure.
+  When unrolling an :class:`RNNCore` on a batch of inputs sequences it may be
+  necessary to reset the core's state at different timesteps for different
+  elements of the batch. The :class:`ResetCore` class enables this by taking a
+  batch of ``should_reset`` booleans in addition to the batch of inputs, and
+  conditionally resetting the core's state for individual elements of the batch.
+  You may also reset individual entries of the state by passing a
+  ``should_reset`` nest compatible with the state structure.
   """
 
   def __init__(self, core: RNNCore, name: Optional[str] = None):
@@ -563,17 +565,17 @@ class ResetCore(RNNCore):
     """Run one step of the wrapped core, handling state reset.
 
     Args:
-      inputs: Tuple with two elements, (inputs, should_reset), where
-        should_reset is the signal used to reset the wrapped core's state.
-        should_reset can be either tensor or nest. If nest, should_reset must
-        match the state structure, and its components' shapes must be prefixes
-        of the correponding entries tensors' shapes in the state nest.
+      inputs: Tuple with two elements, ``inputs, should_reset``, where
+        ``should_reset`` is the signal used to reset the wrapped core's state.
+        ``should_reset`` can be either tensor or nest. If nest, ``should_reset``
+        must match the state structure, and its components' shapes must be
+        prefixes of the correponding entries tensors' shapes in the state nest.
         If tensor, supported shapes are all commom shape prefixes of the state
-        component tensors, e.g. `[batch_size]`.
+        component tensors, e.g. ``[batch_size]``.
       state: Previous wrapped core state.
 
     Returns:
-      Tuple of the wrapped core's (output, next_state).
+      Tuple of the wrapped core's ``output, next_state``.
     """
     inputs, should_reset = inputs
     if jax.treedef_is_leaf(jax.tree_structure(should_reset)):
@@ -686,7 +688,7 @@ class _DeepRNN(RNNCore):
 
 
 class DeepRNN(_DeepRNN):
-  """Wraps a sequence of cores and callables as a single core.
+  r"""Wraps a sequence of cores and callables as a single core.
 
       >>> deep_rnn = hk.DeepRNN([
       ...     hk.LSTM(hidden_size=4),
@@ -694,8 +696,9 @@ class DeepRNN(_DeepRNN):
       ...     hk.LSTM(hidden_size=2),
       ... ])
 
-  The state of a `DeepRNN` is a tuple with one element per `RNNCore`.
-  If no layers are `RNNCore`s, the state is an empty tuple.
+  The state of a :class:`DeepRNN` is a tuple with one element per
+  :class:`RNNCore`. If no layers are :class:`RNNCore`\ s, the state is an empty
+  tuple.
   """
 
   def __init__(self, layers, name: Optional[str] = None):
@@ -704,13 +707,14 @@ class DeepRNN(_DeepRNN):
 
 def deep_rnn_with_skip_connections(layers: Sequence[RNNCore],
                                    name: Optional[str] = None) -> RNNCore:
-  """Constructs a DeepRNN with skip connections.
+  r"""Constructs a :class:`DeepRNN` with skip connections.
 
-  Skip connections alter the dependency structure within a `DeepRNN`.
+  Skip connections alter the dependency structure within a :class:`DeepRNN`.
   Specifically, input to the i-th layer (i > 0) is given by a
   concatenation of the core's inputs and the outputs of the (i-1)-th layer.
 
-  The output of the `DeepRNN` is the concatenation of the outputs of all cores.
+  The output of the :class:`DeepRNN` is the concatenation of the outputs of all
+  cores.
 
   .. code-block:: python
 
@@ -720,13 +724,13 @@ def deep_rnn_with_skip_connections(layers: Sequence[RNNCore],
      ...
 
   Args:
-    layers: List of `RNNCore`s.
+    layers: List of :class:`RNNCore`\ s.
     name: Name of the module.
 
   Returns:
-    A `_DeepRNN` with skip connections.
+    A :class:`_DeepRNN` with skip connections.
 
   Raises:
-    ValueError: If any of the layers is not an `RNNCore`.
+    ValueError: If any of the layers is not an :class:`RNNCore`.
   """
   return _DeepRNN(layers, skip_connections=True, name=name)

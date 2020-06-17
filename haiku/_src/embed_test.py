@@ -87,9 +87,7 @@ class EmbedTest(parameterized.TestCase):
   def test_embed_invalid_lookup(self):
     lookup_style = "FOO"
     emb = embed.Embed(embedding_matrix=_EMBEDDING_MATRIX, lookup_style="FOO")
-    with self.assertRaisesRegex(
-        ValueError, f"{lookup_style} is not a valid enum "
-        f"in EmbedLookupStyle."):
+    with self.assertRaisesRegex(AttributeError, lookup_style):
       emb(_1D_IDS)
 
   @test_utils.transform_and_run

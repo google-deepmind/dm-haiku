@@ -261,12 +261,13 @@ class ResNet(hk.Module):
       blocks_per_group: A sequence of length 4 that indicates the number of
         blocks created in each group.
       num_classes: The number of classes to classify the inputs into.
-      bn_config: A dictionary of two elements, `decay_rate` and `eps` to be
-        passed on to the `BatchNorm` layers. By default the `decay_rate` is
-        `0.9` and `eps` is `1e-5`.
+      bn_config: A dictionary of two elements, ``decay_rate`` and ``eps`` to be
+        passed on to the :class:`~haiku.BatchNorm` layers. By default the
+        ``decay_rate`` is ``0.9`` and ``eps`` is ``1e-5``.
       resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults to
-        False.
-       bottleneck: Whether the block should bottleneck or not. Defaults to True.
+        ``False``.
+      bottleneck: Whether the block should bottleneck or not. Defaults to
+        ``True``.
       channels_per_group: A sequence of length 4 that indicates the number
         of channels used for each block in each group.
       use_projection: A sequence of length 4 that indicates whether each
@@ -350,10 +351,10 @@ class ResNet18(ResNet):
 
     Args:
       num_classes: The number of classes to classify the inputs into.
-      bn_config: A dictionary of two elements, `decay_rate` and `eps` to be
-        passed on to the `BatchNorm` layers.
+      bn_config: A dictionary of two elements, ``decay_rate`` and ``eps`` to be
+        passed on to the :class:`~haiku.BatchNorm` layers.
       resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults
-        to False.
+        to ``False``.
       name: Name of the module.
     """
     super().__init__(blocks_per_group=(2, 2, 2, 2),
@@ -378,10 +379,10 @@ class ResNet34(ResNet):
 
     Args:
       num_classes: The number of classes to classify the inputs into.
-      bn_config: A dictionary of two elements, `decay_rate` and `eps` to be
-        passed on to the `BatchNorm` layers.
+      bn_config: A dictionary of two elements, ``decay_rate`` and ``eps`` to be
+        passed on to the :class:`~haiku.BatchNorm` layers.
       resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults
-        to False.
+        to ``False``.
       name: Name of the module.
     """
     super().__init__(blocks_per_group=(3, 4, 6, 3),
@@ -406,10 +407,10 @@ class ResNet50(ResNet):
 
     Args:
       num_classes: The number of classes to classify the inputs into.
-      bn_config: A dictionary of two elements, `decay_rate` and `eps` to be
-        passed on to the `BatchNorm` layers.
+      bn_config: A dictionary of two elements, ``decay_rate`` and ``eps`` to be
+        passed on to the :class:`~haiku.BatchNorm` layers.
       resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults
-        to False.
+        to ``False``.
       name: Name of the module.
     """
     super().__init__(blocks_per_group=(3, 4, 6, 3),
@@ -432,10 +433,10 @@ class ResNet101(ResNet):
 
     Args:
       num_classes: The number of classes to classify the inputs into.
-      bn_config: A dictionary of two elements, `decay_rate` and `eps` to be
-        passed on to the `BatchNorm` layers.
+      bn_config: A dictionary of two elements, ``decay_rate`` and ``eps`` to be
+        passed on to the :class:`~haiku.BatchNorm` layers.
       resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults
-        to False.
+        to ``False``.
       name: Name of the module.
     """
     super().__init__(blocks_per_group=(3, 4, 23, 3),
@@ -458,10 +459,10 @@ class ResNet152(ResNet):
 
     Args:
       num_classes: The number of classes to classify the inputs into.
-      bn_config: A dictionary of two elements, `decay_rate` and `eps` to be
-        passed on to the `BatchNorm` layers.
+      bn_config: A dictionary of two elements, ``decay_rate`` and ``eps`` to be
+        passed on to the :class:`~haiku.BatchNorm` layers.
       resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults
-        to False.
+        to ``False``.
       name: Name of the module.
     """
     super().__init__(blocks_per_group=(3, 8, 36, 3),
@@ -484,10 +485,10 @@ class ResNet200(ResNet):
 
     Args:
       num_classes: The number of classes to classify the inputs into.
-      bn_config: A dictionary of two elements, `decay_rate` and `eps` to be
-        passed on to the `BatchNorm` layers.
+      bn_config: A dictionary of two elements, ``decay_rate`` and ``eps`` to be
+        passed on to the :class:`~haiku.BatchNorm` layers.
       resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults
-        to False.
+        to ``False``.
       name: Name of the module.
     """
     super().__init__(blocks_per_group=(3, 24, 36, 3),

@@ -407,15 +407,21 @@ Paddings
 
 .. automodule:: haiku.pad
 
-causal
-~~~~~~
+PadFn
+~~~~~
 
-.. autofunction:: causal
+.. autoclass:: PadFn
+   :members:
 
 create
 ~~~~~~
 
 .. autofunction:: create
+
+causal
+~~~~~~
+
+.. autofunction:: causal
 
 full
 ~~~~

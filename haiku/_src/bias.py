@@ -16,13 +16,12 @@
 """Bias module."""
 
 import types
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
 from haiku._src import base
 from haiku._src import initializers
 from haiku._src import module
 from haiku._src import utils
-from haiku._src.typing import Shape, FloatLike  # pylint: disable=g-multiple-import
 import jax.numpy as jnp
 
 # If you are forking replace this block with `import haiku as hk`.
@@ -74,7 +73,7 @@ class Bias(hk.Module):
 
   def __init__(
       self,
-      output_size: Optional[Shape] = None,
+      output_size: Optional[Sequence[int]] = None,
       bias_dims: Optional[Sequence[int]] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
       name: Optional[str] = None,
@@ -101,7 +100,7 @@ class Bias(hk.Module):
   def __call__(
       self,
       inputs: jnp.ndarray,
-      multiplier: FloatLike = None,
+      multiplier: Union[float, jnp.ndarray] = None,
   ) -> jnp.ndarray:
     """Adds bias to ``inputs`` and optionally multiplies by ``multiplier``.
 
@@ -133,7 +132,7 @@ class Bias(hk.Module):
     return inputs + b
 
 
-def calculate_bias_shape(input_shape: Shape, bias_dims: Sequence[int]):
+def calculate_bias_shape(input_shape: Sequence[int], bias_dims: Sequence[int]):
   """Calculate `bias_shape` based on the `input_shape` and `bias_dims`.
 
   Args:

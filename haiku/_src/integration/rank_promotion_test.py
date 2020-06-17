@@ -20,9 +20,10 @@ from absl.testing import parameterized
 import haiku as hk
 from haiku._src import test_utils
 from haiku._src.integration import descriptors
-from haiku._src.typing import DType, Shape  # pylint: disable=g-multiple-import
 import jax
 import jax.numpy as jnp
+
+ModuleFn = descriptors.ModuleFn
 
 
 class RankPromotionTest(parameterized.TestCase):
@@ -36,12 +37,7 @@ class RankPromotionTest(parameterized.TestCase):
     jax.config.update('jax_numpy_rank_promotion', 'warn')
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
-  def test_strict_promotion(
-      self,
-      module_fn: descriptors.ModuleFn,
-      shape: Shape,
-      dtype: DType,
-  ):
+  def test_strict_promotion(self, module_fn: ModuleFn, shape, dtype):
     if descriptors.module_type(module_fn) in (hk.nets.VectorQuantizer,
                                               hk.nets.VectorQuantizerEMA):
       self.skipTest('Requires: https://github.com/google/jax/pull/2901')

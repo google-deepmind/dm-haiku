@@ -22,11 +22,13 @@ from haiku._src import data_structures
 from haiku._src.typing import Params, State  # pylint: disable=g-multiple-import
 import jax.numpy as jnp
 
-Predicate = Callable[[str, str, jnp.ndarray], bool]
 T = TypeVar("T", Params, State)
 
 
-def partition(predicate: Predicate, structure: T) -> Tuple[T, T]:
+def partition(
+    predicate: Callable[[str, str, jnp.ndarray], bool],
+    structure: T,
+) -> Tuple[T, T]:
   """Partitions the input structure in two according to a given predicate.
 
   For a given set of parameters, you can use :func:`partition` to split them:
@@ -43,7 +45,7 @@ def partition(predicate: Predicate, structure: T) -> Tuple[T, T]:
 
   Args:
     predicate: criterion to be used to partition the input data.
-      The `predicate` argument is expected to be a boolean function taking as
+      The ``predicate`` argument is expected to be a boolean function taking as
       inputs the name of the module, the name of a given entry in the module
       data bundle (e.g. parameter name) and the corresponding data.
     structure: Haiku params or state data structure to be partitioned.
@@ -67,7 +69,10 @@ def partition(predicate: Predicate, structure: T) -> Tuple[T, T]:
   return true, false
 
 
-def filter(predicate: Predicate, structure: T) -> T:  # pylint: disable=redefined-builtin
+def filter(  # pylint: disable=redefined-builtin
+    predicate: Callable[[str, str, jnp.ndarray], bool],
+    structure: T,
+) -> T:
   """Filters a input structure according to a user specified predicate.
 
   >>> params = {'linear': {'w': None, 'b': None}}
@@ -79,7 +84,7 @@ def filter(predicate: Predicate, structure: T) -> T:  # pylint: disable=redefine
 
   Args:
     predicate: criterion to be used to partition the input data.
-      The `predicate` argument is expected to be a boolean function taking as
+      The ``predicate`` argument is expected to be a boolean function taking as
       inputs the name of the module, the name of a given entry in the module
       data bundle (e.g. parameter name) and the corresponding data.
     structure: Haiku params or state data structure to be filtered.

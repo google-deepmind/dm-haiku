@@ -18,22 +18,17 @@
 from absl.testing import parameterized
 import haiku as hk
 from haiku._src.integration import descriptors
-from haiku._src.typing import DType, Shape  # pylint: disable=g-multiple-import
 import jax
 import jax.numpy as jnp
 import tree
+
+ModuleFn = descriptors.ModuleFn
 
 
 class DTypeTestCase(parameterized.TestCase):
   """Common base class for dtype tests."""
 
-  def assert_dtype(
-      self,
-      test_dtype: DType,
-      module_fn: descriptors.ModuleFn,
-      shape: Shape,
-      input_dtype: DType,
-  ):
+  def assert_dtype(self, test_dtype, module_fn: ModuleFn, shape, input_dtype):
     """Checks that modules accepting float32 input_dtype output test_dtype."""
     if jax.local_devices()[0].platform != 'tpu':
       self.skipTest('bfloat16 only supported on TPU')

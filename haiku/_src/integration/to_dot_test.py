@@ -20,20 +20,16 @@ from absl.testing import parameterized
 import haiku as hk
 from haiku._src import test_utils
 from haiku._src.integration import descriptors
-from haiku._src.typing import DType, Shape  # pylint: disable=g-multiple-import
 import jax
 import jax.numpy as jnp
+
+ModuleFn = descriptors.ModuleFn
 
 
 class DotTest(parameterized.TestCase):
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
-  def test_dot(
-      self,
-      module_fn: descriptors.ModuleFn,
-      shape: Shape,
-      dtype: DType,
-  ):
+  def test_dot(self, module_fn: ModuleFn, shape, dtype):
     f = hk.transform_with_state(lambda x: module_fn()(x))  # pylint: disable=unnecessary-lambda
     rng = jax.random.PRNGKey(42)
     x = jnp.ones(shape, dtype)

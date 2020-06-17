@@ -21,29 +21,20 @@ from absl.testing import absltest
 from haiku._src import test_utils
 from haiku._src.integration import common
 from haiku._src.integration import descriptors
-from haiku._src.typing import DType, Shape  # pylint: disable=g-multiple-import
 from jax.config import config
 import jax.numpy as jnp
+
+ModuleFn = descriptors.ModuleFn
 
 
 class Float64Test(common.DTypeTestCase):
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
-  def test_float32(
-      self,
-      module_fn: descriptors.ModuleFn,
-      shape: Shape,
-      dtype: DType,
-  ):
+  def test_float32(self, module_fn: ModuleFn, shape, dtype):
     self.assert_dtype(jnp.float32, module_fn, shape, dtype)
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
-  def test_float64(
-      self,
-      module_fn: descriptors.ModuleFn,
-      shape: Shape,
-      dtype: DType,
-  ):
+  def test_float64(self, module_fn: ModuleFn, shape, dtype):
     self.assert_dtype(jnp.float64, module_fn, shape, dtype)
 
 if __name__ == "__main__":

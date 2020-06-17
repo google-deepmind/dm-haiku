@@ -41,7 +41,11 @@ else
 fi
 
 # Run tests using pytest.
-python -m pytest -n "${N_JOBS}" haiku
+TEST_OPTS=()
+if [[ "${INTEGRATION}" -eq "false" ]]; then
+  TEST_OPTS+=("--ignore=haiku/_src/integration/")
+fi
+python -m pytest -n "${N_JOBS}" haiku "${TEST_OPTS[@]}"
 
 # Test docs still build.
 cd docs/

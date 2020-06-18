@@ -216,7 +216,7 @@ def transform(f, *, apply_rng=False) -> Transformed:
   analytics.log_once("transform")
 
   if not apply_rng:
-    warnings.warn("Aapply_rng will soon be removed and defaulted to True",
+    warnings.warn("apply_rng will soon be removed and defaulted to True",
                   DeprecationWarning)
 
   pair = transform_with_state(f)

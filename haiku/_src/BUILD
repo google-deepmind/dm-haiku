@@ -40,9 +40,7 @@ hk_py_library(
     deps = [
         ":analytics",
         ":base",
-        ":data_structures",
         ":typing",
-        # pip: jax
     ],
 )
 
@@ -66,7 +64,6 @@ hk_py_library(
         ":base",
         ":initializers",
         ":module",
-        ":typing",
         ":utils",
         # pip: jax
     ],
@@ -122,7 +119,6 @@ hk_py_library(
         ":typing",
         # pip: jax
         # pip: numpy
-        # pip: tree
     ],
 )
 
@@ -174,7 +170,6 @@ hk_py_library(
         ":base",
         ":initializers",
         ":module",
-        ":typing",
         ":utils",
         # pip: jax
         # pip: numpy
@@ -230,7 +225,6 @@ hk_py_library(
         ":initializers",
         ":module",
         ":pad",
-        ":typing",
         ":utils",
         # pip: jax
         # pip: numpy
@@ -279,10 +273,7 @@ hk_py_test(
 hk_py_library(
     name = "pad",
     srcs = ["pad.py"],
-    deps = [
-        ":typing",
-        ":utils",
-    ],
+    deps = [":utils"],
 )
 
 hk_py_test(
@@ -301,7 +292,6 @@ hk_py_library(
     srcs = ["pool.py"],
     deps = [
         ":module",
-        ":typing",
         # pip: jax
     ],
 )
@@ -473,7 +463,6 @@ hk_py_library(
         ":conv",
         ":initializers",
         ":module",
-        ":typing",
         # pip: jax
     ],
 )
@@ -526,7 +515,6 @@ hk_py_library(
     name = "test_utils",
     srcs = ["test_utils.py"],
     deps = [
-        ":base",
         ":transform",
         # pip: absl/testing:parameterized
         # pip: jax
@@ -550,7 +538,6 @@ hk_py_library(
     srcs = ["embed.py"],
     deps = [
         ":base",
-        ":basic",
         ":initializers",
         ":module",
         # pip: jax
@@ -562,7 +549,6 @@ hk_py_library(
     srcs = ["reshape.py"],
     deps = [
         ":module",
-        ":typing",
         # pip: jax
         # pip: numpy
     ],
@@ -632,7 +618,6 @@ hk_py_test(
         ":basic",
         ":filtering",
         ":transform",
-        ":typing",
         # pip: absl/testing:absltest
         # pip: jax
     ],

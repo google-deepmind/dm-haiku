@@ -28,14 +28,10 @@ from jax.interpreters import xla
 import jax.linear_util as lu
 
 # Registering named call as a primitive
-named_call_p = core.Primitive('named_call')
-# A call_primitive is a higher order primitive
-named_call_p.call_primitive = True
-named_call_p.def_custom_bind(functools.partial(core.call_bind, named_call_p))
+named_call_p = core.CallPrimitive('named_call')
 # named_call is implemented as a plain core.call and only diverges
 # under compilation (see named_call_translation_rule)
 named_call_p.def_impl(core.call_impl)
-named_call_p.multiple_results = True
 
 
 def _named_call_translation_rule(comp_builder: 'xla.xb._JaxComputationBuilder',

@@ -203,3 +203,21 @@ hk_py_test(
         "//haiku",
     ],
 )
+
+hk_py_test(
+    name = "jax2tf_test",
+    timeout = "long",
+    srcs = ["jax2tf_test.py"],
+    shard_count = 50,
+    deps = [
+        ":descriptors",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        "//haiku",
+        "//haiku/_src:test_utils",
+        # pip: jax
+        # pip: jax/experimental/jax2tf
+        # pip: numpy
+        # pip: tensorflow
+    ],
+)

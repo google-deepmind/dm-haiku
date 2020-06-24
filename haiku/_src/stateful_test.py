@@ -218,6 +218,28 @@ class StatefulTest(parameterized.TestCase):
     self.assertEmpty(diff.state)
     self.assertIsNotNone(diff.rng)
 
+  @parameterized.parameters(0, 1, 2, 4, 8)
+  def test_scan_with_state(self, unroll_length):
+    def f(xs):
+      m = CountingModule()
+      def sf(c, x):
+        self.assertEqual(c, ())
+        return c, m(x)
+      _, ys = stateful.scan(sf, (), xs)
+      return ys
+
+    f = transform.transform_with_state(f)
+    key = jax.random.PRNGKey(42)
+    xs = jnp.arange(unroll_length)
+    params, state = f.init(key, xs)
+    self.assertEqual(list(state), ["counting_module"])
+    self.assertEqual(list(state["counting_module"]), ["count"])
+    np.testing.assert_allclose(state["counting_module"]["count"], 0, rtol=1e-4)
+    ys, state = f.apply(params, state, key, xs)
+    np.testing.assert_allclose(state["counting_module"]["count"], unroll_length,
+                               rtol=1e-4)
+    np.testing.assert_allclose(ys, xs ** 2, rtol=1e-4)
+
 
 def _callback_prim(forward, backward):
   def f_impl(x):

@@ -21,6 +21,7 @@ from typing import Any, Mapping, MutableMapping, Optional, Tuple, TypeVar
 
 from haiku._src import base
 import jax
+import jax.numpy as jnp
 
 InternalState = collections.namedtuple("InternalState", "params,state,rng")
 Bundle = Mapping[str, Mapping[str, Any]]
@@ -31,14 +32,15 @@ def copy_structure(bundle: T) -> T:
   return jax.tree_map(lambda x: x, bundle)
 
 
-def internal_state() -> InternalState:
+def internal_state(*, params=True) -> InternalState:
   frame = base.current_frame()
   rng = frame.rng_stack.peek()
   if rng is not None:
     rng = rng.internal_state
-  return InternalState(params=copy_structure(frame.params),
-                       state=copy_structure(frame.state),
-                       rng=copy_structure(rng))
+  return InternalState(
+      params=(copy_structure(frame.params) if params else None),
+      state=copy_structure(frame.state),
+      rng=copy_structure(rng))
 
 
 def update_recursive(dst: MutableMapping[Any, Any], src: Mapping[Any, Any]):
@@ -54,7 +56,7 @@ def update_recursive(dst: MutableMapping[Any, Any], src: Mapping[Any, Any]):
 
 def update_internal_state(state: InternalState):
   frame = base.current_frame()
-  if not frame.params_frozen:
+  if not frame.params_frozen and state.params is not None:
     update_recursive(frame.params, state.params)
   update_recursive(frame.state, state.state)
   rng = state.rng
@@ -63,12 +65,20 @@ def update_internal_state(state: InternalState):
 
 
 def temporary_internal_state(state: InternalState):
+  """Pushes a temporary copy of the internal state."""
   state = copy_structure(state)
   rng = state.rng
   if rng is not None:
     rng = base.PRNGSequence(rng)
+  current_state = internal_state()
+  params = state.params
+  if params is None:
+    params = current_state.params
+  state = state.state
+  if state is None:
+    state = current_state.state
   frame = base.current_frame()
-  frame = frame.evolve(params=state.params, state=state.state, rng=rng)
+  frame = frame.evolve(params=params, state=state, rng=rng)
   return base.frame_stack(frame)
 
 
@@ -372,3 +382,54 @@ def cond(pred, true_operand, true_fun, false_operand, false_fun):
                             false_fun=stateful_branch(false_fun))
   update_internal_state(state)
   return out
+
+
+def scan(f, init, xs, length=None, reverse=False):
+  """Equivalent to `jax.lax.scan` but with Haiku state threaded in and out."""
+  if length is None:
+    length = jax.tree_leaves(xs)[0].shape[0]
+
+  running_init_fn = not base.params_frozen()
+
+  if running_init_fn:
+    # During `init` we need to unroll one step of the scan, this is because our
+    # carry contains the Haiku state and during `init` this may change structure
+    # (e.g. as state is created).
+    if not length:
+      x0 = jax.tree_map(lambda x: jnp.zeros(x.shape[1:], x.dtype), xs)
+      _, y0 = f(init, x0)
+      y0 = jax.tree_map(lambda y: jnp.zeros((0,) + y.shape, y.dtype), y0)
+      return init, y0
+
+    if reverse:
+      x0 = jax.tree_map(lambda x: x[-1], xs)
+      xs = jax.tree_map(lambda x: x[:-1], xs)
+    else:
+      x0 = jax.tree_map(lambda x: x[0], xs)
+      xs = jax.tree_map(lambda x: x[1:], xs)
+    init, y0 = f(init, x0)
+    y0 = jax.tree_map(lambda y: jnp.expand_dims(y, 0), y0)
+    length -= 1
+    if not length:
+      return init, y0
+
+  def stateful_fun(carry, x):
+    carry, state = carry
+    with temporary_internal_state(state):
+      with base.assert_no_new_parameters():
+        carry, out = f(carry, x)
+      carry = (carry, internal_state(params=False))
+      return carry, out
+
+  # We know that we don't need to thread params in and out, since for init we
+  # have already created them (given that above we unroll one step of the scan)
+  # and for apply we know they are immutable. As such we only need to thread the
+  # state and rng in and out.
+  init = (init, internal_state(params=False))
+  (carry, state), ys = jax.lax.scan(stateful_fun, init, xs, length, reverse)
+  update_internal_state(state)
+
+  if running_init_fn:
+    ys = jax.tree_multimap(lambda y0, ys: jnp.concatenate([y0, ys]), y0, ys)
+
+  return carry, ys

@@ -66,6 +66,49 @@ class HaikuTransformsTest(parameterized.TestCase):
                         jax.jit(f.apply)(params, state, rng, x),
                         f.apply(params, state, rng, x, jit=True))
 
+  @test_utils.combined_named_parameters(descriptors.ALL_MODULES,
+                                        test_utils.named_bools('init'))
+  def test_hk_scan(self, module_fn: descriptors.ModuleFn, shape, dtype, init):
+    rng = jax.random.PRNGKey(42)
+    if jnp.issubdtype(dtype, jnp.integer):
+      x = jax.random.randint(rng, shape, 0, np.prod(shape), dtype)
+    else:
+      x = jax.random.uniform(rng, shape, dtype)
+
+    def f(x):
+      mod = module_fn()
+      return mod(x)
+
+    def u_f(xs):
+      mod = module_fn()
+      def s(carry, x):
+        y = mod(x)
+        return carry, y
+      _, ys = hk.scan(s, (), xs)
+      return ys
+
+    u_f = hk.transform_with_state(u_f)
+    f = hk.transform_with_state(f)
+
+    assert_allclose = functools.partial(np.testing.assert_allclose, atol=1e-4)
+    xs = jnp.broadcast_to(x, (8,) + x.shape)
+    params, state = f.init(rng, x)
+
+    if init:
+      u_params, u_state = u_f.init(rng, xs)
+      jax.tree_multimap(assert_allclose, u_params, params)
+      jax.tree_multimap(assert_allclose, u_state, state)
+      return
+
+    def fun(state, x):
+      y, state = f.apply(params, state, rng, x)
+      return state, y
+    s_state, s_ys = jax.lax.scan(fun, state, xs)
+    u_ys, u_state = u_f.apply(params, state, rng, xs)
+
+    jax.tree_multimap(assert_allclose, u_ys, s_ys)
+    jax.tree_multimap(assert_allclose, u_state, s_state)
+
   @test_utils.combined_named_parameters(
       # TODO(tomhennigan) Enable once grad for _scan_transpose implemented.
       set(descriptors.ALL_MODULES) - set(descriptors.RECURRENT_MODULES))

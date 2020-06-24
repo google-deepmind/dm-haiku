@@ -18,7 +18,9 @@
 import collections
 import contextlib
 from typing import (Callable, Iterator, Iterable, MutableMapping, NamedTuple,
-                    Optional, Set, Tuple, Union, Any, Sequence)
+                    Optional, Set, Tuple, Union, Any, Sequence, Mapping,
+                    FrozenSet)
+import warnings
 
 from haiku._src import data_structures
 from haiku._src.typing import (  # pylint: disable=g-multiple-import
@@ -730,3 +732,27 @@ def with_rng(key: PRNGKey):
   """
   assert_context("with_rng")
   return current_frame().rng_stack(PRNGSequence(key))
+
+
+def param_names() -> FrozenSet[Tuple[str, str]]:
+  """Returns all module and parameter names as a set of pairs."""
+  out = []
+  params = current_frame().params
+  for mod_name, bundle in params.items():
+    if not isinstance(bundle, Mapping):
+      # TODO(tomhennigan) Fix broken user code and remove this warning.
+      warnings.warn(f"Invalid entry {mod_name!r} in params {params}")
+      continue
+
+    for name in bundle:
+      out.append((mod_name, name))
+  return frozenset(out)
+
+
+@contextlib.contextmanager
+def assert_no_new_parameters():
+  before = param_names()
+  yield
+  diff = param_names() - before
+  if diff:
+    raise AssertionError(f"New parameters were created: {list(sorted(diff))}")

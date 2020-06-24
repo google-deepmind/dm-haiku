@@ -24,6 +24,7 @@ from haiku._src import basic
 from haiku._src import conv
 from haiku._src import initializers
 from haiku._src import module
+from haiku._src import stateful
 import jax
 import jax.nn
 import jax.numpy as jnp
@@ -35,6 +36,7 @@ hk.Linear = basic.Linear
 hk.ConvND = conv.ConvND
 hk.get_parameter = base.get_parameter
 hk.Module = module.Module
+hk.scan = stateful.scan
 del base, basic, conv, initializers, module
 
 
@@ -156,7 +158,7 @@ def dynamic_unroll(core, input_sequence, initial_state):
   def scan_f(prev_state, inputs):
     outputs, next_state = core(inputs, prev_state)
     return next_state, outputs
-  final_state, output_sequence = jax.lax.scan(
+  final_state, output_sequence = hk.scan(
       scan_f,
       initial_state,
       input_sequence)

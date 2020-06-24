@@ -541,6 +541,11 @@ remat
 
 .. autofunction:: remat
 
+scan
+~~~~
+
+.. autofunction:: scan
+
 value_and_grad
 ~~~~~~~~~~~~~~
 

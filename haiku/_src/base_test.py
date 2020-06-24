@@ -353,5 +353,18 @@ class BaseTest(parameterized.TestCase):
     self.assertEqual(ctx.collect_state(), {"~": {"w": jnp.array(2.)}})
     self.assertEqual(before, {"~": {"w": jnp.array(1.)}})
 
+  def test_assert_no_new_parameters(self):
+    with base.new_context():
+      base.get_parameter("w", [], init=jnp.zeros)
+      with base.assert_no_new_parameters():
+        # Should not raise, "w" already exists.
+        base.get_parameter("w", [], init=jnp.zeros)
+
+      with self.assertRaisesRegex(AssertionError,
+                                  "New parameters were created: .*x"):
+        with base.assert_no_new_parameters():
+          # Should raise, "x" does not exist.
+          base.get_parameter("x", [], init=jnp.zeros)
+
 if __name__ == "__main__":
   absltest.main()

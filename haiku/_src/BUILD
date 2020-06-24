@@ -463,6 +463,7 @@ hk_py_library(
         ":conv",
         ":initializers",
         ":module",
+        ":stateful",
         # pip: jax
     ],
 )

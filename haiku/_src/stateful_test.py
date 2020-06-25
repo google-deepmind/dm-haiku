@@ -218,6 +218,11 @@ class StatefulTest(parameterized.TestCase):
     self.assertEmpty(diff.state)
     self.assertIsNotNone(diff.rng)
 
+  def test_scan_no_transform(self):
+    xs = jnp.arange(3)
+    with self.assertRaises(ValueError, msg="Use jax.scan() instead"):
+      stateful.scan(lambda c, x: (c, x), (), xs)
+
   @parameterized.parameters(0, 1, 2, 4, 8)
   def test_scan_with_state(self, unroll_length):
     def f(xs):

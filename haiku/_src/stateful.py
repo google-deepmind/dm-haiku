@@ -386,6 +386,10 @@ def cond(pred, true_operand, true_fun, false_operand, false_fun):
 
 def scan(f, init, xs, length=None, reverse=False):
   """Equivalent to `jax.lax.scan` but with Haiku state threaded in and out."""
+  if not base.inside_transform():
+    raise ValueError("hk.scan() should not be used outside of hk.transform(). "
+                     "Use jax.scan() instead.")
+
   if length is None:
     length = jax.tree_leaves(xs)[0].shape[0]
 

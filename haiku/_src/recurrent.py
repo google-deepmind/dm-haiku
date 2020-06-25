@@ -37,6 +37,7 @@ hk.ConvND = conv.ConvND
 hk.get_parameter = base.get_parameter
 hk.Module = module.Module
 hk.scan = stateful.scan
+inside_transform = base.inside_transform
 del base, basic, conv, initializers, module
 
 
@@ -154,11 +155,12 @@ def dynamic_unroll(core, input_sequence, initial_state):
         of shape ``[T, ...]``.
       * **final_state** - Core state at time step ``T``.
   """
+  scan = hk.scan if inside_transform() else jax.lax.scan
   # Swap the input and output of core.
   def scan_f(prev_state, inputs):
     outputs, next_state = core(inputs, prev_state)
     return next_state, outputs
-  final_state, output_sequence = hk.scan(
+  final_state, output_sequence = scan(
       scan_f,
       initial_state,
       input_sequence)

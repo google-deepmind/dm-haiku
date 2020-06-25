@@ -96,6 +96,14 @@ class RecurrentTest(parameterized.TestCase):
     for out in outs:
       self.assertEqual(out.shape, (4, 8, 4))
 
+  @parameterized.parameters(recurrent.dynamic_unroll, recurrent.static_unroll)
+  def test_unroll_outside_transform(self, unroll):
+    core = lambda x, s: (x + 1, s + 1)
+    seqs = jnp.arange(8)
+    outs, state = unroll(core, seqs, 0)
+    np.testing.assert_allclose(outs, jnp.arange(9)[1:])
+    np.testing.assert_allclose(state, 8)
+
 
 class LSTMTest(absltest.TestCase):
 

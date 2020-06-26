@@ -37,8 +37,8 @@ def _parse_requirements(requirements_txt_path):
 _VERSION = _get_version()
 
 EXTRA_PACKAGES = {
-    'jax': ['jax>=0.1.55'],
-    'jaxlib': ['jaxlib>=0.1.37'],
+    'jax': ['jax>=0.1.71'],
+    'jaxlib': ['jaxlib>=0.1.49'],
 }
 
 setup(

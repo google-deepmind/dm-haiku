@@ -64,6 +64,7 @@ hk_py_test(
 
 hk_py_test(
     name = "doctest_test",
+    timeout = "long",
     srcs = ["doctest_test.py"],
     deps = [
         # pip: absl/logging

@@ -573,7 +573,7 @@ class ResetCore(RNNCore):
         ``should_reset`` is the signal used to reset the wrapped core's state.
         ``should_reset`` can be either tensor or nest. If nest, ``should_reset``
         must match the state structure, and its components' shapes must be
-        prefixes of the correponding entries tensors' shapes in the state nest.
+        prefixes of the corresponding entries tensors' shapes in the state nest.
         If tensor, supported shapes are all commom shape prefixes of the state
         component tensors, e.g. ``[batch_size]``.
       state: Previous wrapped core state.

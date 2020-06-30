@@ -52,8 +52,6 @@ class JaxToTfTest(parameterized.TestCase):
       tf_transform,
       jax_transform,
   ):
-    if descriptors.module_type(module_fn) == hk.Embed:
-      self.skipTest("JAX2TF embedding tests are broken")
     rng = jax.random.PRNGKey(42)
     if jnp.issubdtype(dtype, jnp.integer):
       x = jax.random.randint(rng, shape, 0, np.prod(shape), dtype)

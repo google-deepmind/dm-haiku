@@ -64,6 +64,61 @@ class UtilsTest(parameterized.TestCase):
     expected_bytes = (np.prod(x.shape) if x.ndim else 1) * x.itemsize
     self.assertEqual(utils.tree_bytes(container(x)), expected_bytes)
 
+  @parameterized.parameters(
+      # int axis
+      # - no keepdims
+      ((3, 4, 5), 0, False, (4, 5)),
+      ((3, 4, 5), 1, False, (3, 5)),
+      ((3, 4, 5), 2, False, (3, 4)),
+      ((3, 4, 5), -3, False, (4, 5)),
+      ((3, 4, 5), -2, False, (3, 5)),
+      ((3, 4, 5), -1, False, (3, 4)),
+      # - keepdims
+      ((3, 4, 5), -3, True, (1, 4, 5)),
+      ((3, 4, 5), -2, True, (3, 1, 5)),
+      ((3, 4, 5), -1, True, (3, 4, 1)),
+      # tuple axis
+      # - no keepdims
+      ((3, 4, 5), (0, 1), False, (5,)),
+      ((3, 4, 5), (1, 2), False, (3,)),
+      ((3, 4, 5), (0, 2), False, (4,)),
+      ((3, 4, 5), (-3, -2), False, (5,)),
+      ((3, 4, 5), (-2, -1), False, (3,)),
+      ((3, 4, 5), (-3, -1), False, (4,)),
+      # - keepdims
+      ((3, 4, 5), (0, 1), True, (1, 1, 5)),
+      ((3, 4, 5), (1, 2), True, (3, 1, 1)),
+      ((3, 4, 5), (0, 2), True, (1, 4, 1)),
+      ((3, 4, 5), (-3, -2), True, (1, 1, 5)),
+      ((3, 4, 5), (-2, -1), True, (3, 1, 1)),
+      ((3, 4, 5), (-3, -1), True, (1, 4, 1)),
+      # tuple axis out of order
+      # - no keepdims
+      ((3, 4, 5), (1, 0), False, (5,)),
+      ((3, 4, 5), (2, 1), False, (3,)),
+      ((3, 4, 5), (2, 0), False, (4,)),
+      ((3, 4, 5), (1, -3), False, (5,)),
+      ((3, 4, 5), (2, -2), False, (3,)),
+      ((3, 4, 5), (2, -3), False, (4,)),
+      ((3, 4, 5), (-2, 0), False, (5,)),
+      ((3, 4, 5), (-1, 1), False, (3,)),
+      ((3, 4, 5), (-1, 0), False, (4,)),
+      # - keepdims
+      ((3, 4, 5), (1, 0), True, (1, 1, 5)),
+      ((3, 4, 5), (2, 1), True, (3, 1, 1)),
+      ((3, 4, 5), (2, 0), True, (1, 4, 1)),
+      ((3, 4, 5), (1, -3), True, (1, 1, 5)),
+      ((3, 4, 5), (2, -2), True, (3, 1, 1)),
+      ((3, 4, 5), (2, -3), True, (1, 4, 1)),
+      ((3, 4, 5), (-2, 0), True, (1, 1, 5,)),
+      ((3, 4, 5), (-1, 1), True, (3, 1, 1)),
+      ((3, 4, 5), (-1, 0), True, (1, 4, 1)),
+  )
+  def test_reduce_shape(self, shape, axis, keepdims, expected):
+    self.assertEqual(utils.reduce_shape(shape, axis, keepdims), expected)
+    self.assertEqual(jnp.zeros(shape).sum(axis=axis, keepdims=keepdims).shape,
+                     expected)
+
 
 class ReplicateTest(parameterized.TestCase):
 

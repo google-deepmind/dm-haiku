@@ -170,6 +170,11 @@ class BatchNorm(hk.Module):
         # E[X^2] - E[X]^2 method.
         var = jnp.var(inputs, axis, keepdims=True)
     else:
+      shape = utils.reduce_shape(inputs.shape, axis, keepdims=True)
+      self.mean_ema.maybe_initialize(shape, inputs.dtype)
+      # TODO(tomhennigan) Consider initializing `var` as 1.
+      self.var_ema.maybe_initialize(shape, inputs.dtype)
+
       mean = self.mean_ema.average
       var = self.var_ema.average
 

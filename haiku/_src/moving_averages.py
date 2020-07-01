@@ -63,10 +63,16 @@ class ExponentialMovingAverage(module.Module):
     c = cond.astype(dtype)
     return c * t + (1. - c) * f
 
+  def maybe_initialize(self, shape, dtype):
+    """If uninitialized sets the average to ``0`` of the given shape/dtype."""
+    base.get_state("counter", (), jnp.int32,
+                   init=initializers.Constant(-self._warmup_length))
+    base.get_state("hidden", shape, dtype, init=jnp.zeros)
+    base.get_state("average", shape, dtype, init=jnp.zeros)
+
+  # TODO(tomhennigan) Remove deprecated alias.
   def initialize(self, value):
-    """If uninitialized sets the average to ``zeros_like`` the given value."""
-    base.get_state("hidden", value.shape, value.dtype, init=jnp.zeros)
-    base.get_state("average", value.shape, value.dtype, init=jnp.zeros)
+    self.maybe_initialize(value.shape, value.dtype)
 
   def __call__(self, value, update_stats=True):
     """Updates the EMA and returns the new value.
@@ -84,17 +90,15 @@ class ExponentialMovingAverage(module.Module):
     if not isinstance(value, jnp.ndarray):
       value = jnp.asarray(value)
 
-    counter = base.get_state("counter", (), jnp.int32,
-                             init=initializers.Constant(-self._warmup_length))
-    counter += 1
+    self.maybe_initialize(value.shape, value.dtype)
 
+    counter = base.get_state("counter") + 1
     decay = jax.lax.convert_element_type(self._decay, value.dtype)
     if self._warmup_length > 0:
       decay = self._cond(counter <= 0, 0.0, decay, value.dtype)
 
     one = jnp.ones([], value.dtype)
-    hidden = base.get_state("hidden", value.shape, value.dtype, init=jnp.zeros)
-    hidden = hidden * decay + value * (one - decay)
+    hidden = base.get_state("hidden") * decay + value * (one - decay)
 
     average = hidden
     if self._zero_debias:

@@ -16,13 +16,15 @@
 """Tests for haiku._src.batch_norm."""
 
 from absl.testing import absltest
+from absl.testing import parameterized
 from haiku._src import batch_norm
 from haiku._src import test_utils
+from haiku._src import transform
 import jax.numpy as jnp
 import numpy as np
 
 
-class BatchNormTest(absltest.TestCase):
+class BatchNormTest(parameterized.TestCase):
 
   @test_utils.transform_and_run
   def test_basic(self):
@@ -108,6 +110,24 @@ class BatchNormTest(absltest.TestCase):
           create_offset=False,
           decay_rate=0.9,
           offset_init=jnp.zeros)
+
+  @test_utils.combined_named_parameters(
+      test_utils.named_bools("is_training"),
+      test_utils.named_bools("test_local_stats"))
+  def test_inits_ema_not_is_training(self, is_training, test_local_stats):
+    def f(x):
+      net = batch_norm.BatchNorm(True, True, 0.9)
+      return net(x, is_training, test_local_stats)
+    f = transform.transform_with_state(f)
+    x = jnp.ones([])
+    _, state = f.init(None, x)
+    if not is_training and test_local_stats:
+      self.assertEmpty(state)
+    else:
+      self.assertLen(state, 2)
+      for ema_name in ("mean_ema", "var_ema"):
+        self.assertEqual(set(state[f"batch_norm/~/{ema_name}"]),
+                         {"counter", "average", "hidden"})
 
 if __name__ == "__main__":
   absltest.main()

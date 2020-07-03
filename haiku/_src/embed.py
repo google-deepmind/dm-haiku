@@ -151,7 +151,7 @@ class Embed(hk.Module):
       lookup_style = getattr(hk.EmbedLookupStyle, lookup_style.upper())
 
     if lookup_style == hk.EmbedLookupStyle.ARRAY_INDEX:
-      return self.embeddings[ids]
+      return self.embeddings[(ids,)]
 
     elif lookup_style == hk.EmbedLookupStyle.ONE_HOT:
       one_hot_ids = jax.nn.one_hot(ids, self.vocab_size)[..., None]

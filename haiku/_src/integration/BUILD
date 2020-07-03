@@ -164,6 +164,21 @@ hk_py_test(
 )
 
 hk_py_test(
+    name = "numpy_inputs_test",
+    srcs = ["numpy_inputs_test.py"],
+    shard_count = 50,
+    deps = [
+        ":descriptors",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        "//haiku",
+        "//haiku/_src:test_utils",
+        # pip: jax
+        # pip: numpy
+    ],
+)
+
+hk_py_test(
     name = "rank_promotion_test",
     srcs = ["rank_promotion_test.py"],
     shard_count = 50,

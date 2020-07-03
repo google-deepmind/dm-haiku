@@ -151,7 +151,7 @@ class VectorQuantizer(hk.Module):
   def quantize(self, encoding_indices):
     """Returns embedding tensor for a batch of indices."""
     w = self.embeddings.swapaxes(1, 0)
-    return w[encoding_indices]
+    return w[(encoding_indices,)]
 
 
 class VectorQuantizerEMA(hk.Module):
@@ -320,4 +320,4 @@ class VectorQuantizerEMA(hk.Module):
   def quantize(self, encoding_indices):
     """Returns embedding tensor for a batch of indices."""
     w = self.embeddings.swapaxes(1, 0)
-    return w[encoding_indices]
+    return w[(encoding_indices,)]

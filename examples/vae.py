@@ -163,7 +163,7 @@ def kl_gaussian(mean: jnp.ndarray, var: jnp.ndarray) -> jnp.ndarray:
 
 
 def main(_):
-  model = hk.transform(lambda x: VariationalAutoEncoder()(x), apply_rng=True)  # pylint: disable=unnecessary-lambda
+  model = hk.transform(lambda x: VariationalAutoEncoder()(x))  # pylint: disable=unnecessary-lambda
   optimizer = optix.adam(FLAGS.learning_rate)
 
   @jax.jit

@@ -179,7 +179,7 @@ class PartitionTest(absltest.TestCase):
         jax_fn=jax.grad,
         f=apply_fn,
         predicate=lambda module_name, name, _: name == "w")
-    df = df_fn(params, inputs)
+    df = df_fn(params, None, inputs)
     self.assertEqual(
         to_set(df),
         set([("first_layer/w", (3.0,)), ("second_layer/w", (2.5,))]))
@@ -188,7 +188,7 @@ class PartitionTest(absltest.TestCase):
         jax_fn=jax.value_and_grad,
         f=apply_fn,
         predicate=lambda module_name, name, _: name == "w")
-    v = fn(params, inputs)
+    v = fn(params, None, inputs)
     self.assertEqual(v[0], jnp.array([12.0]))
     self.assertEqual(to_set(df), to_set(v[1]))
 
@@ -200,7 +200,7 @@ class PartitionTest(absltest.TestCase):
         jax_fn=jax.jacobian,
         f=apply_fn,
         predicate=lambda module_name, name, _: name == "w")
-    jf = jf_fn(params, inputs)
+    jf = jf_fn(params, None, inputs)
 
     self.assertEqual(
         to_set(jf),

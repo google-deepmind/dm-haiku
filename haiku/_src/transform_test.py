@@ -69,7 +69,7 @@ class TransformTest(parameterized.TestCase):
 
     with self.assertRaisesRegex(
         ValueError, "parameters must be created as part of `init`"):
-      apply_fn(params)
+      apply_fn(params, None)
 
   @test_utils.transform_and_run(seed=None)
   def test_no_rng(self):
@@ -77,7 +77,7 @@ class TransformTest(parameterized.TestCase):
       base.next_rng_key()
 
   def test_invalid_rng(self):
-    f = transform.transform(lambda: None, apply_rng=True)
+    f = transform.transform(lambda: None)
     with self.assertRaisesRegex(
         ValueError, "Init must be called with an RNG as the first argument"):
       f.init("nonsense")
@@ -94,7 +94,7 @@ class TransformTest(parameterized.TestCase):
         ValueError, "Apply must be called with an RNG as the third argument"):
       f.apply({}, {"x": {}}, "nonsense")
 
-  @parameterized.parameters(lambda f: transform.transform(f, apply_rng=True),
+  @parameterized.parameters(transform.transform,
                             transform.transform_with_state)
   def test_invalid_rng_none_ignored(self, transform_fn):
     f = transform_fn(lambda: None)
@@ -177,7 +177,7 @@ class TransformTest(parameterized.TestCase):
     self.assertEqual(log, ["~/w0", "~/w1", "~/w2", "~/w3"])
 
     del log[:]
-    apply_fn(params)
+    apply_fn(params, None)
     self.assertEmpty(log)
 
   def test_nested_creators(self):
@@ -293,18 +293,18 @@ class TransformTest(parameterized.TestCase):
 
     rng = jax.random.PRNGKey(42)
     params = f.init(rng)
-    w = f.apply(params)
+    w = f.apply(params, None)
     self.assertEqual(w, 0)
 
   def test_method(self):
     obj = ObjectWithTransform()
     x = jnp.ones([])
     params = obj.forward.init(None, x)
-    obj_out, y = obj.forward.apply(params, x)
+    obj_out, y = obj.forward.apply(params, None, x)
     self.assertEqual(y, 1)
     self.assertIs(obj, obj_out)
     params = jax.tree_map(lambda v: v + 1, params)
-    obj_out, y = obj.forward.apply(params, x)
+    obj_out, y = obj.forward.apply(params, None, x)
     self.assertEqual(y, 2)
     self.assertIs(obj, obj_out)
 
@@ -312,7 +312,7 @@ class TransformTest(parameterized.TestCase):
     obj = ObjectWithTransform()
     x = jnp.ones([])
     params = obj.trampoline.init(None, x)
-    obj_out, y = obj.trampoline.apply(params, x)
+    obj_out, y = obj.trampoline.apply(params, None, x)
     self.assertEqual(y, 1)
     self.assertIs(obj, obj_out)
 
@@ -351,14 +351,14 @@ class TransformTest(parameterized.TestCase):
 
     def without_decorator():
       return jax.random.uniform(base.next_rng_key(), ())
-    without_decorator = transform.transform(without_decorator, apply_rng=True)
+    without_decorator = transform.transform(without_decorator)
     without_decorator_out = without_decorator.apply(None, unrelated_key).item()
 
     def with_decorator():
       with base.with_rng(key):
         return jax.random.uniform(base.next_rng_key(), ())
 
-    with_decorator = transform.transform(with_decorator, apply_rng=True)
+    with_decorator = transform.transform(with_decorator)
     with_decorator_out = with_decorator.apply(None, unrelated_key).item()
 
     self.assertNotEqual(without_decorator_out, expected_output)

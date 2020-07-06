@@ -40,7 +40,7 @@ class ReshapeTest(parameterized.TestCase):
                              preserve_dims=preserve_dims)(inputs)
     init_fn, apply_fn = transform.transform(f)
     params = init_fn(None, jnp.ones([B, H, W, C, D]))
-    outputs = apply_fn(params, np.ones([B, H, W, C, D]))
+    outputs = apply_fn(params, None, np.ones([B, H, W, C, D]))
     self.assertEqual(outputs.shape, expected_output_shape)
 
   def test_invalid_multiple_wildcard(self):
@@ -67,7 +67,7 @@ class ReshapeTest(parameterized.TestCase):
 
     init_fn, apply_fn = transform.transform(f)
     params = init_fn(None)
-    self.assertEqual(apply_fn(params).shape, (2, 3, 20))
+    self.assertEqual(apply_fn(params, None).shape, (2, 3, 20))
 
   @test_utils.transform_and_run
   def test_flatten_1d(self):

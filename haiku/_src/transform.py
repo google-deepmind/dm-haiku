@@ -17,7 +17,6 @@
 
 import types
 from typing import Any, Callable, Mapping, NamedTuple, Optional, Tuple, TypeVar, Union
-import warnings
 
 from haiku._src import analytics
 from haiku._src import base
@@ -90,7 +89,7 @@ APPLY_RNG_STATE_ERROR = RNG_ERROR_TPL.format(
 def without_state(f: TransformedWithState) -> Transformed:
   """Wraps a transformed tuple and ignores state in/out.
 
-  The example below is equivalent to ``f = hk.transform(f, apply_rng=True)``:
+  The example below is equivalent to ``f = hk.transform(f)``:
 
   >>> def f(x):
   ...   mod = hk.Linear(10)
@@ -147,7 +146,7 @@ def without_apply_rng(f: TransformedT) -> TransformedT:
 
 
 # TODO(tomhennigan) Remove apply_rng.
-def transform(f, *, apply_rng=False) -> Transformed:
+def transform(f, *, apply_rng=True) -> Transformed:
   """Transforms a function using Haiku modules into a pair of pure functions.
 
   For a function ``out = f(*a, **k)`` this function returns a pair of two pure
@@ -189,9 +188,10 @@ def transform(f, *, apply_rng=False) -> Transformed:
   })
 
   You can then apply the function with the given parameters by calling
-  ``apply``:
+  ``apply`` (note that since we don't use Haiku's random number APIs to apply
+  our network we pass ``None`` as an RNG key):
 
-  >>> f.apply(params, 1)
+  >>> f.apply(params, None, 1)
   DeviceArray(2., dtype=float32)
 
   It is expected that your program will at some point produce updated parameters
@@ -200,7 +200,7 @@ def transform(f, *, apply_rng=False) -> Transformed:
 
   >>> new_params = {"my_module": {"w": jnp.array(2.)},
   ...               "my_module_1": {"w": jnp.array(3.)}}
-  >>> f.apply(new_params, 2)
+  >>> f.apply(new_params, None, 2)
   DeviceArray(9., dtype=float32)
 
   If your transformed function needs to maintain internal state (e.g. moving
@@ -208,7 +208,7 @@ def transform(f, *, apply_rng=False) -> Transformed:
 
   Args:
     f: A function closing over :class:`Module` instances.
-    apply_rng: Whether ``apply`` should accept `rng` as an argument.
+    apply_rng: In the process of being removed. Can only value `True`.
 
   Returns:
     A :class:`Transformed` tuple with ``init`` and ``apply`` pure functions.
@@ -216,13 +216,14 @@ def transform(f, *, apply_rng=False) -> Transformed:
   analytics.log_once("transform")
 
   if not apply_rng:
-    warnings.warn("apply_rng will soon be removed and defaulted to True",
-                  DeprecationWarning)
+    raise ValueError(
+        "The apply_rng argument has been removed and k.transform "
+        "now *always* applies an rng.\n"
+        "Replace hk.transform(..., apply_rng=False) with "
+        "hk.without_apply_rng(hk.transform(...)).\n"
+        "Replace hk.transform(..., apply_rng=True) with hk.transform(...).")
 
-  pair = transform_with_state(f)
-  if not apply_rng:
-    pair = without_apply_rng(pair)
-  return without_state(pair)
+  return without_state(transform_with_state(f))
 
 
 def transform_with_state(f) -> TransformedWithState:

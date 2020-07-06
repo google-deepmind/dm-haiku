@@ -213,7 +213,8 @@ def run(*, trajectories_per_actor, num_actors, unroll_len):
   # Construct the agent network. We need a sample environment for its spec.
   env = catch.Catch()
   num_actions = env.action_spec().num_values
-  net = hk.transform(lambda ts: SimpleNet(num_actions)(ts))  # pylint: disable=unnecessary-lambda
+  net = hk.without_apply_rng(
+      hk.transform(lambda ts: SimpleNet(num_actions)(ts)))  # pylint: disable=unnecessary-lambda
 
   # Construct the agent and learner.
   agent = Agent(net.apply)

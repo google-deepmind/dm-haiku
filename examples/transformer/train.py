@@ -216,7 +216,7 @@ def main(_):
   # Set up the model, loss, and updater.
   forward_fn = build_forward_fn(vocab_size, FLAGS.d_model, FLAGS.num_heads,
                                 FLAGS.num_layers, FLAGS.dropout_rate)
-  forward_fn = hk.transform(forward_fn, apply_rng=True)
+  forward_fn = hk.transform(forward_fn)
   loss_fn = functools.partial(lm_loss_fn, forward_fn.apply, vocab_size)
 
   optimizer = optix.chain(

@@ -55,7 +55,7 @@ class DepthwiseConv2DTest(parameterized.TestCase):
       return net(data)
 
     init_fn, apply_fn = transform.transform(f)
-    out = apply_fn(init_fn(random.PRNGKey(428)))
+    out = apply_fn(init_fn(random.PRNGKey(428)), None)
     self.assertEqual(out.shape, (1, 8, 8, 3))
     self.assertLen(np.unique(out[0, :, :, 0]), 1)
     self.assertLen(np.unique(out[0, :, :, 1]), 1)
@@ -87,7 +87,7 @@ class DepthwiseConv2DTest(parameterized.TestCase):
       return net(data)
 
     init_fn, apply_fn = transform.transform(f)
-    out = apply_fn(init_fn(random.PRNGKey(428)))
+    out = apply_fn(init_fn(random.PRNGKey(428)), None)
     self.assertEqual(out.shape, (1, 10, 10, 3))
 
   @parameterized.parameters(True, False)
@@ -108,7 +108,7 @@ class DepthwiseConv2DTest(parameterized.TestCase):
       return net(data)
 
     init_fn, apply_fn = transform.transform(f)
-    out = apply_fn(init_fn(random.PRNGKey(428)))
+    out = apply_fn(init_fn(random.PRNGKey(428)), None)
     self.assertEqual(out.shape, (1, 8, 8, 9))
 
   @parameterized.parameters(True, False)
@@ -129,7 +129,7 @@ class DepthwiseConv2DTest(parameterized.TestCase):
       return net(data)
 
     init_fn, apply_fn = transform.transform(f)
-    out = apply_fn(init_fn(random.PRNGKey(428)))
+    out = apply_fn(init_fn(random.PRNGKey(428)), None)
     self.assertEqual(out.shape, (1, 3, 8, 8))
     if with_bias:
       self.assertEqual(np.unique(out[0, 0, :, :])[0], 1*3.0*3.0+1)
@@ -158,7 +158,7 @@ class DepthwiseConv2DTest(parameterized.TestCase):
       return net(data)
 
     init_fn, apply_fn = transform.transform(f)
-    out = apply_fn(init_fn(random.PRNGKey(428)))
+    out = apply_fn(init_fn(random.PRNGKey(428)), None)
     self.assertEqual(out.shape, (1, 27, 8, 8))
 
 if __name__ == "__main__":

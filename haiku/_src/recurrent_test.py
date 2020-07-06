@@ -207,7 +207,7 @@ class ResetCoreTest(parameterized.TestCase):
 
     init_fn, apply_fn = transform.transform(net)
     params = init_fn(jax.random.PRNGKey(428), seqs, resets)
-    result = apply_fn(params, seqs, resets)
+    result = apply_fn(params, None, seqs, resets)
 
     # Verify dynamic and static unroll gave same outs and final states.
     np.testing.assert_allclose(

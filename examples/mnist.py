@@ -57,7 +57,7 @@ def load_dataset(
 
 def main(_):
   # Make the network and optimiser.
-  net = hk.transform(net_fn)
+  net = hk.without_apply_rng(hk.transform(net_fn))
   opt = optix.adam(1e-3)
 
   # Training loss (cross-entropy).

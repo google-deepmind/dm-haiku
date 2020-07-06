@@ -53,7 +53,7 @@ class BiasTest(absltest.TestCase):
       return out
     f = transform.transform(f)
     params = f.init(None)
-    out = f.apply(params)
+    out = f.apply(params, None)
     self.assertEqual(params["bias"]["b"].shape, (d1, 1, d3))
     self.assertEqual(out.shape, (b, d1, d2, d3))
 

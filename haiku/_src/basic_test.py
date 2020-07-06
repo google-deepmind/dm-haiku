@@ -49,16 +49,18 @@ class BasicTest(parameterized.TestCase):
   def test_sequential_params(self):
     seq = basic.Sequential([
         basic.Sequential([basic.Linear(2), basic.Linear(2)]),
-        basic.Sequential([lambda x: basic.Linear(2)(x * 1)])])
+        basic.Sequential([lambda x: basic.Linear(2)(x * 1)])
+    ])
     for _ in range(2):
       # Connect seq to ensure params are created. Connect twice to ensure that
       # we see the two instances of the lambda Linear.
       seq(jnp.zeros([1, 1]))
     params = seq.params_dict()
     self.assertCountEqual(
-        list(params),
-        ["linear/w", "linear/b", "linear_1/w", "linear_1/b",
-         "sequential_1/linear/w", "sequential_1/linear/b"])
+        list(params), [
+            "linear/w", "linear/b", "linear_1/w", "linear_1/b",
+            "sequential_1/linear/w", "sequential_1/linear/b"
+        ])
 
   @test_utils.transform_and_run
   def test_sequential(self):
@@ -71,6 +73,7 @@ class BasicTest(parameterized.TestCase):
     basic.dropout(base.next_rng_key(), 0.25, jnp.ones([3, 3]))
 
   def test_batchapply(self):
+
     def raises(a, b):
       if len(a.shape) != 2:
         raise ValueError("a must be shape 2")
@@ -82,6 +85,7 @@ class BasicTest(parameterized.TestCase):
     np.testing.assert_array_equal(out, 2 * jnp.ones([2, 3, 4]))
 
   def test_batchapply_accepts_float(self):
+
     def raises(a, b):
       if len(a.shape) != 2:
         raise ValueError("a must be shape 2")
@@ -91,6 +95,7 @@ class BasicTest(parameterized.TestCase):
     np.testing.assert_array_equal(out, 3 * jnp.ones([2, 3, 4]))
 
   def test_batchapply_accepts_none(self):
+
     def raises(a, b):
       if a is not None:
         raise ValueError("a must be None.")
@@ -106,6 +111,7 @@ class BasicTest(parameterized.TestCase):
       basic.BatchApply(lambda: 1)()
 
   def test_expand_apply(self):
+
     def raises(a, b):
       if len(a.shape) != 3:
         raise ValueError("a must be shape 3")
@@ -122,6 +128,7 @@ class BasicTest(parameterized.TestCase):
 
   @test_utils.transform_and_run
   def test_to_module(self):
+
     def bias_fn(x):
       b = base.get_parameter("b", [], init=jnp.ones)
       return x + b
@@ -132,6 +139,7 @@ class BasicTest(parameterized.TestCase):
 
   @test_utils.transform_and_run
   def test_to_module_error_invalid_name(self):
+
     def bias_fn(x):
       b = base.get_parameter("b", [], init=jnp.ones)
       return x + b
@@ -144,6 +152,7 @@ class BasicTest(parameterized.TestCase):
 
   @test_utils.transform_and_run
   def test_to_module_error_docs(self):
+
     def documented_fn():
       """Really great docs."""
 
@@ -164,6 +173,7 @@ class BasicTest(parameterized.TestCase):
 class LinearTest(absltest.TestCase):
 
   def test_linear_rank1(self):
+
     def f():
       return basic.Linear(output_size=2)(jnp.zeros([6]))
 
@@ -171,9 +181,10 @@ class LinearTest(absltest.TestCase):
     params = init_fn(random.PRNGKey(428))
     self.assertEqual(params.linear.w.shape, (6, 2))
     self.assertEqual(params.linear.b.shape, (2,))
-    self.assertEqual(apply_fn(params).shape, (2,))
+    self.assertEqual(apply_fn(params, None).shape, (2,))
 
   def test_linear_rank2(self):
+
     def f():
       return basic.Linear(output_size=2)(jnp.zeros((5, 6)))
 
@@ -181,9 +192,10 @@ class LinearTest(absltest.TestCase):
     params = init_fn(random.PRNGKey(428))
     self.assertEqual(params.linear.w.shape, (6, 2))
     self.assertEqual(params.linear.b.shape, (2,))
-    self.assertEqual(apply_fn(params).shape, (5, 2))
+    self.assertEqual(apply_fn(params, None).shape, (5, 2))
 
   def test_linear_rank3(self):
+
     def f():
       return basic.Linear(output_size=2)(jnp.zeros((2, 5, 6)))
 
@@ -191,9 +203,10 @@ class LinearTest(absltest.TestCase):
     params = init_fn(random.PRNGKey(428))
     self.assertEqual(params.linear.w.shape, (6, 2))
     self.assertEqual(params.linear.b.shape, (2,))
-    self.assertEqual(apply_fn(params).shape, (2, 5, 2))
+    self.assertEqual(apply_fn(params, None).shape, (2, 5, 2))
 
   def test_linear_without_bias_has_zero_in_null_space(self):
+
     def f():
       return basic.Linear(output_size=6, with_bias=False)(jnp.zeros((5, 6)))
 
@@ -201,7 +214,8 @@ class LinearTest(absltest.TestCase):
     params = init_fn(random.PRNGKey(428))
     self.assertEqual(params.linear.w.shape, (6, 6))
     self.assertFalse(hasattr(params.linear, "b"))
-    np.testing.assert_array_almost_equal(apply_fn(params), jnp.zeros((5, 6)))
+    np.testing.assert_array_almost_equal(
+        apply_fn(params, None), jnp.zeros((5, 6)))
 
 
 if __name__ == "__main__":

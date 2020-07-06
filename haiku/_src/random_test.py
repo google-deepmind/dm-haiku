@@ -37,14 +37,14 @@ class RandomTest(absltest.TestCase):
     assert_allclose = functools.partial(np.testing.assert_allclose, atol=1e-5)
 
     # With optimize_rng_use the keys returned should be equal to split(n).
-    f_opt = transform.transform(random.optimize_rng_use(f), apply_rng=True)
+    f_opt = transform.transform(random.optimize_rng_use(f))
     jax.tree_multimap(assert_allclose,
                       f_opt.apply({}, key),
                       tuple(jax.random.split(key, 3))[1:])
 
     # Without optimize_rng_use the keys should be equivalent to splitting in a
     # loop.
-    f = transform.transform(f, apply_rng=True)
+    f = transform.transform(f)
     jax.tree_multimap(assert_allclose,
                       f.apply({}, key),
                       tuple(split_for_n(key, 2)))

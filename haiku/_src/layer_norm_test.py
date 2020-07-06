@@ -59,7 +59,7 @@ class LayerNormTest(parameterized.TestCase):
     data = jnp.zeros([2, 3, 4, 5], dtype=jnp.bfloat16)
     params = fwd.init(jax.random.PRNGKey(428), data)
     bf16_params = jax.tree_map(lambda t: t.astype(jnp.bfloat16), params)
-    self.assertEqual(fwd.apply(bf16_params, data).dtype, jnp.bfloat16)
+    self.assertEqual(fwd.apply(bf16_params, None, data).dtype, jnp.bfloat16)
 
   @test_utils.transform_and_run
   def test_simple_case(self):

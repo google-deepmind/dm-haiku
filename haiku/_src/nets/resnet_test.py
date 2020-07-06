@@ -55,7 +55,7 @@ class ResnetTest(parameterized.TestCase):
                             bottleneck=bottleneck)
       return model(image, is_training=False, test_local_stats=True)
 
-    forward = transform.transform(forward_fn, apply_rng=True)
+    forward = transform.transform(forward_fn)
     rng = jax.random.PRNGKey(42)
     image = jnp.ones([2, 64, 64, 3])
     params = forward.init(rng, image)

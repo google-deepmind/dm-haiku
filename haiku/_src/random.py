@@ -62,7 +62,7 @@ def optimize_rng_use(fun):
   ...   net = hk.nets.MLP([300, 100, 10])
   ...   return net(x)
   >>> f = hk.experimental.optimize_rng_use(f)
-  >>> f = hk.transform(f, apply_rng=True)
+  >>> f = hk.transform(f)
   >>> params = f.init(jax.random.PRNGKey(42), jnp.ones([1, 1]))
 
   Args:

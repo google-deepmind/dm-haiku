@@ -52,11 +52,12 @@ class Agent:
     net_factory = functools.partial(net_factory, num_actions)
     # Instantiate two hk.transforms() - one for getting the initial state of the
     # agent, another for actually initializing and running the agent.
-    _, self._initial_state_apply_fn = hk.transform(
-        lambda batch_size: net_factory().initial_state(batch_size))
+    _, self._initial_state_apply_fn = hk.without_apply_rng(
+        hk.transform(
+            lambda batch_size: net_factory().initial_state(batch_size)))
 
-    self._init_fn, self._apply_fn = hk.transform(
-        lambda obs, state: net_factory().unroll(obs, state))
+    self._init_fn, self._apply_fn = hk.without_apply_rng(
+        hk.transform(lambda obs, state: net_factory().unroll(obs, state)))
 
   @functools.partial(jax.jit, static_argnums=0)
   def initial_params(self, rng_key):

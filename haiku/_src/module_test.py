@@ -163,7 +163,7 @@ class ModuleTest(parameterized.TestCase):
     ])
 
     del name_log[:]
-    apply_fn(params)
+    apply_fn(params, None)
     self.assertEmpty(name_log)
 
   def test_stateful_module(self):
@@ -218,7 +218,7 @@ class ModuleTest(parameterized.TestCase):
 
     rng = jax.random.PRNGKey(42)
     params = f.init(rng)
-    w = f.apply(params)
+    w = f.apply(params, None)
     self.assertEqual(w, 0)
 
   def test_transparent(self):

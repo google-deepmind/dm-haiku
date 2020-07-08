@@ -231,10 +231,10 @@ class VectorQuantizerEMA(hk.Module):
 
     self.ema_cluster_size = hk.ExponentialMovingAverage(decay=self.decay,
                                                         name="ema_cluster_size")
-    self.ema_cluster_size.maybe_initialize(num_embeddings, dtype)
+    self.ema_cluster_size.initialize(jnp.zeros([num_embeddings], dtype=dtype))
 
     self.ema_dw = hk.ExponentialMovingAverage(decay=self.decay, name="ema_dw")
-    self.ema_dw.maybe_initialize(embeddings.shape, embeddings.dtype)
+    self.ema_dw.initialize(embeddings)
 
   @property
   def embeddings(self):

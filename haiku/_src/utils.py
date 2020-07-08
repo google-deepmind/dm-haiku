@@ -255,17 +255,3 @@ def simple_dtype(dtype) -> str:
   dtype = dtype.replace("uint", "u")
   dtype = dtype.replace("int", "s")
   return dtype
-
-
-def reduce_shape(shape, axis, keepdims):
-  """Computes the returned shape for a reduction along axis."""
-  shape = list(shape)
-  if keepdims:
-    for axis in jax.tree_leaves(axis):
-      shape[axis] = 1
-  else:
-    n = len(shape)
-    axis = {n + a if a < 0 else a for a in jax.tree_leaves(axis)}
-    for axis in sorted(axis, reverse=True):
-      del shape[axis]
-  return tuple(shape)

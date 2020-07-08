@@ -88,6 +88,38 @@ OPTIONAL_BATCH_MODULES = (
         name="nets.MLP",
         create=lambda: hk.nets.MLP([3, 4, 5]),
         shape=(BATCH_SIZE, 3)),
+    ModuleDescriptor(
+        name="ConvND",
+        create=lambda: hk.ConvND(1, 3, 3),
+        shape=(BATCH_SIZE, 2, 2)),
+    ModuleDescriptor(
+        name="ConvNDTranspose",
+        create=lambda: hk.ConvNDTranspose(1, 3, 3),
+        shape=(BATCH_SIZE, 2, 2)),
+    ModuleDescriptor(
+        name="Conv1D",
+        create=lambda: hk.Conv1D(3, 3),
+        shape=(BATCH_SIZE, 2, 2)),
+    ModuleDescriptor(
+        name="Conv1DTranspose",
+        create=lambda: hk.Conv1DTranspose(3, 3),
+        shape=(BATCH_SIZE, 2, 2)),
+    ModuleDescriptor(
+        name="Conv2D",
+        create=lambda: hk.Conv2D(3, 3),
+        shape=(BATCH_SIZE, 2, 2, 2)),
+    ModuleDescriptor(
+        name="Conv2DTranspose",
+        create=lambda: hk.Conv2DTranspose(3, 3),
+        shape=(BATCH_SIZE, 2, 2, 2)),
+    ModuleDescriptor(
+        name="Conv3D",
+        create=lambda: hk.Conv3D(3, 3),
+        shape=(BATCH_SIZE, 2, 2, 2, 2)),
+    ModuleDescriptor(
+        name="Conv3DTranspose",
+        create=lambda: hk.Conv3DTranspose(3, 3),
+        shape=(BATCH_SIZE, 2, 2, 2, 2)),
 )
 
 # Modules that require input to have a batch dimension.
@@ -138,38 +170,6 @@ BATCH_MODULES = (
         shape=(BATCH_SIZE, 64)),
 
     # TODO(tomhennigan) Make these modules support unbatched input.
-    ModuleDescriptor(
-        name="ConvND",
-        create=lambda: hk.ConvND(1, 3, 3),
-        shape=(BATCH_SIZE, 2, 2)),
-    ModuleDescriptor(
-        name="ConvNDTranspose",
-        create=lambda: hk.ConvNDTranspose(1, 3, 3),
-        shape=(BATCH_SIZE, 2, 2)),
-    ModuleDescriptor(
-        name="Conv1D",
-        create=lambda: hk.Conv1D(3, 3),
-        shape=(BATCH_SIZE, 2, 2)),
-    ModuleDescriptor(
-        name="Conv1DTranspose",
-        create=lambda: hk.Conv1DTranspose(3, 3),
-        shape=(BATCH_SIZE, 2, 2)),
-    ModuleDescriptor(
-        name="Conv2D",
-        create=lambda: hk.Conv2D(3, 3),
-        shape=(BATCH_SIZE, 2, 2, 2)),
-    ModuleDescriptor(
-        name="Conv2DTranspose",
-        create=lambda: hk.Conv2DTranspose(3, 3),
-        shape=(BATCH_SIZE, 2, 2, 2)),
-    ModuleDescriptor(
-        name="Conv3D",
-        create=lambda: hk.Conv3D(3, 3),
-        shape=(BATCH_SIZE, 2, 2, 2, 2)),
-    ModuleDescriptor(
-        name="Conv3DTranspose",
-        create=lambda: hk.Conv3DTranspose(3, 3),
-        shape=(BATCH_SIZE, 2, 2, 2, 2)),
     ModuleDescriptor(
         name="DepthwiseConv2D",
         create=lambda: hk.DepthwiseConv2D(1, 3),

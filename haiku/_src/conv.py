@@ -145,15 +145,23 @@ class ConvND(hk.Module):
     """Connects ``ConvND`` layer.
 
     Args:
-      inputs: A rank-N+2 array with shape ``[N, spatial_dims, C]``.
+      inputs: An array of shape ``[spatial_dims, C]`` and rank-N+1 if unbatched,
+        or an array of shape ``[N, spatial_dims, C]`` and rank-N+2 if batched.
 
     Returns:
-      A rank-N+2 array with shape ``[N, spatial_dims, output_channels]``.
+      An array of shape ``[spatial_dims, output_channels]`` and rank-N+1 if
+        unbatched, or an array of shape ``[N, spatial_dims, output_channels]``
+        and rank-N+2 if batched.
     """
-    required_rank = self.num_spatial_dims + 2
-    if inputs.ndim != required_rank:
-      raise ValueError(f"Input to ConvND needs to have rank {required_rank}, "
-                       f"but input has shape {inputs.shape}.")
+    unbatched_rank = self.num_spatial_dims + 1
+    allowed_ranks = [unbatched_rank, unbatched_rank + 1]
+    if inputs.ndim not in allowed_ranks:
+      raise ValueError(f"Input to ConvND needs to have rank in {allowed_ranks},"
+                       f" but input has shape {inputs.shape}.")
+
+    unbatched = inputs.ndim == unbatched_rank
+    if unbatched:
+      inputs = jnp.expand_dims(inputs, axis=0)
 
     w_shape = self.kernel_shape + (inputs.shape[self.channel_index],
                                    self.output_channels)
@@ -189,6 +197,8 @@ class ConvND(hk.Module):
       b = jnp.broadcast_to(b, out.shape)
       out = out + b
 
+    if unbatched:
+      out = jnp.squeeze(out, axis=0)
     return out
 
 
@@ -435,15 +445,23 @@ class ConvNDTranspose(hk.Module):
     """Computes the transposed convolution of the input.
 
     Args:
-      inputs: A rank-N+2 array with shape ``[N, spatial_dims, C]``.
+      inputs: An array of shape ``[spatial_dims, C]`` and rank-N+1 if unbatched,
+        or an array of shape ``[N, spatial_dims, C]`` and rank-N+2 if batched.
 
     Returns:
-      A rank-N+2 array with shape ``[N, spatial_dims, output_channels]``.
+      An array of shape ``[spatial_dims, output_channels]`` and rank-N+1 if
+        unbatched, or an array of shape ``[N, spatial_dims, output_channels]``
+        and rank-N+2 if batched.
     """
-    required_rank = self.num_spatial_dims + 2
-    if inputs.ndim != required_rank:
-      raise ValueError(f"Input to ConvND needs to have rank {required_rank}, "
-                       f"but input has shape {inputs.shape}.")
+    unbatched_rank = self.num_spatial_dims + 1
+    allowed_ranks = [unbatched_rank, unbatched_rank + 1]
+    if inputs.ndim not in allowed_ranks:
+      raise ValueError(f"Input to ConvNDTranspose needs to have rank in "
+                       f"{allowed_ranks}, but input has shape {inputs.shape}.")
+
+    unbatched = inputs.ndim == unbatched_rank
+    if unbatched:
+      inputs = jnp.expand_dims(inputs, axis=0)
 
     input_channels = inputs.shape[self.channel_index]
     w_shape = self.kernel_shape + (self.output_channels, input_channels)
@@ -477,6 +495,8 @@ class ConvNDTranspose(hk.Module):
       b = jnp.broadcast_to(b, out.shape)
       out = out + b
 
+    if unbatched:
+      out = jnp.squeeze(out, axis=0)
     return out
 
 

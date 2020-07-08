@@ -121,6 +121,20 @@ class ConvTest(parameterized.TestCase):
     self.assertEqual(out.shape, expected_output_shape)
 
   @parameterized.parameters(1, 2, 3)
+  def test_unbatched(self, n):
+    input_shape = [2] + [16]*n + [4]
+
+    def f():
+      data = jnp.zeros(input_shape)
+      net = conv.ConvND(n, output_channels=3, kernel_shape=3)
+      return net(data)
+
+    init_fn, apply_fn = transform.transform(f)
+    out = apply_fn(init_fn(random.PRNGKey(428)), None)
+    expected_output_shape = (2,) + (16,)*n + (3,)
+    self.assertEqual(out.shape, expected_output_shape)
+
+  @parameterized.parameters(1, 2, 3)
   def test_connect_conv_padding_function_valid(self, n):
     reached = [0]
 
@@ -169,8 +183,8 @@ class ConvTest(parameterized.TestCase):
     n = 1
     input_shape = [2, 4] + [16]*n
 
-    with self.assertRaisesRegex(ValueError, "Input to ConvND needs to have "
-                                            "rank 3, but input has shape"):
+    with self.assertRaisesRegex(
+        ValueError, r"Input to ConvND needs to have rank in \[2, 3\]"):
       data = jnp.zeros(input_shape * 2)
       net = conv.ConvND(n, output_channels=3, kernel_shape=3,
                         data_format="channels_first")
@@ -381,8 +395,9 @@ class Conv3DTest(parameterized.TestCase):
   def test_invalid_input_shape(self):
     with_bias = True
 
-    with self.assertRaisesRegex(ValueError, "Input to ConvND needs to have "
-                                            "rank 5, but input has shape"):
+    with self.assertRaisesRegex(
+        ValueError,
+        r"Input to ConvND needs to have rank in \[4, 5\], but input has shape"):
       data = jnp.ones([1, 5, 5, 5, 1, 9, 9])
       net = conv.Conv3D(
           output_channels=1,
@@ -448,6 +463,20 @@ class ConvTransposeTest(parameterized.TestCase):
     self.assertEqual(out.shape, expected_output_shape)
 
   @parameterized.parameters(1, 2, 3)
+  def test_unbatched(self, n):
+    def f():
+      input_shape = [8]*n + [4]
+      data = jnp.zeros(input_shape)
+      net = conv.ConvNDTranspose(
+          n, output_channels=3, kernel_shape=3, stride=3)
+      return net(data)
+
+    init_fn, apply_fn = transform.transform(f)
+    out = apply_fn(init_fn(random.PRNGKey(428)), None)
+    expected_output_shape = (24,)*n + (3,)
+    self.assertEqual(out.shape, expected_output_shape)
+
+  @parameterized.parameters(1, 2, 3)
   def test_connect_conv_transpose_channels_first(self, n):
     def f():
       input_shape = [2, 4] + [16]*n
@@ -465,7 +494,7 @@ class ConvTransposeTest(parameterized.TestCase):
   def test_invalid_input_shape(self):
     n = 1
     with self.assertRaisesRegex(ValueError,
-                                "Input to ConvND needs to have rank"):
+                                "Input to ConvNDTranspose needs to have rank"):
       input_shape = [2, 4] + [16]*n
       data = jnp.zeros(input_shape*2)
       net = conv.ConvNDTranspose(

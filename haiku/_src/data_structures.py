@@ -16,6 +16,7 @@
 """Data structures used by Haiku."""
 
 import collections
+import collections.abc
 import contextlib
 import pprint
 import threading

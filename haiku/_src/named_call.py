@@ -27,6 +27,9 @@ from jax.interpreters import ad
 from jax.interpreters import xla
 import jax.linear_util as lu
 
+xc = jax.lib.xla_client
+xe = xc._xla  # pylint: disable=protected-access
+
 # Registering named call as a primitive
 named_call_p = core.CallPrimitive('named_call')
 # named_call is implemented as a plain core.call and only diverges
@@ -34,13 +37,15 @@ named_call_p = core.CallPrimitive('named_call')
 named_call_p.def_impl(core.call_impl)
 
 
-def _named_call_translation_rule(comp_builder: 'xla.xb._JaxComputationBuilder',
-                                 axis_env: xla.AxisEnv,
-                                 in_nodes: 'Sequence[xla.xc._xla.XlaOp]',
-                                 name_stack: str,
-                                 backend: Optional[Any],
-                                 name: str,
-                                 call_jaxpr: core.Jaxpr):
+def _named_call_translation_rule(
+    comp_builder: xe.XlaBuilder,
+    axis_env: xla.AxisEnv,
+    in_nodes: Sequence[xe.XlaOp],
+    name_stack: str,
+    backend: Optional[Any],
+    name: str,
+    call_jaxpr: core.Jaxpr,
+) -> xe.XlaOp:
   """Compile and add a custom name to the XLA metadata."""
   subcomp_builder = xla.xb.make_computation_builder(f'named_call_{name}')
   args = [xla.xb.parameter(subcomp_builder, i, comp_builder.GetShape(n))
@@ -57,8 +62,12 @@ ad.primitive_transposes[named_call_p] = functools.partial(ad.call_transpose,
 xla.call_translations[named_call_p] = _named_call_translation_rule
 
 
-def statefulify(fun: Callable[..., Any],
-                state: stateful.InternalState) -> Callable[..., Any]:
+def statefulify(
+    fun: Callable[..., Any],
+    state: stateful.InternalState,
+) -> Callable[..., Any]:
+  """Wraps the given function so it is evaluated with the given Haiku state."""
+  @functools.wraps(fun)
   def stateful_fun(*args, **kwargs) -> Tuple[Any, stateful.InternalState]:
     """Explictly returns the changed Haiku state after fun has been executed."""
     with stateful.temporary_internal_state(state):
@@ -67,8 +76,11 @@ def statefulify(fun: Callable[..., Any],
   return stateful_fun
 
 
-def stateful_named_call(fun: Callable[..., Any], *,
-                        name: str) -> Callable[..., Any]:
+def stateful_named_call(
+    fun: Callable[..., Any],
+    *,
+    name: Optional[str] = None,
+) -> Callable[..., Any]:
   """Wraps a function in a name_scope and maintains Haiku state."""
   @functools.wraps(fun)
   def wrapper(*args, **kwargs):
@@ -85,8 +97,15 @@ def stateful_named_call(fun: Callable[..., Any], *,
   return wrapper
 
 
-def _named_call(fun: Callable[..., Any], *, name: str) -> Callable[..., Any]:
+def _named_call(
+    fun: Callable[..., Any],
+    *,
+    name: Optional[str] = None,
+) -> Callable[..., Any]:
   """Wraps a function in a name_scope with the provided name."""
+  if name is None:
+    name = fun.__name__
+
   def named_fun(*args, **kwargs):
     # Wrap and flatten f for JAX internals.
     f = lu.wrap_init(fun)

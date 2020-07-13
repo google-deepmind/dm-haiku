@@ -20,14 +20,15 @@ from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import named_call
 import jax
+import jax.numpy as jnp
 
 
 class NamedCallTest(parameterized.TestCase):
 
   @parameterized.parameters(jax.jit, jax.grad, jax.vmap, jax.remat)
   def test_jax_transforms(self, transform):
-    f = jax.numpy.sum
-    x = jax.numpy.array([1.])
+    f = jnp.sum
+    x = jnp.array([1.])
 
     unnamed_out = transform(f)(x)
     named_out = transform(named_call.stateful_named_call(f, name='test'))(x)
@@ -61,6 +62,18 @@ class NamedCallTest(parameterized.TestCase):
     f = named_call.stateful_named_call(f, name='test')
     out = jax.jit(f, static_argnums=(0,))('not a Jaxtype', 1)
     self.assertEqual(out, 1)
+
+  def test_default_name(self):
+    @named_call.stateful_named_call
+    def naming_things_is_hard(x):
+      return x ** 2
+
+    @jax.jit
+    def f(x):
+      return naming_things_is_hard(x) + naming_things_is_hard(x)
+
+    c = jax.xla_computation(f)(2)
+    self.assertIn('naming_things_is_hard', c.as_hlo_text())
 
 if __name__ == '__main__':
   absltest.main()

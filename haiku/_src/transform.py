@@ -141,7 +141,7 @@ def without_apply_rng(f: TransformedT) -> TransformedT:
     return Transformed(init=f.init, apply=apply_fn)
 
   else:
-    raise ValueError("Must be called with the reuslt of `hk.transformed` or "
+    raise ValueError("Must be called with the result of `hk.transformed` or "
                      f"`hk.transformed_with_state`, actual {type(f)}")
 
 

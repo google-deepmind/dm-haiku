@@ -17,6 +17,7 @@
 
 import types
 from typing import Optional, Sequence, Tuple, Union
+import warnings
 
 from haiku._src import module
 from jax import lax
@@ -41,9 +42,33 @@ def _infer_shape(
       channel_axis = x.ndim + channel_axis
     return (1,) + tuple(size if d != channel_axis else 1
                         for d in range(1, x.ndim))
+  elif len(size) < x.ndim:
+    # Assume additional dimensions are batch dimensions.
+    return (1,) * (x.ndim - len(size)) + tuple(size)
   else:
     assert x.ndim == len(size)
     return tuple(size)
+
+
+_VMAP_SHAPE_INFERENCE_WARNING = (
+    "When running under vmap, passing an `int` (except for `1`) for "
+    "`window_shape` or `strides` will result in the wrong shape being inferred "
+    "because the batch dimension is not visible to Haiku. Please update your "
+    "code to specify a full unbatched size. "
+    ""
+    "For example if you had `pool(x, window_shape=3, strides=1)` before, you "
+    "should now pass `pool(x, window_shape=(3, 3, 1), strides=1)`. "
+    ""
+    "Haiku will assume that any additional dimensions in your input are "
+    "batch dimensions, and will pad `window_shape` and `strides` accordingly "
+    "making your module support both batched and per-example inputs."
+)
+
+
+def _warn_if_unsafe(window_shape, strides):
+  unsafe = lambda size: isinstance(size, int) and size != 1
+  if unsafe(window_shape) or unsafe(strides):
+    warnings.warn(_VMAP_SHAPE_INFERENCE_WARNING, DeprecationWarning)
 
 
 def max_pool(
@@ -69,6 +94,7 @@ def max_pool(
   if padding not in ("SAME", "VALID"):
     raise ValueError(f"Invalid padding '{padding}', must be 'SAME' or 'VALID'.")
 
+  _warn_if_unsafe(window_shape, strides)
   window_shape = _infer_shape(value, window_shape, channel_axis)
   strides = _infer_shape(value, strides, channel_axis)
 
@@ -102,6 +128,7 @@ def avg_pool(
   if padding not in ("SAME", "VALID"):
     raise ValueError(f"Invalid padding '{padding}', must be 'SAME' or 'VALID'.")
 
+  _warn_if_unsafe(window_shape, strides)
   window_shape = _infer_shape(value, window_shape, channel_axis)
   strides = _infer_shape(value, strides, channel_axis)
 

@@ -15,10 +15,13 @@
 # ==============================================================================
 """Tests for haiku._src.pool."""
 
+import functools
+
 from absl.testing import absltest
 
 from haiku._src import pool
 from haiku._src import test_utils
+import jax
 import jax.numpy as jnp
 import numpy as np
 
@@ -37,6 +40,45 @@ class MaxPoolTest(absltest.TestCase):
     ground_truth = np.broadcast_to(ground_truth, (2, 5, 3, 2))
 
     np.testing.assert_equal(result, ground_truth)
+
+  def test_max_pool_unbatched(self):
+    x = np.arange(6, dtype=jnp.float32).reshape([6, 1])
+    leading_dims = (2, 3)
+    x = np.broadcast_to(x, leading_dims + (10, 6, 2))
+
+    window_shape = [2, 2, 1]
+    result = pool.max_pool(
+        x, window_shape=window_shape, strides=window_shape, padding="VALID")
+
+    ground_truth = np.asarray([1., 3., 5.]).reshape([3, 1])
+    ground_truth = np.broadcast_to(ground_truth, leading_dims + (5, 3, 2))
+
+    np.testing.assert_equal(result, ground_truth)
+
+  def test_max_pool_unbatched_vmapped(self):
+    x = np.arange(6, dtype=jnp.float32).reshape([6, 1])
+    leading_dims = (2, 3)
+    x = np.broadcast_to(x, leading_dims + (10, 6, 2))
+
+    window_shape = [2, 2, 1]
+    max_pool_fn = functools.partial(
+        pool.max_pool,
+        window_shape=window_shape,
+        strides=window_shape,
+        padding="VALID")
+    result = jax.vmap(jax.vmap(max_pool_fn))(x)
+
+    ground_truth = np.asarray([1., 3., 5.]).reshape([3, 1])
+    ground_truth = np.broadcast_to(ground_truth, leading_dims + (5, 3, 2))
+
+    np.testing.assert_equal(result, ground_truth)
+
+  def test_max_pool_batch_vs_vmap(self):
+    key = jax.random.PRNGKey(42)
+    batch = jax.random.normal(key, [8, 28, 28, 3])
+    p = functools.partial(pool.max_pool, window_shape=(4, 4, 1),
+                          strides=(2, 2, 1), padding="VALID")
+    np.testing.assert_allclose(p(batch), jax.vmap(p)(batch))
 
   def test_max_pool_overlapping_windows(self):
     x = np.arange(12, dtype=jnp.float32).reshape([6, 2])
@@ -120,6 +162,45 @@ class AvgPoolTest(absltest.TestCase):
     ground_truth = np.broadcast_to(ground_truth, (2, 5, 3, 2))
 
     np.testing.assert_equal(result, ground_truth)
+
+  def test_avg_pool_unbatched(self):
+    x = np.arange(6, dtype=jnp.float32).reshape([6, 1])
+    leading_dims = (2, 3)
+    x = np.broadcast_to(x, leading_dims + (10, 6, 2))
+
+    window_shape = [2, 2, 1]
+    result = pool.avg_pool(
+        x, window_shape=window_shape, strides=window_shape, padding="VALID")
+
+    ground_truth = np.asarray([0.5, 2.5, 4.5]).reshape([3, 1])
+    ground_truth = np.broadcast_to(ground_truth, leading_dims + (5, 3, 2))
+
+    np.testing.assert_equal(result, ground_truth)
+
+  def test_avg_pool_unbatched_vmapped(self):
+    x = np.arange(6, dtype=jnp.float32).reshape([6, 1])
+    leading_dims = (2, 3)
+    x = np.broadcast_to(x, leading_dims + (10, 6, 2))
+
+    window_shape = [2, 2, 1]
+    avg_pool_fn = functools.partial(
+        pool.avg_pool,
+        window_shape=window_shape,
+        strides=window_shape,
+        padding="VALID")
+    result = jax.vmap(jax.vmap(avg_pool_fn))(x)
+
+    ground_truth = np.asarray([0.5, 2.5, 4.5]).reshape([3, 1])
+    ground_truth = np.broadcast_to(ground_truth, leading_dims + (5, 3, 2))
+
+    np.testing.assert_equal(result, ground_truth)
+
+  def test_avg_pool_batch_vs_vmap(self):
+    key = jax.random.PRNGKey(42)
+    batch = jax.random.normal(key, [8, 28, 28, 3])
+    p = functools.partial(pool.avg_pool, window_shape=(4, 4, 1),
+                          strides=(2, 2, 1), padding="VALID")
+    np.testing.assert_allclose(p(batch), jax.vmap(p)(batch))
 
   def test_avg_pool_overlapping_windows(self):
     x = np.arange(12, dtype=jnp.float32).reshape([6, 2])

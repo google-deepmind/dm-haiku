@@ -633,9 +633,11 @@ class ResetCore(RNNCore):
     # >> batch_entry 1:
     # >>  [[0. 0.]
     # >>  [0. 0.]]
-    should_reset = jax.tree_multimap(
-        _validate_and_conform, should_reset, state)
-    batch_size = jax.tree_leaves(inputs)[0].shape[0]
+    should_reset = jax.tree_multimap(_validate_and_conform, should_reset, state)
+    if self._is_batched(state):
+      batch_size = jax.tree_leaves(inputs)[0].shape[0]
+    else:
+      batch_size = None
     initial_state = jax.tree_multimap(
         lambda s, i: i.astype(s.dtype), state, self.initial_state(batch_size))
     state = jax.tree_multimap(jnp.where, should_reset, initial_state, state)
@@ -643,6 +645,13 @@ class ResetCore(RNNCore):
 
   def initial_state(self, batch_size: Optional[int]):
     return self.core.initial_state(batch_size)
+
+  def _is_batched(self, state):
+    state = jax.tree_leaves(state)
+    if not state:  # Empty state is treated as unbatched.
+      return False
+    batched = jax.tree_leaves(self.initial_state(batch_size=1))
+    return all(b.shape[1:] == s.shape[1:] for b, s in zip(batched, state))
 
 
 class _DeepRNN(RNNCore):

@@ -154,11 +154,38 @@ class _DummyCore(recurrent.RNNCore):
     super().__init__(name=name)
     self._state = state
 
-  def __call__(self, x, y):
-    return x, y
+  def __call__(self, inputs, prev_state):
+    return inputs, prev_state
 
   def initial_state(self, batch_size):
     return jax.tree_map(jnp.zeros_like, self._state)
+
+
+class _IncrementByOneCore(recurrent.RNNCore):
+
+  def __init__(self, state_size=4, name=None):
+    super().__init__(name=name)
+    self._state_size = state_size
+
+  def __call__(self, inputs, prev_state):
+    del inputs
+    state = prev_state + 1.
+    return state, state
+
+  def initial_state(self, batch_size):
+    if batch_size is not None:
+      return jnp.zeros((batch_size, self._state_size))
+    return jnp.zeros(self._state_size)
+
+
+class _BatchedOnlyCore(recurrent.RNNCore):
+
+  def __call__(self, inputs, prev_state):
+    return inputs, prev_state
+
+  def initial_state(self, batch_size):
+    assert batch_size is not None
+    return jnp.zeros([batch_size])
 
 
 class ResetCoreTest(parameterized.TestCase):
@@ -243,6 +270,39 @@ class ResetCoreTest(parameterized.TestCase):
         core_outs[0, 0], reset_outs[1, 0], rtol=1e-6, atol=1e-6)
     for cs, rs in zip(core_states, reset_states):
       np.testing.assert_allclose(cs[0, 0], rs[1, 0], rtol=1e-6, atol=1e-6)
+
+  @parameterized.parameters(recurrent.dynamic_unroll, recurrent.static_unroll)
+  @test_utils.transform_and_run
+  def test_unbatched(self, unroll):
+    reset_time = 2
+    seq_len = 5
+    state_size = 4
+
+    core = recurrent.ResetCore(_IncrementByOneCore(state_size=state_size))
+    inputs = jnp.arange(0, seq_len)
+    batch_size = None  # Unbatched.
+    should_reset = inputs == reset_time
+    initial_state = core.initial_state(batch_size)
+    result, _ = unroll(core, (inputs, should_reset), initial_state)
+
+    expected_result = np.array([  # seq_len x state_size
+        [1.0, 1.0, 1.0, 1.0],
+        [2.0, 2.0, 2.0, 2.0],
+        [1.0, 1.0, 1.0, 1.0],  # reset_time = 2.
+        [2.0, 2.0, 2.0, 2.0],
+        [3.0, 3.0, 3.0, 3.0]
+    ])
+    np.testing.assert_allclose(result, expected_result, rtol=1e-6, atol=1e-6)
+
+  @test_utils.transform_and_run
+  def test_allow_batched_only_cores(self):
+    # Ensures batched-only cores can be wrapped with ResetCore.
+    core = recurrent.ResetCore(_BatchedOnlyCore())
+    batch_size = 5
+    inputs = jnp.ones((batch_size, 4))
+    prev_state = core.initial_state(batch_size)
+    should_reset = 0 * prev_state
+    core((inputs, should_reset), prev_state)
 
   @parameterized.parameters(
       (np.array((True, False)),
@@ -363,6 +423,7 @@ def static_unroll_with_states(core, inputs, state):
   outs = jnp.stack(outs, axis=0)
   states = tree.map_structure(lambda *a: jnp.stack(a, axis=0), *states)
   return outs, states
+
 
 if __name__ == "__main__":
   absltest.main()

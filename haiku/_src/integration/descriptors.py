@@ -180,7 +180,10 @@ BATCH_MODULES = (
 class DummyCore(hk.RNNCore):
 
   def initial_state(self, batch_size):
-    return jnp.ones([batch_size, 128, 1])
+    if batch_size is not None:
+      return jnp.ones([batch_size, 128, 1])
+    else:
+      return jnp.ones([128, 1])
 
   def __call__(self, inputs, state):
     return inputs, state

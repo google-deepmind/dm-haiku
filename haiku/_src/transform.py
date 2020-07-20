@@ -32,8 +32,8 @@ del typing
 
 T = TypeVar("T")
 
-# TODO(tomhennigan): Use protocols to describe *args when we are 3.8+.
-# https://www.python.org/dev/peps/pep-0544/#callback-protocols
+# TODO(b/161684853): Use protocols for transform if/when PEP-612 is implemented.
+# https://www.python.org/dev/peps/pep-0612/
 
 
 class Transformed(NamedTuple):

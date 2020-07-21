@@ -51,6 +51,7 @@ from haiku._src.conv import ConvNDTranspose
 from haiku._src.depthwise_conv import DepthwiseConv2D
 from haiku._src.embed import Embed
 from haiku._src.embed import EmbedLookupStyle
+from haiku._src.group_norm import GroupNorm
 from haiku._src.layer_norm import InstanceNorm
 from haiku._src.layer_norm import LayerNorm
 from haiku._src.module import Module
@@ -120,6 +121,7 @@ __all__ = (
     "ExponentialMovingAverage",
     "Flatten",
     "GRU",
+    "GroupNorm",
     "IdentityCore",
     "InstanceNorm",
     "LSTM",

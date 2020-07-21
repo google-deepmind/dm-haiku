@@ -32,6 +32,7 @@ py_library(
         "//haiku/_src:dot",
         "//haiku/_src:embed",
         "//haiku/_src:filtering",
+        "//haiku/_src:group_norm",
         "//haiku/_src:initializers",
         "//haiku/_src:layer_norm",
         "//haiku/_src:lift",

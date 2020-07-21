@@ -164,6 +164,32 @@ hk_py_test(
 )
 
 hk_py_library(
+    name = "group_norm",
+    srcs = ["group_norm.py"],
+    deps = [
+        ":base",
+        ":initializers",
+        ":module",
+        ":utils",
+        # pip: jax
+    ],
+)
+
+hk_py_test(
+    name = "group_norm_test",
+    srcs = ["group_norm_test.py"],
+    deps = [
+        ":group_norm",
+        ":initializers",
+        ":test_utils",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        # pip: jax
+        # pip: numpy
+    ],
+)
+
+hk_py_library(
     name = "depthwise_conv",
     srcs = ["depthwise_conv.py"],
     deps = [

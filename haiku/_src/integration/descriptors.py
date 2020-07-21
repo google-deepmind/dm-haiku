@@ -141,6 +141,10 @@ BATCH_MODULES = (
         create=lambda: hk.InstanceNorm(True, True),
         shape=(BATCH_SIZE, 3, 2)),
     ModuleDescriptor(
+        name="GroupNorm",
+        create=lambda: hk.GroupNorm(5),
+        shape=(BATCH_SIZE, 4, 4, 10)),
+    ModuleDescriptor(
         name="LayerNorm",
         create=lambda: hk.LayerNorm(1, True, True),
         shape=(BATCH_SIZE, 3, 2)),

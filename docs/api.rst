@@ -178,10 +178,16 @@ Normalization modules
 
 .. currentmodule:: haiku
 
-LayerNorm
+BatchNorm
 ~~~~~~~~~
 
-.. autoclass:: LayerNorm
+.. autoclass:: BatchNorm
+   :members:
+
+GroupNorm
+~~~~~~~~~
+
+.. autoclass:: GroupNorm
    :members:
 
 InstanceNorm
@@ -190,22 +196,22 @@ InstanceNorm
 .. autoclass:: InstanceNorm
    :members:
 
-BatchNorm
+LayerNorm
 ~~~~~~~~~
 
-.. autoclass:: BatchNorm
-   :members:
-
-ExponentialMovingAverage
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: ExponentialMovingAverage
+.. autoclass:: LayerNorm
    :members:
 
 SpectralNorm
 ~~~~~~~~~~~~
 
 .. autoclass:: SpectralNorm
+   :members:
+
+ExponentialMovingAverage
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: ExponentialMovingAverage
    :members:
 
 SNParamsTree

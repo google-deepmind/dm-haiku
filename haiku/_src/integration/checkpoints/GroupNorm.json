@@ -1,0 +1,14 @@
+{
+  "module": [
+    "GroupNorm(groups=5)"
+  ],
+  "input": "f32[8, 4, 4, 10]",
+  "param_size": 20,
+  "param_bytes": 80,
+  "params": {
+    "group_norm": {
+      "offset": "f32[10]",
+      "scale": "f32[10]"
+    }
+  }
+}

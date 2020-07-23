@@ -113,7 +113,7 @@ def loss_fn(images, labels):
   logits = mlp(images)
   return jnp.mean(softmax_cross_entropy(logits, labels))
 
-loss_obj = hk.transform(loss_fn)
+loss_obj = hk.transform(loss_fn, apply_rng=True)
 ```
 
 `hk.transform` allows us to turn this function into a pair of pure functions:
@@ -158,14 +158,14 @@ function. Whenever `hk.get_parameter` is called the value returned will come
 from the `params` you provide as input to `apply`:
 
 ```python
-loss = loss_obj.apply(params, images, labels)
+loss = loss_obj.apply(params, None, images, labels)
 ```
 
 Since `apply` is a pure function we can pass it to `jax.grad` (or any of JAX's
 other transforms):
 
 ```python
-grads = jax.grad(loss_obj.apply)(params, images, labels)
+grads = jax.grad(loss_obj.apply)(params, None, images, labels)
 ```
 
 Finally, we put this all together into a simple training loop:
@@ -175,7 +175,7 @@ def sgd(param, update):
   return param - 0.01 * update
 
 for images, labels in input_dataset:
-  grads = jax.grad(loss_obj.apply)(params, images, labels)
+  grads = jax.grad(loss_obj.apply)(params, None, images, labels)
   params = jax.tree_multimap(sgd, params, grads)
 ```
 
@@ -255,7 +255,7 @@ def forward_fn(x):
 # Turn `forward_fn` into an object with `init` and `apply` methods. By default,
 # the `apply` will require an rng (which can be None), to be used with
 # `hk.next_rng_key`.
-forward = hk.transform(forward_fn)
+forward = hk.transform(forward_fn, apply_rng=True)
 
 x = jnp.ones([1, 1])
 
@@ -295,7 +295,7 @@ class Dropout(hk.Module):
     p = jax.random.bernoulli(key, 1.0 - self.rate, shape=x.shape)
     return x * p / (1.0 - self.rate)
 
-forward = hk.transform(lambda x: Dropout()(x))
+forward = hk.transform(lambda x: Dropout()(x), apply_rng=True)
 
 key1, key2 = jax.random.split(jax.random.PRNGKey(42), 2)
 params = forward.init(key1, x)
@@ -359,7 +359,7 @@ def loss_fn(inputs, labels):
   logits = hk.nets.MLP([8, 4, 2])(x)
   return jnp.mean(softmax_cross_entropy(logits, labels))
 
-loss_obj = hk.transform(loss_fn)
+loss_obj = hk.transform(loss_fn, apply_rng=True)
 
 # Initialize the model on a single device.
 rng = jax.random.PRNGKey(428)
@@ -383,7 +383,7 @@ def make_superbatch():
 
 def update(params, inputs, labels, axis_name='i'):
   """Updates params based on performance on inputs and labels."""
-  grads = jax.grad(loss_obj.apply)(params, inputs, labels)
+  grads = jax.grad(loss_obj.apply)(params, None, inputs, labels)
   # Take the mean of the gradients across all data-parallel replicas.
   grads = jax.lax.pmean(grads, axis_name)
   # Update parameters using SGD or Adam or ...

@@ -35,7 +35,7 @@ abstractions for machine learning research.
     rng = jax.random.PRNGKey(42)
     x = jnp.ones([8, 28 * 28])
     params = forward.init(rng, x)
-    logits = forward.apply(params, x)
+    logits = forward.apply(params, rng, x)
 
 Installation
 ------------

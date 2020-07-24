@@ -189,6 +189,10 @@ def evaluate(
     state: hk.State,
 ) -> Scalars:
   """Evaluates the model at the given params/state."""
+  if split.num_examples % FLAGS.eval_batch_size:
+    raise ValueError(f'Eval batch size {FLAGS.eval_batch_size} must be a '
+                     f'multiple of {split} num examples {split.num_examples}')
+
   # Params/state are sharded per-device during training. We just need the copy
   # from the first device (since we do not pmap evaluation at the moment).
   params, state = jax.tree_map(lambda x: x[0], (params, state))
@@ -198,8 +202,9 @@ def evaluate(
   correct = jnp.array(0)
   total = 0
   for batch in test_dataset:
-    correct += eval_batch(params, state, next(test_dataset))
+    correct += eval_batch(params, state, batch)
     total += batch['images'].shape[0]
+  assert total == split.num_examples, total
   return {'top_1_acc': correct.item() / total}
 
 

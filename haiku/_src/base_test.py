@@ -159,6 +159,28 @@ class BaseTest(parameterized.TestCase):
 
     self.assertEqual(log, ["a", "b", "c"])
 
+  def test_original_dtype(self):
+
+    def dtype_cast_creator(next_creator, shape, dtype, init, context):
+      if context.original_dtype == jnp.bfloat16:
+        dtype = jnp.float32
+      return next_creator(shape, dtype, init)
+
+    def dtype_recast_getter(next_getter, value, context):
+      if context.original_dtype == jnp.bfloat16:
+        assert value.dtype == jnp.float32
+        value = value.astype(jnp.bfloat16)
+      return next_getter(value)
+
+    with base.new_context() as ctx:
+      with base.custom_creator(dtype_cast_creator), \
+           base.custom_getter(dtype_recast_getter):
+        param = base.get_parameter("w", [], jnp.bfloat16, jnp.ones)
+        orig_param = jax.tree_leaves(ctx.collect_params())[0]
+
+        assert param.dtype == jnp.bfloat16
+        assert orig_param.dtype == jnp.float32
+
   def test_custom_getter_bf16(self):
     def bf16_getter(next_getter, value, context):
       del context

@@ -274,6 +274,8 @@ def get_parameter(
   params = frame.params[bundle_name]
   param = params.get(name)
   fq_name = bundle_name + "/" + name
+  context = ParamContext(full_name=fq_name, module=current_module(),
+                         original_dtype=dtype)
   if param is None:
     if frame.params_frozen:
       raise ValueError(
@@ -281,12 +283,12 @@ def get_parameter(
           "All parameters must be created as part of `init`.".format(
               name, bundle_name))
 
-    param = create_parameter(fq_name, shape, dtype, init)
+    param = create_parameter(context, shape, dtype, init)
     params[name] = param  # pytype: disable=unsupported-operands
 
   # Custom getters allow a hook for users to customize the value returned by
   # get_parameter. For example casting values to some dtype.
-  param = run_custom_getters(fq_name, param)
+  param = run_custom_getters(context, param)
 
   assert param.shape == tuple(shape), (
       "{!r} with shape {!r} does not match shape={!r} dtype={!r}".format(
@@ -295,8 +297,26 @@ def get_parameter(
   return param
 
 
+class ParamContext(NamedTuple):
+  """Read only state showing where parameters are being created.
+
+  Attributes:
+    full_name: The full name of the given parameter (e.g. ``mlp/~/linear_0/w``).
+    module: The module that owns the current parameter, ``None`` if this
+      parameter exists outside any module.
+    original_dtype: The dtype that `get_parameter()` was originally called with.
+  """
+  full_name: str
+  module: Optional[Module]
+  original_dtype: Any
+
+NextCreator = Callable[[Sequence[int], Any, Initializer], jnp.ndarray]
+ParamCreator = Callable[
+    [NextCreator, Sequence[int], Any, Initializer, ParamContext], jnp.ndarray]
+
+
 def create_parameter(
-    full_name: str,
+    context: ParamContext,
     shape: Sequence[int],
     dtype: Any = jnp.float32,
     init: Initializer = None,
@@ -313,7 +333,7 @@ def create_parameter(
   dtype('float16')
 
   Args:
-    full_name: Name of the parameter, including parent module name.
+    context: A ParamContext object describing the parameter's context.
     shape: The shape of the parameter.
     dtype: The dtype of the parameter.
     init: A callable of shape, dtype to generate an initial value for the
@@ -325,7 +345,6 @@ def create_parameter(
   if not creator_stack:
     return init(shape, dtype)
 
-  context = ParamContext(full_name=full_name, module=current_module())
   creator_stack_copy = creator_stack.clone()
 
   def next_creator(shape, dtype, init):
@@ -336,22 +355,6 @@ def create_parameter(
       return init(shape, dtype)
 
   return next_creator(shape, dtype, init)
-
-
-class ParamContext(NamedTuple):
-  """Read only state showing where parameters are being created.
-
-  Attributes:
-    full_name: The full name of the given parameter (e.g. ``mlp/~/linear_0/w``).
-    module: The module that owns the current parameter, ``None`` if this
-      parameter exists outside any module.
-  """
-  full_name: str
-  module: Optional[Module]
-
-NextCreator = Callable[[Sequence[int], Any, Initializer], jnp.ndarray]
-ParamCreator = Callable[
-    [NextCreator, Sequence[int], Any, Initializer, ParamContext], jnp.ndarray]
 
 
 def custom_creator(creator: ParamCreator):
@@ -380,7 +383,7 @@ def custom_creator(creator: ParamCreator):
 
 
 def run_custom_getters(
-    full_name: str,
+    context: ParamContext,
     value: jnp.ndarray,
 ) -> jnp.ndarray:
   """Creates a parameter by running user defined creators then init.
@@ -396,7 +399,7 @@ def run_custom_getters(
   dtype('bfloat16')
 
   Args:
-    full_name: Name of the parameter, including parent module name.
+    context: A ParamContext object describing the parameter's context.
     value: The current value of the parameter.
 
   Returns:
@@ -405,7 +408,6 @@ def run_custom_getters(
   if not getter_stack:
     return value
 
-  context = ParamContext(full_name=full_name, module=current_module())
   getter_stack_copy = getter_stack.clone()
 
   def next_getter(value):

@@ -57,11 +57,6 @@ class ExponentialMovingAverage(module.Module):
           "average to an initial value. Set zero_debias=False if setting "
           "warmup_length to a non-zero value.")
 
-  def _cond(self, cond, t, f, dtype):
-    """Internal, implements jax.lax.cond without control flow."""
-    c = cond.astype(dtype)
-    return c * t + (1. - c) * f
-
   def initialize(self, value):
     """If uninitialized sets the average to ``zeros_like`` the given value."""
     base.get_state("hidden", value.shape, value.dtype, init=jnp.zeros)
@@ -91,7 +86,7 @@ class ExponentialMovingAverage(module.Module):
 
     decay = jax.lax.convert_element_type(self._decay, value.dtype)
     if self._warmup_length > 0:
-      decay = self._cond(counter <= 0, 0.0, decay, value.dtype)
+      decay = jax.lax.select(counter <= 0, 0.0, decay)
 
     one = jnp.ones([], value.dtype)
     hidden = base.get_state("hidden", value.shape, value.dtype, init=jnp.zeros)

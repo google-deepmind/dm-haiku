@@ -19,8 +19,8 @@ import contextlib
 import functools
 import inspect
 import re
-from typing import (Any, Callable, ContextManager, Dict, Mapping, Optional,
-                    Tuple, Type, TypeVar)
+from typing import (Any, Callable, ContextManager, Dict, Mapping, NamedTuple,
+                    Optional, Tuple, Type, TypeVar)
 
 from haiku._src import base
 from haiku._src import data_structures
@@ -64,9 +64,9 @@ class ModuleMetaclass(abc.ABCMeta):
       elif isinstance(value, property):
         # TODO(tomhennigan) Preserve the type of property subclasses.
         clsdict[key] = property(
-            value.fget if not value.fget else with_name_scope(key, value.fget),
-            value.fset if not value.fset else with_name_scope(key, value.fset),
-            value.fdel if not value.fdel else with_name_scope(key, value.fdel),
+            value.fget if not value.fget else wrap_method(key, value.fget),
+            value.fset if not value.fset else wrap_method(key, value.fset),
+            value.fdel if not value.fdel else wrap_method(key, value.fdel),
             doc=value.__doc__)
 
       elif inspect.isfunction(value):
@@ -89,7 +89,7 @@ class ModuleMetaclass(abc.ABCMeta):
       # to decorator functions using args[0]).
       # Equivalent to: `cls.__dict__[method_name].__get__(None, cls)`
       method = getattr(cls, method_name)
-      method = with_name_scope(method_name, method)
+      method = wrap_method(method_name, method)
       setattr(cls, method_name, method)
 
     return cls
@@ -105,7 +105,7 @@ class ModuleMetaclass(abc.ABCMeta):
     module = cls.__new__(cls, *args, **kwargs)  # pytype: disable=wrong-arg-types
 
     # Now attempt to initialize the object.
-    init = with_name_scope("__init__", cls.__init__)
+    init = wrap_method("__init__", cls.__init__)
     init(module, *args, **kwargs)
 
     module._auto_repr = utils.auto_repr(cls, *args, **kwargs)  # pylint: disable=protected-access
@@ -120,8 +120,156 @@ class ModuleMetaclass(abc.ABCMeta):
     return module
 
 
-def with_name_scope(method_name, unbound_method):
-  """Wraps `method` such that it enters the module stacks.
+class MethodContext(NamedTuple):
+  r"""Read only state showing the calling context for a method.
+
+  For example lets define two interceptors and print the values in the context.
+  Additionally we will make the first interceptor conditionally short circuit,
+  since interceptors stack and are run in order, an earlier interceptor can
+  decide to call the next interecptor, or short circuit and call the underlying
+  method directly:
+
+  >>> module = hk.Linear(1, name="method_context_example")
+  >>> short_circuit = False
+
+  >>> def my_interceptor_1(next_fun, args, kwargs, context):
+  ...   print('running my_interceptor_1')
+  ...   print('- module.name: ', context.module.name)
+  ...   print('- method_name: ', context.method_name)
+  ...   if short_circuit:
+  ...     return context.orig_method(*args, **kwargs)
+  ...   else:
+  ...     return next_fun(*args, **kwargs)
+  >>> def my_interceptor_2(next_fun, args, kwargs, context):
+  ...   print('running my_interceptor_2')
+  ...   print('- module.name: ', context.module.name)
+  ...   print('- method_name: ', context.method_name)
+  ...   return next_fun(*args, **kwargs)
+
+  When ``short_circuit=False`` the two interceptors will run in order:
+
+  >>> with hk.experimental.intercept_methods(my_interceptor_1), \
+  ...      hk.experimental.intercept_methods(my_interceptor_2):
+  ...   _ = module(jnp.ones([1, 1]))
+  running my_interceptor_1
+  - module.name:  method_context_example
+  - method_name:  __call__
+  running my_interceptor_2
+  - module.name:  method_context_example
+  - method_name:  __call__
+
+  Setting ``short_circuit=True`` will cause the first interecptor to call the
+  original method (rather than ``next_fun`` which will trigger the next
+  interceptor):
+
+  >>> short_circuit = True
+  >>> with hk.experimental.intercept_methods(my_interceptor_1), \
+  ...      hk.experimental.intercept_methods(my_interceptor_2):
+  ...   _ = module(jnp.ones([1, 1]))
+  running my_interceptor_1
+  - module.name:  method_context_example
+  - method_name:  __call__
+
+  Attributes:
+    module: A :class:`~haiku.Module` instance whose method is being called.
+    method_name: The name of the method being called on the module.
+    orig_method: The underlying method on the module which when called will
+      *not* trigger interceptors. You should only call this if you want to
+      short circuit all the other interceptors, in general you should prefer to
+      call the ``next_fun`` passed to your interceptor which will run
+      ``orig_method`` after running all other interceptors.
+  """
+
+  module: "Module"
+  method_name: str
+  orig_method: Callable[..., Any]
+
+
+Args = Tuple[Any]
+Kwargs = Dict[str, Any]
+NextGetter = Callable[..., Any]
+MethodGetter = Callable[[NextGetter, Args, Kwargs, MethodContext], Any]
+interceptor_stack = ThreadLocalStack()  # type: ThreadLocalStack[MethodGetter]
+
+
+def intercept_methods(interceptor: MethodGetter):
+  """Register a new method interceptor.
+
+  Method interceptors allow you to (at a distance) intercept method calls to
+  modules and modify args/kwargs before calling the underlying method. After the
+  underlying method is called you can modify its result before it is passed back
+  to the user.
+
+  For example you could intercept method calls to :class:`~haiku.BatchNorm` and
+  ensure it is always computed in full precision:
+
+  >>> def my_interceptor(next_f, args, kwargs, context):
+  ...   if (type(context.module) is not hk.BatchNorm
+  ...       or context.method_name != "__call__"):
+  ...     # We ignore methods other than BatchNorm.__call__.
+  ...     return next_f(*args, **kwargs)
+  ...
+  ...   def cast_if_array(x):
+  ...     if isinstance(x, jnp.ndarray):
+  ...       x = x.astype(jnp.float32)
+  ...     return x
+  ...
+  ...   args, kwargs = jax.tree_map(cast_if_array, (args, kwargs))
+  ...   out = next_f(*args, **kwargs)
+  ...   return out
+
+  We can create and use our module in the usual way, we just need to wrap any
+  method calls we want to intercept in the context manager:
+
+  >>> mod = hk.BatchNorm(decay_rate=0.9, create_scale=True, create_offset=True)
+  >>> x = jnp.ones([], jnp.bfloat16)
+  >>> with hk.experimental.intercept_methods(my_interceptor):
+  ...   out = mod(x, is_training=True)
+  >>> assert out.dtype == jnp.float32
+
+  Without the interceptor BatchNorm would compute in bf16, however since we
+  cast `x` before the underlying method is called we compute in f32.
+
+  Args:
+    interceptor: A method interceptor.
+
+  Returns:
+    Context manager under which the interceptor is active.
+  """
+  base.assert_context("experimental.intercept_methods")
+  return interceptor_stack(interceptor)
+
+
+def run_interceptors(
+    bound_method: Callable[..., Any],
+    method_name: str,
+    module: "Module",
+    *args: Args,
+    **kwargs: Kwargs,
+) -> Any:
+  """Runs any method interceptors or the original method."""
+  if not interceptor_stack:
+    return bound_method(*args, **kwargs)
+
+  ctx = MethodContext(module=module,
+                      method_name=method_name,
+                      orig_method=bound_method)
+  interceptor_stack_copy = interceptor_stack.clone()
+
+  def next_fun(*args, **kwargs):
+    if interceptor_stack_copy:
+      # NOTE: The `interceptor_fun` may call `next_fun` to trigger the next
+      # interceptor (and so on) allowing interceptors to be run in turn.
+      interceptor_fun = interceptor_stack_copy.popleft()
+      return interceptor_fun(next_fun, args, kwargs, ctx)
+    else:
+      return bound_method(*args, **kwargs)
+
+  return next_fun(*args, **kwargs)
+
+
+def wrap_method(method_name, unbound_method):
+  """Wraps `method` such that it enters name stack and runs method interceptors.
 
   Args:
     method_name: The name of the method (e.g. "__call__").
@@ -147,6 +295,7 @@ def with_name_scope(method_name, unbound_method):
       # hk.Module enters the module name scope for all methods.
       module_name = getattr(module, "module_name", None)
       f = functools.partial(unbound_method, module)
+      f = functools.partial(run_interceptors, f, method_name, module)
       if modules_with_named_call and module_name:
         local_name = module_name.split("/")[-1]
         f = named_call.stateful_named_call(f, name=local_name)

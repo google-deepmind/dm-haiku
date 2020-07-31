@@ -628,6 +628,16 @@ ParamContext
 
 .. autoclass:: ParamContext
 
+intercept_methods
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: intercept_methods
+
+MethodContext
+~~~~~~~~~~~~~
+
+.. autoclass:: MethodContext
+
 named_call
 ~~~~~~~~~~
 

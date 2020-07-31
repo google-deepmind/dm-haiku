@@ -317,6 +317,84 @@ class ModuleTest(parameterized.TestCase):
         self.assertEqual(params[module_name]["w"].shape[-1], output_size)
         self.assertEqual(params[module_name]["b"].shape[-1], output_size)
 
+  @test_utils.transform_and_run
+  def test_intercept_method(self):
+    mod = IdentityModule()
+    x = jnp.ones([])
+    call_count = []
+
+    def add_one_interceptor(f, args, kwargs, context):
+      call_count.append(None)
+      self.assertLen(context, 3)
+      self.assertIs(context.module, mod)
+      self.assertEqual(context.method_name, "__call__")
+      self.assertEqual(context.orig_method(2), 2)
+      self.assertEqual(args, (x,))
+      self.assertEmpty(kwargs)
+      y = f(*args, **kwargs)
+      return y + 1
+
+    y1 = mod(x)
+    with module.intercept_methods(add_one_interceptor):
+      y2 = mod(x)
+    y3 = mod(x)
+
+    self.assertLen(call_count, 1)
+    self.assertEqual(y1, 1)
+    self.assertEqual(y2, 2)
+    self.assertEqual(y3, 1)
+
+  @test_utils.transform_and_run
+  def test_intercept_methods_calling_underlying_optional(self):
+    def do_nothing_interceptor(f, args, kwargs, context):
+      del f, context
+      self.assertEmpty(args)
+      self.assertEmpty(kwargs)
+
+    m = RaisesModule()
+    with module.intercept_methods(do_nothing_interceptor):
+      m()
+
+    with self.assertRaises(AssertionError):
+      m()  # Without the interceptor we expect an error.
+
+    # The previous error should not stop us from re-applying.
+    with module.intercept_methods(do_nothing_interceptor):
+      m()
+
+  @test_utils.transform_and_run
+  def test_intercept_methods_run_in_lifo_order(self):
+    def op_interceptor(op):
+      def _interceptor(f, args, kwargs, context):
+        del context
+        y = f(*args, **kwargs)
+        return op(y)
+      return _interceptor
+
+    mod = IdentityModule()
+    x = 7
+    with module.intercept_methods(op_interceptor(lambda a: a + 1)), \
+         module.intercept_methods(op_interceptor(lambda a: a ** 2)):
+      y = mod(x)
+    self.assertEqual(y, (x ** 2) + 1)
+
+    with module.intercept_methods(op_interceptor(lambda a: a ** 2)), \
+         module.intercept_methods(op_interceptor(lambda a: a + 1)):
+      y = mod(x)
+    self.assertEqual(y, (x + 1) ** 2)
+
+
+class IdentityModule(module.Module):
+
+  def __call__(self, x):
+    return x
+
+
+class RaisesModule(module.Module):
+
+  def __call__(self):
+    assert False
+
 
 class CapturesModule(module.Module):
 

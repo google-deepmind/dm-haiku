@@ -68,7 +68,7 @@ class VqvaeTest(parameterized.TestCase):
     # in the encoding indices tensor. First we check that the continuous
     # distances are reasonably close, and then we only allow N differences in
     # the encodings. For batch of 100, N == 3 seems okay (passed 1000x tests).
-    np.testing.assert_allclose(distances, vq_output_np['distances'], atol=4e-2)
+    np.testing.assert_allclose(distances, vq_output_np['distances'], atol=5e-2)
     num_differences_in_encodings = (closest_index !=
                                     vq_output_np['encoding_indices']).sum()
     num_differences_allowed = 3

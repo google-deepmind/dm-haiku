@@ -26,8 +26,6 @@ from haiku._src import data_structures
 import jax
 import tree
 
-frozendict = data_structures.frozendict
-FrozenList = data_structures.FrozenList
 Stack = data_structures.Stack
 FlatMapping = data_structures.FlatMapping
 
@@ -124,23 +122,23 @@ class ThreadLocalStackTest(absltest.TestCase):
     self.assertEmpty(s)
 
 
-class FrozenDictTest(parameterized.TestCase):
+class FlatMappingTest(parameterized.TestCase):
 
   def test_init_from_dict(self):
     o = dict(a=1, b=2)
-    f = frozendict(o)
+    f = FlatMapping(o)
     self.assertEqual(o, f)
     o["a"] = 2
     self.assertEqual(f["a"], 1)
     self.assertNotEqual(o, f)
 
   def test_getattr(self):
-    f = frozendict(a=1, b=2)
+    f = FlatMapping(dict(a=1, b=2))
     self.assertEqual(f.a, 1)
     self.assertEqual(f.b, 2)
 
   def test_setattr(self):
-    f = frozendict(a=1)
+    f = FlatMapping(dict(a=1))
     with self.assertRaises(AttributeError):
       # Existing attr.
       f.a = 4  # pytype: disable=not-writable
@@ -149,91 +147,113 @@ class FrozenDictTest(parameterized.TestCase):
       f.c = 4  # pytype: disable=not-writable
 
   def test_getitem(self):
-    f = frozendict(a=1, b=2)
+    f = FlatMapping(dict(a=1, b=2))
     self.assertEqual(f["a"], 1)
     self.assertEqual(f["b"], 2)
 
+  def test_getitem_missing(self):
+    f = FlatMapping({})
+    with self.assertRaises(KeyError):
+      f["~"]  # pylint: disable=pointless-statement
+
+  def test_getitem_missing_nested(self):
+    f = FlatMapping({"~": {}})
+    with self.assertRaises(KeyError):
+      f["~"]["missing"]  # pylint: disable=pointless-statement
+
+  def test_getitem_nested_immutable(self):
+    f = data_structures.to_immutable_dict({"a": {"b": "c"}})
+    with self.assertRaisesRegex(TypeError, "does not support item assignment"):
+      f["a"]["b"] = "d"
+
   def test_get(self):
-    f = frozendict(a=1, b=2)
+    f = FlatMapping(dict(a=1, b=2))
     self.assertEqual(f.get("a"), 1)
     self.assertEqual(f.get("b"), 2)
-    self.assertEqual(f.get("c"), None)
+    self.assertIsNone(f.get("c"))
     self.assertEqual(f.get("d", f), f)
 
-  @parameterized.parameters(jax.tree_util.tree_map, tree.map_structure)
+  @parameterized.parameters(jax.tree_map, tree.map_structure)
   def test_tree_map(self, tree_map):
-    f = frozendict(a=1, b=frozendict(c=2))
+    f = FlatMapping(dict(a=1, b=dict(c=2)))
     p = tree_map("v: {}".format, f)
-    self.assertEqual(type(p), frozendict)
-    self.assertEqual(p, {"a": "v: 1", "b": {"c": "v: 2"}})
+    self.assertEqual(type(p), FlatMapping)
+    self.assertEqual(p._to_mapping(), {"a": "v: 1", "b": {"c": "v: 2"}})
 
   def test_eq_hash(self):
-    a = frozendict(a=1, b=2)
-    b = frozendict(a=1, b=2)
+    a = FlatMapping(dict(a=1, b=2))
+    b = FlatMapping(dict(a=1, b=2))
     self.assertEqual(a, b)
     self.assertEqual(hash(a), hash(b))
 
   @parameterized.named_parameters(
-      # ("copy", copy.copy),  # TODO(tomhennigan) Re-enable.
+      ("copy", copy.copy),
       ("deepcopy", copy.deepcopy),
       ("pickle", lambda v: pickle.loads(pickle.dumps(v)),),
       ("cloudpickle", lambda v: cloudpickle.loads(cloudpickle.dumps(v)),),
       ("dill", lambda v: dill.loads(dill.dumps(v)),),
   )
   def test_copy(self, clone):
-    before = frozendict(a=frozendict(b=1, c=2))
+    before = data_structures.to_immutable_dict(dict(a=dict(b=1, c=2)))
     after = clone(before)
     self.assertIsNot(before, after)
     self.assertEqual(before, after)
     self.assertEqual(after, {"a": {"b": 1, "c": 2}})
+    jax.tree_multimap(self.assertEqual, before, after)
+
+  def test_deepcopy_still_immutable(self):
+    before = FlatMapping(dict(a=[1, 2, 3]))
+    after = copy.deepcopy(before)
+    with self.assertRaises(TypeError):
+      before["a"] = [3, 2, 1]  # pytype: disable=unsupported-operands
+    self.assertEqual(before["a"], [1, 2, 3])
+    self.assertEqual(after["a"], [1, 2, 3])
 
   def test_keys(self):
-    d = frozendict({"key1": "value", "key2": "value2"})
+    d = FlatMapping({"key1": "value", "key2": "value2"})
     self.assertEqual(str(d.keys()), "KeysOnlyKeysView(['key1', 'key2'])")
     self.assertEqual(repr(d.keys()), "KeysOnlyKeysView(['key1', 'key2'])")
-
-
-class FlatMappingTest(parameterized.TestCase):
 
   def test_init(self):
     # Init from dict
     d = {"foo": {"a": 1}, "bar": 2}
-    f = FlatMapping.from_mapping(d)
+    f = FlatMapping(d)
     self.assertEqual(f, d)
 
     # Init from FlatMapping
-    f2 = FlatMapping.from_mapping(f)
+    f2 = FlatMapping(f)
     self.assertEqual(f, f2)
 
     # Init from dict with nested FlatMapping
-    inner = FlatMapping.from_mapping({"a": 1})
+    inner = FlatMapping({"a": 1})
     outer = {"foo": inner, "bar": 2}
-    nested_flatmapping = FlatMapping.from_mapping(outer)
+    nested_flatmapping = FlatMapping(outer)
     self.assertEqual(outer, nested_flatmapping)
 
     # Init from flat structures
-    values, treedef = f.flatten()
-    self.assertEqual(FlatMapping((values, treedef)), f)
+    values, treedef = jax.tree_flatten(f)
+    self.assertEqual(
+        FlatMapping(data_structures.FlatComponents(values, treedef)), f)
 
   def test_get_item(self):
-    f_map = FlatMapping.from_mapping({"foo": {"b": [1], "d": {"e": 2}},
-                                      "bar": (1,)})
+    f_map = FlatMapping(
+        {"foo": {"b": [1], "d": {"e": 2}}, "bar": (1,)})
     self.assertEqual(f_map["foo"], {"b": [1], "d": {"e": 2}})
     self.assertEqual(f_map["bar"], (1,))
     with self.assertRaises(KeyError):
       _ = f_map["b"]
 
   def test_items(self):
-    f_map = FlatMapping.from_mapping({"foo": {"b": {"c": 1}, "d": {"e": 2}},
-                                      "bar": {"c": 1}})
+    f_map = FlatMapping(
+        {"foo": {"b": {"c": 1}, "d": {"e": 2}}, "bar": {"c": 1}})
     items = list(f_map.items())
-    self.assertEqual(items[0], ("bar", {"c": 1}))
-    self.assertEqual(items[1], ("foo", {"b": {"c": 1}, "d": {"e": 2}}))
+    self.assertEqual(items[0], ("foo", {"b": {"c": 1}, "d": {"e": 2}}))
+    self.assertEqual(items[1], ("bar", {"c": 1}))
     self.assertEqual(items, list(zip(f_map.keys(), f_map.values())))
 
   def test_tree_functions(self):
-    f = FlatMapping.from_mapping({"foo": {"b": {"c": 1}, "d": 2},
-                                  "bar": {"c": 1}})
+    f = FlatMapping(
+        {"foo": {"b": {"c": 1}, "d": 2}, "bar": {"c": 1}})
 
     m = jax.tree_map(lambda x: x + 1, f)
     self.assertEqual(type(m), FlatMapping)
@@ -249,48 +269,60 @@ class FlatMappingTest(parameterized.TestCase):
     self.assertEqual(type(f), FlatMapping)
     self.assertEqual(f, uf)
 
+  def test_flatten_nested_struct(self):
+    d = {"foo": {"bar": [1, 2, 3]},
+         "baz": {"bat": [4, 5, 6],
+                 "qux": [7, [8, 9]]}}
+    f = FlatMapping(d)
+    leaves, treedef = jax.tree_flatten(f)
+    self.assertEqual([4, 5, 6, 7, 8, 9, 1, 2, 3], leaves)
+    g = jax.tree_unflatten(treedef, leaves)
+    self.assertEqual(g, f)
+    self.assertEqual(g, d)
+
+  def test_nested_sequence(self):
+    f_map = FlatMapping(
+        {"foo": [1, 2], "bar": [{"a": 1}, 2]})
+    leaves, _ = jax.tree_flatten(f_map)
+
+    self.assertEqual(leaves, [1, 2, 1, 2])
+    print(f_map["foo"])
+    self.assertEqual(f_map["foo"][0], 1)
+
   @parameterized.named_parameters(("tuple", tuple), ("list", list),)
   def test_different_sequence_types(self, type_of_sequence):
-    f_map = FlatMapping.from_mapping({"foo": type_of_sequence((1, 2)),
-                                      "bar": type_of_sequence((3, {"b": 4}))})
-    leaves, _ = f_map.flatten()
+    f_map = FlatMapping(
+        {"foo": type_of_sequence((1, 2)),
+         "bar": type_of_sequence((3, {"b": 4}))})
+    leaves, _ = jax.tree_flatten(f_map)
 
-    self.assertEqual(leaves, (3, 4, 1, 2))
+    self.assertEqual(leaves, [3, 4, 1, 2])
     self.assertEqual(f_map["foo"][0], 1)
     self.assertEqual(f_map["bar"][1]["b"], 4)
 
   def test_replace_leaves_with_nodes_in_map(self):
-    f = FlatMapping.from_mapping({"foo": 1, "bar": 2})
+    f = FlatMapping({"foo": 1, "bar": 2})
 
     f_nested = jax.tree_map(lambda x: {"a": (x, x)}, f)
-    leaves, _ = f_nested.flatten()
+    leaves, _ = jax.tree_flatten(f_nested)
 
-    self.assertEqual(leaves, (2, 2, 1, 1))
-
-  def test_nested_immutability(self):
-    f = FlatMapping.from_mapping({"foo": [{"a": 3}, 2],
-                                  "bar": {"a": [3, 2]}})
-
-    with self.assertRaises(TypeError):
-      f["foo"][1] = 1  # pytype: disable=unsupported-operands
-
-    with self.assertRaises(TypeError):
-      f["foo"][0]["a"] = 1  # pytype: disable=unsupported-operands
-
-    with self.assertRaises(TypeError):
-      f["bar"]["a"] = 1  # pytype: disable=unsupported-operands
-
-    with self.assertRaises(TypeError):
-      f["bar"]["a"][0] = 1  # pytype: disable=unsupported-operands
+    self.assertEqual(leaves, [2, 2, 1, 1])
 
   def test_frozen_builtins_jax_compatibility(self):
-    f = FlatMapping.from_mapping({"foo": [3, 2],
-                                  "bar": {"a": 3}})
+    f = FlatMapping({"foo": [3, 2], "bar": {"a": 3}})
     mapped_frozen_list = jax.tree_map(lambda x: x+1, f["foo"])
     self.assertEqual(mapped_frozen_list[0], 4)
 
     mapped_frozen_dict = jax.tree_map(lambda x: x+1, f["bar"])
     self.assertEqual(mapped_frozen_dict["a"], 4)
+
+  def test_tree_transpose(self):
+    outerdef = jax.tree_structure(FlatMapping({"a": 1, "b": 2}))
+    innerdef = jax.tree_structure([1, 2])
+    self.assertEqual(
+        [FlatMapping({"a": 3, "b": 5}), FlatMapping({"a": 4, "b": 6})],
+        jax.tree_transpose(
+            outerdef, innerdef, FlatMapping({"a": [3, 4], "b": [5, 6]})))
 
 
 class DataStructuresTest(absltest.TestCase):
@@ -299,63 +331,15 @@ class DataStructuresTest(absltest.TestCase):
     before = {"a": {"b": 1, "c": 2}}
     after = data_structures.to_immutable_dict(before)
     self.assertEqual(before, after)
-    self.assertEqual(type(after), frozendict)
-    self.assertEqual(type(after["a"]), frozendict)
+    self.assertEqual(type(after), FlatMapping)
+    self.assertEqual(type(after["a"]), FlatMapping)
 
   def test_to_mutable_dict(self):
-    before = frozendict({"a": {"b": 1, "c": 2}})
+    before = FlatMapping({"a": {"b": 1, "c": 2}})
     after = data_structures.to_mutable_dict(before)
     self.assertEqual(before, after)
     self.assertEqual(type(after), dict)
     self.assertEqual(type(after["a"]), dict)
-
-
-class FrozenListTest(parameterized.TestCase):
-
-  def test_isinstance(self):
-    self.assertIsInstance(FrozenList(), list)
-
-  def test_equality_with_list(self):
-    self.assertEqual(FrozenList([1, FrozenList([2, 3]), 4]), [1, [2, 3], 4])
-
-  def test_hashable(self):
-    self.assertEqual(hash(FrozenList([1, 2])), hash(FrozenList([1, 2])))
-
-  @parameterized.named_parameters(
-      ("copy", copy.copy),
-      ("deepcopy", copy.deepcopy),
-      ("pickle", lambda v: pickle.loads(pickle.dumps(v))),
-      ("cloudpickle", lambda v: cloudpickle.loads(cloudpickle.dumps(v))),
-      ("dill", lambda v: dill.loads(dill.dumps(v))),
-  )
-  def test_copy(self, clone):
-    before = FrozenList([1, FrozenList([2, 3]), 4])
-    after = clone(before)
-    self.assertIsNot(before, after)
-    self.assertEqual(before, after)
-    self.assertEqual(after, [1, [2, 3], 4])
-
-  def test_cannot_setitem(self):
-    l = FrozenList([0])
-    with self.assertRaisesRegex(TypeError, "'FrozenList' .* does not support"):
-      l[0] = None
-
-  def test_cannot_append(self):
-    l = FrozenList([0])
-    with self.assertRaisesRegex(TypeError, "'FrozenList' .* does not support"):
-      l.append(None)
-
-  def test_cannot_extend(self):
-    l = FrozenList([0])
-    with self.assertRaisesRegex(TypeError, "'FrozenList' .* does not support"):
-      l.extend([1])
-
-  @parameterized.parameters("clear", "sort", "pop", "reverse")
-  def test_cannot(self, name):
-    l = FrozenList([0])
-    m = getattr(l, name)
-    with self.assertRaisesRegex(TypeError, "'FrozenList' .* does not support"):
-      m()
 
 if __name__ == "__main__":
   absltest.main()

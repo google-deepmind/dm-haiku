@@ -61,7 +61,7 @@ class Frame(NamedTuple):
 
   @property
   def params_frozen(self):
-    return isinstance(self.params, data_structures.frozendict)
+    return isinstance(self.params, data_structures.FlatMapping)
 
   @classmethod
   def create(cls, params, state, rng: Optional["PRNGSequence"]):

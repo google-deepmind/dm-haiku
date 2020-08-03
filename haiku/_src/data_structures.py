@@ -14,20 +14,26 @@
 # ==============================================================================
 """Data structures used by Haiku."""
 
+# pylint: disable=unidiomatic-typecheck
+# `isinstance(x, Mapping)` is super expensive, so we avoid it where possible
+# since we expect constructing some of these types to be on the critical path
+# for users.
+
 import collections
 import contextlib
 import pprint
 import threading
-from typing import Any, Callable, Generic, Mapping, Optional, TypeVar, Tuple, Sequence, Union
+from typing import (Any, Callable, Generic, Mapping, NamedTuple, Optional,
+                    Sequence, TypeVar, Union)
 
 from haiku._src import utils
 import jax
-from jax import tree_util
 
 K = TypeVar("K")
 V = TypeVar("V")
 T = TypeVar("T")
 U = TypeVar("U")
+PyTreeDef = type(jax.tree_structure(None))
 
 
 class Stack(Generic[T]):
@@ -89,7 +95,152 @@ class KeysOnlyKeysView(collections.abc.KeysView):
   __str__ = __repr__
 
 
-# TODO(lenamartens) Deprecate type
+def to_immutable_dict(mapping: Mapping[K, V]) -> Mapping[K, V]:
+  """Returns an immutable copy of the given mapping."""
+  if type(mapping) is FlatMapping:
+    return mapping
+  items = []
+  for key, value in mapping.items():
+    value_type = type(value)
+    if value_type is dict:
+      value = to_immutable_dict(value)
+    items.append((key, value))
+  return FlatMapping(items)
+
+
+# TODO(tomhennigan) Better types here (Mapping[K, V]) -> MutableMapping[K, V]?
+def to_mutable_dict(mapping):
+  """Turns an immutable FlatMapping into a mutable dict."""
+  out = {}
+  for key, value in mapping.items():
+    value_type = type(value)
+    if value_type is FlatMapping:
+      value = to_mutable_dict(value)
+    out[key] = value
+  return out
+
+
+def _repr_item(k, v):
+  k = repr(k) + ": "
+  v = pprint.pformat(v)
+  return k + utils.indent(len(k), v).lstrip()
+
+
+class FlatComponents(NamedTuple):
+  leaves: Sequence[Any]
+  structure: PyTreeDef
+
+
+class FlatMapping(Mapping[K, V]):
+  """Immutable mapping with O(1) flatten and O(n) unflatten operation.
+
+  Warning: this type is only efficient when used with ``jax.tree_*``. When used
+  with ``tree.*`` it has similar performance to ``dict``.
+
+  Note that to prevent common errors immutable shims are returned for any
+  nested mappings.
+  """
+  __slots__ = ("_structure", "_leaves", "_mapping")
+
+  def __init__(self, *args, **kwargs):
+    """Accepts FlatComponents or the same arguments as `dict`."""
+    if not kwargs and len(args) == 1 and type(args[0]) is FlatComponents:
+      leaves, structure = args[0]
+      mapping = None
+
+      # When unflattening we cannot assume that the leaves are not pytrees (for
+      # example: `jax.tree_map(list, my_map)` would pass a list of lists in
+      # as leaves).
+      if not jax.tree_util.all_leaves(leaves):
+        mapping = jax.tree_unflatten(structure, leaves)
+        leaves, structure = jax.tree_flatten(mapping)
+    else:
+      mapping = dict(*args, **kwargs)
+      leaves, structure = jax.tree_flatten(mapping)
+
+    self._structure = structure
+    self._leaves = tuple(leaves)
+    self._mapping = mapping
+
+  def _to_mapping(self) -> Mapping[K, V]:
+    if self._mapping is None:
+      self._mapping = jax.tree_unflatten(self._structure, self._leaves)
+    return self._mapping
+
+  def keys(self):
+    return KeysOnlyKeysView(self._to_mapping())
+
+  def values(self):
+    return self._to_mapping().values()
+
+  def items(self):
+    return self._to_mapping().items()
+
+  def __eq__(self, other):
+    if other is None:
+      return False
+    t = type(other)
+    if t is FlatMapping:
+      other = other._to_mapping()
+    return self._to_mapping() == other
+
+  def __hash__(self):
+    return hash((self._structure, self._leaves))
+
+  def __getitem__(self, key: K) -> V:
+    return self._to_mapping()[key]
+
+  def __getattr__(self, key):
+    # TODO(tomhennigan) Remove getattr override.
+    # NOTE: Strictly speaking this is not part of the dict API, but it is quite
+    # convenient to be able to do `params.w` rather than `params['w']`.
+    try:
+      return self[key]
+    except KeyError as e:
+      raise AttributeError(e)
+
+  def __iter__(self):
+    return iter(self.keys())
+
+  def __len__(self):
+    return len(self._to_mapping())
+
+  def __str__(self):
+    single_line = "{}({{{}}})".format(
+        type(self).__name__,
+        ", ".join("{!r}: {!r}".format(k, v) for k, v in self.items()))
+    if len(single_line) <= 80:
+      return single_line
+
+    return "{}({{\n{},\n}})".format(
+        type(self).__name__,
+        utils.indent(2, ",\n".join(_repr_item(k, v) for k, v in self.items())))
+
+  __repr__ = __str__
+
+  def __reduce__(self):
+    return FlatMapping, (self._to_mapping(),)
+
+  # Workaround for https://github.com/python/typing/issues/498.
+  __copy__ = None
+
+
+jax.tree_util.register_pytree_node(
+    FlatMapping,
+    lambda s: (s._leaves, s._structure),  # pylint: disable=protected-access
+    lambda treedef, leaves: FlatMapping(FlatComponents(leaves, treedef)))
+
+#      _                               _           _
+#   __| | ___ _ __  _ __ ___  ___ __ _| |_ ___  __| |
+#  / _` |/ _ \ '_ \| '__/ _ \/ __/ _` | __/ _ \/ _` |
+# | (_| |  __/ |_) | | |  __/ (_| (_| | ||  __/ (_| |
+#  \__,_|\___| .__/|_|  \___|\___\__,_|\__\___|\__,_|
+#            |_|
+
+# The classes below are untested and maintained for backwards compatibility with
+# old checkpoints.
+
+
 class frozendict(Mapping[K, V]):  # pylint: disable=invalid-name
   """Immutable mapping from keys to values."""
   __slots__ = ("_storage", "_keys", "_hash")
@@ -152,223 +303,7 @@ class frozendict(Mapping[K, V]):  # pylint: disable=invalid-name
   def __reduce__(self):
     return (frozendict, (self._storage,))
 
-
-def to_immutable_dict(mapping: Mapping[K, V]) -> Mapping[K, V]:
-  return _to_immutable(mapping)
-
-
-def _to_immutable(o: T) -> T:
-  if isinstance(o, Mapping) and not isinstance(o, frozendict):
-    return frozendict({k: to_immutable_dict(v) for k, v in o.items()})
-  return o
-
-
-# TODO(tomhennigan) Better types here (Mapping[K, V]) -> MutableMapping[K, V]?
-def to_mutable_dict(mapping):
-  """Turns an immutable frozendict into a mutable dict."""
-  return {k: (to_mutable_dict(v) if isinstance(v, frozendict) else v)
-          for k, v in mapping.items()}
-
-
-def _repr_item(k, v):
-  k = repr(k) + ": "
-  v = pprint.pformat(v)
-  return k + utils.indent(len(k), v).lstrip()
-
-
 jax.tree_util.register_pytree_node(
     frozendict,
     lambda s: (tuple(s.values()), tuple(s.keys())),
     lambda k, xs: frozendict(zip(k, xs)))
-
-# PyTreeDef is defined in jaxlib/pytree.cc but not exposed.
-PyTreeDef = Any
-FlatComponents = Tuple[Sequence[Any], PyTreeDef]
-
-
-class FlatMapping(Mapping[K, V]):
-  """Immutable mapping with O(1) flatten and O(n) unflatten operation."""
-
-  def __init__(self, flat: FlatComponents, check_leaves: bool = True):
-    """Constructs a flat mapping from already flattened components.
-
-    Args:
-      flat: A tuple containing a flat sequence of values and a PyTreeDef
-      representing the output of jax.tree_flatten on a structure.
-      check_leaves: Check if all leaves are flat values, and reflatten if not.
-      This check is O(n), whereas the normal construction time is O(1).
-    """
-    leaves, structure = flat
-
-    # TODO(lenamartens): upstream is_leaf check to Jax
-    is_leaf = lambda x: type(x) not in tree_util._registry  # pylint: disable=unidiomatic-typecheck  pylint: disable=protected-access
-    if check_leaves and not all(map(is_leaf, leaves)):
-      tree = jax.tree_unflatten(structure, leaves)
-      leaves, structure = jax.tree_flatten(tree)
-
-    self._structure = structure
-    self._leaves = tuple(leaves)
-    self._mapping = None
-
-  @classmethod
-  def from_mapping(cls, m: Mapping[Any, Any]) -> "FlatMapping":
-    """Construct a new FlatMapping object from a Mapping.
-
-    Args:
-      m: If m is a FlatMapping, the internal structures from m are reused
-         to construct a new FlatMapping (this is O(1))
-         If m is any other Mapping, m will be flattened (this is O(n logn))
-    Returns:
-      A FlatMapping with the keys and values of the input mapping.
-    """
-    if isinstance(m, FlatMapping):
-      return cls(m.flatten(), check_leaves=False)
-    return cls(jax.tree_flatten(m), check_leaves=False)
-
-  def to_mapping(self) -> Mapping[K, V]:
-    if not self._mapping:
-      self._mapping = jax.tree_unflatten(self._structure, self._leaves)
-    return self._mapping
-
-  def keys(self):
-    return KeysOnlyKeysView(self.to_mapping())
-
-  def values(self):
-    return self.to_mapping().values()
-
-  def items(self):
-    return self.to_mapping().items()
-
-  def __eq__(self, other):
-    if not isinstance(other, Mapping):
-      return False
-    if isinstance(other, FlatMapping):
-      leaves, structure = other._leaves, other._structure  # pylint: disable=protected-access
-    else:
-      leaves, structure = jax.tree_flatten(other)
-    return self._leaves == tuple(leaves) and self._structure == structure
-
-  def __getitem__(self, key: K) -> Union["FrozenDict", "FrozenList", V]:
-    # Create a read-only version to prevent modification of the returned item:
-    # modifying an item will not modify the node in the FlatMapping,
-    # which will be confusing. User-defined nodes will still be mutable.
-    return builtin_to_immutable(self.to_mapping()[key])
-
-  def __iter__(self):
-    return iter(self.keys())
-
-  def __len__(self):
-    return len(self.keys())
-
-  def flatten(self) -> FlatComponents:
-    return self._leaves, self._structure
-
-  def __str__(self):
-    single_line = "{}({{{}}})".format(
-        type(self).__name__,
-        ", ".join("{!r}: {!r}".format(k, v) for k, v in self.items()))
-    if len(single_line) <= 80:
-      return single_line
-
-    return "{}({{\n{},\n}})".format(
-        type(self).__name__,
-        utils.indent(
-            2, ",\n".join(_repr_item(k, v) for k, v in self.items())))
-
-  __repr__ = __str__
-
-
-jax.tree_util.register_pytree_node(
-    FlatMapping,
-    lambda s: s.flatten(),
-    lambda treedef, leaves: FlatMapping((leaves, treedef)))
-
-
-def builtin_to_immutable(value):
-  if type(value) is dict:  # pylint: disable=unidiomatic-typecheck
-    return FrozenDict(value)
-  elif type(value) is list:  # pylint: disable=unidiomatic-typecheck
-    return FrozenList(value)
-  else:
-    return value
-
-
-def not_supported(method_name):
-  def method(self, *a, **k):
-    raise TypeError(
-        f"{type(self).__name__!r} object does not support {method_name!r}")
-  return method
-
-
-# TODO(lenamartens) merge FrozenDict and frozendict when frozendict has been
-# swapped out for FlatMapping
-class FrozenDict(frozendict):
-  """Immutable dictionary that contains immutable dicts/lists itself."""
-  __slots__ = ()
-
-  def __getattr__(self, name):
-    value = super().__getattr__(name)
-    value = builtin_to_immutable(value)
-    return value
-
-  def __getitem__(self, name):
-    value = super().__getitem__(name)
-    value = builtin_to_immutable(value)
-    return value
-
-
-jax.tree_util.register_pytree_node(
-    FrozenDict,
-    lambda s: (tuple(s.values()), tuple(s.keys())),
-    lambda k, xs: FrozenDict(zip(k, xs)))
-
-
-class FrozenList(list):
-  """Immutable list that contains immutable dicts/lists itself."""
-  __slots__ = ()
-
-  def __repr__(self):
-    return f"{type(self).__name__}({list(self)})"
-  __str__ = __repr__
-
-  def __getitem__(self, name):
-    value = super().__getitem__(name)
-    value = builtin_to_immutable(value)
-    return value
-
-  def __hash__(self):
-    return hash(tuple(self))
-
-  def __iter__(self):
-    for v in super().__iter__():
-      yield builtin_to_immutable(v)
-
-  def __reversed__(self):
-    return reversed([v for v in self])
-
-  def __sorted__(self):
-    return sorted([v for v in self])
-
-  def __reduce__(self):
-    return type(self), (list(self),)
-
-  # Adding an explicit TypeError for methods that are defined for tuples but
-  # not for lists
-  __iadd__ = not_supported("__iadd__")
-  __imul__ = not_supported("__imul__")
-  __setattr__ = not_supported("__setattr__")
-  __setitem__ = not_supported("__setitem__")
-  append = not_supported("append")
-  clear = not_supported("clear")
-  copy = not_supported("copy")
-  extend = not_supported("extend")
-  insert = not_supported("insert")
-  pop = not_supported("pop")
-  remove = not_supported("remove")
-  reverse = not_supported("reverse")
-  sort = not_supported("sort")
-
-jax.tree_util.register_pytree_node(
-    FrozenList,
-    lambda xs: (xs, None),
-    lambda _, xs: FrozenList(xs))

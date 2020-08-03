@@ -36,9 +36,9 @@ def partition(
   >>> predicate = lambda module_name, name, value: name == 'w'
   >>> weights, biases = hk.data_structures.partition(predicate, params)
   >>> weights
-  frozendict({'linear': frozendict({'w': None})})
+  FlatMapping({'linear': FlatMapping({'w': None})})
   >>> biases
-  frozendict({'linear': frozendict({'b': None})})
+  FlatMapping({'linear': FlatMapping({'b': None})})
 
   Note: returns new structures not a view.
 
@@ -77,7 +77,7 @@ def filter(  # pylint: disable=redefined-builtin
   >>> params = {'linear': {'w': None, 'b': None}}
   >>> predicate = lambda module_name, name, value: name == 'w'
   >>> hk.data_structures.filter(predicate, params)
-  frozendict({'linear': frozendict({'w': None})})
+  FlatMapping({'linear': FlatMapping({'w': None})})
 
   Note: returns a new structure not a view.
 
@@ -107,7 +107,7 @@ def merge(*structures: T) -> T:
   >>> weights = {'linear': {'w': None}}
   >>> biases = {'linear': {'b': None}}
   >>> hk.data_structures.merge(weights, biases)
-  frozendict({'linear': frozendict({'b': None, 'w': None})})
+  FlatMapping({'linear': FlatMapping({'w': None, 'b': None})})
 
   When structures are not disjoint the output will contain the value from the
   last structure for each path:
@@ -115,7 +115,7 @@ def merge(*structures: T) -> T:
   >>> weights1 = {'linear': {'w': 1}}
   >>> weights2 = {'linear': {'w': 2}}
   >>> hk.data_structures.merge(weights1, weights2)
-  frozendict({'linear': frozendict({'w': 2})})
+  FlatMapping({'linear': FlatMapping({'w': 2})})
 
   Note: returns a new structure not a view.
 

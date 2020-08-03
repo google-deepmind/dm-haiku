@@ -181,9 +181,9 @@ def transform(f, *, apply_rng=True) -> Transformed:
 
   >>> params = f.init(None, 1)
   >>> params
-  frozendict({
-    'my_module': frozendict({'w': DeviceArray(0., dtype=float32)}),
-    'my_module_1': frozendict({'w': DeviceArray(0., dtype=float32)}),
+  FlatMapping({
+    'my_module': FlatMapping({'w': DeviceArray(0., dtype=float32)}),
+    'my_module_1': FlatMapping({'w': DeviceArray(0., dtype=float32)}),
   })
 
   You can then apply the function with the given parameters by calling

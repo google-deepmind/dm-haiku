@@ -178,8 +178,8 @@ class LinearTest(absltest.TestCase):
 
     init_fn, apply_fn = transform.transform(f)
     params = init_fn(random.PRNGKey(428))
-    self.assertEqual(params.linear.w.shape, (6, 2))
-    self.assertEqual(params.linear.b.shape, (2,))
+    self.assertEqual(params["linear"]["w"].shape, (6, 2))
+    self.assertEqual(params["linear"]["b"].shape, (2,))
     self.assertEqual(apply_fn(params, None).shape, (2,))
 
   def test_linear_rank2(self):
@@ -189,8 +189,8 @@ class LinearTest(absltest.TestCase):
 
     init_fn, apply_fn = transform.transform(f)
     params = init_fn(random.PRNGKey(428))
-    self.assertEqual(params.linear.w.shape, (6, 2))
-    self.assertEqual(params.linear.b.shape, (2,))
+    self.assertEqual(params["linear"]["w"].shape, (6, 2))
+    self.assertEqual(params["linear"]["b"].shape, (2,))
     self.assertEqual(apply_fn(params, None).shape, (5, 2))
 
   def test_linear_rank3(self):
@@ -211,8 +211,8 @@ class LinearTest(absltest.TestCase):
 
     init_fn, apply_fn = transform.transform(f)
     params = init_fn(random.PRNGKey(428))
-    self.assertEqual(params.linear.w.shape, (6, 6))
-    self.assertFalse(hasattr(params.linear, "b"))
+    self.assertEqual(params["linear"]["w"].shape, (6, 6))
+    self.assertNotIn("b", params["linear"])
     np.testing.assert_array_almost_equal(
         apply_fn(params, None), jnp.zeros((5, 6)))
 

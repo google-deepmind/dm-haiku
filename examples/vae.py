@@ -47,7 +47,7 @@ def load_dataset(split: str, batch_size: int) -> Generator[Batch, None, None]:
   ds = ds.batch(batch_size)
   ds = ds.prefetch(buffer_size=5)
   ds = ds.repeat()
-  return tfds.as_numpy(ds)
+  return iter(tfds.as_numpy(ds))
 
 
 class Encoder(hk.Module):

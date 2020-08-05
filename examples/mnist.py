@@ -51,7 +51,7 @@ def load_dataset(
   if is_training:
     ds = ds.shuffle(10 * batch_size, seed=0)
   ds = ds.batch(batch_size)
-  return tfds.as_numpy(ds)
+  return iter(tfds.as_numpy(ds))
 
 
 def main(_):

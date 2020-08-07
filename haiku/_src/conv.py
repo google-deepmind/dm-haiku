@@ -490,7 +490,7 @@ class ConvNDTranspose(hk.Module):
         bias_shape = (self.output_channels,)
       else:
         bias_shape = (self.output_channels,) + (1,) * self.num_spatial_dims
-      b = hk.get_parameter("b", bias_shape, init=self.b_init)
+      b = hk.get_parameter("b", bias_shape, inputs.dtype, init=self.b_init)
       b = jnp.broadcast_to(b, out.shape)
       out = out + b
 

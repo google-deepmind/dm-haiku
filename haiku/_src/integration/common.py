@@ -19,6 +19,7 @@ import haiku as hk
 from haiku._src.integration import descriptors
 import jax
 import jax.numpy as jnp
+import numpy as np
 import tree
 
 ModuleFn = descriptors.ModuleFn
@@ -29,40 +30,55 @@ class DTypeTestCase(parameterized.TestCase):
 
   def assert_dtype(self, test_dtype, module_fn: ModuleFn, shape, input_dtype):
     """Checks that modules accepting float32 input_dtype output test_dtype."""
-    if jax.local_devices()[0].platform != 'tpu':
-      self.skipTest('bfloat16 only supported on TPU')
+    platform = jax.local_devices()[0].platform
+
+    if platform == 'gpu' and test_dtype == jnp.bfloat16:
+      self.skipTest('Skipping bf16 on GPU')
+
+    if platform == 'tpu' and test_dtype == jnp.float16:
+      self.skipTest('Skipping f16 on TPU')
 
     if input_dtype != jnp.float32:
-      self.skipTest('Skipping module without float32 input')
+      self.skipTest('Skipping module with non-f32 input')
 
     rng = jax.random.PRNGKey(42)
 
+    def ones_creator(next_creator, shape, dtype, init, context):
+      if context.full_name == 'vector_quantizer/embeddings':
+        # NOTE: vector_quantizer/embeddings is created using a ctor argument
+        # so dtype is not expected to follow input to __call__.
+        dtype = test_dtype
+      else:
+        self.assertEqual(dtype, test_dtype, msg=context.full_name)
+
+      # NOTE: We need to do this since some initializers (e.g. random.uniform)
+      # do not support <32bit dtypes. This also makes the test run a bit faster.
+      init = np.ones
+      return next_creator(shape, dtype, init)
+
     def g(x):
-      mod = module_fn()
-      return mod(x)
+      with hk.experimental.custom_creator(ones_creator):
+        mod = module_fn()
+        return mod(x)
 
-    init_fn, apply_fn = hk.transform_with_state(g)
+    g = hk.transform_with_state(g)
 
-    # Create state in f32 to start.
-    # NOTE: We need to do this since some initializers (e.g. random.uniform) do
-    # not support <32bit dtypes.
-    x = jax.random.uniform(rng, shape)
-    params, state = jax.eval_shape(init_fn, rng, x)
+    x = jax.random.uniform(rng, shape).astype(test_dtype)
+    params, state = jax.jit(g.init)(rng, x)
 
-    # Cast f32 to test_dtype.
-    def make_param(v):
-      dtype = test_dtype if v.dtype == jnp.float32 else v.dtype
-      return jnp.ones(v.shape, dtype)
-    params, state = jax.tree_map(make_param, (params, state))
+    # No custom creator for state so we need to do this manually.
+    def cast_if_floating(x):
+      if jnp.issubdtype(x.dtype, jnp.floating):
+        x = x.astype(test_dtype)
+      return x
 
-    # test_dtype in should result in test_dtype out.
-    x = x.astype(test_dtype)
+    state = jax.tree_map(cast_if_floating, state)
 
     for _ in range(2):
-      y, state = jax.eval_shape(apply_fn, params, state, rng, x)
+      y, state = jax.eval_shape(g.apply, params, state, rng, x)
 
       def assert_dtype(path, v):
-        if v.dtype != jnp.int32:
+        if jnp.issubdtype(v.dtype, jnp.floating):
           self.assertEqual(v.dtype, test_dtype, msg=path)
 
       tree.map_structure_with_path(assert_dtype, y)

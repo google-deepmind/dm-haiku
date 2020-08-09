@@ -125,12 +125,14 @@ class LayerNorm(hk.Module):
 
     param_shape = inputs.shape[-1:]
     if self.create_scale:
-      scale = hk.get_parameter("scale", param_shape, init=self.scale_init)
+      scale = hk.get_parameter("scale", param_shape, inputs.dtype,
+                               init=self.scale_init)
     elif scale is None:
       scale = np.array(1., dtype=inputs.dtype)
 
     if self.create_offset:
-      offset = hk.get_parameter("offset", param_shape, init=self.offset_init)
+      offset = hk.get_parameter("offset", param_shape, inputs.dtype,
+                                init=self.offset_init)
     elif offset is None:
       offset = np.array(0., dtype=inputs.dtype)
 

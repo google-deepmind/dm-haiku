@@ -150,6 +150,7 @@ class VectorQuantizer(hk.Module):
   def quantize(self, encoding_indices):
     """Returns embedding tensor for a batch of indices."""
     w = self.embeddings.swapaxes(1, 0)
+    w = jax.device_put(w)  # Required when embeddings is a NumPy array.
     return w[(encoding_indices,)]
 
 

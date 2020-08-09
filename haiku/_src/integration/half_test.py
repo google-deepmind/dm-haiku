@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Tests for haiku._src.conformance.bfloat16_test."""
+"""Tests Haiku modules in half precision."""
 
 from absl.testing import absltest
 from haiku._src import test_utils
@@ -24,6 +24,10 @@ ModuleFn = descriptors.ModuleFn
 
 
 class Bfloat16Test(common.DTypeTestCase):
+
+  @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
+  def test_float16(self, module_fn: descriptors.ModuleFn, shape, dtype):
+    self.assert_dtype(jnp.float16, module_fn, shape, dtype)
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
   def test_bfloat16(self, module_fn: descriptors.ModuleFn, shape, dtype):

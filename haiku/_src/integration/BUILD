@@ -86,16 +86,15 @@ hk_py_library(
         "//haiku/_src:test_utils",
         "//haiku/_src:typing",
         # pip: jax
+        # pip: numpy
         # pip: tree
     ],
 )
 
 hk_py_test(
-    name = "bfloat16_test",
-    srcs = ["bfloat16_test.py"],
-    gpu = False,
+    name = "half_test",
+    srcs = ["half_test.py"],
     shard_count = 50,
-    tpu = False,
     deps = [
         ":common",
         ":descriptors",

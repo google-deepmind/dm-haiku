@@ -127,7 +127,7 @@ class DepthwiseConv2D(hk.Module):
         b_shape = (self.channel_multiplier * inputs.shape[channel_index],)
       else:
         b_shape = (self.channel_multiplier * inputs.shape[channel_index], 1, 1)
-      b = hk.get_parameter("b", b_shape, init=self.b_init)
+      b = hk.get_parameter("b", b_shape, inputs.dtype, init=self.b_init)
       b = jnp.broadcast_to(b, out.shape)
       out = out + b
 

@@ -495,9 +495,9 @@ class GRU(RNNCore):
 
     input_size = inputs.shape[-1]
     hidden_size = self.hidden_size
-    w_i = hk.get_parameter("w_i", [input_size, 3 * hidden_size],
+    w_i = hk.get_parameter("w_i", [input_size, 3 * hidden_size], inputs.dtype,
                            init=self.w_i_init)
-    w_h = hk.get_parameter("w_h", [hidden_size, 3 * hidden_size],
+    w_h = hk.get_parameter("w_h", [hidden_size, 3 * hidden_size], inputs.dtype,
                            init=self.w_h_init)
     b = hk.get_parameter("b", [3 * hidden_size], inputs.dtype, init=self.b_init)
     w_h_z, w_h_a = jnp.split(w_h, indices_or_sections=[2 * hidden_size], axis=1)

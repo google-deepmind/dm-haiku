@@ -88,7 +88,7 @@ def sequence_loss(batch: dataset.Batch) -> jnp.ndarray:
 @jax.jit
 def update(state: TrainingState, batch: dataset.Batch) -> TrainingState:
   """Does a step of SGD given inputs & targets."""
-  _, optimizer = optix.adam(FLAGS.learning_rate)
+  _, optimizer = make_optimizer()
   _, loss_fn = hk.without_apply_rng(hk.transform(sequence_loss))
   gradients = jax.grad(loss_fn)(state.params, batch)
   updates, new_opt_state = optimizer(gradients, state.opt_state)

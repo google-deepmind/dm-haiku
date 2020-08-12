@@ -26,14 +26,15 @@ from haiku._src import data_structures
 import jax
 import tree
 
-Stack = data_structures.Stack
 FlatMapping = data_structures.FlatMapping
 
 
 class StackTest(absltest.TestCase):
 
+  cls = data_structures.Stack
+
   def test_len(self):
-    s = Stack()
+    s = self.cls()
     self.assertEmpty(s)
     for i in range(10):
       self.assertLen(s, i)
@@ -44,7 +45,7 @@ class StackTest(absltest.TestCase):
     self.assertEmpty(s)
 
   def test_push_peek_pop(self):
-    s = Stack()
+    s = self.cls()
     for i in range(3):
       s.push(i)
     self.assertEqual(s.peek(), 2)
@@ -56,7 +57,7 @@ class StackTest(absltest.TestCase):
     self.assertEmpty(s)
 
   def test_popleft(self):
-    s = Stack()
+    s = self.cls()
     s.push(1)
     s.push(2)
     s.push(3)
@@ -67,7 +68,7 @@ class StackTest(absltest.TestCase):
     self.assertEqual(s.pop(), 3)
 
   def test_call(self):
-    s = Stack()
+    s = self.cls()
     with s(0):
       self.assertEqual(s.peek(), 0)
       with s(1):
@@ -76,7 +77,7 @@ class StackTest(absltest.TestCase):
     self.assertEmpty(s)
 
   def test_map(self):
-    s1 = Stack()
+    s1 = self.cls()
     s1.push(1)
     s1.push(2)
     s2 = s1.map(lambda x: x + 2)
@@ -87,7 +88,7 @@ class StackTest(absltest.TestCase):
     self.assertEqual(s2.pop(), 3)
 
   def test_clone(self):
-    s1 = Stack()
+    s1 = self.cls()
     for i in range(5):
       s1.push(i)
     s2 = s1.clone()
@@ -97,11 +98,24 @@ class StackTest(absltest.TestCase):
     self.assertEqual([s1.pop() for _ in range(len(s1))], [4, 3, 2, 1, 0])
     self.assertEmpty(s2)
 
+  def test_exception_safe(self):
+    s = self.cls()
+    o1 = object()
+    o2 = object()
+    with s(o1):
+      with self.assertRaisesRegex(ValueError, "expected"):
+        with s(o2):
+          raise ValueError("expected")
+      self.assertIs(s.peek(), o1)
+    self.assertEmpty(s)
 
-class ThreadLocalStackTest(absltest.TestCase):
+
+class ThreadLocalStackTest(StackTest):
+
+  cls = data_structures.ThreadLocalStack
 
   def test_stack_per_thread(self):
-    s = data_structures.ThreadLocalStack()
+    s = self.cls()
     self.assertEmpty(s)
     s.push(42)
 

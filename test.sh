@@ -19,7 +19,9 @@
 set -e
 set -x
 
-virtualenv -p python3 .
+# Aim for hermetic Python environment.
+unset PYTHONPATH
+virtualenv -p python3 --no-site-packages .
 source bin/activate
 python --version
 

@@ -387,5 +387,11 @@ class BaseTest(parameterized.TestCase):
           # Should raise, "x" does not exist.
           base.get_parameter("x", [], init=jnp.zeros)
 
+  def test_context_cleanup_after_error(self):
+    with base.new_context():
+      with self.assertRaisesRegex(ValueError, "expected"):
+        raise ValueError("expected")
+    self.assertEmpty(base.frame_stack)
+
 if __name__ == "__main__":
   absltest.main()

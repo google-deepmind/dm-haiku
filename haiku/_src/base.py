@@ -275,7 +275,7 @@ def get_parameter(
   param = params.get(name)
   fq_name = bundle_name + "/" + name
   context = ParamContext(full_name=fq_name, module=current_module(),
-                         original_dtype=dtype)
+                         original_dtype=dtype, original_shape=shape)
   if param is None:
     if frame.params_frozen:
       raise ValueError(
@@ -305,10 +305,12 @@ class ParamContext(NamedTuple):
     module: The module that owns the current parameter, ``None`` if this
       parameter exists outside any module.
     original_dtype: The dtype that `get_parameter()` was originally called with.
+    original_dtype: The shape that `get_parameter()` was originally called with.
   """
   full_name: str
   module: Optional[Module]
   original_dtype: Any
+  original_shape: Sequence[int]
 
 NextCreator = Callable[[Sequence[int], Any, Initializer], jnp.ndarray]
 ParamCreator = Callable[

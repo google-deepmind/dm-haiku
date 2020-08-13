@@ -181,6 +181,24 @@ class BaseTest(parameterized.TestCase):
         assert param.dtype == jnp.bfloat16
         assert orig_param.dtype == jnp.float32
 
+  def test_original_shape(self):
+
+    def new_shape_creator(next_creator, shape, dtype, init, context):
+      del shape
+      del context
+      new_shape = (1, 2, 3)
+      return next_creator(new_shape, dtype, init)
+
+    def original_shape_restorer(next_creator, shape, dtype, init, context):
+      assert shape == (1, 2, 3)
+      return next_creator(context.original_shape, dtype, init)
+
+    with base.new_context():
+      with base.custom_creator(new_shape_creator):
+        with base.custom_creator(original_shape_restorer):
+          param = base.get_parameter("w", [5], jnp.bfloat16, jnp.ones)
+          assert param.shape == (5,)
+
   def test_custom_getter_bf16(self):
     def bf16_getter(next_getter, value, context):
       del context

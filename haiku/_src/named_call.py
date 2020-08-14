@@ -22,6 +22,7 @@ from haiku._src import stateful
 import jax
 from jax import api
 from jax import core
+from jax.config import config
 from jax.interpreters import ad
 from jax.interpreters import xla
 import jax.linear_util as lu
@@ -111,12 +112,18 @@ def _named_call(
     flat_args, in_tree = jax.tree_flatten((args, kwargs))
     flat_f, out_tree = api.flatten_fun(f, in_tree)
 
-    # Hide any args that are not a valid JaxType by partially applying flat_f
-    dyn_argnums = [i for (i, x) in enumerate(flat_args)
-                   if jax.api._valid_jaxtype(x)]  # pylint: disable=protected-access
-    part_flat_f, dyn_args = jax.argnums_partial(flat_f, dyn_argnums, flat_args)
+    if config.omnistaging_enabled:
+      # Avoid abstracting inputs by calling as a thunk
+      f_thunk = lu.wrap_init(lambda: flat_f.call_wrapped(*flat_args),)
+      out_flat = named_call_p.bind(f_thunk, name=name)
+    else:
+      # Hide any args that are not a valid JaxType by partially applying flat_f
+      dyn_argnums = [i for (i, x) in enumerate(flat_args)
+                     if jax.api._valid_jaxtype(x)]  # pylint: disable=protected-access
+      part_f, dyn_args = jax.argnums_partial(flat_f, dyn_argnums, flat_args)
 
-    # Call f with a custom XLA subcomputation via named_call & unflatten result.
-    out_flat = named_call_p.bind(part_flat_f, *dyn_args, name=name)
+      # Call with a custom XLA subcomputation via named_call & unflatten result.
+      out_flat = named_call_p.bind(part_f, *dyn_args, name=name)
+
     return jax.tree_unflatten(out_tree(), out_flat)
   return named_fun

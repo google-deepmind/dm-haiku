@@ -93,6 +93,7 @@ hk_py_library(
 
 hk_py_test(
     name = "half_test",
+    timeout = "long",
     srcs = ["half_test.py"],
     shard_count = 50,
     deps = [

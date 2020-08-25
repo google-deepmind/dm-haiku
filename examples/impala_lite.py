@@ -124,7 +124,7 @@ class Agent:
                                                    timestep.reward, discount,
                                                    rhos)
 
-    # Note that we use mean here, rather than sum as in canonical rawbeast.
+    # Note that we use mean here, rather than sum as in canonical IMPALA.
     # Compute policy gradient loss.
     pg_advantage = jax.lax.stop_gradient(vtrace_returns.pg_advantage)
     tb_pg_loss_fn = jax.vmap(rlax.policy_gradient_loss, in_axes=1, out_axes=1)

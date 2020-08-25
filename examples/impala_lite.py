@@ -127,7 +127,7 @@ class Agent:
     # Note that we use mean here, rather than sum as in canonical IMPALA.
     # Compute policy gradient loss.
     pg_advantage = jax.lax.stop_gradient(vtrace_returns.pg_advantage)
-    tb_pg_loss_fn = jax.vmap(rlax.policy_gradient_loss, in_axes=1, out_axes=1)
+    tb_pg_loss_fn = jax.vmap(rlax.policy_gradient_loss, in_axes=1, out_axes=0)
     pg_loss = tb_pg_loss_fn(learner_logits, actions, pg_advantage, mask)
     pg_loss = jnp.mean(pg_loss)
 
@@ -135,7 +135,7 @@ class Agent:
     bl_loss = 0.5 * jnp.mean(jnp.square(vtrace_returns.errors) * mask)
 
     # Entropy regularization.
-    ent_loss_fn = jax.vmap(rlax.entropy_loss, in_axes=1, out_axes=1)
+    ent_loss_fn = jax.vmap(rlax.entropy_loss, in_axes=1, out_axes=0)
     ent_loss = ent_loss_fn(learner_logits, mask)
     ent_loss = jnp.mean(ent_loss)
 

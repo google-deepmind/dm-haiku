@@ -15,6 +15,7 @@
 """Tests for haiku._src.moving_averages."""
 
 from absl.testing import absltest
+from absl.testing import parameterized
 from haiku._src import basic
 from haiku._src import moving_averages
 from haiku._src import test_utils
@@ -26,7 +27,7 @@ import numpy as np
 import tree
 
 
-class MovingAveragesTest(absltest.TestCase):
+class MovingAveragesTest(parameterized.TestCase):
 
   @test_utils.transform_and_run
   def test_zero_decay(self):
@@ -106,16 +107,23 @@ class MovingAveragesTest(absltest.TestCase):
       # Floating point error creeps up to 1e-7 (the default).
       np.testing.assert_allclose(inp_value, value, rtol=1e-6)
 
+  @parameterized.parameters(True, False)
   @test_utils.transform_and_run
-  def test_initialize(self):
+  def test_initialize(self, legacy_initialize):
     ema = moving_averages.ExponentialMovingAverage(0.99)
-    ema.initialize(jnp.ones([]))
+    if legacy_initialize:
+      ema.initialize(jnp.ones([]))
+    else:
+      ema.initialize([])
     self.assertEqual(ema.average, 0.)
     ema(jnp.array(100.))
 
     # Matching the behavior of Sonnet 2 initialize only sets the value to zero
     # if the EMA has not already been initialized.
-    ema.initialize(jnp.ones([]))
+    if legacy_initialize:
+      ema.initialize(jnp.ones([]))
+    else:
+      ema.initialize([])
     self.assertNotEqual(ema.average, 0.)
 
 

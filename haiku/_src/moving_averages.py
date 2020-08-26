@@ -15,6 +15,7 @@
 """Moving averages."""
 
 import re
+import warnings
 
 from haiku._src import base
 from haiku._src import data_structures
@@ -57,10 +58,17 @@ class ExponentialMovingAverage(module.Module):
           "average to an initial value. Set zero_debias=False if setting "
           "warmup_length to a non-zero value.")
 
-  def initialize(self, value):
-    """If uninitialized sets the average to ``zeros_like`` the given value."""
-    base.get_state("hidden", value.shape, value.dtype, init=jnp.zeros)
-    base.get_state("average", value.shape, value.dtype, init=jnp.zeros)
+  def initialize(self, shape, dtype=jnp.float32):
+    """If uninitialized sets the average to ``zeros`` of the given shape/dtype."""
+    if hasattr(shape, "shape"):
+      warnings.warn("Passing a value into initialize instead of a shape/dtype "
+                    "is deprecated. Update your code to use: "
+                    "`ema.initialize(v.shape, v.dtype)`.",
+                    category=DeprecationWarning)
+      shape, dtype = shape.shape, shape.dtype
+
+    base.get_state("hidden", shape, dtype, init=jnp.zeros)
+    base.get_state("average", shape, dtype, init=jnp.zeros)
 
   def __call__(self, value, update_stats=True):
     """Updates the EMA and returns the new value.

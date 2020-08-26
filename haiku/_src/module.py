@@ -35,7 +35,14 @@ modules_with_named_call = False
 
 
 def profiler_name_scopes(enabled=True):
-  """Enable/disable profiler name_scopes on all haiku module methods."""
+  """Enable/disable profiler name_scopes on all haiku module methods.
+
+  Note: currently only enables for ``__call__``. See: :function:`named_call` if
+  you want to annotate other methods explicitly.
+
+  Args:
+    enabled: Whether to enable name scopes or not.
+  """
   global modules_with_named_call
   modules_with_named_call = enabled
 
@@ -296,7 +303,15 @@ def wrap_method(method_name, unbound_method):
       module_name = getattr(module, "module_name", None)
       f = functools.partial(unbound_method, module)
       f = functools.partial(run_interceptors, f, method_name, module)
-      if modules_with_named_call and module_name:
+      # TODO(tomhennigan): With omnistaging primitives (like named call) will
+      # stage out return values eagerly. For functions that produce non-Array
+      # values (e.g. `def is_batched(self, x) -> bool`) a tracer will be
+      # returned that might result in a concretization error. For now we only
+      # enable named call on __call__ (covering 99% of the interesting usages)
+      # with an assumption that __call__ is `f(*) -> Tree[Array]`. Longer term
+      # we may want to split static and dynamic results in named call to support
+      # other methods.
+      if modules_with_named_call and module_name and method_name == "__call__":
         local_name = module_name.split("/")[-1]
         f = named_call.stateful_named_call(f, name=local_name)
 

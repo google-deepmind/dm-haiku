@@ -132,3 +132,65 @@ class DepthwiseConv2D(hk.Module):
       out = out + b
 
     return out
+
+
+class SeparableDepthwiseConv2D(hk.Module):
+  """Separable 2-D Depthwise Convolution Module."""
+
+  def __init__(
+      self,
+      channel_multiplier: int,
+      kernel_shape: Union[int, Sequence[int]],
+      stride: Union[int, Sequence[int]] = 1,
+      padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
+      with_bias: bool = True,
+      w_init: Optional[hk.initializers.Initializer] = None,
+      b_init: Optional[hk.initializers.Initializer] = None,
+      data_format: str = "NHWC",
+      name: Optional[str] = None,
+  ):
+    """Construct a Separable 2D Depthwise Convolution module.
+
+    Args:
+      channel_multiplier: Multiplicity of output channels. To keep the number of
+        output channels the same as the number of input channels, set 1.
+      kernel_shape: The shape of the kernel. Either an integer or a sequence of
+        length ``num_spatial_dims``.
+      stride: Optional stride for the kernel. Either an integer or a sequence of
+        length ``num_spatial_dims``. Defaults to 1.
+      padding: Optional padding algorithm. Either ``VALID``, ``SAME`` or a
+        sequence of ``before, after`` pairs. Defaults to ``SAME``. See:
+        https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
+      with_bias: Whether to add a bias. By default, true.
+      w_init: Optional weight initialization. By default, truncated normal.
+      b_init: Optional bias initialization. By default, zeros.
+      data_format: The data format of the input.  Can be either
+        ``channels_first``, ``channels_last``, ``N...C`` or ``NC...``. By
+        default, ``channels_last``.
+      name: The name of the module.
+    """
+    super().__init__(name=name)
+    kernel_shape = utils.replicate(kernel_shape, 2, "kernel_shape")
+    self._conv1 = DepthwiseConv2D(
+        channel_multiplier=channel_multiplier,
+        kernel_shape=[kernel_shape[0], 1],
+        stride=stride,
+        padding=padding,
+        with_bias=False,
+        w_init=w_init,
+        b_init=b_init,
+        data_format=data_format)
+
+    self._conv2 = DepthwiseConv2D(
+        channel_multiplier=1,
+        kernel_shape=[1, kernel_shape[1]],
+        stride=1,
+        padding=padding,
+        with_bias=with_bias,
+        w_init=w_init,
+        b_init=b_init,
+        data_format=data_format)
+
+  def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:
+    return self._conv2(self._conv1(inputs))
+

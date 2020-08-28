@@ -173,6 +173,13 @@ DepthwiseConv2D
 .. autoclass:: DepthwiseConv2D
    :members:
 
+
+SeparableDepthwiseConv2D
+~~~~~~~~~~~~~~~
+
+.. autoclass:: DepthwiseConv2D
+   :members:
+
 Normalization modules
 ---------------------
 

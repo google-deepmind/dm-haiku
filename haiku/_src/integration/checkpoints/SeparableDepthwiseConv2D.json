@@ -1,0 +1,17 @@
+{
+  "module": [
+    "SeparableDepthwiseConv2D(channel_multiplier=1, kernel_shape=3)"
+  ],
+  "input": "f32[8, 2, 2, 2]",
+  "param_size": 14,
+  "param_bytes": 56,
+  "params": {
+    "separable_depthwise_conv2_d/~/depthwise_conv2_d": {
+      "w": "f32[3, 1, 1, 2]"
+    },
+    "separable_depthwise_conv2_d/~/depthwise_conv2_d_1": {
+      "b": "f32[2]",
+      "w": "f32[1, 3, 1, 2]"
+    }
+  }
+}

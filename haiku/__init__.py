@@ -48,6 +48,7 @@ from haiku._src.conv import Conv3DTranspose
 from haiku._src.conv import ConvND
 from haiku._src.conv import ConvNDTranspose
 from haiku._src.depthwise_conv import DepthwiseConv2D
+from haiku._src.depthwise_conv import SeparableDepthwiseConv2D
 from haiku._src.embed import Embed
 from haiku._src.embed import EmbedLookupStyle
 from haiku._src.group_norm import GroupNorm

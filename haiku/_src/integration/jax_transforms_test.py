@@ -31,7 +31,7 @@ ModuleFn = descriptors.ModuleFn
 DEFAULT_ATOL = 1e-5
 CUSTOM_ATOL = {hk.nets.ResNet: 0.05, hk.nets.MobileNetV1: 0.05,
                hk.nets.VectorQuantizer: 0.05, hk.nets.VectorQuantizerEMA: 0.05,
-               hk.BatchNorm: 1e-4}
+               hk.BatchNorm: 1e-4, hk.SeparableDepthwiseConv2D: 3e-3}
 
 
 class JaxTransformsTest(parameterized.TestCase):

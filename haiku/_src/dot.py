@@ -96,7 +96,7 @@ def to_graph(fun):
 
     with graph_stack(graph), \
          module.hook_methods(method_hook), \
-         jax.core.new_master(DotTrace) as master:
+         jax.core.new_main(DotTrace) as master:
       out_flat = _interpret_subtrace(flat_fun, master).call_wrapped(*args_flat)
     out = jax.tree_unflatten(out_tree(), out_flat)
 
@@ -160,7 +160,7 @@ class DotTrace(jax.core.Trace):
     graph = Graph.create(title=f'{call_primitive} ({name_or_str(f.f)})')
     graph_stack.peek().subgraphs.append(graph)
     with graph_stack(graph):
-      f = _interpret_subtrace(f, self.master)
+      f = _interpret_subtrace(f, self.main)
       vals_out = f.call_wrapped(*[t.val for t in tracers])
       return [DotTracer(self, v) for v in vals_out]
 

@@ -1,2 +1,2 @@
-git+git://github.com/google/jax.git@146cf49fa04ce8e476da6981f52688b63bef7f4e
+git+git://github.com/google/jax.git@04f9a7e53db3eb0eb6d5d08a5f2a967bf9712048
 jaxlib==0.1.52

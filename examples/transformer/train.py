@@ -36,9 +36,9 @@ import haiku as hk
 from examples.transformer import dataset
 from examples.transformer import model
 import jax
-from jax.experimental import optix
 import jax.numpy as jnp
 import numpy as np
+import optax
 import tensorflow.compat.v2 as tf
 
 flags.DEFINE_integer('batch_size', 16, 'Train batch size per core')
@@ -114,7 +114,8 @@ class Updater:
   This extracts some common boilerplate from the training loop.
   """
 
-  def __init__(self, net_init, loss_fn, optimizer: optix.InitUpdate):
+  def __init__(self, net_init, loss_fn,
+               optimizer: optax.GradientTransformation):
     self._net_init = net_init
     self._loss_fn = loss_fn
     self._opt = optimizer
@@ -141,7 +142,7 @@ class Updater:
     loss, g = jax.value_and_grad(self._loss_fn)(params, rng, data)
 
     updates, opt_state = self._opt.update(g, state['opt_state'])
-    params = optix.apply_updates(params, updates)
+    params = optax.apply_updates(params, updates)
 
     new_state = {
         'step': state['step'] + 1,
@@ -218,9 +219,9 @@ def main(_):
   forward_fn = hk.transform(forward_fn)
   loss_fn = functools.partial(lm_loss_fn, forward_fn.apply, vocab_size)
 
-  optimizer = optix.chain(
-      optix.clip_by_global_norm(FLAGS.grad_clip_value),
-      optix.adam(FLAGS.learning_rate, b1=0.9, b2=0.99))
+  optimizer = optax.chain(
+      optax.clip_by_global_norm(FLAGS.grad_clip_value),
+      optax.adam(FLAGS.learning_rate, b1=0.9, b2=0.99))
 
   updater = Updater(forward_fn.init, loss_fn, optimizer)
   updater = CheckpointingUpdater(updater, FLAGS.checkpoint_dir)

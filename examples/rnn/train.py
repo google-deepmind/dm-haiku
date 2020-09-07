@@ -25,10 +25,9 @@ from examples.rnn import dataset
 import jax
 from jax import lax
 from jax import ops
-from jax.experimental import optix
 import jax.numpy as jnp
 import numpy as np
-
+import optax
 import tensorflow_datasets as tfds
 
 flags.DEFINE_integer('train_batch_size', 32, '')
@@ -68,9 +67,9 @@ def make_network() -> hk.RNNCore:
   return model
 
 
-def make_optimizer() -> optix.InitUpdate:
+def make_optimizer() -> optax.GradientTransformation:
   """Defines the optimizer."""
-  return optix.adam(FLAGS.learning_rate)
+  return optax.adam(FLAGS.learning_rate)
 
 
 def sequence_loss(batch: dataset.Batch) -> jnp.ndarray:
@@ -92,7 +91,7 @@ def update(state: TrainingState, batch: dataset.Batch) -> TrainingState:
   _, loss_fn = hk.without_apply_rng(hk.transform(sequence_loss))
   gradients = jax.grad(loss_fn)(state.params, batch)
   updates, new_opt_state = optimizer(gradients, state.opt_state)
-  new_params = optix.apply_updates(state.params, updates)
+  new_params = optax.apply_updates(state.params, updates)
   return TrainingState(params=new_params, opt_state=new_opt_state)
 
 

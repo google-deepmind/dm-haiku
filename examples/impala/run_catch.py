@@ -25,7 +25,7 @@ from examples.impala import haiku_nets
 from examples.impala import learner as learner_lib
 from examples.impala import util
 import jax
-from jax.experimental import optix
+import optax
 
 ACTION_REPEAT = 1
 BATCH_SIZE = 2
@@ -57,7 +57,7 @@ def main(_):
 
   # Construct the optimizer.
   max_updates = MAX_ENV_FRAMES / FRAMES_PER_ITER
-  opt = optix.rmsprop(1e-1, decay=0.99, eps=0.1)
+  opt = optax.rmsprop(1e-1, decay=0.99, eps=0.1)
 
   # Construct the learner.
   learner = learner_lib.Learner(

@@ -24,8 +24,8 @@ hk_py_binary(
         # pip: absl/logging
         "//haiku",
         # pip: jax
-        # pip: jax:optix
         # pip: numpy
+        # pip: optax
         # pip: tensorflow_datasets
     ],
 )

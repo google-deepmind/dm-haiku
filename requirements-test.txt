@@ -6,3 +6,4 @@ virtualenv
 dm-tree>=0.1.1
 dataclasses==0.7 ; python_version<'3.7'
 tf-nightly==2.3.0.dev20200609
+optax==0.0.1

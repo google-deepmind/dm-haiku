@@ -13,6 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 """Tests for haiku.examples.impala.learner."""
+
 from absl.testing import absltest
 from bsuite.environments import catch
 from examples.impala import actor as actor_lib
@@ -20,7 +21,7 @@ from examples.impala import agent as agent_lib
 from examples.impala import haiku_nets
 from examples.impala import learner as learner_lib
 import jax
-from jax.experimental import optix
+import optax
 
 
 class LearnerTest(absltest.TestCase):
@@ -39,7 +40,7 @@ class LearnerTest(absltest.TestCase):
     learner = learner_lib.Learner(
         agent=agent,
         rng_key=jax.random.PRNGKey(42),
-        opt=optix.sgd(1e-2),
+        opt=optax.sgd(1e-2),
         batch_size=1,
         discount_factor=0.99,
         frames_per_iter=unroll_length,

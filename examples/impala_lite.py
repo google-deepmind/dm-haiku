@@ -31,9 +31,9 @@ from bsuite.environments import catch
 import dm_env
 import haiku as hk
 import jax
-from jax.experimental import optix
 import jax.numpy as jnp
 import numpy as np
+import optax
 import rlax
 
 OptState = Any
@@ -203,7 +203,7 @@ class Learner:
   ) -> Tuple[hk.Params, OptState]:
     g = jax.grad(self._agent.loss)(params, trajs)
     updates, new_opt_state = self._opt_update(g, opt_state)
-    return optix.apply_updates(params, updates), new_opt_state
+    return optax.apply_updates(params, updates), new_opt_state
 
 
 def run(*, trajectories_per_actor, num_actors, unroll_len):
@@ -217,7 +217,7 @@ def run(*, trajectories_per_actor, num_actors, unroll_len):
 
   # Construct the agent and learner.
   agent = Agent(net.apply)
-  opt = optix.rmsprop(1e-1, decay=0.99, eps=0.1)
+  opt = optax.rmsprop(1e-1, decay=0.99, eps=0.1)
   learner = Learner(agent, opt.update)
 
   # Initialize the optimizer state.

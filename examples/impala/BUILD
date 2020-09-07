@@ -18,7 +18,7 @@ hk_py_binary(
         # pip: absl:app
         # pip: bsuite/environments:catch
         # pip: jax
-        # pip: jax:optix
+        # pip: optax
     ],
 )
 
@@ -87,8 +87,8 @@ hk_py_library(
         "//haiku",
         # pip: jax
         # pip: jax:optimizers
-        # pip: jax:optix
         # pip: numpy
+        # pip: optax
         # pip: rlax
     ],
 )
@@ -104,7 +104,7 @@ hk_py_test(
         # pip: absl/testing:absltest
         # pip: bsuite/environments:catch
         # pip: jax
-        # pip: jax:optix
+        # pip: optax
     ],
 )
 

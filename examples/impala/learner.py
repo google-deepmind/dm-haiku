@@ -27,9 +27,9 @@ from examples.impala import agent as agent_lib
 from examples.impala import util
 import jax
 from jax.experimental import optimizers
-from jax.experimental import optix
 import jax.numpy as jnp
 import numpy as np
+import optax
 import rlax
 
 
@@ -56,7 +56,7 @@ class Learner:
       self,
       agent: agent_lib.Agent,
       rng_key,
-      opt: optix.InitUpdate,
+      opt: optax.GradientTransformation,
       batch_size: int,
       discount_factor: float,
       frames_per_iter: int,
@@ -150,7 +150,7 @@ class Learner:
 
     grad_norm_unclipped = optimizers.l2_norm(grads)
     updates, updated_opt_state = self._opt.update(grads, opt_state)
-    params = optix.apply_updates(params, updates)
+    params = optax.apply_updates(params, updates)
     weight_norm = optimizers.l2_norm(params)
     logs.update({
         'grad_norm_unclipped': grad_norm_unclipped,

@@ -24,9 +24,9 @@ from absl import logging
 import haiku as hk
 from examples.imagenet import dataset
 import jax
-from jax.experimental import optix
 import jax.numpy as jnp
 import numpy as np
+import optax
 import tree
 
 # Hyper parameters.
@@ -47,7 +47,7 @@ flags.DEFINE_float('train_weight_decay', 1e-4, help='')
 FLAGS = flags.FLAGS
 
 # Types.
-OptState = Tuple[optix.TraceState, optix.ScaleByScheduleState, optix.ScaleState]
+OptState = Tuple[optax.TraceState, optax.ScaleByScheduleState, optax.ScaleState]
 Scalars = Mapping[str, jnp.ndarray]
 
 
@@ -86,10 +86,11 @@ def lr_schedule(step: jnp.ndarray) -> jnp.ndarray:
 
 def make_optimizer():
   """SGD with nesterov momentum and a custom lr schedule."""
-  return optix.chain(optix.trace(decay=FLAGS.optimizer_momentum,
-                                 nesterov=FLAGS.optimizer_use_nesterov),
-                     optix.scale_by_schedule(lr_schedule),
-                     optix.scale(-1))
+  return optax.chain(
+      optax.trace(
+          decay=FLAGS.optimizer_momentum,
+          nesterov=FLAGS.optimizer_use_nesterov),
+      optax.scale_by_schedule(lr_schedule), optax.scale(-1))
 
 
 def l2_loss(params: Iterable[jnp.ndarray]) -> jnp.ndarray:
@@ -147,7 +148,7 @@ def train_step(
 
   # Compute and apply updates via our optimizer.
   updates, opt_state = make_optimizer().update(grads, opt_state)
-  params = optix.apply_updates(params, updates)
+  params = optax.apply_updates(params, updates)
 
   # Scalars to log (note: we log the mean across all hosts/devices).
   scalars = {'train_loss': loss}

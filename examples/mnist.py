@@ -19,9 +19,9 @@ from typing import Any, Generator, Mapping, Tuple
 from absl import app
 import haiku as hk
 import jax
-from jax.experimental import optix
 import jax.numpy as jnp
 import numpy as np
+import optax
 import tensorflow_datasets as tfds
 
 OptState = Any
@@ -57,7 +57,7 @@ def load_dataset(
 def main(_):
   # Make the network and optimiser.
   net = hk.without_apply_rng(hk.transform(net_fn))
-  opt = optix.adam(1e-3)
+  opt = optax.adam(1e-3)
 
   # Training loss (cross-entropy).
   def loss(params: hk.Params, batch: Batch) -> jnp.ndarray:
@@ -86,7 +86,7 @@ def main(_):
     """Learning rule (stochastic gradient descent)."""
     grads = jax.grad(loss)(params, batch)
     updates, opt_state = opt.update(grads, opt_state)
-    new_params = optix.apply_updates(params, updates)
+    new_params = optax.apply_updates(params, updates)
     return new_params, opt_state
 
   # We maintain avg_params, the exponential moving average of the "live" params.

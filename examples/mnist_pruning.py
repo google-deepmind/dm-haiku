@@ -20,9 +20,9 @@ from typing import Any, Callable, Generator, Mapping, Sequence, Text, Tuple
 from absl import app
 import haiku as hk
 import jax
-from jax.experimental import optix
 import jax.numpy as jnp
 import numpy as np
+import optax
 import tensorflow_datasets as tfds
 
 OptState = Any
@@ -199,7 +199,7 @@ def load_dataset(
 def main(_):
   # Make the network and optimiser.
   net = hk.without_apply_rng(hk.transform(net_fn))
-  opt = optix.adam(1e-3)
+  opt = optax.adam(1e-3)
 
   # Define layerwise sparsities
   def module_matching(s):
@@ -295,7 +295,7 @@ def main(_):
     # applying a straight-through estimator here (that is not masking
     # the updates) leads to much worse performance.
     updates = apply_mask(updates, masks, module_sparsity)
-    params = optix.apply_updates(params, updates)
+    params = optax.apply_updates(params, updates)
     # we start pruning at iteration 1000 and end at iteration 8000
     progress = min(max((step - 1000.) / 8000., 0.), 1.)
     if step % 200 == 0:

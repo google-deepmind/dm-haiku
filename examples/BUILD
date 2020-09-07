@@ -13,8 +13,8 @@ hk_py_binary(
         # pip: absl:app
         "//haiku",
         # pip: jax
-        # pip: jax:optix
         # pip: numpy
+        # pip: optax
         # pip: tensorflow_datasets
     ],
 )
@@ -28,8 +28,8 @@ hk_py_binary(
         # pip: absl/logging
         "//haiku",
         # pip: jax
-        # pip: jax:optix
         # pip: numpy
+        # pip: optax
         # pip: tensorflow_datasets
     ],
 )
@@ -41,8 +41,8 @@ hk_py_binary(
         # pip: absl:app
         "//haiku",
         # pip: jax
-        # pip: jax:optix
         # pip: numpy
+        # pip: optax
         # pip: tensorflow_datasets
     ],
 )
@@ -57,8 +57,8 @@ hk_py_binary(
         # pip: dm_env
         "//haiku",
         # pip: jax
-        # pip: jax:optix
         # pip: numpy
+        # pip: optax
         # pip: rlax
     ],
 )

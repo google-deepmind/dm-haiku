@@ -14,6 +14,7 @@
 # ==============================================================================
 """Variational Autoencoder example on binarized MNIST dataset."""
 
+
 from typing import Any, Generator, Mapping, Tuple, NamedTuple, Sequence
 
 from absl import app
@@ -21,9 +22,9 @@ from absl import flags
 from absl import logging
 import haiku as hk
 import jax
-from jax.experimental import optix
 import jax.numpy as jnp
 import numpy as np
+import optax
 import tensorflow_datasets as tfds
 
 
@@ -163,7 +164,7 @@ def kl_gaussian(mean: jnp.ndarray, var: jnp.ndarray) -> jnp.ndarray:
 
 def main(_):
   model = hk.transform(lambda x: VariationalAutoEncoder()(x))  # pylint: disable=unnecessary-lambda
-  optimizer = optix.adam(FLAGS.learning_rate)
+  optimizer = optax.adam(FLAGS.learning_rate)
 
   @jax.jit
   def loss_fn(params: hk.Params, rng_key: PRNGKey, batch: Batch) -> jnp.ndarray:
@@ -186,7 +187,7 @@ def main(_):
     """Single SGD update step."""
     grads = jax.grad(loss_fn)(params, rng_key, batch)
     updates, new_opt_state = optimizer.update(grads, opt_state)
-    new_params = optix.apply_updates(params, updates)
+    new_params = optax.apply_updates(params, updates)
     return new_params, new_opt_state
 
   rng_seq = hk.PRNGSequence(42)

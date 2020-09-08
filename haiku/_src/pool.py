@@ -21,6 +21,7 @@ import warnings
 from haiku._src import module
 from jax import lax
 import jax.numpy as jnp
+import numpy as np
 
 # If you are forking replace this block with `import haiku as hk`.
 hk = types.ModuleType("haiku")
@@ -135,7 +136,7 @@ def avg_pool(
   pooled = lax.reduce_window(value, *reduce_window_args)
   if padding == "VALID":
     # Avoid the extra reduce_window.
-    return pooled / jnp.prod(window_shape)
+    return pooled / np.prod(window_shape)
   else:
     # Count the number of valid entries at each input point, then use that for
     # computing average. Assumes that any two arrays of same shape will be

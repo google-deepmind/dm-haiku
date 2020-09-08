@@ -22,6 +22,7 @@ from haiku._src import transform
 from haiku._src.nets import resnet
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 
 _RESNETS = ["ResNet{}".format(i) for i in (18, 34, 50, 101, 152, 200)]
@@ -96,7 +97,7 @@ class ResnetTest(parameterized.TestCase):
     image = jnp.ones([2, 64, 64, 3])
     rng = jax.random.PRNGKey(0)
     params, _ = model.init(rng, image)
-    num_params = sum(jnp.prod(p.shape).item() for p in jax.tree_leaves(params))
+    num_params = sum(np.prod(p.shape).item() for p in jax.tree_leaves(params))
     self.assertGreater(num_params, int(0.998 * expected_num_params))
     self.assertLess(num_params, int(1.002 * expected_num_params))
 

@@ -319,6 +319,7 @@ hk_py_library(
     deps = [
         ":module",
         # pip: jax
+        # pip: numpy
     ],
 )
 

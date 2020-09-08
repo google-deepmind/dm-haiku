@@ -87,7 +87,7 @@ class Decoder(hk.Module):
     z = hk.Linear(self._hidden_size)(z)
     z = jax.nn.relu(z)
 
-    logits = hk.Linear(jnp.prod(self._output_shape))(z)
+    logits = hk.Linear(np.prod(self._output_shape))(z)
     logits = jnp.reshape(logits, (-1, *self._output_shape))
 
     return logits

@@ -31,6 +31,7 @@ hk_py_test(
         "//haiku/_src:test_utils",
         "//haiku/_src:transform",
         # pip: jax
+        # pip: numpy
     ],
 )
 

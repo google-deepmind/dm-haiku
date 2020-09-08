@@ -95,6 +95,7 @@ hk_py_test(
     name = "half_test",
     timeout = "long",
     srcs = ["half_test.py"],
+    cpu = False,  # TODO(tomhennigan): Timing out on CPU.
     shard_count = 50,
     deps = [
         ":common",

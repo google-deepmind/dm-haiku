@@ -76,6 +76,7 @@ class ConvND(hk.Module):
       b_init: Optional[hk.initializers.Initializer] = None,
       data_format: str = "channels_last",
       mask: Optional[jnp.ndarray] = None,
+      feature_group_count: int = 1,
       name: Optional[str] = None,
   ):
     """Initializes the module.
@@ -106,6 +107,12 @@ class ConvND(hk.Module):
         ``channels_first``, ``channels_last``, ``N...C`` or ``NC...``. By
         default, ``channels_last``.
       mask: Optional mask of the weights.
+      feature_group_count: Optional number of groups in group convolution.
+        Default value of 1 corresponds to normal dense convolution. If a higher
+        value is used, convolutions are applied separately to that many groups,
+        then stacked together. This reduces the number of parameters
+        and possibly the compute for a given ``output_channels``. See:
+        https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
       name: The name of the module.
     """
     super().__init__(name=name)
@@ -123,6 +130,7 @@ class ConvND(hk.Module):
     self.w_init = w_init
     self.b_init = b_init or jnp.zeros
     self.mask = mask
+    self.feature_group_count = feature_group_count
     self.lhs_dilation = utils.replicate(1, num_spatial_dims, "lhs_dilation")
     self.kernel_dilation = (
         utils.replicate(rate, num_spatial_dims, "kernel_dilation"))
@@ -162,8 +170,13 @@ class ConvND(hk.Module):
     if unbatched:
       inputs = jnp.expand_dims(inputs, axis=0)
 
-    w_shape = self.kernel_shape + (inputs.shape[self.channel_index],
-                                   self.output_channels)
+    if inputs.shape[self.channel_index] % self.feature_group_count != 0:
+      raise ValueError(f"Inputs channels {inputs.shape[self.channel_index]} "
+                       f"should be a multiple of feature_group_count "
+                       f"{self.feature_group_count}")
+    w_shape = self.kernel_shape + (
+        inputs.shape[self.channel_index] // self.feature_group_count,
+        self.output_channels)
 
     if self.mask is not None and self.mask.shape != w_shape:
       raise ValueError("Mask needs to have the same shape as weights. "
@@ -185,7 +198,8 @@ class ConvND(hk.Module):
                                    padding=self.padding,
                                    lhs_dilation=self.lhs_dilation,
                                    rhs_dilation=self.kernel_dilation,
-                                   dimension_numbers=self.dimension_numbers)
+                                   dimension_numbers=self.dimension_numbers,
+                                   feature_group_count=self.feature_group_count)
 
     if self.with_bias:
       if self.channel_index == -1:
@@ -217,6 +231,7 @@ class Conv1D(ConvND):
       b_init: Optional[hk.initializers.Initializer] = None,
       data_format: str = "NWC",
       mask: Optional[jnp.ndarray] = None,
+      feature_group_count: int = 1,
       name: Optional[str] = None,
   ):
     """Initializes the module.
@@ -243,6 +258,12 @@ class Conv1D(ConvND):
       data_format: The data format of the input. Either ``NWC`` or ``NCW``. By
         default, ``NWC``.
       mask: Optional mask of the weights.
+      feature_group_count: Optional number of groups in group convolution.
+        Default value of 1 corresponds to normal dense convolution. If a higher
+        value is used, convolutions are applied separately to that many groups,
+        then stacked together. This reduces the number of parameters
+        and possibly the compute for a given ``output_channels``. See:
+        https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
       name: The name of the module.
     """
     super().__init__(
@@ -257,6 +278,7 @@ class Conv1D(ConvND):
         b_init=b_init,
         data_format=data_format,
         mask=mask,
+        feature_group_count=feature_group_count,
         name=name)
 
 
@@ -276,6 +298,7 @@ class Conv2D(ConvND):
       b_init: Optional[hk.initializers.Initializer] = None,
       data_format: str = "NHWC",
       mask: Optional[jnp.ndarray] = None,
+      feature_group_count: int = 1,
       name: Optional[str] = None,
   ):
     """Initializes the module.
@@ -302,6 +325,12 @@ class Conv2D(ConvND):
       data_format: The data format of the input. Either ``NHWC`` or ``NCHW``. By
         default, ``NHWC``.
       mask: Optional mask of the weights.
+      feature_group_count: Optional number of groups in group convolution.
+        Default value of 1 corresponds to normal dense convolution. If a higher
+        value is used, convolutions are applied separately to that many groups,
+        then stacked together. This reduces the number of parameters
+        and possibly the compute for a given ``output_channels``. See:
+        https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
       name: The name of the module.
     """
     super().__init__(
@@ -316,6 +345,7 @@ class Conv2D(ConvND):
         b_init=b_init,
         data_format=data_format,
         mask=mask,
+        feature_group_count=feature_group_count,
         name=name)
 
 
@@ -335,6 +365,7 @@ class Conv3D(ConvND):
       b_init: Optional[hk.initializers.Initializer] = None,
       data_format: str = "NDHWC",
       mask: Optional[jnp.ndarray] = None,
+      feature_group_count: int = 1,
       name: Optional[str] = None,
   ):
     """Initializes the module.
@@ -361,6 +392,12 @@ class Conv3D(ConvND):
       data_format: The data format of the input. Either ``NDHWC`` or ``NCDHW``.
         By default, ``NDHWC``.
       mask: Optional mask of the weights.
+      feature_group_count: Optional number of groups in group convolution.
+        Default value of 1 corresponds to normal dense convolution. If a higher
+        value is used, convolutions are applied separately to that many groups,
+        then stacked together. This reduces the number of parameters
+        and possibly the compute for a given ``output_channels``. See:
+        https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
       name: The name of the module.
     """
     super().__init__(
@@ -375,6 +412,7 @@ class Conv3D(ConvND):
         b_init=b_init,
         data_format=data_format,
         mask=mask,
+        feature_group_count=feature_group_count,
         name=name)
 
 

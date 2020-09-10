@@ -120,6 +120,39 @@ class ResnetTest(parameterized.TestCase):
       for block in block_group.blocks[1:]:
         self.assertFalse(hasattr(block, "proj_conv"))
 
+  @test_utils.combined_named_parameters(
+      [(i, getattr(resnet, i)) for i in _RESNETS],
+      test_utils.named_bools("resnet_v2"),
+  )
+  def test_logits_config(self, resnet_class, resnet_v2):
+    def model_func_logits_config_default(img):
+      model = resnet_class(1000, resnet_v2=resnet_v2)
+      return model(img, is_training=True)
+
+    def model_func_logits_config_modified(img):
+      model = resnet_class(1000, resnet_v2=resnet_v2,
+                           logits_config=dict(w_init=jnp.ones))
+      return model(img, is_training=True)
+
+    image = jnp.ones([2, 64, 64, 3])
+    rng = jax.random.PRNGKey(0)
+
+    model = hk.transform_with_state(model_func_logits_config_default)
+    params, _ = model.init(rng, image)
+    logits_keys = [k for k in params.keys() if "/logits" in k]
+    self.assertLen(logits_keys, 1)
+
+    # Check logits params are zeros
+    w_logits = params[logits_keys[0]]["w"]
+    np.testing.assert_allclose(jnp.zeros_like(w_logits), w_logits)
+
+    model = hk.transform_with_state(model_func_logits_config_modified)
+    params, _ = model.init(rng, image)
+
+    # Check logits params are ones
+    w_logits = params[logits_keys[0]]["w"]
+    np.testing.assert_allclose(jnp.ones_like(w_logits), w_logits)
+
 
 if __name__ == "__main__":
   absltest.main()

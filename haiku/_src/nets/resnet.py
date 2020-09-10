@@ -15,7 +15,7 @@
 """Resnet."""
 
 import types
-from typing import Mapping, Optional, Sequence, Union
+from typing import Mapping, Optional, Sequence, Union, Any
 
 from haiku._src import basic
 from haiku._src import batch_norm
@@ -252,6 +252,7 @@ class ResNet(hk.Module):
       bottleneck: bool = True,
       channels_per_group: Sequence[int] = (256, 512, 1024, 2048),
       use_projection: Sequence[bool] = (True, True, True, True),
+      logits_config: Optional[Mapping[str, Any]] = None,
       name: Optional[str] = None,
   ):
     """Constructs a ResNet model.
@@ -271,6 +272,7 @@ class ResNet(hk.Module):
         of channels used for each block in each group.
       use_projection: A sequence of length 4 that indicates whether each
         residual block should use projection.
+      logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
     """
     super().__init__(name=name)
@@ -281,6 +283,10 @@ class ResNet(hk.Module):
     bn_config.setdefault("eps", 1e-5)
     bn_config.setdefault("create_scale", True)
     bn_config.setdefault("create_offset", True)
+
+    logits_config = dict(logits_config or {})
+    logits_config.setdefault("w_init", jnp.zeros)
+    logits_config.setdefault("name", "logits")
 
     # Number of blocks in each group for ResNet.
     check_length(4, blocks_per_group, "blocks_per_group")
@@ -314,7 +320,7 @@ class ResNet(hk.Module):
     if self.resnet_v2:
       self.final_batchnorm = hk.BatchNorm(name="final_batchnorm", **bn_config)
 
-    self.logits = hk.Linear(num_classes, w_init=jnp.zeros, name="logits")
+    self.logits = hk.Linear(num_classes, **logits_config)
 
   def __call__(self, inputs, is_training, test_local_stats=False):
     out = inputs
@@ -345,6 +351,7 @@ class ResNet18(ResNet):
                num_classes: int,
                bn_config: Optional[Mapping[str, float]] = None,
                resnet_v2: bool = False,
+               logits_config: Optional[Mapping[str, Any]] = None,
                name: Optional[str] = None):
     """Constructs a ResNet model.
 
@@ -354,6 +361,7 @@ class ResNet18(ResNet):
         passed on to the :class:`~haiku.BatchNorm` layers.
       resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults
         to ``False``.
+      logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
     """
     super().__init__(blocks_per_group=(2, 2, 2, 2),
@@ -363,6 +371,7 @@ class ResNet18(ResNet):
                      bottleneck=False,
                      channels_per_group=(64, 128, 256, 512),
                      use_projection=(False, True, True, True),
+                     logits_config=logits_config,
                      name=name)
 
 
@@ -373,6 +382,7 @@ class ResNet34(ResNet):
                num_classes: int,
                bn_config: Optional[Mapping[str, float]] = None,
                resnet_v2: bool = False,
+               logits_config: Optional[Mapping[str, Any]] = None,
                name: Optional[str] = None):
     """Constructs a ResNet model.
 
@@ -382,6 +392,7 @@ class ResNet34(ResNet):
         passed on to the :class:`~haiku.BatchNorm` layers.
       resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults
         to ``False``.
+      logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
     """
     super().__init__(blocks_per_group=(3, 4, 6, 3),
@@ -391,6 +402,7 @@ class ResNet34(ResNet):
                      bottleneck=False,
                      channels_per_group=(64, 128, 256, 512),
                      use_projection=(False, True, True, True),
+                     logits_config=logits_config,
                      name=name)
 
 
@@ -401,6 +413,7 @@ class ResNet50(ResNet):
                num_classes: int,
                bn_config: Optional[Mapping[str, float]] = None,
                resnet_v2: bool = False,
+               logits_config: Optional[Mapping[str, Any]] = None,
                name: Optional[str] = None):
     """Constructs a ResNet model.
 
@@ -410,6 +423,7 @@ class ResNet50(ResNet):
         passed on to the :class:`~haiku.BatchNorm` layers.
       resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults
         to ``False``.
+      logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
     """
     super().__init__(blocks_per_group=(3, 4, 6, 3),
@@ -417,6 +431,7 @@ class ResNet50(ResNet):
                      bn_config=bn_config,
                      resnet_v2=resnet_v2,
                      bottleneck=True,
+                     logits_config=logits_config,
                      name=name)
 
 
@@ -427,6 +442,7 @@ class ResNet101(ResNet):
                num_classes: int,
                bn_config: Optional[Mapping[str, float]] = None,
                resnet_v2: bool = False,
+               logits_config: Optional[Mapping[str, Any]] = None,
                name: Optional[str] = None):
     """Constructs a ResNet model.
 
@@ -436,6 +452,7 @@ class ResNet101(ResNet):
         passed on to the :class:`~haiku.BatchNorm` layers.
       resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults
         to ``False``.
+      logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
     """
     super().__init__(blocks_per_group=(3, 4, 23, 3),
@@ -443,6 +460,7 @@ class ResNet101(ResNet):
                      bn_config=bn_config,
                      resnet_v2=resnet_v2,
                      bottleneck=True,
+                     logits_config=logits_config,
                      name=name)
 
 
@@ -453,6 +471,7 @@ class ResNet152(ResNet):
                num_classes: int,
                bn_config: Optional[Mapping[str, float]] = None,
                resnet_v2: bool = False,
+               logits_config: Optional[Mapping[str, Any]] = None,
                name: Optional[str] = None):
     """Constructs a ResNet model.
 
@@ -462,6 +481,7 @@ class ResNet152(ResNet):
         passed on to the :class:`~haiku.BatchNorm` layers.
       resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults
         to ``False``.
+      logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
     """
     super().__init__(blocks_per_group=(3, 8, 36, 3),
@@ -469,6 +489,7 @@ class ResNet152(ResNet):
                      bn_config=bn_config,
                      resnet_v2=resnet_v2,
                      bottleneck=True,
+                     logits_config=logits_config,
                      name=name)
 
 
@@ -479,6 +500,7 @@ class ResNet200(ResNet):
                num_classes: int,
                bn_config: Optional[Mapping[str, float]] = None,
                resnet_v2: bool = False,
+               logits_config: Optional[Mapping[str, Any]] = None,
                name: Optional[str] = None):
     """Constructs a ResNet model.
 
@@ -488,6 +510,7 @@ class ResNet200(ResNet):
         passed on to the :class:`~haiku.BatchNorm` layers.
       resnet_v2: Whether to use the v1 or v2 ResNet implementation. Defaults
         to ``False``.
+      logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
     """
     super().__init__(blocks_per_group=(3, 24, 36, 3),
@@ -495,4 +518,5 @@ class ResNet200(ResNet):
                      bn_config=bn_config,
                      resnet_v2=resnet_v2,
                      bottleneck=True,
+                     logits_config=logits_config,
                      name=name)

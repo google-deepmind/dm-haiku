@@ -42,9 +42,13 @@ def profiler_name_scopes(enabled=True):
 
   Args:
     enabled: Whether to enable name scopes or not.
+  Returns:
+    The previous value of the name_scopes setting.
   """
   global modules_with_named_call
+  previously_enabled = modules_with_named_call
   modules_with_named_call = enabled
+  return previously_enabled
 
 
 class ModuleMetaclass(abc.ABCMeta):

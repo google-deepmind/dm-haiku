@@ -14,11 +14,14 @@
 # ==============================================================================
 """Tests for haiku._src.nets.vqvae."""
 
+import functools
+
 from absl.testing import absltest
 from absl.testing import parameterized
 
 from haiku._src import stateful
 from haiku._src import test_utils
+from haiku._src import transform
 from haiku._src.nets import vqvae
 import jax
 import jax.numpy as jnp
@@ -151,6 +154,55 @@ class VqvaeTest(parameterized.TestCase):
       vqvae_f(inputs, False)
       current_embeddings = vqvae_module.embeddings
       self.assertTrue((current_embeddings == prev_embeddings).all())
+
+  def testEmaCrossReplica(self):
+    embedding_dim = 6
+    batch_size = 16
+    inputs = np.random.rand(jax.local_device_count(), batch_size, embedding_dim)
+    embeddings = {}
+    perplexities = {}
+
+    for axis_name in [None, 'i']:
+      def my_function(x, axis_name):
+        decay = np.array(0.9, dtype=np.float32)
+        vqvae_module = vqvae.VectorQuantizerEMA(
+            embedding_dim=embedding_dim,
+            num_embeddings=7,
+            commitment_cost=0.5,
+            decay=decay,
+            cross_replica_axis=axis_name,
+            dtype=jnp.float32)
+
+        outputs = vqvae_module(x, is_training=True)
+        return vqvae_module.embeddings, outputs['perplexity']
+
+      vqvae_f = transform.transform_with_state(
+          functools.partial(my_function, axis_name=axis_name))
+
+      rng = jax.random.PRNGKey(42)
+      rng = jnp.broadcast_to(rng, (jax.local_device_count(), rng.shape[0]))
+
+      params, state = jax.pmap(
+          vqvae_f.init, axis_name='i')(rng, inputs)
+      update_fn = jax.pmap(vqvae_f.apply, axis_name='i')
+
+      for _ in range(10):
+        outputs, state = update_fn(params, state, None, inputs)
+      embeddings[axis_name], perplexities[axis_name] = outputs
+
+    # In the single-device case, specifying a cross_replica_axis should have
+    # no effect. Otherwise, it should!
+    if jax.device_count() == 1:
+      # Have to use assert_allclose here rather than checking exact matches to
+      # make the test pass on GPU, presumably because of nondeterministic
+      # reductions.
+      np.testing.assert_allclose(
+          embeddings[None], embeddings['i'], rtol=1e-6, atol=1e-6)
+      np.testing.assert_allclose(
+          perplexities[None], perplexities['i'], rtol=1e-6, atol=1e-6)
+    else:
+      self.assertFalse((embeddings[None] == embeddings['i']).all())
+      self.assertFalse((perplexities[None] == perplexities['i']).all())
 
 
 if __name__ == '__main__':

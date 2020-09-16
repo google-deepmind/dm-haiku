@@ -15,7 +15,7 @@
 """Haiku implementation of VQ-VAE https://arxiv.org/abs/1711.00937."""
 
 import types
-from typing import Any
+from typing import Any, Optional
 
 from haiku._src import base
 from haiku._src import initializers
@@ -197,6 +197,7 @@ class VectorQuantizerEMA(hk.Module):
       decay,
       epsilon: float = 1e-5,
       dtype: Any = jnp.float32,
+      cross_replica_axis: Optional[str] = None,
       name: str = None,
   ):
     """Initializes a VQ-VAE EMA module.
@@ -212,6 +213,10 @@ class VectorQuantizerEMA(hk.Module):
         Averages.
       epsilon: small constant to aid numerical stability, default ``1e-5``.
       dtype: dtype for the embeddings variable, defaults to ``float32``.
+      cross_replica_axis: If not ``None``, it should be a string representing
+        the axis name over which this module is being run within a ``jax.pmap``.
+        Supplying this argument means that cluster statistics and the perplexity
+        are calculated across all replicas on that axis.
       name: name of the module.
     """
     super().__init__(name=name)
@@ -223,6 +228,7 @@ class VectorQuantizerEMA(hk.Module):
     self.decay = decay
     self.commitment_cost = commitment_cost
     self.epsilon = epsilon
+    self.cross_replica_axis = cross_replica_axis
 
     embedding_shape = [embedding_dim, num_embeddings]
     initializer = hk.initializers.VarianceScaling(distribution="uniform")
@@ -284,10 +290,15 @@ class VectorQuantizerEMA(hk.Module):
     e_latent_loss = jnp.mean((jax.lax.stop_gradient(quantized) - inputs)**2)
 
     if is_training:
-      updated_ema_cluster_size = self.ema_cluster_size(
-          jnp.sum(encodings, axis=0))
+      cluster_size = jnp.sum(encodings, axis=0)
+      if self.cross_replica_axis:
+        cluster_size = jax.lax.psum(
+            cluster_size, axis_name=self.cross_replica_axis)
+      updated_ema_cluster_size = self.ema_cluster_size(cluster_size)
 
       dw = jnp.matmul(flat_inputs.T, encodings)
+      if self.cross_replica_axis:
+        dw = jax.lax.psum(dw, axis_name=self.cross_replica_axis)
       updated_ema_dw = self.ema_dw(dw)
 
       n = jnp.sum(updated_ema_cluster_size)
@@ -306,6 +317,8 @@ class VectorQuantizerEMA(hk.Module):
     # Straight Through Estimator
     quantized = inputs + jax.lax.stop_gradient(quantized - inputs)
     avg_probs = jnp.mean(encodings, 0)
+    if self.cross_replica_axis:
+      avg_probs = jax.lax.pmean(avg_probs, axis_name=self.cross_replica_axis)
     perplexity = jnp.exp(-jnp.sum(avg_probs * jnp.log(avg_probs + 1e-10)))
 
     return {

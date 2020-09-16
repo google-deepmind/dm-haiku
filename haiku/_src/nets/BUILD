@@ -111,6 +111,7 @@ hk_py_test(
         # pip: absl/testing:parameterized
         "//haiku/_src:stateful",
         "//haiku/_src:test_utils",
+        "//haiku/_src:transform",
         # pip: jax
         # pip: numpy
     ],

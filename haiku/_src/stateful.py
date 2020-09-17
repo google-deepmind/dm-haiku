@@ -456,3 +456,32 @@ def scan(f, init, xs, length=None, reverse=False):
     ys = jax.tree_multimap(lambda y0, ys: jnp.concatenate([y0, ys]), y0, ys)
 
   return carry, ys
+
+
+def fori_loop(lower, upper, body_fun, init_val):
+  """Equivalent to ``jax.lax.fori_loop`` with Haiku state threaded in/out."""
+  if not base.inside_transform():
+    raise ValueError(
+        "hk.fori_loop() should not be used outside of hk.transform(). "
+        "Use jax.lax.fori_loop() instead.")
+
+  def pure_body_fun(i, val):
+    state, val = val
+    with temporary_internal_state(state):
+      val = body_fun(i, val)
+      state = internal_state()
+      return state, val
+
+  if not base.params_frozen():
+    # During init we need to unwind one step of the loop to ensure the Haiku
+    # state before and after the body has the same structure.
+    init_val = body_fun(lower, init_val)
+    lower += 1
+    if upper - lower == 0:
+      return init_val
+
+  state = internal_state()
+  init_val = state, init_val
+  state, val = jax.lax.fori_loop(lower, upper, pure_body_fun, init_val)
+  update_internal_state(state)
+  return val

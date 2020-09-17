@@ -14,6 +14,8 @@
 # ==============================================================================
 """Tests for haiku._src.stateful."""
 
+import itertools as it
+
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import base
@@ -248,6 +250,15 @@ class StatefulTest(parameterized.TestCase):
     np.testing.assert_allclose(state["counting_module"]["count"], unroll_length,
                                rtol=1e-4)
     np.testing.assert_allclose(ys, xs ** 2, rtol=1e-4)
+
+  @parameterized.parameters(*it.product((0, 1, 2, 4, 8), (1, 2, 3)))
+  @test_utils.transform_and_run
+  def test_fori(self, lower, n):
+    upper = lower + n
+    m = CountingModule()
+    y = stateful.fori_loop(lower, upper, lambda i, x: m(i), 2)
+    self.assertEqual(y, jnp.square(upper - 1))
+    self.assertEqual(m.count, upper - lower)
 
 
 def _callback_prim(forward, backward):

@@ -81,6 +81,7 @@ from haiku._src.reshape import Reshape
 from haiku._src.spectral_norm import SNParamsTree
 from haiku._src.spectral_norm import SpectralNorm
 from haiku._src.stateful import cond
+from haiku._src.stateful import fori_loop
 from haiku._src.stateful import grad
 from haiku._src.stateful import jit
 from haiku._src.stateful import remat
@@ -149,6 +150,7 @@ __all__ = (
     "dropout",
     "dynamic_unroll",
     "expand_apply",
+    "fori_loop",
     "get_parameter",
     "get_state",
     "grad",

@@ -539,6 +539,11 @@ cond
 
 .. autofunction:: cond
 
+fori_loop
+~~~~~~~~~
+
+.. autofunction:: fori_loop
+
 grad
 ~~~~
 

@@ -16,6 +16,7 @@
 
 import collections
 import functools
+import inspect
 from typing import Any, Mapping, MutableMapping, Optional, Tuple, TypeVar
 
 from haiku._src import base
@@ -368,17 +369,36 @@ def stateful_branch(branch_fun):
   return new_branch_fun
 
 
-def cond(pred, true_operand, true_fun, false_operand, false_fun):
+def _new_cond(pred, true_fun, false_fun, operand):
+  del pred, true_fun, false_fun, operand
+
+
+def _old_cond(pred, true_operand, true_fun, false_operand, false_fun):
+  del pred, true_operand, true_fun, false_operand, false_fun
+
+
+def cond(*args, **kwargs):
   """Equivalent to ``jax.lax.cond`` but with Haiku state threaded in and out."""
   if not base.inside_transform():
     raise ValueError("hk.cond() should not be used outside of hk.transform(). "
                      "Use jax.cond() instead.")
+
+  try:
+    bound_args = inspect.signature(_old_cond).bind(*args, **kwargs)
+  except TypeError:
+    bound_args = inspect.signature(_new_cond).bind(*args, **kwargs)
+    pred, true_fun, false_fun, operand = bound_args.args
+  else:
+    pred, true_operand, true_fun, false_operand, false_fun = bound_args.args
+    true_fun = lambda op, f=true_fun: f(op[0])
+    false_fun = lambda op, f=false_fun: f(op[1])
+    operand = (true_operand, false_operand)
+
   state = internal_state()
   out, state = jax.lax.cond(pred,
-                            true_operand=(state, true_operand),
                             true_fun=stateful_branch(true_fun),
-                            false_operand=(state, false_operand),
-                            false_fun=stateful_branch(false_fun))
+                            false_fun=stateful_branch(false_fun),
+                            operand=(state, operand))
   update_internal_state(state)
   return out
 

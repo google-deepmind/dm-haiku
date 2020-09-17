@@ -154,10 +154,15 @@ class StatefulTest(parameterized.TestCase):
     with self.assertRaises(ValueError, msg="Use jax.remat() instead"):
       stateful.remat(lambda x: x**2)(x)
 
-  def test_cond(self):
+  @parameterized.parameters(True, False)
+  def test_cond(self, single_arg):
     def f(x):
       mod = SquareModule()
-      return stateful.cond(x == 2, x, mod, x, lambda x: mod(x + 1))
+      if single_arg:
+        return stateful.cond(x == 2, mod, lambda x: mod(x + 1), x)
+      else:
+        return stateful.cond(x == 2, x, mod, x, lambda x: mod(x + 1))
+
     f = transform.transform_with_state(f)
     for x, y in ((1, 4), (2, 4), (3, 16)):
       x, y = map(jnp.array, (x, y))

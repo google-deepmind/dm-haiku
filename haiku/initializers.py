@@ -17,6 +17,7 @@
 from haiku._src.initializers import Constant
 from haiku._src.initializers import Identity
 from haiku._src.initializers import Orthogonal
+from haiku._src.initializers import DeltaOrthogonal
 from haiku._src.initializers import RandomNormal
 from haiku._src.initializers import RandomUniform
 from haiku._src.initializers import TruncatedNormal
@@ -28,6 +29,7 @@ from haiku._src.typing import Initializer
 __all__ = (
     "Constant",
     "Orthogonal",
+    "DeltaOrthogonal",
     "Identity",
     "Initializer",
     "RandomNormal",

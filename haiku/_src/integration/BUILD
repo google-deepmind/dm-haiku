@@ -4,8 +4,6 @@ package(default_visibility = ["//visibility:private"])
 
 licenses(["notice"])
 
-exports_files(["LICENSE"])
-
 hk_py_library(
     name = "descriptors",
     srcs = ["descriptors.py"],

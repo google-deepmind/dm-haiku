@@ -2,8 +2,6 @@ load("//haiku/_src:build_defs.bzl", "hk_py_binary", "hk_py_library")
 
 licenses(["notice"])
 
-exports_files(["LICENSE"])
-
 hk_py_library(
     name = "dataset",
     srcs = ["dataset.py"],

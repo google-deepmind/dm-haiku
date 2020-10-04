@@ -4,8 +4,6 @@ package(default_visibility = ["//haiku:__subpackages__"])
 
 licenses(["notice"])
 
-exports_files(["LICENSE"])
-
 hk_py_library(
     name = "resnet",
     srcs = ["resnet.py"],

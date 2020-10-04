@@ -4,8 +4,6 @@ package(default_visibility = [":__subpackages__"])
 
 licenses(["notice"])
 
-exports_files(["LICENSE"])
-
 hk_py_binary(
     name = "train",
     srcs = ["train.py"],

@@ -178,6 +178,26 @@ class StatefulTest(parameterized.TestCase):
     with self.assertRaises(ValueError, msg="Use jax.cond() instead"):
       stateful.cond(x == 2, x, lambda x: x**2, x, lambda x: (x + 1)**2)
 
+  def test_switch(self):
+    def f(i, x):
+      mod = SquareModule()
+      branches = [mod, lambda x: mod(x + 1), lambda x: mod(x + 2)]
+      return stateful.switch(i, branches, x)
+
+    f = transform.transform_with_state(f)
+    for i, x, y in ((0, 1, 1), (1, 2, 9), (2, 3, 25)):
+      i, x, y = map(jnp.array, (i, x, y))
+      params, state = f.init(None, i, x)
+      out, state = f.apply(params, state, None, i, x)
+      self.assertEqual(state, {"square_module": {"y": y}})
+      self.assertEqual(out, y)
+
+  def test_switch_no_transform(self):
+    i = jnp.array(2)
+    x = jnp.array(42.)
+    with self.assertRaises(ValueError, msg="Use jax.switch() instead"):
+      stateful.switch(i, [lambda x: x**2] * 3, x)
+
   @test_utils.transform_and_run
   def test_difference_empty(self):
     before = stateful.internal_state()

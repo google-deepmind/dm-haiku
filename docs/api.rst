@@ -564,6 +564,11 @@ scan
 
 .. autofunction:: scan
 
+switch
+~~~~
+
+.. autofunction:: switch
+
 value_and_grad
 ~~~~~~~~~~~~~~
 

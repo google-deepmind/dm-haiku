@@ -403,6 +403,20 @@ def cond(*args, **kwargs):
   return out
 
 
+def switch(index, branches, operand):
+  """Equivalent to ``jax.lax.switch`` but with Haiku state threaded through."""
+  if not base.inside_transform():
+    raise ValueError(
+        "hk.switch() should not be used outside of hk.transform(). "
+        "Use jax.switch() instead.")
+
+  state = internal_state()
+  out, state = jax.lax.switch(
+      index, tuple(map(stateful_branch, branches)), (state, operand))
+  update_internal_state(state)
+  return out
+
+
 def scan(f, init, xs, length=None, reverse=False):
   """Equivalent to `jax.lax.scan` but with Haiku state threaded in and out."""
   if not base.inside_transform():

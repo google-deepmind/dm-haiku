@@ -86,6 +86,7 @@ from haiku._src.stateful import grad
 from haiku._src.stateful import jit
 from haiku._src.stateful import remat
 from haiku._src.stateful import scan
+from haiku._src.stateful import switch
 from haiku._src.stateful import value_and_grad
 from haiku._src.transform import transform
 from haiku._src.transform import transform_with_state
@@ -169,6 +170,7 @@ __all__ = (
     "scan",
     "set_state",
     "static_unroll",
+    "switch",
     "testing",
     "to_module",
     "transform",

@@ -45,6 +45,17 @@ class ModuleTest(parameterized.TestCase):
     self.assertEqual(mod1.module_name, "custom_name")
     self.assertEqual(mod2.module_name, "custom_name_1")
 
+  @test_utils.transform_and_run
+  def test_supports_arg_named_module(self):
+
+    class MyModule(module.Module):
+
+      def __init__(self, module):  # pylint: disable=redefined-outer-name
+        del module
+        super().__init__()
+
+    self.assertIsNotNone(MyModule(module=None))
+
   @parameterized.parameters(1, 2, 3)
   @test_utils.transform_and_run
   def test_module_naming_explicit_numbering(self, step):

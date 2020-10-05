@@ -251,10 +251,10 @@ def intercept_methods(interceptor: MethodGetter):
   return interceptor_stack(interceptor)
 
 
-def run_interceptors(
+def run_interceptors(  # pylint: disable=invalid-name
     bound_method: Callable[..., Any],
     method_name: str,
-    module: "Module",
+    self: "Module",
     *args: Args,
     **kwargs: Kwargs,
 ) -> Any:
@@ -262,7 +262,7 @@ def run_interceptors(
   if not interceptor_stack:
     return bound_method(*args, **kwargs)
 
-  ctx = MethodContext(module=module,
+  ctx = MethodContext(module=self,
                       method_name=method_name,
                       orig_method=bound_method)
   interceptor_stack_copy = interceptor_stack.clone()
@@ -294,19 +294,19 @@ def wrap_method(method_name, unbound_method):
     return unbound_method
 
   @functools.wraps(unbound_method)
-  def wrapped(module, *args, **kwargs):
+  def wrapped(self, *args, **kwargs):
     """Calls the original method with a group name set before and after."""
     if not base.frame_stack:
       raise ValueError(
           "All `hk.Module`s must be initialized inside an `hk.transform`.")
 
     frame = base.current_frame()
-    state = base.ModuleState(module=module, method_name=method_name)
-    with frame.module(state), _module_method_call(module, method_name):
+    state = base.ModuleState(module=self, method_name=method_name)
+    with frame.module(state), _module_method_call(self, method_name):
       # hk.Module enters the module name scope for all methods.
-      module_name = getattr(module, "module_name", None)
-      f = functools.partial(unbound_method, module)
-      f = functools.partial(run_interceptors, f, method_name, module)
+      module_name = getattr(self, "module_name", None)
+      f = functools.partial(unbound_method, self)
+      f = functools.partial(run_interceptors, f, method_name, self)
       # TODO(tomhennigan): With omnistaging primitives (like named call) will
       # stage out return values eagerly. For functions that produce non-Array
       # values (e.g. `def is_batched(self, x) -> bool`) a tracer will be

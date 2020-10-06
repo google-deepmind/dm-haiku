@@ -88,6 +88,7 @@ from haiku._src.stateful import remat
 from haiku._src.stateful import scan
 from haiku._src.stateful import switch
 from haiku._src.stateful import value_and_grad
+from haiku._src.stateful import vmap
 from haiku._src.transform import transform
 from haiku._src.transform import transform_with_state
 from haiku._src.transform import Transformed
@@ -177,6 +178,7 @@ __all__ = (
     "transform_with_state",
     "transparent",
     "value_and_grad",
+    "vmap",
     "with_rng",
     "without_apply_rng",
     "without_state",

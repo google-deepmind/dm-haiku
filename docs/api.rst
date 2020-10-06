@@ -574,6 +574,11 @@ value_and_grad
 
 .. autofunction:: value_and_grad
 
+vmap
+~~~~
+
+.. autofunction:: vmap
+
 Testing
 -------
 

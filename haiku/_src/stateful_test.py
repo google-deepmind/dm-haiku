@@ -280,6 +280,32 @@ class StatefulTest(parameterized.TestCase):
     self.assertEqual(y, jnp.square(upper - 1))
     self.assertEqual(m.count, upper - lower)
 
+  def test_vmap(self):
+    def g(x):
+      return CountingModule()(x)
+
+    def f(x):
+      return stateful.vmap(g)(x)
+
+    f = transform.transform_with_state(f)
+
+    x = jnp.ones([4]) + 1
+    params, state = f.init(None, x)
+
+    # State should not be mapped.
+    self.assertEmpty(params)
+    cnt, = jax.tree_leaves(state)
+    self.assertEqual(cnt.ndim, 0)
+    self.assertEqual(cnt, 0)
+
+    # The output should be mapped but state should not be.
+    y, state = f.apply(params, state, None, x)
+    self.assertEqual(y.shape, (4,))
+    np.testing.assert_allclose(y, x ** 2)
+    cnt, = jax.tree_leaves(state)
+    self.assertEqual(cnt.ndim, 0)
+    self.assertEqual(cnt, 1)
+
 
 def _callback_prim(forward, backward):
   def f_impl(x):

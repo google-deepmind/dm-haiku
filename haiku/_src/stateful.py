@@ -499,3 +499,28 @@ def fori_loop(lower, upper, body_fun, init_val):
   state, val = jax.lax.fori_loop(lower, upper, pure_body_fun, init_val)
   update_internal_state(state)
   return val
+
+
+def vmap(fun, in_axes=0, out_axes=0, axis_name=None):
+  """Equivalent to ``jax.vmap`` with module parameters/state not mapped."""
+
+  # TODO(tomhennigan): Allow configuration of params/state/rng mapping.
+  in_axes = in_axes, None
+  out_axes = out_axes, None
+
+  def pure_fun(args, state_in):
+    with temporary_internal_state(state_in):
+      out = fun(*args)
+      state_out = difference(state_in, internal_state())
+      return out, state_out
+
+  @functools.wraps(fun)
+  def mapped_fun(*args):
+    mapped_pure_fun = jax.vmap(pure_fun, in_axes=in_axes, out_axes=out_axes,
+                               axis_name=axis_name)
+    state = internal_state()
+    out, state = mapped_pure_fun(args, state)
+    update_internal_state(state)
+    return out
+
+  return mapped_fun

@@ -194,5 +194,37 @@ class HaikuTransformsTest(parameterized.TestCase):
                         jax.jit(f.apply)(params, state, rng, x),
                         f.apply(params, state, rng, x))
 
+  @test_utils.combined_named_parameters(descriptors.OPTIONAL_BATCH_MODULES)
+  def test_vmap(self, module_fn: ModuleFn, shape, dtype):
+    rng = jax.random.PRNGKey(42)
+    if jnp.issubdtype(dtype, jnp.integer):
+      x = jax.random.randint(rng, shape, 0, np.prod(shape), dtype)
+    else:
+      x = jax.random.uniform(rng, shape, dtype)
+
+    # Expand our input since we will map over it.
+    x = jnp.broadcast_to(x, (2,) + x.shape)
+
+    f = hk.transform_with_state(lambda x: module_fn()(x))  # pylint: disable=unnecessary-lambda
+    f_mapped = hk.transform_with_state(
+        lambda x: hk.vmap(lambda x: module_fn()(x))(x))  # pylint: disable=unnecessary-lambda
+
+    params, state = f_mapped.init(rng, x)
+
+    # JAX vmap with explicitly unmapped params/state/rng. This should be
+    # equivalent to `f_mapped.apply(..)` (since by default hk.vmap does not map
+    # params/state/rng).
+    v_apply = jax.vmap(f.apply,
+                       in_axes=(None, None, None, 0),
+                       out_axes=(0, None))
+
+    module_type = descriptors.module_type(module_fn)
+    atol = CUSTOM_ATOL.get(module_type, DEFAULT_ATOL)
+    assert_allclose = functools.partial(np.testing.assert_allclose, atol=atol)
+    jax.tree_multimap(
+        assert_allclose,
+        f_mapped.apply(params, state, rng, x),
+        v_apply(params, state, rng, x))
+
 if __name__ == '__main__':
   absltest.main()

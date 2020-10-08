@@ -94,6 +94,7 @@ class Embed(hk.Module):
       raise ValueError(
           "hk.Embed must be supplied either with an initial `embedding_matrix` "
           "or with `embed_dim` and `vocab_size`.")
+
     if embedding_matrix is not None:
       embedding_matrix = jnp.asarray(embedding_matrix)
       if vocab_size and embedding_matrix.shape[0] != vocab_size:
@@ -106,16 +107,19 @@ class Embed(hk.Module):
             "An `embedding_matrix` was supplied but the `embed_dim` of "
             f"{embed_dim} was not consistent with its shape "
             f"{embedding_matrix.shape}.")
-      self.embeddings = hk.get_parameter("embeddings", embedding_matrix.shape,
-                                         init=lambda _, __: embedding_matrix)
-    else:
-      w_init = w_init or hk.initializers.TruncatedNormal()
-      self.embeddings = hk.get_parameter("embeddings", [vocab_size, embed_dim],
-                                         init=w_init)
+      w_init = lambda shape, dtype: embedding_matrix
+      vocab_size = embedding_matrix.shape[0]
+      embed_dim = embedding_matrix.shape[1]
 
-    self.vocab_size = vocab_size or embedding_matrix.shape[0]
-    self.embed_dim = embed_dim or embedding_matrix.shape[1]
+    self.vocab_size = vocab_size
+    self.embed_dim = embed_dim
     self.lookup_style = lookup_style
+    self.w_init = w_init or hk.initializers.TruncatedNormal()
+
+  @property
+  def embeddings(self):
+    return hk.get_parameter("embeddings", [self.vocab_size, self.embed_dim],
+                            init=self.w_init)
 
   def __call__(
       self,

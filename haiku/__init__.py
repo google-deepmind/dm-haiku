@@ -89,6 +89,7 @@ from haiku._src.stateful import scan
 from haiku._src.stateful import switch
 from haiku._src.stateful import value_and_grad
 from haiku._src.stateful import vmap
+from haiku._src.transform import running_init
 from haiku._src.transform import transform
 from haiku._src.transform import transform_with_state
 from haiku._src.transform import Transformed
@@ -168,6 +169,7 @@ __all__ = (
     "pad",
     "remat",
     "reserve_rng_keys",
+    "running_init",
     "scan",
     "set_state",
     "static_unroll",

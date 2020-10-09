@@ -313,3 +313,33 @@ def check_mapping(name: str, mapping: Optional[T]) -> T:
                     "`apply(params, state, rng, ...)` for "
                     "`hk.transform_with_state`.")
   return mapping
+
+
+def running_init() -> bool:
+  """Return True if running the ``init`` function of a Haiku transform.
+
+  In general you should not need to gate behaviour of your module based on
+  whether you are running ``init`` or ``apply``, but sometimes (e.g. when making
+  use of JAX control flow) this is required.
+
+  For example, if you want to use :func:`switch` to pick between experts, when
+  we run your init function we need to ensure that params/state for all experts
+  are created (unconditionally) but during apply we want to conditionally apply
+  (and perhaps update the internal state) of only one of our experts:
+
+  >>> experts = [hk.nets.ResNet50(10) for _ in range(5)]
+  >>> x = jnp.ones([1, 224, 224, 3])
+  >>> if hk.running_init():
+  ...   # During init unconditionally create params/state for all experts.
+  ...   for expert in experts:
+  ...     out = expert(x, is_training=True)
+  ... else:
+  ...   # During apply conditionally apply (and update) only one expert.
+  ...   index = jax.random.randint(hk.next_rng_key(), [], 0, len(experts) - 1)
+  ...   out = hk.switch(index, experts, x)
+
+  Returns:
+    True if running ``init`` otherwise False.
+  """
+  base.assert_context("running_init")
+  return not base.params_frozen()

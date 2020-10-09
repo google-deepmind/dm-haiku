@@ -16,6 +16,8 @@ Transforming Functions
 
 .. autofunction:: without_state
 
+.. autofunction:: running_init
+
 Type Hints
 ~~~~~~~~~~
 

@@ -389,6 +389,20 @@ class TransformTest(parameterized.TestCase):
       params = f.init(rng)
       f.apply(params, rng)
 
+  def test_running_init(self):
+    l = []
+    f = transform.transform(lambda: l.append(transform.running_init()))
+    f.init(None)
+    f.apply({}, None)
+    init_value, apply_value = l  # pylint: disable=unbalanced-tuple-unpacking
+    self.assertEqual(init_value, True)
+    self.assertEqual(apply_value, False)
+
+  def test_running_init_outside_transform(self):
+    with self.assertRaisesRegex(ValueError,
+                                "running_init.*used as part of.*transform"):
+      transform.running_init()
+
 
 class ObjectWithTransform(object):
 

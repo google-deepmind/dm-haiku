@@ -166,6 +166,17 @@ class DotTrace(jax.core.Trace):
 
   process_map = process_call
 
+  def process_custom_jvp_call(self, primitive, fun, jvp, tracers):
+    # Drop the custom differentiation rule.
+    del primitive, jvp  # Unused.
+    return fun.call_wrapped(*tracers)
+
+  def process_custom_vjp_call(self, primitive, fun, fwd, bwd, tracers,
+                              out_trees):
+    # Drop the custom differentiation rule.
+    del primitive, fwd, bwd, out_trees  # Unused.
+    return fun.call_wrapped(*tracers)
+
 
 def _format_val(val):
   if not hasattr(val, 'shape'):

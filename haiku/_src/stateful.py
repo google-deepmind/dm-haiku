@@ -417,7 +417,7 @@ def switch(index, branches, operand):
   return out
 
 
-def scan(f, init, xs, length=None, reverse=False):
+def scan(f, init, xs, length=None, reverse=False, unroll=1):
   """Equivalent to `jax.lax.scan` but with Haiku state threaded in and out."""
   if not base.inside_transform():
     raise ValueError("hk.scan() should not be used outside of hk.transform(). "
@@ -463,7 +463,8 @@ def scan(f, init, xs, length=None, reverse=False):
   # and for apply we know they are immutable. As such we only need to thread the
   # state and rng in and out.
   init = (init, internal_state(params=False))
-  (carry, state), ys = jax.lax.scan(stateful_fun, init, xs, length, reverse)
+  (carry, state), ys = jax.lax.scan(
+      stateful_fun, init, xs, length, reverse, unroll=unroll)
   update_internal_state(state)
 
   if running_init_fn:

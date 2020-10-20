@@ -82,6 +82,16 @@ def temporary_internal_state(state: InternalState):
   return base.frame_stack(frame)
 
 
+def reserve_up_to_full_rng_block():
+  """If RNG is active in the current frame, reserve up to the default block."""
+  # TODO(lenamartens): Fix needing full block reservation in stateful
+  # control-flow by keeping track of current key with index and keeping a full
+  # block in PRNGSequence at all time.
+  rng_seq = base.current_frame().rng_stack.peek()
+  if rng_seq:
+    rng_seq.reserve_up_to_full()
+
+
 def grad(fun, argnums=0, has_aux=False, holomorphic=False):
   r"""Creates a function which evaluates the gradient of ``fun``.
 
@@ -364,6 +374,7 @@ def stateful_branch(branch_fun):
     state, operand = operand
     with temporary_internal_state(state):
       out = branch_fun(operand)
+      reserve_up_to_full_rng_block()
       # TODO(tomhennigan) Return difference of state in/out here.
       return out, internal_state()
   return new_branch_fun
@@ -394,6 +405,7 @@ def cond(*args, **kwargs):
     false_fun = lambda op, f=false_fun: f(op[1])
     operand = (true_operand, false_operand)
 
+  reserve_up_to_full_rng_block()
   state = internal_state()
   out, state = jax.lax.cond(pred,
                             true_fun=stateful_branch(true_fun),
@@ -410,6 +422,7 @@ def switch(index, branches, operand):
         "hk.switch() should not be used outside of hk.transform(). "
         "Use jax.switch() instead.")
 
+  reserve_up_to_full_rng_block()
   state = internal_state()
   out, state = jax.lax.switch(
       index, tuple(map(stateful_branch, branches)), (state, operand))
@@ -455,13 +468,21 @@ def scan(f, init, xs, length=None, reverse=False, unroll=1):
     with temporary_internal_state(state):
       with base.assert_no_new_parameters():
         carry, out = f(carry, x)
+      reserve_up_to_full_rng_block()
       carry = (carry, internal_state(params=False))
       return carry, out
+
+  # Before pulling out the  internal state,  reserve a full block  of RNG keys.
+  # This is to make sure we're always passing in the same amount of subkeys in
+  # and out of the scan carry (scan requires equal length lists).
+  # After every scan iteration we reserve back up to the full block.
+  reserve_up_to_full_rng_block()
 
   # We know that we don't need to thread params in and out, since for init we
   # have already created them (given that above we unroll one step of the scan)
   # and for apply we know they are immutable. As such we only need to thread the
   # state and rng in and out.
+
   init = (init, internal_state(params=False))
   (carry, state), ys = jax.lax.scan(
       stateful_fun, init, xs, length, reverse, unroll=unroll)
@@ -484,6 +505,7 @@ def fori_loop(lower, upper, body_fun, init_val):
     state, val = val
     with temporary_internal_state(state):
       val = body_fun(i, val)
+      reserve_up_to_full_rng_block()
       state = internal_state()
       return state, val
 
@@ -495,6 +517,7 @@ def fori_loop(lower, upper, body_fun, init_val):
     if upper - lower == 0:
       return init_val
 
+  reserve_up_to_full_rng_block()
   state = internal_state()
   init_val = state, init_val
   state, val = jax.lax.fori_loop(lower, upper, pure_body_fun, init_val)

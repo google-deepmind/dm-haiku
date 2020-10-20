@@ -32,6 +32,8 @@ from haiku._src.typing import (  # pylint: disable=g-multiple-import
 import jax
 import jax.numpy as jnp
 
+DEFAULT_PRNG_RESERVE_SIZE = 1
+
 Stack = data_structures.Stack
 ThreadLocalStack = data_structures.ThreadLocalStack
 
@@ -512,6 +514,14 @@ class PRNGSequence(Iterator[PRNGKey]):
       self._key = new_keys[0]
       self._subkeys.extend(new_keys[1:])
 
+  def reserve_up_to_full(self):
+    num = DEFAULT_PRNG_RESERVE_SIZE - len(self._subkeys)
+    if num > 0:
+      self.reserve(num)
+    else:
+      sliced_subkeys = list(self._subkeys)[:DEFAULT_PRNG_RESERVE_SIZE]
+      self._subkeys = collections.deque(sliced_subkeys)
+
   @property
   def internal_state(self) -> PRNGSequenceState:
     return self._key, tuple(self._subkeys)
@@ -525,7 +535,7 @@ class PRNGSequence(Iterator[PRNGKey]):
 
   def __next__(self) -> PRNGKey:
     if not self._subkeys:
-      self.reserve(1)
+      self.reserve(DEFAULT_PRNG_RESERVE_SIZE)
     return self._subkeys.popleft()
 
   next = __next__

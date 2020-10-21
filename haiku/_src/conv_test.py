@@ -440,6 +440,13 @@ class Conv3DTest(parameterized.TestCase):
       net(data)
 
 
+def default_output_shape(input_shape, kernel, stride, padding):
+  if padding == "SAME":
+    return input_shape * stride
+  elif padding == "VALID":
+    return (input_shape - 1) * stride + kernel
+
+
 class ConvTransposeTest(parameterized.TestCase):
 
   @parameterized.parameters(0, -2)
@@ -583,6 +590,51 @@ class ConvTransposeTest(parameterized.TestCase):
     # something seriously wrong (ie the previous buggy initialization).
     rel_diff = np.abs(actual_std - expected_std) / expected_std
     self.assertLess(rel_diff, 0.5)
+
+  @parameterized.parameters(
+      ([7, 9], None, 5, 3, "SAME", "channels_first"),
+      ([7, 9, 16], None, 5, 2, "VALID", "channels_first"),
+      ([9, 13], None, 5, 4, "VALID", "channels_last"),
+      ([7, 9, 13], None, 5, 3, "VALID", "channels_last"),
+      # Default is: 21, 27, 48
+      ([7, 9, 16], [19, 25, 48], 5, 3, "SAME", "channels_first"),
+      # Default is:  23, 41, 50
+      ([7, 13, 16], [25, 42, 50], 5, 3, "VALID", "channels_first"),
+      # Default is:  45, 65, 80
+      ([9, 13, 16], [43, 64, 80], 6, 5, "SAME", "channels_last"),
+      # Default is: 36, 46, 66
+      ([7, 9, 13], [38, 48, 67], 6, 5, "VALID", "channels_last"),
+  )
+  @test_utils.transform_and_run
+  def test_output_sizes(self, input_shape, output_shape, kernel, stride,
+                        padding, data_format):
+    batch_dim = 2
+    num_channels = 3
+    if data_format == "channels_first":
+      data = jnp.zeros([batch_dim, num_channels] + input_shape)
+    if data_format == "channels_last":
+      data = jnp.zeros([batch_dim] + input_shape + [num_channels])
+
+    net = conv.ConvNDTranspose(
+        num_spatial_dims=len(input_shape),
+        output_channels=3,
+        kernel_shape=kernel,
+        output_shape=output_shape,
+        stride=stride,
+        padding=padding,
+        data_format=data_format)
+    out = net(data)
+
+    if output_shape is None:
+      output_shape = [
+          default_output_shape(in_shape, kernel, stride, padding)
+          for in_shape in input_shape
+      ]
+    if data_format == "channels_first":
+      expected_shape = tuple([batch_dim, num_channels] + output_shape)
+    if data_format == "channels_last":
+      expected_shape = tuple([batch_dim] + output_shape + [num_channels])
+    self.assertEqual(out.shape, expected_shape)
 
 
 class Conv1DTransposeTest(parameterized.TestCase):

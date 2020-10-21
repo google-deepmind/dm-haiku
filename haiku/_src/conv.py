@@ -416,6 +416,36 @@ class Conv3D(ConvND):
         name=name)
 
 
+def compute_adjusted_padding(input_size: int, output_size: int,
+                             kernel_size: int, stride: int, padding: str,
+                             dilation: int = 1) -> Tuple[int, int]:
+  """Computes adjusted padding for desired ConvTranspose `output_size`."""
+  kernel_size = (kernel_size - 1) * dilation + 1
+  if padding == "VALID":
+    expected_input_size = (output_size - kernel_size + stride) // stride
+    if input_size != expected_input_size:
+      raise ValueError(f"The expected input size with the current set of input "
+                       f"parameters is {expected_input_size} which doesn't "
+                       f"match the actual input size {input_size}.")
+    padding_before = 0
+  elif padding == "SAME":
+    expected_input_size = (output_size + stride - 1) // stride
+    if input_size != expected_input_size:
+      raise ValueError(f"The expected input size with the current set of input "
+                       f"parameters is {expected_input_size} which doesn't "
+                       f"match the actual input size {input_size}.")
+    padding_needed = (output_size - 1) * stride + kernel_size - output_size
+    padding_before = padding_needed // 2
+  else:
+    raise ValueError(f"`padding` must be 'VALID' or 'SAME'. Passed: {padding}.")
+
+  expanded_input_size = (input_size - 1) * stride + 1
+  padded_out_size = output_size + kernel_size - 1
+  pad_before = kernel_size - 1 - padding_before
+  pad_after = padded_out_size - expanded_input_size - pad_before
+  return (pad_before, pad_after)
+
+
 class ConvNDTranspose(hk.Module):
   """General n-dimensional transposed convolution (aka. deconvolution)."""
 
@@ -425,6 +455,7 @@ class ConvNDTranspose(hk.Module):
       output_channels: int,
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
+      output_shape: Optional[Union[int, Sequence[int]]] = None,
       padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
@@ -442,6 +473,9 @@ class ConvNDTranspose(hk.Module):
         length ``num_spatial_dims``.
       stride: Optional stride for the kernel. Either an integer or a sequence of
         length ``num_spatial_dims``. Defaults to 1.
+      output_shape: Output shape of the spatial dimensions of a transpose
+        convolution. Can be either an integer or an iterable of integers. If a
+        `None` value is given, a default shape is automatically calculated.
       padding: Optional padding algorithm. Either "VALID" or "SAME".
         Defaults to "SAME". See:
         https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
@@ -465,6 +499,13 @@ class ConvNDTranspose(hk.Module):
     self.output_channels = output_channels
     self.kernel_shape = (
         utils.replicate(kernel_shape, num_spatial_dims, "kernel_shape"))
+    self.output_shape = output_shape
+    if self.output_shape is not None:
+      self.output_shape = (
+          utils.replicate(output_shape, num_spatial_dims, "output_shape"))
+      if not isinstance(padding, str):
+        raise ValueError("When specifying `output_shape`, ensure that paddding "
+                         "is 'VALID' or 'SAME'.")
     self.with_bias = with_bias
     self.stride = utils.replicate(stride, num_spatial_dims, "strides")
     self.w_init = w_init
@@ -517,11 +558,28 @@ class ConvNDTranspose(hk.Module):
     if self.mask is not None:
       w = w * self.mask
 
-    out = lax.conv_transpose(inputs,
-                             w,
-                             strides=self.stride,
-                             padding=self.padding,
-                             dimension_numbers=self.dimension_numbers)
+    if self.output_shape is None:
+      out = lax.conv_transpose(
+          inputs,
+          w,
+          strides=self.stride,
+          padding=self.padding,
+          dimension_numbers=self.dimension_numbers)
+    else:
+      input_shape = (
+          inputs.shape[2:] if self.channel_index == 1 else inputs.shape[1:-1])
+      paddings = []
+      for in_shape, out_shape, kernel, stride in zip(  #
+          input_shape, self.output_shape, self.kernel_shape, self.stride):
+        padding = compute_adjusted_padding(in_shape, out_shape, kernel, stride,
+                                           self.padding)
+        paddings.append(padding)
+      out = lax.conv_transpose(
+          inputs,
+          w,
+          strides=self.stride,
+          padding=tuple(paddings),
+          dimension_numbers=self.dimension_numbers)
 
     if self.with_bias:
       if self.channel_index == -1:
@@ -545,6 +603,7 @@ class Conv1DTranspose(ConvNDTranspose):
       output_channels: int,
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
+      output_shape: Optional[Union[int, Sequence[int]]] = None,
       padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
@@ -561,6 +620,9 @@ class Conv1DTranspose(ConvNDTranspose):
         length 1.
       stride: Optional stride for the kernel. Either an integer or a sequence of
         length 1. Defaults to 1.
+      output_shape: Output shape of the spatial dimensions of a transpose
+        convolution. Can be either an integer or an iterable of integers. If a
+        `None` value is given, a default shape is automatically calculated.
       padding: Optional padding algorithm. Either ``VALID`` or ``SAME``.
         Defaults to ``SAME``. See:
         https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
@@ -576,6 +638,7 @@ class Conv1DTranspose(ConvNDTranspose):
         num_spatial_dims=1,
         output_channels=output_channels,
         kernel_shape=kernel_shape,
+        output_shape=output_shape,
         stride=stride,
         padding=padding,
         with_bias=with_bias,
@@ -594,6 +657,7 @@ class Conv2DTranspose(ConvNDTranspose):
       output_channels: int,
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
+      output_shape: Optional[Union[int, Sequence[int]]] = None,
       padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
@@ -610,6 +674,9 @@ class Conv2DTranspose(ConvNDTranspose):
         length 2.
       stride: Optional stride for the kernel. Either an integer or a sequence of
         length 2. Defaults to 1.
+      output_shape: Output shape of the spatial dimensions of a transpose
+        convolution. Can be either an integer or an iterable of integers. If a
+        `None` value is given, a default shape is automatically calculated.
       padding: Optional padding algorithm. Either ``VALID`` or ``SAME``.
         Defaults to ``SAME``. See:
         https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
@@ -626,6 +693,7 @@ class Conv2DTranspose(ConvNDTranspose):
         output_channels=output_channels,
         kernel_shape=kernel_shape,
         stride=stride,
+        output_shape=output_shape,
         padding=padding,
         with_bias=with_bias,
         w_init=w_init,
@@ -643,6 +711,7 @@ class Conv3DTranspose(ConvNDTranspose):
       output_channels: int,
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
+      output_shape: Optional[Union[int, Sequence[int]]] = None,
       padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
@@ -659,6 +728,9 @@ class Conv3DTranspose(ConvNDTranspose):
         length 3.
       stride: Optional stride for the kernel. Either an integer or a sequence of
         length 3. Defaults to 1.
+      output_shape: Output shape of the spatial dimensions of a transpose
+        convolution. Can be either an integer or an iterable of integers. If a
+        `None` value is given, a default shape is automatically calculated.
       padding: Optional padding algorithm. Either ``VALID`` or ``SAME``.
         Defaults to ``SAME``. See:
         https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
@@ -675,6 +747,7 @@ class Conv3DTranspose(ConvNDTranspose):
         output_channels=output_channels,
         kernel_shape=kernel_shape,
         stride=stride,
+        output_shape=output_shape,
         padding=padding,
         with_bias=with_bias,
         w_init=w_init,

@@ -389,7 +389,7 @@ def _old_cond(pred, true_operand, true_fun, false_operand, false_fun):
 
 
 def cond(*args, **kwargs):
-  """Equivalent to ``jax.lax.cond`` but with Haiku state threaded in and out."""
+  """Equivalent to ``jax.lax.cond`` but with Haiku state threaded in/out."""
   if not base.inside_transform():
     raise ValueError("hk.cond() should not be used outside of hk.transform(). "
                      "Use jax.cond() instead.")
@@ -416,7 +416,7 @@ def cond(*args, **kwargs):
 
 
 def switch(index, branches, operand):
-  """Equivalent to ``jax.lax.switch`` but with Haiku state threaded through."""
+  """Equivalent to ``jax.lax.switch`` but with Haiku state threaded in/out."""
   if not base.inside_transform():
     raise ValueError(
         "hk.switch() should not be used outside of hk.transform(). "
@@ -431,7 +431,7 @@ def switch(index, branches, operand):
 
 
 def scan(f, init, xs, length=None, reverse=False, unroll=1):
-  """Equivalent to `jax.lax.scan` but with Haiku state threaded in and out."""
+  """Equivalent to ``jax.lax.scan`` but with Haiku state threaded in/out."""
   if not base.inside_transform():
     raise ValueError("hk.scan() should not be used outside of hk.transform(). "
                      "Use jax.scan() instead.")

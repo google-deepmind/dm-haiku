@@ -1,19 +1,5 @@
 :github_url: https://github.com/deepmind/dm-haiku/tree/master/docs
 
-.. toctree::
-   :caption: Guides
-   :maxdepth: 1
-
-   modules
-   transforms
-
-.. toctree::
-   :caption: Package Reference
-   :maxdepth: 1
-
-   api
-
-
 Haiku Documentation
 ===================
 
@@ -43,11 +29,22 @@ Installation
 See https://github.com/google/jax#pip-installation for instructions on
 installing JAX.
 
-Install Haiku by running::
+We suggest installing the latest version of Haiku by running::
 
     $ pip install git+https://github.com/deepmind/dm-haiku
 
+.. toctree::
+   :caption: Guides
+   :maxdepth: 1
 
+   modules
+   transforms
+
+.. toctree::
+   :caption: API Documentation
+   :maxdepth: 1
+
+   api
 
 Known issues
 ------------

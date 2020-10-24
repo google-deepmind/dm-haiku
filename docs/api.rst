@@ -1,70 +1,170 @@
-.. TODO(slebedev): add a title, e.g. "API docs"?
-
-Base
-----
+Haiku Fundamentals
+==================
 
 .. currentmodule:: haiku
 
-Transforming Functions
-~~~~~~~~~~~~~~~~~~~~~~
+Haiku Transforms
+----------------
+
+.. autosummary::
+
+    transform
+    transform_with_state
+    without_apply_rng
+    without_state
+
+transform
+~~~~~~~~~
 
 .. autofunction:: transform
 
+transform_with_state
+~~~~~~~~~~~~~~~~~~~~
+
 .. autofunction:: transform_with_state
+
+without_apply_rng
+~~~~~~~~~~~~~~~~~
 
 .. autofunction:: without_apply_rng
 
+without_state
+~~~~~~~~~~~~~
+
 .. autofunction:: without_state
 
-.. autofunction:: running_init
+Modules, Parameters and State
+-----------------------------
 
-Type Hints
-~~~~~~~~~~
+.. autosummary::
 
-.. autoclass:: LSTMState
+    Module
+    to_module
+    get_parameter
+    get_state
+    set_state
+    transparent
 
-.. autoclass:: Params
-
-.. autoclass:: State
-
-.. autoclass:: Transformed
-
-.. autoclass:: TransformedWithState
-
-Parameters and State
-~~~~~~~~~~~~~~~~~~~~
+Module
+~~~~~~
 
 .. autoclass:: Module
    :members:
 
+to_module
+~~~~~~~~~
+
 .. autofunction:: to_module
+
+get_parameter
+~~~~~~~~~~~~~
 
 .. autofunction:: get_parameter
 
+get_state
+~~~~~~~~~
+
 .. autofunction:: get_state
+
+set_state
+~~~~~~~~~
 
 .. autofunction:: set_state
 
+transparent
+~~~~~~~~~~~~
+
 .. autofunction:: transparent
 
-Random Number Generators
-~~~~~~~~~~~~~~~~~~~~~~~~
+Random Numbers
+--------------
+
+.. autosummary::
+
+    PRNGSequence
+    next_rng_key
+    next_rng_keys
+    maybe_next_rng_key
+    reserve_rng_keys
+    with_rng
+
+PRNGSequence
+~~~~~~~~~~~~
 
 .. autoclass:: PRNGSequence
    :members:
 
+next_rng_key
+~~~~~~~~~~~~
+
 .. autofunction:: next_rng_key
+
+next_rng_keys
+~~~~~~~~~~~~~
 
 .. autofunction:: next_rng_keys
 
+maybe_next_rng_key
+~~~~~~~~~~~~~~~~~~
+
 .. autofunction:: maybe_next_rng_key
+
+reserve_rng_keys
+~~~~~~~~~~~~~~~~
 
 .. autofunction:: reserve_rng_keys
 
+with_rng
+~~~~~~~~
+
 .. autofunction:: with_rng
 
-Linear modules
---------------
+Type Hints
+----------
+
+.. autosummary::
+
+    LSTMState
+    Params
+    State
+    Transformed
+    TransformedWithState
+
+LSTMState
+~~~~~~~~~
+
+.. autoclass:: LSTMState
+
+Params
+~~~~~~
+
+.. autoclass:: Params
+
+State
+~~~~~
+
+.. autoclass:: State
+
+Transformed
+~~~~~~~~~~~
+
+.. autoclass:: Transformed
+
+TransformedWithState
+~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: TransformedWithState
+
+Common Modules
+==============
+
+Linear
+------
+
+.. autosummary::
+
+    Linear
+    Bias
 
 Linear
 ~~~~~~
@@ -78,10 +178,17 @@ Bias
 .. autoclass:: Bias
    :members:
 
-Pooling modules
----------------
+Pooling
+-------
 
 .. currentmodule:: haiku
+
+.. autosummary::
+
+    avg_pool
+    AvgPool
+    max_pool
+    MaxPool
 
 Average Pool
 ~~~~~~~~~~~~
@@ -102,13 +209,21 @@ Max Pool
 Dropout
 -------
 
+.. autosummary::
+
+    dropout
+
 dropout
 ~~~~~~~
 
 .. autofunction:: dropout
 
-Combinator modules
-------------------
+Combinator
+----------
+
+.. autosummary::
+
+    Sequential
 
 Sequential
 ~~~~~~~~~~
@@ -116,10 +231,23 @@ Sequential
 .. autoclass:: Sequential
   :members:
 
-Convolutional modules
----------------------
+Convolutional
+-------------
 
 .. currentmodule:: haiku
+
+.. autosummary::
+
+    ConvND
+    Conv1D
+    Conv2D
+    Conv3D
+    ConvNDTranspose
+    Conv1DTranspose
+    Conv2DTranspose
+    Conv3DTranspose
+    DepthwiseConv2D
+    DepthwiseConv2D
 
 ConvND
 ~~~~~~
@@ -177,15 +305,26 @@ DepthwiseConv2D
 
 
 SeparableDepthwiseConv2D
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: DepthwiseConv2D
    :members:
 
-Normalization modules
----------------------
+Normalization
+-------------
 
 .. currentmodule:: haiku
+
+.. autosummary::
+
+    BatchNorm
+    GroupNorm
+    InstanceNorm
+    LayerNorm
+    SpectralNorm
+    ExponentialMovingAverage
+    SNParamsTree
+    EMAParamsTree
 
 BatchNorm
 ~~~~~~~~~
@@ -235,10 +374,27 @@ EMAParamsTree
 .. autoclass:: EMAParamsTree
    :members:
 
-Recurrent modules
------------------
+Recurrent
+---------
 
 .. currentmodule:: haiku
+
+.. autosummary::
+
+    RNNCore
+    dynamic_unroll
+    static_unroll
+    expand_apply
+    VanillaRNN
+    LSTM
+    GRU
+    DeepRNN
+    deep_rnn_with_skip_connections
+    ResetCore
+    IdentityCore
+    Conv1DLSTM
+    Conv2DLSTM
+    Conv3DLSTM
 
 RNNCore
 ~~~~~~~
@@ -318,10 +474,16 @@ Conv3DLSTM
 .. autoclass:: Conv3DLSTM
    :members:
 
-Batch modules
--------------
+Batch
+-----
 
 .. currentmodule:: haiku
+
+.. autosummary::
+
+    Reshape
+    Flatten
+    BatchApply
 
 Reshape
 ~~~~~~~
@@ -341,10 +503,15 @@ BatchApply
 .. autoclass:: BatchApply
    :members:
 
-Embedding modules
------------------
+Embedding
+---------
 
 .. currentmodule:: haiku
+
+.. autosummary::
+
+    Embed
+    EmbedLookupStyle
 
 Embed
 ~~~~~
@@ -362,6 +529,18 @@ Initializers
 ------------
 
 .. automodule:: haiku.initializers
+
+.. autosummary::
+
+    Initializer
+    Constant
+    Identity
+    Orthogonal
+    RandomNormal
+    RandomUniform
+    TruncatedNormal
+    VarianceScaling
+    UniformScaling
 
 Initializer
 ~~~~~~~~~~~
@@ -422,6 +601,16 @@ Paddings
 
 .. automodule:: haiku.pad
 
+.. autosummary::
+
+    PadFn
+    create
+    causal
+    full
+    reverse_causal
+    same
+    valid
+
 PadFn
 ~~~~~
 
@@ -458,24 +647,41 @@ valid
 
 .. autofunction:: valid
 
-.. TODO(tomhennigan): rename to something more appropriate.
-
-Networks
---------
+Full Networks
+=============
 
 .. automodule:: haiku.nets
 
 MLP
-~~~
+---
 
 .. autoclass:: MLP
    :members:
+
+MobileNet
+---------
 
 MobileNetV1
 ~~~~~~~~~~~
 
 .. autoclass:: MobileNetV1
    :members:
+
+ResNet
+------
+
+.. autosummary::
+
+    ResNet
+    ResNet.BlockGroup
+    ResNet.BlockV1
+    ResNet.BlockV2
+    ResNet18
+    ResNet34
+    ResNet50
+    ResNet101
+    ResNet152
+    ResNet200
 
 ResNet
 ~~~~~~
@@ -520,6 +726,14 @@ ResNet200
    :members:
 
 VectorQuantizer
+---------------
+
+.. autosummary::
+
+    VectorQuantizer
+    VectorQuantizerEMA
+
+VectorQuantizer
 ~~~~~~~~~~~~~~~
 
 .. autoclass:: VectorQuantizer
@@ -531,10 +745,20 @@ VectorQuantizerEMA
 .. autoclass:: VectorQuantizerEMA
    :members:
 
-JAX Transforms
---------------
+JAX Fundamentals
+================
 
 .. currentmodule:: haiku
+
+Control Flow
+------------
+
+.. autosummary::
+
+    cond
+    fori_loop
+    scan
+    switch
 
 cond
 ~~~~
@@ -545,6 +769,27 @@ fori_loop
 ~~~~~~~~~
 
 .. autofunction:: fori_loop
+
+scan
+~~~~
+
+.. autofunction:: scan
+
+switch
+~~~~~~
+
+.. autofunction:: switch
+
+JAX Transforms
+--------------
+
+.. autosummary::
+
+    grad
+    jit
+    remat
+    value_and_grad
+    vmap
 
 grad
 ~~~~
@@ -561,16 +806,6 @@ remat
 
 .. autofunction:: remat
 
-scan
-~~~~
-
-.. autofunction:: scan
-
-switch
-~~~~
-
-.. autofunction:: switch
-
 value_and_grad
 ~~~~~~~~~~~~~~
 
@@ -581,20 +816,93 @@ vmap
 
 .. autofunction:: vmap
 
-Testing
--------
+🚧 Experimental
+===============
 
-.. automodule:: haiku.testing
+.. automodule:: haiku.experimental
 
-transform_and_run
-~~~~~~~~~~~~~~~~~
+.. autosummary::
 
-.. autofunction:: transform_and_run
+    custom_creator
+    custom_getter
+    ParamContext
+    intercept_methods
+    MethodContext
+    named_call
+    optimize_rng_use
+    lift
+    profiler_name_scopes
+    to_dot
 
-Data structures
+custom_creator
+--------------
+
+.. autofunction:: custom_creator
+
+custom_getter
+-------------
+
+.. autofunction:: custom_getter
+
+ParamContext
+------------
+
+.. autoclass:: ParamContext
+
+intercept_methods
+-----------------
+
+.. autofunction:: intercept_methods
+
+MethodContext
+-------------
+
+.. autoclass:: MethodContext
+
+named_call
+----------
+
+.. autofunction:: named_call
+
+optimize_rng_use
+----------------
+
+.. autofunction:: optimize_rng_use
+
+lift
+----
+
+.. autofunction:: lift
+
+profiler_name_scopes
+--------------------
+
+.. autofunction:: profiler_name_scopes
+
+to_dot
+------
+
+.. autofunction:: to_dot
+
+Utilities
+=========
+
+.. currentmodule:: haiku
+
+Data Structures
 ---------------
 
 .. automodule:: haiku.data_structures
+
+.. autosummary::
+
+    filter
+    merge
+    partition
+    to_immutable_dict
+    to_mutable_dict
+    tree_bytes
+    tree_size
 
 filter
 ~~~~~~
@@ -631,66 +939,43 @@ tree_size
 
 .. autofunction:: tree_size
 
+Testing
+-------
 
-Experimental
-------------
+.. automodule:: haiku.testing
 
-.. automodule:: haiku.experimental
+.. autosummary::
 
-custom_creator
-~~~~~~~~~~~~~~
+    transform_and_run
 
-.. autofunction:: custom_creator
-
-custom_getter
-~~~~~~~~~~~~~
-
-.. autofunction:: custom_getter
-
-ParamContext
-~~~~~~~~~~~~
-
-.. autoclass:: ParamContext
-
-intercept_methods
+transform_and_run
 ~~~~~~~~~~~~~~~~~
 
-.. autofunction:: intercept_methods
+.. autofunction:: transform_and_run
 
-MethodContext
-~~~~~~~~~~~~~
+Conditional Computation
+-----------------------
 
-.. autoclass:: MethodContext
+.. automodule:: haiku
 
-named_call
-~~~~~~~~~~
+.. autosummary::
 
-.. autofunction:: named_call
+    running_init
 
-optimize_rng_use
-~~~~~~~~~~~~~~~~
+running_init
+~~~~~~~~~~~~
 
-.. autofunction:: optimize_rng_use
+.. autofunction:: running_init
 
-lift
-~~~~
-
-.. autofunction:: lift
-
-profiler_name_scopes
-~~~~~~~~~~~~~~~~~~~~
-
-.. autofunction:: profiler_name_scopes
-
-to_dot
-~~~~~~
-
-.. autofunction:: to_dot
-
-Utilities
+Functions
 ---------
 
-.. currentmodule:: haiku
+.. automodule:: haiku
+
+.. autosummary::
+
+    multinomial
+    one_hot
 
 multinomial
 ~~~~~~~~~~~
@@ -703,7 +988,7 @@ one_hot
 .. autofunction:: one_hot
 
 References
-----------
+==========
 
 .. bibliography:: references.bib
    :style: unsrt

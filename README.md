@@ -234,7 +234,7 @@ Let's work through implementing a linear layer:
 class MyLinear(hk.Module):
 
   def __init__(self, output_size, name=None):
-    super(MyLinear, self).__init__(name=name)
+    super().__init__(name=name)
     self.output_size = output_size
 
   def __call__(self, x):
@@ -294,9 +294,10 @@ In Haiku we provide a simple API for maintaining a PRNG key sequence associated
 with modules: `hk.next_rng_key()` (or `next_rng_keys()` for multiple keys):
 
 ```python
-class Dropout(hk.Module):
-  def __init__(self, rate=0.5):
-    super().__init__()
+class MyDropout(hk.Module):
+
+  def __init__(self, rate=0.5, name=None):
+    super().__init__(name=name)
     self.rate = rate
 
   def __call__(self, x):
@@ -304,7 +305,7 @@ class Dropout(hk.Module):
     p = jax.random.bernoulli(key, 1.0 - self.rate, shape=x.shape)
     return x * p / (1.0 - self.rate)
 
-forward = hk.transform(lambda x: Dropout()(x))
+forward = hk.transform(lambda x: MyDropout()(x))
 
 key1, key2 = jax.random.split(jax.random.PRNGKey(42), 2)
 params = forward.init(key1, x)

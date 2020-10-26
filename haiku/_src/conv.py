@@ -416,9 +416,14 @@ class Conv3D(ConvND):
         name=name)
 
 
-def compute_adjusted_padding(input_size: int, output_size: int,
-                             kernel_size: int, stride: int, padding: str,
-                             dilation: int = 1) -> Tuple[int, int]:
+def compute_adjusted_padding(
+    input_size: int,
+    output_size: int,
+    kernel_size: int,
+    stride: int,
+    padding: str,
+    dilation: int = 1,
+) -> Tuple[int, int]:
   """Computes adjusted padding for desired ConvTranspose `output_size`."""
   kernel_size = (kernel_size - 1) * dilation + 1
   if padding == "VALID":
@@ -558,28 +563,19 @@ class ConvNDTranspose(hk.Module):
     if self.mask is not None:
       w = w * self.mask
 
-    if self.output_shape is None:
-      out = lax.conv_transpose(
-          inputs,
-          w,
-          strides=self.stride,
-          padding=self.padding,
-          dimension_numbers=self.dimension_numbers)
-    else:
+    padding = self.padding
+    if self.output_shape is not None:
       input_shape = (
           inputs.shape[2:] if self.channel_index == 1 else inputs.shape[1:-1])
-      paddings = []
-      for in_shape, out_shape, kernel, stride in zip(  #
-          input_shape, self.output_shape, self.kernel_shape, self.stride):
-        padding = compute_adjusted_padding(in_shape, out_shape, kernel, stride,
-                                           self.padding)
-        paddings.append(padding)
-      out = lax.conv_transpose(
-          inputs,
-          w,
-          strides=self.stride,
-          padding=tuple(paddings),
-          dimension_numbers=self.dimension_numbers)
+      padding = tuple(map(
+          lambda i, o, k, s: compute_adjusted_padding(i, o, k, s, self.padding),
+          input_shape, self.output_shape, self.kernel_shape, self.stride))
+
+    out = lax.conv_transpose(inputs,
+                             w,
+                             strides=self.stride,
+                             padding=padding,
+                             dimension_numbers=self.dimension_numbers)
 
     if self.with_bias:
       if self.channel_index == -1:

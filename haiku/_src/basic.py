@@ -227,8 +227,9 @@ class BatchApply:
   This may be useful for applying a module to each timestep of e.g. a
   ``[Time, Batch, ...]`` array.
 
-  For some ``f``\ s and platforms, this may be more efficient than ``jax.vmap``,
-  especially when combined with other transformations like ``jax.grad``.
+  For some ``f``\ s and platforms, this may be more efficient than
+  :func:`jax.vmap`, especially when combined with other transformations like
+  :func:`jax.grad`.
   """
 
   def __init__(self, f, num_dims=2):

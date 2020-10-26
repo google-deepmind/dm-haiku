@@ -87,6 +87,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.inheritance_diagram',
+    'sphinx.ext.intersphinx',
     'sphinx.ext.linkcode',
     'sphinx.ext.napoleon',
     'sphinxcontrib.bibtex',
@@ -194,3 +195,11 @@ def linkcode_resolve(domain, info):
   return 'https://github.com/deepmind/dm-haiku/blob/master/haiku/%s#L%d#L%d' % (
       os.path.relpath(filename, start=os.path.dirname(
           hk.__file__)), lineno, lineno + len(source) - 1)
+
+
+# -- Intersphinx configuration -----------------------------------------------
+
+intersphinx_mapping = {
+    'jax': ('https://jax.readthedocs.io/en/latest/', None),
+}
+

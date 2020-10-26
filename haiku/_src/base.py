@@ -584,7 +584,7 @@ def next_rng_key() -> PRNGKey:
 
   Returns:
     A unique (within a call to ``init`` or ``apply``) JAX rng key that can be
-    used with APIs such as ``jax.random.uniform``.
+    used with APIs such as :func:`jax.random.uniform`.
   """
   assert_context("next_rng_key")
   return next_rng_key_internal()
@@ -610,7 +610,7 @@ def next_rng_keys(num: int) -> Tuple[PRNGKey, ...]:
 
   Returns:
     One or more unique (within a transformed function) JAX rng key that can be
-    used with APIs such as ``jax.random.uniform``.
+    used with APIs such as :func:`jax.random.uniform`.
   """
   assert_context("next_rng_keys")
   rng_seq = rng_seq_or_fail()

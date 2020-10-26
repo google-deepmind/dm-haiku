@@ -214,9 +214,9 @@ class VectorQuantizerEMA(hk.Module):
       epsilon: small constant to aid numerical stability, default ``1e-5``.
       dtype: dtype for the embeddings variable, defaults to ``float32``.
       cross_replica_axis: If not ``None``, it should be a string representing
-        the axis name over which this module is being run within a ``jax.pmap``.
-        Supplying this argument means that cluster statistics and the perplexity
-        are calculated across all replicas on that axis.
+        the axis name over which this module is being run within a
+        :func:`jax.pmap`. Supplying this argument means that cluster statistics
+        and the perplexity are calculated across all replicas on that axis.
       name: name of the module.
     """
     super().__init__(name=name)

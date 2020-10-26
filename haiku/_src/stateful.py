@@ -389,7 +389,7 @@ def _old_cond(pred, true_operand, true_fun, false_operand, false_fun):
 
 
 def cond(*args, **kwargs):
-  """Equivalent to ``jax.lax.cond`` but with Haiku state threaded in/out."""
+  """Equivalent to :func:`jax.lax.cond` but with Haiku state passed in/out."""
   if not base.inside_transform():
     raise ValueError("hk.cond() should not be used outside of hk.transform(). "
                      "Use jax.cond() instead.")
@@ -416,7 +416,7 @@ def cond(*args, **kwargs):
 
 
 def switch(index, branches, operand):
-  """Equivalent to ``jax.lax.switch`` but with Haiku state threaded in/out."""
+  """Equivalent to :func:`jax.lax.switch` but with Haiku state passed in/out."""
   if not base.inside_transform():
     raise ValueError(
         "hk.switch() should not be used outside of hk.transform(). "
@@ -431,7 +431,7 @@ def switch(index, branches, operand):
 
 
 def scan(f, init, xs, length=None, reverse=False, unroll=1):
-  """Equivalent to ``jax.lax.scan`` but with Haiku state threaded in/out."""
+  """Equivalent to :func:`jax.lax.scan` but with Haiku state passed in/out."""
   if not base.inside_transform():
     raise ValueError("hk.scan() should not be used outside of hk.transform(). "
                      "Use jax.scan() instead.")
@@ -495,7 +495,7 @@ def scan(f, init, xs, length=None, reverse=False, unroll=1):
 
 
 def fori_loop(lower, upper, body_fun, init_val):
-  """Equivalent to ``jax.lax.fori_loop`` with Haiku state threaded in/out."""
+  """Equivalent to :func:`jax.lax.fori_loop` with Haiku state passed in/out."""
   if not base.inside_transform():
     raise ValueError(
         "hk.fori_loop() should not be used outside of hk.transform(). "
@@ -526,7 +526,7 @@ def fori_loop(lower, upper, body_fun, init_val):
 
 
 def vmap(fun, in_axes=0, out_axes=0, axis_name=None):
-  """Equivalent to ``jax.vmap`` with module parameters/state not mapped."""
+  """Equivalent to :func:`jax.vmap` with module parameters/state not mapped."""
 
   # TODO(tomhennigan): Allow configuration of params/state/rng mapping.
   in_axes = in_axes, None

@@ -91,7 +91,7 @@ def static_unroll(core, input_sequence, initial_state):
          outputs, state = core(input_sequence[t], state)
 
   A *static* unroll replaces a loop with its body repeated multiple
-  times when executed inside ``jax.jit``::
+  times when executed inside :func:`jax.jit`::
 
       state = initial_state
       outputs0, state = core(input_sequence[0], state)
@@ -139,7 +139,7 @@ def dynamic_unroll(core, input_sequence, initial_state):
          outputs, state = core(input_sequence[t], state)
 
   A *dynamic* unroll preserves the loop structure when executed inside
-  ``jax.jit``. See :func:`static_unroll` for an unroll function which
+  :func:`jax.jit`. See :func:`static_unroll` for an unroll function which
   replaces a loop with its body repeated multiple times.
 
   Args:

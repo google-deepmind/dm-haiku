@@ -44,10 +44,10 @@ def optimize_rng_use(fun):
   """Optimizes a RNG key splitting in ``fun``.
 
   Our strategy here is to use abstract interpretation to run your function
-  twice, the first time we use ``jax.eval_shape`` to avoid spending any flops
-  and simply observe how many times you call :func:`~haiku.next_rng_key`. We
-  then run your function again, but this time we reserve enough RNG keys ahead
-  of time such that we only need to call ``jax.random.split`` once.
+  twice, the first time we use :func:`jax.eval_shape` to avoid spending any
+  flops and simply observe how many times you call :func:`~haiku.next_rng_key`.
+  We then run your function again, but this time we reserve enough RNG keys
+  ahead of time such that we only need to call :func:`jax.random.split` once.
 
   In the following example, we need three random samples for our weight
   matricies in our 3 layer MLP. To draw these samples we use
@@ -69,7 +69,7 @@ def optimize_rng_use(fun):
 
   Returns:
     A function that applies ``fun`` but only requires one call to
-    ``jax.random.split`` by Haiku.
+    :func:`jax.random.split` by Haiku.
   """
 
   @functools.wraps(fun)

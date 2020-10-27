@@ -150,6 +150,11 @@ class Embed(hk.Module):
       lookup_style = getattr(hk.EmbedLookupStyle, lookup_style.upper())
 
     if lookup_style == hk.EmbedLookupStyle.ARRAY_INDEX:
+      # If you don't wrap ids in a singleton tuple then JAX will try to unpack
+      # it along the row dimension and treat each row as a separate index into
+      # one of the dimensions of the array. The error only surfaces when
+      # indexing with DeviceArray, while indexing with numpy.ndarray works fine.
+      # See https://github.com/google/jax/issues/620 for more details.
       return self.embeddings[(ids,)]
 
     elif lookup_style == hk.EmbedLookupStyle.ONE_HOT:

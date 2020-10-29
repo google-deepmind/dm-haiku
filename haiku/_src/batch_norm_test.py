@@ -17,6 +17,8 @@
 from absl.testing import absltest
 from haiku._src import batch_norm
 from haiku._src import test_utils
+from haiku._src import transform
+import jax
 import jax.numpy as jnp
 import numpy as np
 
@@ -107,6 +109,22 @@ class BatchNormTest(absltest.TestCase):
           create_offset=False,
           decay_rate=0.9,
           offset_init=jnp.zeros)
+
+  def test_eps_cast_to_var_dtype(self):
+    # See https://github.com/google/jax/issues/4718 for more info. In the
+    # context of this test we need to assert NumPy bf16 params/state and a
+    # Python float for eps preserve bf16 output.
+
+    def f(x, is_training):
+      return batch_norm.BatchNorm(True, True, 0.9, eps=0.1)(x, is_training)
+
+    f = transform.transform_with_state(f)
+
+    x = np.ones([], jnp.bfloat16)
+    key = jax.random.PRNGKey(42)
+    params, state = jax.device_get(f.init(key, x, True))
+    y, _ = f.apply(params, state, None, x, False)
+    self.assertEqual(y.dtype, jnp.bfloat16)
 
 if __name__ == "__main__":
   absltest.main()

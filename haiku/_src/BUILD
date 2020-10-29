@@ -155,6 +155,7 @@ hk_py_test(
     deps = [
         ":batch_norm",
         ":test_utils",
+        ":transform",
         # pip: absl/testing:absltest
         # pip: jax
         # pip: numpy

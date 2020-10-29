@@ -189,5 +189,6 @@ class BatchNorm(hk.Module):
     elif offset is None:
       offset = np.zeros([], dtype=w_dtype)
 
-    inv = scale * jax.lax.rsqrt(var + self.eps)
+    eps = jax.lax.convert_element_type(self.eps, var.dtype)
+    inv = scale * jax.lax.rsqrt(var + eps)
     return (inputs - mean) * inv + offset

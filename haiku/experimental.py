@@ -19,7 +19,8 @@ Features may be removed or modified at any time.
 
 from haiku._src.base import custom_creator
 from haiku._src.base import custom_getter
-from haiku._src.base import ParamContext
+from haiku._src.base import custom_state_getter
+from haiku._src.base import GetterContext
 from haiku._src.dot import to_dot
 from haiku._src.lift import lift
 from haiku._src.module import intercept_methods
@@ -28,15 +29,19 @@ from haiku._src.module import profiler_name_scopes
 from haiku._src.named_call import stateful_named_call as named_call
 from haiku._src.random import optimize_rng_use
 
+# TODO(tomhennigan): Remove deprecated alias.
+ParamContext = GetterContext
 
 __all__ = (
     "custom_creator",
     "custom_getter",
+    "custom_state_getter",
     "intercept_methods",
     "lift",
     "MethodContext",
     "named_call",
     "optimize_rng_use",
+    "GetterContext",
     "ParamContext",
     "profiler_name_scopes",
     "to_dot",

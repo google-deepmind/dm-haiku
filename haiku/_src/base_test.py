@@ -199,7 +199,10 @@ class BaseTest(parameterized.TestCase):
           param = base.get_parameter("w", [5], jnp.bfloat16, jnp.ones)
           assert param.shape == (5,)
 
-  def test_custom_getter_bf16(self):
+  @parameterized.parameters(
+      (base.get_parameter, base.custom_getter, "collect_params"),
+      (base.get_state, base.custom_state_getter, "collect_state"))
+  def test_custom_getter_bf16(self, get_x, custom_x, collect_x):
     def bf16_getter(next_getter, value, context):
       del context
       if value.dtype == jnp.float32:
@@ -207,17 +210,19 @@ class BaseTest(parameterized.TestCase):
       return next_getter(value)
 
     with base.new_context() as ctx:
-      with base.custom_getter(bf16_getter):
-        f = base.get_parameter("f", [], jnp.float32, init=jnp.ones)
-        i = base.get_parameter("i", [], jnp.int32, init=jnp.ones)
+      with custom_x(bf16_getter):
+        f = get_x("f", [], jnp.float32, init=jnp.ones)
+        i = get_x("i", [], jnp.int32, init=jnp.ones)
 
-    params = ctx.collect_params()
-    self.assertEqual(params["~"]["f"].dtype, jnp.float32)
+    collection = getattr(ctx, collect_x)()
+    self.assertEqual(collection["~"]["f"].dtype, jnp.float32)
     self.assertEqual(f.dtype, jnp.bfloat16)
-    self.assertEqual(params["~"]["i"].dtype, jnp.int32)
+    self.assertEqual(collection["~"]["i"].dtype, jnp.int32)
     self.assertEqual(i.dtype, jnp.int32)
 
-  def test_nested_getters(self):
+  @parameterized.parameters((base.get_parameter, base.custom_getter),
+                            (base.get_state, base.custom_state_getter))
+  def test_nested_getters(self, get_x, custom_x):
     log = []
 
     def logging_getter(log_msg, dtype_in, dtype_out):
@@ -230,10 +235,10 @@ class BaseTest(parameterized.TestCase):
       return _logging_getter
 
     with base.new_context():
-      with base.custom_getter(logging_getter("a", jnp.float32, jnp.bfloat16)), \
-           base.custom_getter(logging_getter("b", jnp.bfloat16, jnp.int32)), \
-           base.custom_getter(logging_getter("c", jnp.int32, jnp.int8)):
-        w = base.get_parameter("w", [], init=jnp.ones)
+      with custom_x(logging_getter("a", jnp.float32, jnp.bfloat16)), \
+           custom_x(logging_getter("b", jnp.bfloat16, jnp.int32)), \
+           custom_x(logging_getter("c", jnp.int32, jnp.int8)):
+        w = get_x("w", [], init=jnp.ones)
 
     self.assertEqual(w.dtype, jnp.int8)
     self.assertEqual(log, ["a", "b", "c"])
@@ -248,14 +253,15 @@ class BaseTest(parameterized.TestCase):
       with base.custom_creator(my_creator):
         pass
 
-  def test_getter_requires_context(self):
+  @parameterized.parameters(base.custom_getter, base.custom_state_getter)
+  def test_getter_requires_context(self, custom_x):
     def my_getter(next_getter, value, context):
       del context
       return next_getter(value)
 
     with self.assertRaisesRegex(ValueError,
                                 "must be used as part of an `hk.transform`"):
-      with base.custom_getter(my_getter):
+      with custom_x(my_getter):
         pass
 
   def test_get_state_no_init_raises(self):

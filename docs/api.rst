@@ -825,7 +825,8 @@ vmap
 
     custom_creator
     custom_getter
-    ParamContext
+    custom_state_getter
+    GetterContext
     intercept_methods
     MethodContext
     named_call
@@ -844,8 +845,22 @@ custom_getter
 
 .. autofunction:: custom_getter
 
+custom_state_getter
+-------------------
+
+.. autofunction:: custom_state_getter
+
+GetterContext
+-------------
+
+.. autoclass:: GetterContext
+
 ParamContext
 ------------
+
+.. deprecated:: 0.0.3
+  Renamed to :class:`GetterContext` and used for both custom parameter getters
+  and custom state getters.
 
 .. autoclass:: ParamContext
 

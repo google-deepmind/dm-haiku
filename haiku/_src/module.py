@@ -200,7 +200,7 @@ Args = Tuple[Any]
 Kwargs = Dict[str, Any]
 NextGetter = Callable[..., Any]
 MethodGetter = Callable[[NextGetter, Args, Kwargs, MethodContext], Any]
-interceptor_stack = ThreadLocalStack()  # type: ThreadLocalStack[MethodGetter]
+interceptor_stack: ThreadLocalStack[MethodGetter] = ThreadLocalStack()
 
 
 def intercept_methods(interceptor: MethodGetter):
@@ -475,7 +475,7 @@ def unique_and_canonical_name(name: str) -> str:
   return qualified_name
 
 MethodHook = Callable[[Module, str], ContextManager[None]]
-method_hook_stack = ThreadLocalStack()  # type: ThreadLocalStack[MethodHook]
+method_hook_stack: ThreadLocalStack[MethodHook] = ThreadLocalStack()
 
 
 def hook_methods(method_hook: MethodHook) -> ContextManager[None]:

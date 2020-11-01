@@ -43,10 +43,10 @@ MutableParams = MutableMapping[str, MutableMapping[str, jnp.ndarray]]
 MutableState = MutableMapping[str, MutableMapping[str, StatePair]]
 
 # TODO(tomhennigan) Should creator_stack be part of frame?
-frame_stack = ThreadLocalStack()  # type: ThreadLocalStack["Frame"]
-creator_stack = ThreadLocalStack()  # type: ThreadLocalStack["ParamCreator"]
-param_getter_stack = ThreadLocalStack()  # type: ThreadLocalStack["Getter"]
-state_getter_stack = ThreadLocalStack()  # type: ThreadLocalStack["Getter"]
+frame_stack: ThreadLocalStack["Frame"] = ThreadLocalStack()
+creator_stack: ThreadLocalStack["ParamCreator"] = ThreadLocalStack()
+param_getter_stack: ThreadLocalStack["Getter"] = ThreadLocalStack()
+state_getter_stack: ThreadLocalStack["Getter"] = ThreadLocalStack()
 
 
 class Frame(NamedTuple):

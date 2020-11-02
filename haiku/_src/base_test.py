@@ -27,6 +27,9 @@ import numpy as np
 
 # TODO(tomhennigan) Improve test coverage.
 
+custom_state_creator = functools.partial(
+    base.custom_creator, params=False, state=True)
+
 custom_state_getter = functools.partial(
     base.custom_getter, params=False, state=True)
 
@@ -131,7 +134,10 @@ class BaseTest(parameterized.TestCase):
     self.assertLen(rngs, 6)
     self.assertTrue(jnp.all(jnp.array(rngs) == jnp.array(maybes)))
 
-  def test_init_custom_creator(self):
+  @parameterized.parameters(
+      (base.get_parameter, base.custom_creator, "collect_params"),
+      (base.get_state, custom_state_creator, "collect_state"))
+  def test_init_custom_creator(self, get_x, custom_x, collect_x):
     def zeros_creator(next_creator, shape, dtype, init, context):
       self.assertEqual(context.full_name, "~/w")
       self.assertEqual(shape, [])
@@ -140,12 +146,14 @@ class BaseTest(parameterized.TestCase):
       return next_creator(shape, dtype, jnp.zeros)
 
     with base.new_context() as ctx:
-      with base.custom_creator(zeros_creator):
-        base.get_parameter("w", [], init=jnp.ones)
+      with custom_x(zeros_creator):
+        get_x("w", [], init=jnp.ones)
 
-    self.assertEqual(ctx.collect_params(), {"~": {"w": jnp.zeros([])}})
+    self.assertEqual(getattr(ctx, collect_x)(), {"~": {"w": jnp.zeros([])}})
 
-  def test_nested_creators(self):
+  @parameterized.parameters((base.get_parameter, base.custom_creator),
+                            (base.get_state, custom_state_creator))
+  def test_nested_creators(self, get_x, custom_x):
     log = []
 
     def logging_creator(log_msg):
@@ -156,15 +164,19 @@ class BaseTest(parameterized.TestCase):
       return _logging_creator
 
     with base.new_context():
-      with base.custom_creator(logging_creator("a")), \
-           base.custom_creator(logging_creator("b")), \
-           base.custom_creator(logging_creator("c")):
-        base.get_parameter("w", [], init=jnp.ones)
+      with custom_x(logging_creator("a")), \
+           custom_x(logging_creator("b")), \
+           custom_x(logging_creator("c")):
+        get_x("w", [], init=jnp.ones)
 
     self.assertEqual(log, ["a", "b", "c"])
 
-  def test_original_dtype(self):
-
+  @parameterized.parameters((base.get_parameter, base.custom_creator,
+                             base.custom_getter, "collect_params"),
+                            (base.get_state, custom_state_creator,
+                             custom_state_getter, "collect_state"))
+  def test_original_dtype(self, get_x, custom_create_x, custom_get_x,
+                          collect_x):
     def dtype_cast_creator(next_creator, shape, dtype, init, context):
       if context.original_dtype == jnp.bfloat16:
         dtype = jnp.float32
@@ -177,15 +189,17 @@ class BaseTest(parameterized.TestCase):
       return next_getter(value)
 
     with base.new_context() as ctx:
-      with base.custom_creator(dtype_cast_creator), \
-           base.custom_getter(dtype_recast_getter):
-        param = base.get_parameter("w", [], jnp.bfloat16, jnp.ones)
-        orig_param = jax.tree_leaves(ctx.collect_params())[0]
+      with custom_create_x(dtype_cast_creator), \
+           custom_get_x(dtype_recast_getter):
+        value = get_x("w", [], jnp.bfloat16, jnp.ones)
+        orig_value = jax.tree_leaves(getattr(ctx, collect_x)())[0]
 
-        assert param.dtype == jnp.bfloat16
-        assert orig_param.dtype == jnp.float32
+        assert value.dtype == jnp.bfloat16
+        assert orig_value.dtype == jnp.float32
 
-  def test_original_shape(self):
+  @parameterized.parameters((base.get_parameter, base.custom_creator),
+                            (base.get_state, custom_state_creator))
+  def test_original_shape(self, get_x, custom_x):
 
     def new_shape_creator(next_creator, shape, dtype, init, context):
       del shape
@@ -198,10 +212,10 @@ class BaseTest(parameterized.TestCase):
       return next_creator(context.original_shape, dtype, init)
 
     with base.new_context():
-      with base.custom_creator(new_shape_creator):
-        with base.custom_creator(original_shape_restorer):
-          param = base.get_parameter("w", [5], jnp.bfloat16, jnp.ones)
-          assert param.shape == (5,)
+      with custom_x(new_shape_creator):
+        with custom_x(original_shape_restorer):
+          value = get_x("w", [5], jnp.bfloat16, jnp.ones)
+          assert value.shape == (5,)
 
   @parameterized.parameters(
       (base.get_parameter, base.custom_getter, "collect_params"),
@@ -247,14 +261,51 @@ class BaseTest(parameterized.TestCase):
     self.assertEqual(w.dtype, jnp.int8)
     self.assertEqual(log, ["a", "b", "c"])
 
-  def test_creator_requires_context(self):
+  @parameterized.parameters(*it.permutations([True, False], 2))
+  def test_creator_types(self, params, state):
+    log = []
+    def logging_creator(next_creator, shape, dtype, init, context):
+      log.append(context.full_name)
+      return next_creator(shape, dtype, init)
+
+    with base.new_context():
+      with base.custom_creator(logging_creator, params=params, state=state):
+        base.get_parameter("params", [], init=jnp.zeros)
+        base.get_state("state", [], init=jnp.zeros)
+
+    self.assertLen(log, int(params) + int(state))
+    if params:
+      self.assertIn("~/params", log)
+    if state:
+      self.assertIn("~/state", log)
+
+  @parameterized.parameters(*it.permutations([True, False], 2))
+  def test_getter_types(self, params, state):
+    log = []
+    def logging_getter(next_getter, value, context):
+      log.append(context.full_name)
+      return next_getter(value)
+
+    with base.new_context():
+      with base.custom_getter(logging_getter, params=params, state=state):
+        base.get_parameter("params", [], init=jnp.zeros)
+        base.get_state("state", [], init=jnp.zeros)
+
+    self.assertLen(log, int(params) + int(state))
+    if params:
+      self.assertIn("~/params", log)
+    if state:
+      self.assertIn("~/state", log)
+
+  @parameterized.parameters(base.custom_creator, custom_state_creator)
+  def test_creator_requires_context(self, custom_x):
     def my_creator(next_creator, shape, dtype, init, context):
       del context
       return next_creator(shape, dtype, init)
 
     with self.assertRaisesRegex(ValueError,
                                 "must be used as part of an `hk.transform`"):
-      with base.custom_creator(my_creator):
+      with custom_x(my_creator):
         pass
 
   @parameterized.parameters(base.custom_getter, custom_state_getter)

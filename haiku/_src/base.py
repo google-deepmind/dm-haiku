@@ -44,7 +44,8 @@ MutableState = MutableMapping[str, MutableMapping[str, StatePair]]
 
 # TODO(tomhennigan) Should creator_stack be part of frame?
 frame_stack: ThreadLocalStack["Frame"] = ThreadLocalStack()
-creator_stack: ThreadLocalStack["ParamCreator"] = ThreadLocalStack()
+param_creator_stack: ThreadLocalStack["Creator"] = ThreadLocalStack()
+state_creator_stack: ThreadLocalStack["Creator"] = ThreadLocalStack()
 param_getter_stack: ThreadLocalStack["Getter"] = ThreadLocalStack()
 state_getter_stack: ThreadLocalStack["Getter"] = ThreadLocalStack()
 
@@ -286,12 +287,12 @@ def get_parameter(
           "All parameters must be created as part of `init`.".format(
               name, bundle_name))
 
-    param = create_parameter(context, shape, dtype, init)
+    param = run_creators(param_creator_stack, context, shape, dtype, init)
     params[name] = param  # pytype: disable=unsupported-operands
 
   # Custom getters allow a hook for users to customize the value returned by
   # get_parameter. For example casting values to some dtype.
-  param = run_custom_getters(param_getter_stack, context, param)
+  param = run_getters(param_getter_stack, context, param)
 
   assert param.shape == tuple(shape), (
       "{!r} with shape {!r} does not match shape={!r} dtype={!r}".format(
@@ -318,54 +319,39 @@ class GetterContext(NamedTuple):
   original_shape: Sequence[int]
 
 NextCreator = Callable[[Sequence[int], Any, Initializer], jnp.ndarray]
-ParamCreator = Callable[
+Creator = Callable[
     [NextCreator, Sequence[int], Any, Initializer, GetterContext], jnp.ndarray]
 
 
-def create_parameter(
+def run_creators(
+    stack: ThreadLocalStack[Creator],
     context: GetterContext,
     shape: Sequence[int],
     dtype: Any = jnp.float32,
     init: Initializer = None,
 ) -> jnp.ndarray:
-  """Creates a parameter by running user defined creators then init.
-
-  >>> def zeros_creator(next_creator, shape, dtype, init, context):
-  ...   init = jnp.zeros
-  ...   return next_creator(shape, dtype, init)
-
-  >>> with hk.experimental.custom_creator(zeros_creator):
-  ...   w = hk.get_parameter("w", [], jnp.float32, init=jnp.ones)
-  >>> w.dtype
-  dtype('float16')
-
-  Args:
-    context: A GetterContext object describing the parameter's context.
-    shape: The shape of the parameter.
-    dtype: The dtype of the parameter.
-    init: A callable of shape, dtype to generate an initial value for the
-      parameter.
-
-  Returns:
-    A jnp.ndarray with the parameter of the given shape/dtype.
-  """
-  if not creator_stack:
+  """See :func:`custom_creator` for usage."""
+  if not stack:
     return init(shape, dtype)
 
-  creator_stack_copy = creator_stack.clone()
+  stack_copy = stack.clone()
 
   def next_creator(shape, dtype, init):
-    if creator_stack_copy:
-      return creator_stack_copy.popleft()(next_creator, shape, dtype, init,
-                                          context)
+    if stack_copy:
+      return stack_copy.popleft()(next_creator, shape, dtype, init, context)
     else:
       return init(shape, dtype)
 
   return next_creator(shape, dtype, init)
 
 
-def custom_creator(creator: ParamCreator):
-  """Registers a custom parameter creator.
+def custom_creator(
+    creator: Creator,
+    *,
+    params: bool = True,
+    state: bool = False,
+) -> contextlib.AbstractContextManager:
+  """Registers a custom parameter and/or state creator.
 
   When new parameters are created via :func:`get_parameter` we first run custom
   creators passing user defined values through. For example:
@@ -379,44 +365,40 @@ def custom_creator(creator: ParamCreator):
   >>> z
   DeviceArray(0., dtype=float32)
 
+  If ``state=True`` then your creator will additionally run on calls to
+  :func:`get_state`:
+
+  >>> with hk.experimental.custom_creator(zeros_creator, state=True):
+  ...   z = hk.get_state("z", [], jnp.float32, jnp.ones)
+  >>> z
+  DeviceArray(0., dtype=float32)
+
   Args:
     creator: A parameter creator.
+    params: Whether to intercept parameter creation, defaults to ``True``.
+    state: Whether to intercept state creation, defaults to ``False``.
 
   Returns:
     Context manager under which the creator is active.
   """
   assert_context("experimental.custom_creator")
-  return creator_stack(creator)
+  stack = contextlib.ExitStack()
+  if params:
+    stack.enter_context(param_creator_stack(creator))
+  if state:
+    stack.enter_context(state_creator_stack(creator))
+  return stack
 
 NextGetter = Callable[[str, jnp.ndarray], jnp.ndarray]
 Getter = Callable[[NextGetter, jnp.ndarray, GetterContext], jnp.ndarray]
 
 
-def run_custom_getters(
+def run_getters(
     stack: Stack[Getter],
     context: GetterContext,
     value: jnp.ndarray,
 ) -> jnp.ndarray:
-  """Creates a parameter or state by running user defined creators then init.
-
-  >>> def bfloat16_scope(next_getter, value, context):
-  ...   if value.dtype == jnp.float32:
-  ...     value = value.astype(jnp.bfloat16)
-  ...   return next_getter(value)
-
-  >>> with hk.experimental.custom_getter(bfloat16_scope):
-  ...   w = hk.get_parameter("w", [], jnp.float32, init=jnp.ones)
-  >>> w.dtype
-  dtype('bfloat16')
-
-  Args:
-    stack: The getter stack to follow.
-    context: A GetterContext object describing the value's context.
-    value: The current value.
-
-  Returns:
-    A jnp.ndarray with the value of the given shape/dtype.
-  """
+  """See :func:`custom_getter` for usage."""
   if not stack:
     return value
 
@@ -699,6 +681,9 @@ def get_state(
   assert_context("get_state")
   bundle_name = current_bundle_name()
   state = current_frame().state[bundle_name]
+  fq_name = f"{bundle_name}/{name}"
+  context = GetterContext(fq_name, current_module(), dtype, shape)
+
   value = state.get(name, None)
   if value is None:
     if init is None:
@@ -707,16 +692,15 @@ def get_state(
     if shape is None or dtype is None:
       raise ValueError(f"Must provide shape and dtype to initialize {name!r} "
                        f"in {bundle_name!r}.")
-    initial = init(shape, dtype)
-    value = state[name] = StatePair(initial, initial)
 
-  value = value.current
+    value = run_creators(state_creator_stack, context, shape, dtype, init)
+    state[name] = StatePair(value, value)
+  else:
+    value = value.current
 
   # Custom getters allow a hook for users to customize the value returned by
   # get_state. For example casting values to some dtype.
-  fq_name = f"{bundle_name}/{name}"
-  context = GetterContext(fq_name, current_module(), dtype, shape)
-  value = run_custom_getters(state_getter_stack, context, value)
+  value = run_getters(state_getter_stack, context, value)
 
   return value
 

@@ -801,3 +801,50 @@ def assert_no_new_parameters():
   diff = param_names() - before
   if diff:
     raise AssertionError(f"New parameters were created: {list(sorted(diff))}")
+
+
+def _get_ids(collection_name: str) -> FrozenSet[int]:
+  """Returns the identity for all state in the current context."""
+  out = []
+  collection = getattr(current_frame(), collection_name)
+  for mod_name, bundle in collection.items():
+    if not isinstance(bundle, Mapping):
+      # TODO(tomhennigan) Fix broken user code and remove this warning.
+      warnings.warn(f"Invalid entry {mod_name!r} in collection {collection}")
+      continue
+
+    out.extend(map(id, bundle.values()))
+
+  return frozenset(out)
+
+
+def _all_state():
+  params = _get_ids("params")
+  state = _get_ids("state")
+  rng = current_frame().rng_stack.peek()
+  if rng is not None:
+    key, subkeys = rng.internal_state
+    rng = frozenset(map(id, [key] + list(subkeys)))
+  else:
+    rng = frozenset()
+  return params, state, rng
+
+
+@contextlib.contextmanager
+def assert_state_unchanged():
+  """Asserts that in the given block params, state and rng are unchanged."""
+  params_before, state_before, rng_before = _all_state()
+  yield
+  params_after, state_after, rng_after = _all_state()
+
+  params_diff = params_after - params_before
+  state_diff = state_after - state_before
+  rng_diff = rng_after - rng_before
+  if params_diff or state_diff or rng_diff:
+    raise StateChangedError("Within this code block you are not able to modify "
+                            "Haiku managed state (e.g. via `next_rng_key` or "
+                            "`set_state`).")
+
+
+class StateChangedError(AssertionError):
+  pass

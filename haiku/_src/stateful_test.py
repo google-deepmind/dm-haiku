@@ -370,6 +370,70 @@ class StatefulTest(parameterized.TestCase):
     self.assertEqual(cnt.ndim, 0)
     self.assertEqual(cnt, 1)
 
+  def test_while_loop_rejected_in_init(self):
+    def f():
+      stateful.while_loop(lambda x: x.all(), lambda x: not x, 1)
+    f = transform.transform(f)
+    with self.assertRaisesRegex(
+        ValueError, "hk.while_loop does not support initialization"):
+      f.init(None)
+
+  def test_updating_state_in_cond_fails(self):
+    def f(x):
+      m = CountingModule(op=lambda x: x + 1)
+      if not base.params_frozen():
+        return m(x)
+      else:
+        stateful.while_loop(m, lambda x: x, x)
+
+    f = transform.transform_with_state(f)
+    x = jnp.zeros([])
+    params, state = f.init(None, x)
+    with self.assertRaisesRegex(
+        ValueError,
+        "does not support.*set_state.*next_rng_key.*in.*cond_fun`"):
+      f.apply(params, state, None, x)
+
+  def test_rng_in_cond_fails(self):
+    def f(x):
+      m = CountingModule(op=lambda x: x + 1)
+      if not base.params_frozen():
+        return m(x)
+      else:
+        stateful.while_loop(lambda _: base.next_rng_key(), lambda x: x, x)
+
+    f = transform.transform_with_state(f)
+    x = jnp.zeros([])
+    params, state = f.init(None, x)
+    with self.assertRaisesRegex(
+        ValueError,
+        "does not support.*set_state.*next_rng_key.*in.*cond_fun`"):
+      f.apply(params, state, jax.random.PRNGKey(42), x)
+
+  @parameterized.parameters(0, 1, 2, 4, 8)
+  def test_while_loop_with_state(self, iters):
+    def f(x):
+      m = CountingModule(op=lambda x: x + 1)
+      if not base.params_frozen():
+        return m(x)
+      else:
+        _, y = stateful.while_loop(lambda a: a[0] < iters,
+                                   lambda a: (a[0] + 1, m(a[1])),
+                                   (0, x))
+        return y
+
+    f = transform.transform_with_state(f)
+    x = jnp.zeros([])
+    params, state = f.init(None, x)
+    self.assertEqual(list(state), ["counting_module"])
+    self.assertEqual(list(state["counting_module"]), ["count"])
+    np.testing.assert_allclose(state["counting_module"]["count"], x, rtol=1e-4)
+
+    y, state = f.apply(params, state, None, x)
+    np.testing.assert_allclose(state["counting_module"]["count"], iters,
+                               rtol=1e-4)
+    np.testing.assert_allclose(y, iters, rtol=1e-4)
+
 
 def _callback_prim(forward, backward):
   def f_impl(x):
@@ -389,12 +453,16 @@ def _callback_prim(forward, backward):
 
 class CountingModule(module.Module):
 
+  def __init__(self, op=jnp.square, name=None):
+    super().__init__(name=name)
+    self.op = op
+
   @property
   def count(self):
     return base.get_state("count", [], init=jnp.zeros)
 
   def __call__(self, x):
-    y = x ** 2
+    y = self.op(x)
     base.set_state("count", self.count + 1)
     return y
 

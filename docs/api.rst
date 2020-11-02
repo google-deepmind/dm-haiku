@@ -759,6 +759,7 @@ Control Flow
     fori_loop
     scan
     switch
+    while_loop
 
 cond
 ~~~~
@@ -779,6 +780,11 @@ switch
 ~~~~~~
 
 .. autofunction:: switch
+
+while_loop
+~~~~~~~~~~
+
+.. autofunction:: while_loop
 
 JAX Transforms
 --------------

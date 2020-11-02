@@ -89,6 +89,7 @@ from haiku._src.stateful import scan
 from haiku._src.stateful import switch
 from haiku._src.stateful import value_and_grad
 from haiku._src.stateful import vmap
+from haiku._src.stateful import while_loop
 from haiku._src.transform import running_init
 from haiku._src.transform import transform
 from haiku._src.transform import transform_with_state
@@ -181,6 +182,7 @@ __all__ = (
     "transparent",
     "value_and_grad",
     "vmap",
+    "while_loop",
     "with_rng",
     "without_apply_rng",
     "without_state",

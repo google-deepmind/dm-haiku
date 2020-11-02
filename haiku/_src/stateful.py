@@ -548,3 +548,44 @@ def vmap(fun, in_axes=0, out_axes=0, axis_name=None):
     return out
 
   return mapped_fun
+
+
+def while_loop(cond_fun, body_fun, init_val):
+  """Equivalent to jax.lax.while_loop with Haiku state threaded in/out."""
+
+  if not base.params_frozen():
+    raise ValueError(
+        "hk.while_loop does not support initialization (since we cannot "
+        "statically determine if your loop while run at least once). Please "
+        "use `hk.running_init` to run the body unconditionally:\n"
+        "\n"
+        "    if hk.running_init():\n"
+        "      # Unconditionally connect the module at init time.\n"
+        "      val = module(val)\n"
+        "    else:\n"
+        "      val = hk.while_loop(lambda val: val.mean() < 1, module, val)\n")
+
+  def pure_cond_fun(val):
+    val, _ = val
+    try:
+      with base.assert_state_unchanged():
+        return cond_fun(val)
+    except base.StateChangedError as e:
+      # If we find a use case for updating state/using rng in `cond` we would
+      # need to make a change in JAX itself (to support aux in/out of the cond).
+      raise ValueError(
+          "`hk.while_loop` does not support `hk.set_state`, `hk.next_rng_key` "
+          "(et al) in `cond_fun`."
+      ) from e
+
+  def pure_body_fun(val):
+    val, state = val
+    with temporary_internal_state(state):
+      val = body_fun(val)
+      state = internal_state()
+      return val, state
+
+  init_val = (init_val, internal_state())
+  val, state = jax.lax.while_loop(pure_cond_fun, pure_body_fun, init_val)
+  update_internal_state(state)
+  return val

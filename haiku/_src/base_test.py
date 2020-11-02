@@ -14,6 +14,7 @@
 # ==============================================================================
 """Tests for haiku._src.base."""
 
+import functools
 import itertools as it
 
 from absl.testing import absltest
@@ -25,6 +26,9 @@ import jax.numpy as jnp
 import numpy as np
 
 # TODO(tomhennigan) Improve test coverage.
+
+custom_state_getter = functools.partial(
+    base.custom_getter, params=False, state=True)
 
 
 class BaseTest(parameterized.TestCase):
@@ -201,7 +205,7 @@ class BaseTest(parameterized.TestCase):
 
   @parameterized.parameters(
       (base.get_parameter, base.custom_getter, "collect_params"),
-      (base.get_state, base.custom_state_getter, "collect_state"))
+      (base.get_state, custom_state_getter, "collect_state"))
   def test_custom_getter_bf16(self, get_x, custom_x, collect_x):
     def bf16_getter(next_getter, value, context):
       del context
@@ -221,7 +225,7 @@ class BaseTest(parameterized.TestCase):
     self.assertEqual(i.dtype, jnp.int32)
 
   @parameterized.parameters((base.get_parameter, base.custom_getter),
-                            (base.get_state, base.custom_state_getter))
+                            (base.get_state, custom_state_getter))
   def test_nested_getters(self, get_x, custom_x):
     log = []
 
@@ -253,7 +257,7 @@ class BaseTest(parameterized.TestCase):
       with base.custom_creator(my_creator):
         pass
 
-  @parameterized.parameters(base.custom_getter, base.custom_state_getter)
+  @parameterized.parameters(base.custom_getter, custom_state_getter)
   def test_getter_requires_context(self, custom_x):
     def my_getter(next_getter, value, context):
       del context

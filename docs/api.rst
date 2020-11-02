@@ -825,7 +825,6 @@ vmap
 
     custom_creator
     custom_getter
-    custom_state_getter
     GetterContext
     intercept_methods
     MethodContext
@@ -844,11 +843,6 @@ custom_getter
 -------------
 
 .. autofunction:: custom_getter
-
-custom_state_getter
--------------------
-
-.. autofunction:: custom_state_getter
 
 GetterContext
 -------------

@@ -431,8 +431,13 @@ def run_custom_getters(
   return next_getter(value)
 
 
-def custom_getter(getter: Getter):
-  """Registers a custom parameter getter.
+def custom_getter(
+    getter: Getter,
+    *,
+    params: bool = True,
+    state: bool = False,
+) -> contextlib.AbstractContextManager:
+  """Registers a custom parameter or state getter.
 
   When parameters are retrieved using :func:`get_parameter` we always run all
   custom getters before returning a value to the user.
@@ -446,39 +451,29 @@ def custom_getter(getter: Getter):
   >>> w.dtype
   dtype(bfloat16)
 
+  If ``state=True`` the getter will additionally run for calls to
+  :func:`get_state`:
+
+  >>> with hk.experimental.custom_getter(bf16_getter, state=True):
+  ...   c = hk.get_state("c", [], jnp.float32, jnp.ones)
+  >>> c.dtype
+  dtype(bfloat16)
+
   Args:
     getter: A parameter getter.
+    params: Whether the getter should run on :func:`get_parameter`
+    state: Whether the getter should run on :func:`get_state`.
 
   Returns:
     Context manager under which the getter is active.
   """
   assert_context("experimental.custom_getter")
-  return param_getter_stack(getter)
-
-
-def custom_state_getter(getter: Getter):
-  """Registers a custom state getter.
-
-  When state is retrieved using :func:`get_state` we always run all
-  custom getters before returning a value to the user.
-
-  >>> def bf16_getter(next_getter, value, context):
-  ...   value = value.astype(jnp.bfloat16)
-  ...   return next_getter(value)
-
-  >>> with hk.experimental.custom_state_getter(bf16_getter):
-  ...   w = hk.get_state("w", [], jnp.float32, jnp.ones)
-  >>> w.dtype
-  dtype(bfloat16)
-
-  Args:
-    getter: A state getter.
-
-  Returns:
-    Context manager under which the getter is active.
-  """
-  assert_context("experimental.custom_state_getter")
-  return state_getter_stack(getter)
+  stack = contextlib.ExitStack()
+  if params:
+    stack.enter_context(param_getter_stack(getter))
+  if state:
+    stack.enter_context(state_getter_stack(getter))
+  return stack
 
 
 def assert_is_prng_key(key: PRNGKey):

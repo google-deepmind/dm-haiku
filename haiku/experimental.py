@@ -24,6 +24,7 @@ from haiku._src.dot import to_dot
 from haiku._src.lift import lift
 from haiku._src.module import intercept_methods
 from haiku._src.module import MethodContext
+from haiku._src.module import name_scope
 from haiku._src.module import profiler_name_scopes
 from haiku._src.named_call import stateful_named_call as named_call
 from haiku._src.random import optimize_rng_use
@@ -37,6 +38,7 @@ __all__ = (
     "intercept_methods",
     "lift",
     "MethodContext",
+    "name_scope",
     "named_call",
     "optimize_rng_use",
     "GetterContext",

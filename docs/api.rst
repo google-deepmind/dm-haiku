@@ -834,6 +834,7 @@ vmap
     GetterContext
     intercept_methods
     MethodContext
+    name_scope
     named_call
     optimize_rng_use
     lift
@@ -873,6 +874,11 @@ MethodContext
 -------------
 
 .. autoclass:: MethodContext
+
+name_scope
+----------
+
+.. autofunction:: name_scope
 
 named_call
 ----------

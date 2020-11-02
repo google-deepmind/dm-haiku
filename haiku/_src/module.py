@@ -279,6 +279,90 @@ def run_interceptors(  # pylint: disable=invalid-name
   return next_fun(*args, **kwargs)
 
 
+def simulate_module_call(module):
+  frame = base.current_frame()
+  state = base.ModuleState(module=module, method_name="__call__")
+  return frame.module(state)
+
+
+class NameScope:
+  """Context manager that when active adds a new name in the hierarcy."""
+
+  def __init__(self, name: str):
+    if not name or name[0] == "/":
+      raise ValueError("Name scopes must not start with /")
+
+    module = None
+    with contextlib.ExitStack() as stack:
+      for subname in name.split("/"):
+        module = Module(name=subname)
+        stack.enter_context(simulate_module_call(module))
+
+    self.__entered = False
+    self.__module = module
+    self.__stack = contextlib.ExitStack()
+
+  def __enter__(self):
+    if self.__stack is None:
+      raise ValueError("name_scope is not reusable")
+    if self.__entered:
+      raise ValueError("name_scope is not reentrant")
+    self.__entered = True
+    self.__stack.enter_context(simulate_module_call(self.__module))
+
+  def __exit__(self, exc_type, exc_value, traceback):
+    try:
+      return self.__stack.__exit__(exc_type, exc_value, traceback)
+    finally:
+      self.__stack = None
+
+
+def name_scope(name: str) -> ContextManager[None]:
+  """Context manager which adds a prefix to all new modules, params or state.
+
+  >>> with hk.experimental.name_scope("my_name_scope"):
+  ...   net = hk.Linear(1, name="my_linear")
+  >>> net.module_name
+  'my_name_scope/my_linear'
+
+  When used inside a module, any submodules, parameters or state created inside
+  the name scope will have a prefix added to their names:
+
+  >>> class MyModule(hk.Module):
+  ...   def __call__(self, x):
+  ...     with hk.experimental.name_scope("my_name_scope"):
+  ...       submodule = hk.Linear(1, name="submodule")
+  ...       w = hk.get_parameter("w", [], init=jnp.ones)
+  ...     return submodule(x) + w
+
+  >>> f = hk.transform(lambda x: MyModule()(x))
+  >>> params = f.init(jax.random.PRNGKey(42), jnp.ones([1, 1]))
+  >>> jax.tree_map(jnp.shape, params)
+  FlatMapping({
+    'my_module/my_name_scope': FlatMapping({'w': ()}),
+    'my_module/my_name_scope/submodule': FlatMapping({'b': (1,), 'w': (1, 1)}),
+  })
+
+  Name scopes are very similar to putting all of the code inside the context
+  manager inside a method on a :class:`Module` with the name you provide. Behind
+  the scenes this is precisely how name scopes are implemented.
+
+  If you are familiar with TensorFlow then Haiku's :func:`name_scope` is similar
+  to ``tf.variable_scope(..)`` in TensorFlow 1 and ``tf.name_scope(..)`` in
+  TensorFlow 1 and 2 in that it changes the names associated with modules,
+  parameters and state.
+
+  Args:
+    name: The name scope to use (e.g. ``"foo"`` or ``"foo/bar"``).
+
+  Returns:
+    A single use context manager that when active prefixes new modules,
+    parameters or state with the given name.
+  """
+  base.assert_context("experimental.name_scope")
+  return NameScope(name)
+
+
 def wrap_method(method_name, unbound_method):
   """Wraps `method` such that it enters name stack and runs method interceptors.
 

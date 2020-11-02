@@ -394,6 +394,74 @@ class ModuleTest(parameterized.TestCase):
       y = mod(x)
     self.assertEqual(y, (x + 1) ** 2)
 
+  @test_utils.transform_and_run
+  def test_name_scope_trivial(self):
+    with module.name_scope("foo"):
+      mod1 = module.Module(name="bar")
+      mod2 = module.Module(name="bar")
+    self.assertEqual(mod1.module_name, "foo/bar")
+    self.assertEqual(mod2.module_name, "foo/bar_1")
+
+  @test_utils.transform_and_run
+  def test_name_scope_inside_module(self):
+    mod = NameScopeModule(name="module")
+    w, w_foo = mod()
+    self.assertIsNot(w, w_foo)
+    params = mod.params_dict()
+    self.assertLen(params, 2)
+    self.assertIs(params["module/w"], w)
+    self.assertIs(params["module/foo/w"], w_foo)
+
+  @test_utils.transform_and_run
+  def test_name_scope_slash_delimited(self):
+    with module.name_scope("foo/bar"):
+      mod = module.Module(name="baz")
+    self.assertEqual(mod.module_name, "foo/bar/baz")
+
+  @test_utils.transform_and_run
+  def test_name_scope_nesting(self):
+    with module.name_scope("foo"):
+      with module.name_scope("bar"):
+        mod = module.Module(name="baz")
+    self.assertEqual(mod.module_name, "foo/bar/baz")
+
+  @test_utils.transform_and_run
+  def test_name_scope_duplicate_name(self):
+    with module.name_scope("foo"):
+      mod1 = module.Module(name="bar")
+    with module.name_scope("foo"):
+      mod2 = module.Module(name="bar")
+    self.assertEqual(mod1.module_name, "foo/bar")
+    self.assertEqual(mod2.module_name, "foo_1/bar")
+
+  @test_utils.transform_and_run
+  def test_name_scope_reuse(self):
+    scope = module.name_scope("foo")
+    with scope:
+      pass
+    with self.assertRaisesRegex(ValueError, "name_scope is not reusable"):
+      with scope:
+        pass
+
+  @test_utils.transform_and_run
+  def test_name_scope_reenter(self):
+    scope = module.name_scope("foo")
+    with scope:
+      with self.assertRaisesRegex(ValueError, "name_scope is not reentrant"):
+        with scope:
+          pass
+
+  @test_utils.transform_and_run
+  def test_name_scope_leading_slash(self):
+    with self.assertRaisesRegex(ValueError,
+                                "Name scopes must not start with /"):
+      module.name_scope("/foo")
+
+  def test_name_scope_outside_transform(self):
+    with self.assertRaisesRegex(
+        ValueError, "name_scope.*must be used as part of an `hk.transform`"):
+      module.name_scope("foo")
+
 
 class IdentityModule(module.Module):
 
@@ -508,6 +576,15 @@ class DataMLP(module.Module):
         x = self.activation(x)
       x = DataLinear(output_size, name="linear")(x)
     return x
+
+
+class NameScopeModule(module.Module):
+
+  def __call__(self):
+    w = base.get_parameter("w", [], init=jnp.zeros)
+    with module.name_scope("foo"):
+      w_foo = base.get_parameter("w", [], init=jnp.zeros)
+    return w, w_foo
 
 if __name__ == "__main__":
   absltest.main()

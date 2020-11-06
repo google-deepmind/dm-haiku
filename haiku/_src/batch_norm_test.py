@@ -14,6 +14,7 @@
 # ==============================================================================
 """Tests for haiku._src.batch_norm."""
 
+import os
 from absl.testing import absltest
 from haiku._src import batch_norm
 from haiku._src import test_utils
@@ -81,6 +82,65 @@ class BatchNormTest(absltest.TestCase):
     # axis separately leads to a fully normalized = equal array.
     np.testing.assert_equal(result, np.zeros(inputs.shape))
 
+  def test_simple_training_cross_replica_axis(self):
+    ldc = jax.local_device_count()
+
+    def f(x, is_training=True):
+      return batch_norm.BatchNorm(
+          create_scale=False,
+          create_offset=False,
+          decay_rate=0.9,
+          cross_replica_axis="i",
+      )(x, is_training=is_training)
+
+    f = transform.transform_with_state(f)
+
+    inputs = np.arange(ldc * 4).reshape(ldc, 4)
+    key = np.broadcast_to(jax.random.PRNGKey(42), (ldc, 2))
+    params, state = jax.pmap(f.init, axis_name="i")(key, inputs)
+    result, _ = jax.pmap(f.apply, axis_name="i")(params, state, key, inputs)
+
+    mean = np.mean(inputs, axis=0)
+    std = np.std(inputs, axis=0) + 1e-10
+    expected = (inputs - mean) / std
+
+    np.testing.assert_array_almost_equal(result, expected)
+
+  def test_simple_training_cross_replica_axis_index_groups(self):
+    ldc = jax.local_device_count()
+    if ldc < 2:
+      self.skipTest("Cross-replica test requires at least 2 devices.")
+    num_groups = ldc // 2
+    num_group_devices = ldc // num_groups
+    # for 8 devices this produces [[0, 1], [2, 3], [4, 5], [6, 7]] groups.
+    groups = np.arange(ldc).reshape(num_groups, num_group_devices).tolist()
+
+    def f(x, is_training=True):
+      return batch_norm.BatchNorm(
+          create_scale=False,
+          create_offset=False,
+          decay_rate=0.9,
+          cross_replica_axis="i",
+          cross_replica_axis_index_groups=groups,
+      )(x, is_training=is_training)
+
+    f = transform.transform_with_state(f)
+
+    inputs = np.arange(ldc * 4).reshape(ldc, 4).astype(np.float32)
+    key = np.broadcast_to(jax.random.PRNGKey(42), (ldc, 2))
+    params, state = jax.pmap(f.init, axis_name="i")(key, inputs)
+    result, _ = jax.pmap(f.apply, axis_name="i")(params, state, key, inputs)
+
+    expected = np.empty_like(inputs)
+    for g in range(num_groups):
+      group_inputs = inputs[num_group_devices*g:num_group_devices*(g + 1)]
+      group_mean = np.mean(group_inputs, axis=0)
+      group_std = np.std(group_inputs, axis=0) + 1e-10
+      group_inputs = (group_inputs - group_mean) / group_std
+      expected[num_group_devices*g:num_group_devices*(g + 1)] = group_inputs
+
+    np.testing.assert_array_almost_equal(result, expected)
+
   @test_utils.transform_and_run
   def test_no_scale_and_offset(self):
     layer = batch_norm.BatchNorm(
@@ -127,4 +187,10 @@ class BatchNormTest(absltest.TestCase):
     self.assertEqual(y.dtype, jnp.bfloat16)
 
 if __name__ == "__main__":
+  _xla_flags = os.environ.get("XLA_FLAGS", "")
+  os.environ["XLA_FLAGS"] = (_xla_flags +
+                             " --xla_force_host_platform_device_count=8")
+
   absltest.main()
+
+  os.environ["XLA_FLAGS"] = _xla_flags

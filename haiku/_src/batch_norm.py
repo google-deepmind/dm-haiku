@@ -68,6 +68,7 @@ class BatchNorm(hk.Module):
       offset_init: Optional[hk.initializers.Initializer] = None,
       axis: Optional[Sequence[int]] = None,
       cross_replica_axis: Optional[str] = None,
+      cross_replica_axis_index_groups: Optional[Sequence[Sequence[int]]] = None,
       data_format: str = "channels_last",
       name: Optional[str] = None,
   ):
@@ -90,6 +91,7 @@ class BatchNorm(hk.Module):
         the axis name over which this module is being run within a ``jax.pmap``.
         Supplying this argument means that batch statistics are calculated
         across all replicas on that axis.
+      cross_replica_axis_index_groups: Specifies how devices are grouped.
       data_format: The data format of the input. Can be either
         ``channels_first``, ``channels_last``, ``N...C`` or ``NC...``. By
         default it is ``channels_last``.
@@ -100,6 +102,10 @@ class BatchNorm(hk.Module):
       raise ValueError("Cannot set `scale_init` if `create_scale=False`")
     if not create_offset and offset_init is not None:
       raise ValueError("Cannot set `offset_init` if `create_offset=False`")
+    if (cross_replica_axis is None and
+        cross_replica_axis_index_groups is not None):
+      raise ValueError("`cross_replica_axis` name must be specified"
+                       "if `cross_replica_axis_index_groups` are used.")
 
     self.create_scale = create_scale
     self.create_offset = create_offset
@@ -108,6 +114,7 @@ class BatchNorm(hk.Module):
     self.offset_init = offset_init or jnp.zeros
     self.axis = axis
     self.cross_replica_axis = cross_replica_axis
+    self.cross_replica_axis_index_groups = cross_replica_axis_index_groups
     self.channel_index = utils.get_channel_index(data_format)
     self.mean_ema = hk.ExponentialMovingAverage(decay_rate, name="mean_ema")
     self.var_ema = hk.ExponentialMovingAverage(decay_rate, name="var_ema")
@@ -155,12 +162,17 @@ class BatchNorm(hk.Module):
       axis = [i for i in range(inputs.ndim) if i != channel_index]
 
     if is_training or test_local_stats:
-      cross_replica_axis = self.cross_replica_axis
       if self.cross_replica_axis:
         mean = jnp.mean(inputs, axis, keepdims=True)
-        mean = jax.lax.pmean(mean, cross_replica_axis)
+        mean = jax.lax.pmean(
+            mean,
+            axis_name=self.cross_replica_axis,
+            axis_index_groups=self.cross_replica_axis_index_groups)
         mean_of_squares = jnp.mean(inputs**2, axis, keepdims=True)
-        mean_of_squares = jax.lax.pmean(mean_of_squares, cross_replica_axis)
+        mean_of_squares = jax.lax.pmean(
+            mean_of_squares,
+            axis_name=self.cross_replica_axis,
+            axis_index_groups=self.cross_replica_axis_index_groups)
         var = mean_of_squares - mean ** 2
       else:
         mean = jnp.mean(inputs, axis, keepdims=True)

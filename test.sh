@@ -19,6 +19,11 @@
 set -e
 set -x
 
+if [ -z "$(which pandoc)" ]; then
+  echo 1>&2 "Requesting to install pandoc"
+  sudo apt install -y pandoc
+fi
+
 # Aim for hermetic Python environment.
 unset PYTHONPATH
 virtualenv -p python3 --no-site-packages .

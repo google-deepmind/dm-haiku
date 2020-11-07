@@ -1,5 +1,8 @@
-sphinx==2.0.1
-sphinx_rtd_theme==0.4.3
-sphinxcontrib-katex==0.4.1
-sphinxcontrib-bibtex==0.4.2
-sphinx-autodoc-typehints==1.10.3
+sphinx==3.3.0
+sphinx_rtd_theme==0.5.0
+sphinxcontrib-katex==0.7.1
+sphinxcontrib-bibtex==1.0.0
+sphinx-autodoc-typehints==1.11.1
+nbsphinx==0.8.0
+IPython==7.16.1
+pandoc==1.0.2

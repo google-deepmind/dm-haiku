@@ -37,8 +37,8 @@ We suggest installing the latest version of Haiku by running::
    :caption: Guides
    :maxdepth: 1
 
-   modules
-   transforms
+   notebooks/modules
+   notebooks/transforms
 
 .. toctree::
    :caption: API Documentation
@@ -50,10 +50,10 @@ Known issues
 ------------
 
 .. warning::
-    Using JAX transformations like :func:`jax.jit` and :func:`jax.remat` inside of Haiku
-    networks can lead to hard to interpret tracing errors and potentially
-    silently wrong results. Read :ref:`transforms-caveats` to find out
-    how to work around these issues.
+    Using JAX transformations like :func:`jax.jit` and :func:`jax.remat` inside
+    of Haiku networks can lead to hard to interpret tracing errors and
+    potentially silently wrong results. Read :doc:`notebooks/transforms` to find
+    out how to work around these issues.
 
 Contribute
 ----------

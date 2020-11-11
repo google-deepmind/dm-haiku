@@ -70,6 +70,39 @@ def to_dot(fun):
   return wrapped_fun
 
 
+def abstract_to_dot(fun):
+  """Converts a function using Haiku modules to a dot graph.
+
+  Same as `hk.experimental.to_dot` but uses JAX's abstract interpretation
+  machinery to evaluate the function without requiring concrete inputs.
+  Valid inputs for the wrapped function include `jax.ShapeDtypeStruct`.
+
+  `hk.experimental.abstract_to_dot` does not support data-dependent
+  control-flow, because no concrete values are provided to the function.
+
+  Args:
+    fun: function using Haiku modules.
+
+  Returns:
+    wrapped function.
+  """
+  @functools.wraps(fun)
+  def wrapped_fun(*args):
+    dot_out = None
+    # eval_shape cannot evaluate functions which return str, as str is not a
+    # valid JAX types.
+    # The following function extracts the created dot string during the
+    # abstract evaluation.
+    def dot_extractor_fn(*inner_args):
+      nonlocal dot_out
+      dot_out = to_dot(fun)(*inner_args)
+    jax.eval_shape(dot_extractor_fn, *args)
+    msg = 'Failed to extract dot graph from abstract evaluation'
+    assert dot_out is not None, msg
+    return dot_out
+  return wrapped_fun
+
+
 def name_or_str(o):
   return getattr(o, '__name__', str(o))
 
@@ -324,7 +357,9 @@ def _graph_to_dot(graph: Graph, args, outputs):
 
   for value in captures:
     node_id = id(value)
-    if hasattr(value, 'size') and value.size == 1:
+    if (not hasattr(value, 'aval') and
+        hasattr(value, 'size') and
+        value.size == 1):
       label = f'<b>{value.item()}</b>'
     else:
       label = f'<b>{escape(_format_val(value))}</b>'

@@ -38,6 +38,7 @@ py_library(
         "//haiku/_src:lift",
         "//haiku/_src:module",
         "//haiku/_src:moving_averages",
+        "//haiku/_src:named_call",
         "//haiku/_src:pad",
         "//haiku/_src:pool",
         "//haiku/_src:random",

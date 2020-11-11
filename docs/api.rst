@@ -829,6 +829,7 @@ vmap
 
 .. autosummary::
 
+    abstract_to_dot
     custom_creator
     custom_getter
     GetterContext
@@ -840,6 +841,12 @@ vmap
     lift
     profiler_name_scopes
     to_dot
+
+
+abstract_to_dot
+------
+
+.. autofunction:: abstract_to_dot
 
 custom_creator
 --------------

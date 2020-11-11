@@ -56,6 +56,19 @@ class DotTest(parameterized.TestCase):
     add_out, = add_node.outputs
     self.assertEqual(add_out, c)
 
+  @test_utils.transform_and_run
+  def test_no_namescopes_inside_abstract_dot(self):
+    mod = AddModule()
+    current_setting = module.modules_with_named_call
+    a = b = jax.ShapeDtypeStruct(shape=tuple(), dtype=jnp.float32)
+    try:
+      module.profiler_name_scopes(enabled=True)
+      with mock.patch.object(named_call, "stateful_named_call") as mock_f:
+        _ = dot.abstract_to_dot(mod)(a, b)
+        mock_f.assert_not_called()
+    finally:
+      module.profiler_name_scopes(enabled=current_setting)
+
   def test_call(self):
     def my_function(x):
       return x

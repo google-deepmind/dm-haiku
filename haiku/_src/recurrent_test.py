@@ -44,6 +44,11 @@ class DuplicateCore(recurrent.RNNCore):
     return self.base_core.initial_state(batch_size)
 
 
+def make_sequence(shape):
+  # Skips 0 for meaningful multiplicative interactions.
+  return np.arange(1, np.product(shape) + 1, dtype=np.float32).reshape(shape)
+
+
 class RecurrentTest(parameterized.TestCase):
 
   def test_add_batch(self):
@@ -185,6 +190,21 @@ class _BatchedOnlyCore(recurrent.RNNCore):
   def initial_state(self, batch_size):
     assert batch_size is not None
     return jnp.zeros([batch_size])
+
+
+def static_unroll_with_states(core, inputs, state):
+  outs = []
+  states = []
+  steps = tree.flatten(inputs)[0].shape[0]
+  for i in range(steps):
+    step_input = tree.map_structure(lambda x: x[i], inputs)  # pylint: disable=cell-var-from-loop
+    out, state = core(step_input, state)
+    outs.append(out)
+    states.append(state)
+
+  outs = jnp.stack(outs, axis=0)
+  states = tree.map_structure(lambda *a: jnp.stack(a, axis=0), *states)
+  return outs, states
 
 
 class ResetCoreTest(parameterized.TestCase):
@@ -334,7 +354,7 @@ class ResetCoreTest(parameterized.TestCase):
 class IdentityCoreTest(parameterized.TestCase):
 
   @test_utils.transform_and_run
-  def testIdenittyCore_call(self):
+  def test_identity_core_call(self):
     core = recurrent.IdentityCore()
     inputs, state_in = object(), object()
     outputs, state_out = core(inputs, state_in)
@@ -342,7 +362,7 @@ class IdentityCoreTest(parameterized.TestCase):
     self.assertIs(state_in, state_out)
 
   @test_utils.transform_and_run
-  def testIdenittyCore_initial_state(self):
+  def test_identity_core_initial_state(self):
     core = recurrent.IdentityCore()
     self.assertEqual(core.initial_state(1), ())
 
@@ -404,24 +424,28 @@ class DeepRNNTest(parameterized.TestCase):
       recurrent.deep_rnn_with_skip_connections([jax.nn.relu])
 
 
-def make_sequence(shape):
-  # Skips 0 for meaningful multiplicative interactions.
-  return np.arange(1, np.product(shape) + 1, dtype=np.float32).reshape(shape)
+class BatchMajorUnrollTest(parameterized.TestCase):
 
+  @parameterized.parameters(recurrent.dynamic_unroll, recurrent.static_unroll)
+  @test_utils.transform_and_run
+  def test_batch_major(self, unroll):
+    core = recurrent.LSTM(4)
+    sequence_len, batch_size = 10, 5
 
-def static_unroll_with_states(core, inputs, state):
-  outs = []
-  states = []
-  steps = tree.flatten(inputs)[0].shape[0]
-  for i in range(steps):
-    step_input = tree.map_structure(lambda x: x[i], inputs)  # pylint: disable=cell-var-from-loop
-    out, state = core(step_input, state)
-    outs.append(out)
-    states.append(state)
+    inputs = np.random.randn(sequence_len, batch_size, 2)
+    batch_major_inputs = jnp.swapaxes(inputs, 0, 1)
 
-  outs = jnp.stack(outs, axis=0)
-  states = tree.map_structure(lambda *a: jnp.stack(a, axis=0), *states)
-  return outs, states
+    initial_state = core.initial_state(batch_size)
+    time_major_outputs, time_major_unroll_state_out = unroll(
+        core, inputs, initial_state, time_major=True)
+    batch_major_outputs, batch_major_unroll_state_out = unroll(
+        core, batch_major_inputs, initial_state, time_major=False)
+
+    jax.tree_multimap(np.testing.assert_array_equal,
+                      time_major_unroll_state_out, batch_major_unroll_state_out)
+    jax.tree_multimap(
+        lambda x, y: np.testing.assert_array_equal(x, jnp.swapaxes(y, 0, 1)),
+        time_major_outputs, batch_major_outputs)
 
 
 if __name__ == "__main__":

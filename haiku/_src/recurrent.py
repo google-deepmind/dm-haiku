@@ -80,7 +80,7 @@ class RNNCore(hk.Module):
     """
 
 
-def static_unroll(core, input_sequence, initial_state):
+def static_unroll(core, input_sequence, initial_state, time_major=True):
   """Performs a static unroll of an RNN.
 
   An *unroll* corresponds to calling the core on each element of the
@@ -104,31 +104,43 @@ def static_unroll(core, input_sequence, initial_state):
   Args:
     core: An :class:`RNNCore` to unroll.
     input_sequence: An arbitrarily nested structure of tensors of shape
-      ``[T, ...]`` where ``T`` is the number of time steps.
+      ``[T, ...]`` if time-major=True, or ``[B, T, ...]`` if time_major=False,
+      where ``T`` is the number of time steps.
     initial_state: An initial state of the given core.
+    time_major: If True, inputs are expected time-major, otherwise they are
+      expected batch-major.
 
   Returns:
     A tuple with two elements:
       * **output_sequence** - An arbitrarily nested structure of tensors
-        of shape ``[T, ...]``.
+        of shape ``[T, ...]`` if time-major, otherwise ``[B, T, ...]``.
       * **final_state** - Core state at time step ``T``.
   """
   output_sequence = []
-  num_steps = jax.tree_leaves(input_sequence)[0].shape[0]
+  time_axis = 0 if time_major else 1
+  num_steps = jax.tree_leaves(input_sequence)[0].shape[time_axis]
   state = initial_state
   for t in range(num_steps):
-    inputs = jax.tree_map(lambda x, _t=t: x[_t], input_sequence)
+    if time_major:
+      inputs = jax.tree_map(lambda x, _t=t: x[_t], input_sequence)
+    else:
+      inputs = jax.tree_map(lambda x, _t=t: x[:, _t], input_sequence)
     outputs, state = core(inputs, state)
     output_sequence.append(outputs)
 
-  # Stack outputs along the time dimension.
+  # Stack outputs along the time axis.
   output_sequence = jax.tree_multimap(
-      lambda *args: jnp.stack(args),
+      lambda *args: jnp.stack(args, axis=time_axis),
       *output_sequence)
   return output_sequence, state
 
 
-def dynamic_unroll(core, input_sequence, initial_state):
+def _swap_batch_time(inputs):
+  """Swaps batch and time axes, assumed to be the first two axes."""
+  return jax.tree_map(lambda x: jnp.swapaxes(x, 0, 1), inputs)
+
+
+def dynamic_unroll(core, input_sequence, initial_state, time_major=True):
   """Performs a dynamic unroll of an RNN.
 
   An *unroll* corresponds to calling the core on each element of the
@@ -145,13 +157,16 @@ def dynamic_unroll(core, input_sequence, initial_state):
   Args:
     core: An :class:`RNNCore` to unroll.
     input_sequence: An arbitrarily nested structure of tensors of shape
-      ``[T, ...]`` where ``T`` is the number of time steps.
-    initial_state: initial state of the given core.
+      ``[T, ...]`` if time-major=True, or ``[B, T, ...]`` if time_major=False,
+      where ``T`` is the number of time steps.
+    initial_state: An initial state of the given core.
+    time_major: If True, inputs are expected time-major, otherwise they are
+      expected batch-major.
 
   Returns:
     A tuple with two elements:
       * **output_sequence** - An arbitrarily nested structure of tensors
-        of shape ``[T, ...]``.
+        of shape ``[T, ...]`` if time-major, otherwise ``[B, T, ...]``.
       * **final_state** - Core state at time step ``T``.
   """
   scan = hk.scan if inside_transform() else jax.lax.scan
@@ -159,10 +174,15 @@ def dynamic_unroll(core, input_sequence, initial_state):
   def scan_f(prev_state, inputs):
     outputs, next_state = core(inputs, prev_state)
     return next_state, outputs
+  # TODO(hamzamerzic): Remove axis swapping once scan supports time axis arg.
+  if not time_major:
+    input_sequence = _swap_batch_time(input_sequence)
   final_state, output_sequence = scan(
       scan_f,
       initial_state,
       input_sequence)
+  if not time_major:
+    output_sequence = _swap_batch_time(output_sequence)
   return output_sequence, final_state
 
 

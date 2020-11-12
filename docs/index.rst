@@ -37,7 +37,7 @@ We suggest installing the latest version of Haiku by running::
    :caption: Guides
    :maxdepth: 1
 
-   notebooks/modules
+   notebooks/basics
    notebooks/transforms
 
 .. toctree::

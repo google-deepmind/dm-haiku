@@ -8,7 +8,7 @@ hk_py_binary(
     name = "init",
     srcs = ["init.py"],
     deps = [
-        "//third_party/benchmark/bindings/python/google_benchmark",
+        # pip: google_benchmark
         "//haiku",
         # pip: jax
     ],

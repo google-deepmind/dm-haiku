@@ -556,7 +556,7 @@ def while_loop(cond_fun, body_fun, init_val):
   if not base.params_frozen():
     raise ValueError(
         "hk.while_loop does not support initialization (since we cannot "
-        "statically determine if your loop while run at least once). Please "
+        "statically determine if your loop will run at least once). Please "
         "use `hk.running_init` to run the body unconditionally:\n"
         "\n"
         "    if hk.running_init():\n"

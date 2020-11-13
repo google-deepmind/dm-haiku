@@ -46,6 +46,12 @@ We suggest installing the latest version of Haiku by running::
 
    api
 
+.. toctree::
+   :caption: Advanced
+   :maxdepth: 1
+
+   notebooks/jax2tf
+
 Known issues
 ------------
 

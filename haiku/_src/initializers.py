@@ -164,7 +164,7 @@ class VarianceScaling(hk.initializers.Initializer):
       distribution: Random distribution to use. One of ``truncated_normal``,
         ``normal`` or ``uniform``.
     """
-    if scale <= 0.0:
+    if scale < 0.0:
       raise ValueError('`scale` must be a positive float.')
     if mode not in {'fan_in', 'fan_out', 'fan_avg'}:
       raise ValueError('Invalid `mode` argument:', mode)

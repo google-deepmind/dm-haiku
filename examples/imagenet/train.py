@@ -132,7 +132,7 @@ def loss_fn(
   return loss, state
 
 
-@functools.partial(jax.pmap, axis_name='i')
+@functools.partial(jax.pmap, axis_name='i', donate_argnums=(0, 1, 2))
 def train_step(
     params: hk.Params,
     state: hk.State,
@@ -249,8 +249,9 @@ def main(argv):
   with time_activity('train'):
     for step_num in range(num_train_steps):
       # Take a single training step.
-      params, state, opt_state, train_scalars = (
-          train_step(params, state, opt_state, next(train_dataset)))
+      with jax.profiler.StepTraceContext('train', step_num=step_num):
+        params, state, opt_state, train_scalars = (
+            train_step(params, state, opt_state, next(train_dataset)))
 
       # By default we do not evaluate during training, but you can configure
       # this with a flag.

@@ -51,6 +51,9 @@ def make_sequence(shape):
 
 class RecurrentTest(parameterized.TestCase):
 
+  UNROLLS = (recurrent.dynamic_unroll, recurrent.static_unroll)
+  CORES = (recurrent.VanillaRNN, recurrent.LSTM, recurrent.GRU)
+
   def test_add_batch(self):
     sample_tree = dict(
         a=[jnp.zeros([]), jnp.zeros([1])],
@@ -68,9 +71,7 @@ class RecurrentTest(parameterized.TestCase):
   # These two tests assume that the core takes argument hidden_size, and the
   # output is a single tensor with the same size as hidden_size.
   # They should be generalized when new cores are added.
-  @parameterized.parameters(
-      *it.product((recurrent.dynamic_unroll, recurrent.static_unroll),
-                  (recurrent.VanillaRNN, recurrent.LSTM, recurrent.GRU)))
+  @parameterized.parameters(*it.product(UNROLLS, CORES))
   @test_utils.transform_and_run
   def test_core_unroll_unbatched(self, unroll, core_cls):
     seqs = make_sequence([8, 1])  # [T, F]
@@ -78,9 +79,7 @@ class RecurrentTest(parameterized.TestCase):
     out, _ = unroll(core, seqs, core.initial_state(batch_size=None))
     self.assertEqual(out.shape, (8, 4))
 
-  @parameterized.parameters(
-      *it.product((recurrent.dynamic_unroll, recurrent.static_unroll),
-                  (recurrent.VanillaRNN, recurrent.LSTM, recurrent.GRU)))
+  @parameterized.parameters(*it.product(UNROLLS, CORES))
   @test_utils.transform_and_run
   def test_core_unroll_batched(self, unroll, core_cls):
     seqs = make_sequence([4, 8, 1])  # [T, B, F]
@@ -89,7 +88,7 @@ class RecurrentTest(parameterized.TestCase):
     out, _ = unroll(core, seqs, core.initial_state(batch_size))
     self.assertEqual(out.shape, (4, 8, 4))
 
-  @parameterized.parameters(recurrent.dynamic_unroll, recurrent.static_unroll)
+  @parameterized.parameters(*UNROLLS)
   @test_utils.transform_and_run
   def test_core_unroll_nested(self, unroll):
     seqs = make_sequence([4, 8, 1])
@@ -100,7 +99,7 @@ class RecurrentTest(parameterized.TestCase):
     for out in outs:
       self.assertEqual(out.shape, (4, 8, 4))
 
-  @parameterized.parameters(recurrent.dynamic_unroll, recurrent.static_unroll)
+  @parameterized.parameters(*UNROLLS)
   def test_unroll_outside_transform(self, unroll):
     core = lambda x, s: (x + 1, s + 1)
     seqs = jnp.arange(8)

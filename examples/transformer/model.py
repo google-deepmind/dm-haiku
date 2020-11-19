@@ -140,7 +140,7 @@ class Transformer(hk.Module):
       Array of shape [B, T, H].
     """
 
-    init_scale = 2. / np.sqrt(self._num_layers)
+    init_scale = 2. / self._num_layers
     dropout_rate = self._dropout_rate if is_training else 0.
     if mask is not None:
       mask = mask[:, None, None, :]

@@ -10,6 +10,30 @@ hk_py_library(
 )
 
 hk_py_library(
+    name = "attention",
+    srcs = ["attention.py"],
+    deps = [
+        ":basic",
+        ":initializers",
+        ":module",
+        # pip: jax
+        # pip: numpy
+    ],
+)
+
+hk_py_test(
+    name = "attention_test",
+    srcs = ["attention_test.py"],
+    deps = [
+        ":attention",
+        ":test_utils",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        # pip: numpy
+    ],
+)
+
+hk_py_library(
     name = "base",
     srcs = ["base.py"],
     deps = [

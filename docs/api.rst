@@ -474,6 +474,17 @@ Conv3DLSTM
 .. autoclass:: Conv3DLSTM
    :members:
 
+Attention
+-----------------
+
+.. currentmodule:: haiku
+
+MultiHeadAttention
+~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: MultiHeadAttention
+   :members:
+
 Batch
 -----
 

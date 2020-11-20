@@ -22,75 +22,24 @@ import jax.numpy as jnp
 import numpy as np
 
 
-class Attention(hk.Module):
-  """A general multi-headed attention module."""
-
-  def __init__(self,
-               num_heads: int,
-               init_scale: float,
-               name: Optional[str] = None):
-    super().__init__(name=name)
-    self._num_heads = num_heads
-    self._init_scale = init_scale
-
-  @hk.transparent
-  def _multihead_linear(self,
-                        inputs: jnp.ndarray,
-                        head_dim: int) -> jnp.ndarray:
-    """Runs a multi-headed linear over inputs, using the given per-head size."""
-    batch_size, sequence_length = inputs.shape[:2]
-    initializer = hk.initializers.VarianceScaling(self._init_scale)
-    out = hk.Linear(head_dim * self._num_heads, w_init=initializer)(inputs)
-    shape = (batch_size, sequence_length, self._num_heads, head_dim)
-    return jnp.reshape(out, shape)
-
-  def __call__(self,
-               x: jnp.ndarray,
-               y: jnp.ndarray,
-               mask: Optional[jnp.ndarray]) -> jnp.ndarray:
-    """Multihead attention over y with queries from x.
-
-    Args:
-      x: Shape [B, q_timesteps, H1].
-      y: Shape [B, kv_timesteps, H2].
-      mask: Attention mask to apply. [{1,B}, 1, {1,q_timesteps}, kv_timesteps].
-
-    Returns:
-      Output of the attention with shape [batch, timesteps, hiddens]
-    """
-    batch_size, q_time, embedding_size = x.shape
-    head_dim = embedding_size // self._num_heads
-    q = self._multihead_linear(x, head_dim)
-    k = self._multihead_linear(y, head_dim)
-    v = self._multihead_linear(y, head_dim)
-
-    # Compute attention matrix.
-    scale = 1. / np.sqrt(head_dim)
-    attention = scale * jnp.einsum('bthd,bThd->bhtT', q, k)
-    if mask is not None:
-      attention = attention * mask - 1e10 * (1 - mask)
-    attention = jax.nn.softmax(attention)
-
-    # Attend over values, flatten, and return linear result.
-    attended_v = jnp.einsum('bhtT,bThd->bthd', attention, v)
-    attended_v = jnp.reshape(attended_v, [batch_size, q_time, embedding_size])
-    initializer = hk.initializers.VarianceScaling(self._init_scale)
-    return hk.Linear(embedding_size, w_init=initializer)(attended_v)
-
-
-class CausalSelfAttention(Attention):
+class CausalSelfAttention(hk.MultiHeadAttention):
   """Self attention with a causal mask applied."""
 
-  def __call__(self,
-               x: jnp.ndarray,
-               mask: Optional[jnp.ndarray]) -> jnp.ndarray:
-    seq_len = x.shape[1]
+  def __call__(
+      self,
+      query: jnp.ndarray,
+      key: Optional[jnp.ndarray] = None,
+      value: Optional[jnp.ndarray] = None,
+      mask: Optional[jnp.ndarray] = None,
+  ) -> jnp.ndarray:
+    key = key if key is not None else query
+    value = value if value is not None else query
+
+    seq_len = query.shape[1]
     causal_mask = np.tril(np.ones((seq_len, seq_len)))
-    if mask is not None:
-      mask *= causal_mask
-    else:
-      mask = causal_mask
-    return super().__call__(x, x, mask)
+    mask = mask * causal_mask if mask is not None else causal_mask
+
+    return super().__call__(query, key, value, mask)
 
 
 class DenseBlock(hk.Module):
@@ -149,9 +98,11 @@ class Transformer(hk.Module):
     # see https://github.com/openai/gpt-2/blob/master/src/model.py.
     for i in range(self._num_layers):
       h_norm = layer_norm(h, name=f'h{i}_ln_1')
-      h_attn = CausalSelfAttention(self._num_heads,
-                                   init_scale,
-                                   name=f'h{i}_attn')(h_norm, mask)
+      h_attn = CausalSelfAttention(
+          num_heads=self._num_heads,
+          key_size=64,
+          w_init_scale=init_scale,
+          name=f'h{i}_attn')(h_norm, mask=mask)
       h_attn = hk.dropout(hk.next_rng_key(), dropout_rate, h_attn)
       h = h + h_attn
       h_norm = layer_norm(h, name=f'h{i}_ln_2')

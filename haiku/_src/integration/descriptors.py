@@ -37,6 +37,17 @@ class Training(Wrapped):
     return self.wrapped(x, is_training=True)
 
 
+class MultiInput(Wrapped):
+
+  def __init__(self, wrapped, num_inputs):
+    super().__init__(wrapped)
+    self.num_inputs = num_inputs
+
+  def __call__(self, x: jnp.ndarray):
+    inputs = [x for _ in range(self.num_inputs)]
+    return self.wrapped(*inputs)
+
+
 class Recurrent(Wrapped):
   """Unrolls a recurrent module."""
 
@@ -146,6 +157,12 @@ BATCH_MODULES = (
     ModuleDescriptor(
         name="LayerNorm",
         create=lambda: hk.LayerNorm(1, True, True),
+        shape=(BATCH_SIZE, 3, 2)),
+    ModuleDescriptor(
+        name="MultiHeadAttention",
+        create=lambda: MultiInput(  # pylint: disable=g-long-lambda
+            hk.MultiHeadAttention(num_heads=8, key_size=64, w_init_scale=1.0),
+            num_inputs=3),
         shape=(BATCH_SIZE, 3, 2)),
     ModuleDescriptor(
         name="SpectralNorm",

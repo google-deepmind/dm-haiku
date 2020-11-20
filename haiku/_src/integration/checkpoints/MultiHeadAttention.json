@@ -1,0 +1,26 @@
+{
+  "module": [
+    "MultiHeadAttention(num_heads=8, key_size=64, w_init_scale=1.0)"
+  ],
+  "input": "f32[8, 3, 2]",
+  "param_size": 267264,
+  "param_bytes": 1069056,
+  "params": {
+    "multi_head_attention/key": {
+      "b": "f32[512]",
+      "w": "f32[2, 512]"
+    },
+    "multi_head_attention/linear": {
+      "b": "f32[512]",
+      "w": "f32[512, 512]"
+    },
+    "multi_head_attention/query": {
+      "b": "f32[512]",
+      "w": "f32[2, 512]"
+    },
+    "multi_head_attention/value": {
+      "b": "f32[512]",
+      "w": "f32[2, 512]"
+    }
+  }
+}

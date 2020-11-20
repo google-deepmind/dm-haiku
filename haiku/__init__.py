@@ -20,6 +20,7 @@ from haiku import initializers
 from haiku import nets
 from haiku import pad
 from haiku import testing
+from haiku._src.attention import MultiHeadAttention
 from haiku._src.base import get_parameter
 from haiku._src.base import get_state
 from haiku._src.base import maybe_next_rng_key
@@ -135,6 +136,7 @@ __all__ = (
     "Linear",
     "MaxPool",
     "Module",
+    "MultiHeadAttention",
     "PRNGSequence",
     "Params",
     "RNNCore",

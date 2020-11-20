@@ -22,6 +22,7 @@ py_library(
     srcs_version = "PY3",
     visibility = ["//visibility:public"],
     deps = [
+        "//haiku/_src:attention",
         "//haiku/_src:base",
         "//haiku/_src:basic",
         "//haiku/_src:batch_norm",

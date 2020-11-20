@@ -24,7 +24,7 @@ from typing import (Any, Callable, ContextManager, Dict, Mapping, NamedTuple,
 
 from haiku._src import base
 from haiku._src import data_structures
-from haiku._src import named_call
+from haiku._src import stateful
 from haiku._src import utils
 import jax.numpy as jnp
 
@@ -401,7 +401,7 @@ def wrap_method(method_name, unbound_method):
       # other methods.
       if modules_with_named_call and module_name and method_name == "__call__":
         local_name = module_name.split("/")[-1]
-        f = named_call.stateful_named_call(f, name=local_name)
+        f = stateful.named_call(f, name=local_name)
 
       out = f(*args, **kwargs)
 

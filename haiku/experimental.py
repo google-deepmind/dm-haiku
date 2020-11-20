@@ -27,8 +27,8 @@ from haiku._src.module import intercept_methods
 from haiku._src.module import MethodContext
 from haiku._src.module import name_scope
 from haiku._src.module import profiler_name_scopes
-from haiku._src.named_call import stateful_named_call as named_call
 from haiku._src.random import optimize_rng_use
+from haiku._src.stateful import named_call
 
 # TODO(tomhennigan): Remove deprecated alias.
 ParamContext = GetterContext

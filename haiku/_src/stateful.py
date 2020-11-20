@@ -17,7 +17,7 @@
 import collections
 import functools
 import inspect
-from typing import Any, Mapping, MutableMapping, Optional, Tuple, TypeVar
+from typing import Any, Callable, Mapping, MutableMapping, Optional, Tuple, TypeVar
 
 from haiku._src import base
 import jax
@@ -589,3 +589,21 @@ def while_loop(cond_fun, body_fun, init_val):
   val, state = jax.lax.while_loop(pure_cond_fun, pure_body_fun, init_val)
   update_internal_state(state)
   return val
+
+
+def named_call(
+    fun: Callable[..., Any],
+    *,
+    name: Optional[str] = None,
+) -> Callable[..., Any]:
+  """Wraps a function in an XLA name_scope and maintains Haiku state."""
+  @functools.wraps(fun)
+  def wrapper(*args, **kwargs):
+    if base.inside_transform():
+      stateful_named_call = thread_hk_state_in_kwargs(jax.named_call)
+      named_fun = stateful_named_call(fun, name=name)
+    else:
+      named_fun = jax.named_call(fun, name=name)
+    out = named_fun(*args, **kwargs)
+    return out
+  return wrapper

@@ -18,7 +18,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import dot
 from haiku._src import module
-from haiku._src import named_call
+from haiku._src import stateful
 from haiku._src import test_utils
 import jax
 import jax.numpy as jnp
@@ -63,7 +63,7 @@ class DotTest(parameterized.TestCase):
     a = b = jax.ShapeDtypeStruct(shape=tuple(), dtype=jnp.float32)
     try:
       module.profiler_name_scopes(enabled=True)
-      with mock.patch.object(named_call, "stateful_named_call") as mock_f:
+      with mock.patch.object(stateful, "named_call") as mock_f:
         _ = dot.abstract_to_dot(mod)(a, b)
         mock_f.assert_not_called()
     finally:
@@ -96,7 +96,7 @@ class DotTest(parameterized.TestCase):
     current_setting = module.modules_with_named_call
     try:
       module.profiler_name_scopes(enabled=True)
-      with mock.patch.object(named_call, "stateful_named_call") as mock_f:
+      with mock.patch.object(stateful, "named_call") as mock_f:
         _ = dot.to_dot(mod)(1, 1)
         mock_f.assert_not_called()
     finally:

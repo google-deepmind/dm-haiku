@@ -86,7 +86,7 @@ hk_py_library(
     deps = [
         ":base",
         ":data_structures",
-        ":named_call",
+        ":stateful",
         ":utils",
         # pip: jax
     ],
@@ -233,7 +233,7 @@ hk_py_test(
     deps = [
         ":dot",
         ":module",
-        ":named_call",
+        ":stateful",
         ":test_utils",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
@@ -456,28 +456,6 @@ hk_py_test(
         # pip: jax
         # pip: numpy
         # pip: tree
-    ],
-)
-
-hk_py_library(
-    name = "named_call",
-    srcs = ["named_call.py"],
-    srcs_version = "PY3",
-    deps = [
-        ":base",
-        ":stateful",
-        # pip: jax
-    ],
-)
-
-hk_py_test(
-    name = "named_call_test",
-    srcs = ["named_call_test.py"],
-    deps = [
-        ":named_call",
-        # pip: absl/testing:absltest
-        # pip: absl/testing:parameterized
-        # pip: jax
     ],
 )
 

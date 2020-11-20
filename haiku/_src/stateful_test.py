@@ -14,6 +14,7 @@
 # ==============================================================================
 """Tests for haiku._src.stateful."""
 
+import functools
 import itertools as it
 
 from absl.testing import absltest
@@ -433,6 +434,66 @@ class StatefulTest(parameterized.TestCase):
     np.testing.assert_allclose(state["counting_module"]["count"], iters,
                                rtol=1e-4)
     np.testing.assert_allclose(y, iters, rtol=1e-4)
+
+  def test_named_call(self):
+    def f(x):
+      return stateful.named_call(SquareModule(), name="square")(x)
+
+    x = jnp.array(2.)
+    rng = jax.random.PRNGKey(42)
+    init, apply = transform.transform_with_state(f)
+    params, state = init(rng, x)
+    y, state = jax.jit(apply)(params, state, rng, x)
+    self.assertEqual(y, x ** 2)
+
+  @parameterized.parameters(jax.jit, jax.grad, jax.vmap, jax.remat)
+  def test_named_call_jax_transforms(self, jax_transform):
+    f = jnp.sum
+    x = jnp.array([1.])
+
+    unnamed_out = jax_transform(f)(x)
+    named_out = jax_transform(stateful.named_call(f, name="test"))(x)
+
+    self.assertEqual(unnamed_out, named_out)
+
+  def test_static_argnums_named_call(self):
+    f = stateful.named_call(lambda x, y: y if x else None,
+                            name="test")
+    f = jax.jit(f, static_argnums=(0,))
+    out = f(True, 5)
+    self.assertEqual(out, 5)
+
+  def test_named_call_non_jaxtype_arg(self):
+    # For the test to fail without the invalid JaxType filter we need to pass
+    # in a valid JaxType that forces the invalid Jaxtype to be raised to an
+    # abstract value.
+    def f(not_a_jaxtype, a_jaxtype):
+      # then Jax needs to try and evaluate the abstractified non-JaxType
+      if not_a_jaxtype:
+        return a_jaxtype
+      return 0
+
+    f = stateful.named_call(f, name="test")
+    out = jax.jit(f, static_argnums=(0,))("not a Jaxtype", 1)
+    self.assertEqual(out, 1)
+
+  def test_named_call_partial_function(self):
+    f = stateful.named_call(lambda x, y: y if x else None)
+    f = jax.jit(functools.partial(f, True))
+    out = f(5)
+    self.assertEqual(out, 5)
+
+  def test_named_call_default_name(self):
+    @stateful.named_call
+    def naming_things_is_hard(x):
+      return x ** 2
+
+    @jax.jit
+    def f(x):
+      return naming_things_is_hard(x) + naming_things_is_hard(x)
+
+    c = jax.xla_computation(f)(2)
+    self.assertIn("naming_things_is_hard", c.as_hlo_text())
 
 
 def _callback_prim(forward, backward):

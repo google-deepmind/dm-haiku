@@ -360,6 +360,13 @@ class BaseTest(parameterized.TestCase):
     self.assertEqual(ctx.collect_initial_state(), {"~": {"count": 0}})
     self.assertEqual(ctx.collect_state(), {"~": {"count": 10}})
 
+  def test_new_state_in_apply(self):
+    with base.new_context(params={}, state={}) as ctx:
+      base.set_state("count", 1)
+
+    self.assertEqual(ctx.collect_initial_state(), {"~": {"count": 1}})
+    self.assertEqual(ctx.collect_state(), {"~": {"count": 1}})
+
   @parameterized.parameters((42, True), (42, False),
                             (28, True), (28, False))
   def test_prng_sequence(self, seed, wrap_seed):

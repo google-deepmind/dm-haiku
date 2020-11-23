@@ -186,6 +186,7 @@ def new_context(
   else:
     state = {m: {k: StatePair(v, v) for k, v in p.items()}
              for m, p in state.items()}
+    state = collections.defaultdict(dict, state)
 
   if rng is not None and not isinstance(rng, PRNGSequence):
     rng = PRNGSequence(rng)

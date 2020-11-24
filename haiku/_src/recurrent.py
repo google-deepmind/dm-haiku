@@ -202,20 +202,29 @@ class VanillaRNN(RNNCore):
      h_t = \operatorname{ReLU}(w_i x_t + b_i + w_h h_{t-1} + b_h)
   """
 
-  def __init__(self, hidden_size: int, name: Optional[str] = None):
+  def __init__(
+      self,
+      hidden_size: int,
+      double_bias: bool = True,
+      name: Optional[str] = None
+  ):
     """Constructs a vanilla RNN core.
 
     Args:
       hidden_size: Hidden layer size.
+      double_bias: Whether to use a bias in the two linear layers. This changes
+        nothing to the learning performance of the cell. However, doubling will
+        create two sets of bias parameters rather than one.
       name: Name of the module.
     """
     super().__init__(name=name)
     self.hidden_size = hidden_size
+    self.double_bias = double_bias
 
   def __call__(self, inputs, prev_state):
-    # TODO(slebedev): Consider dropping one of the biases.
     input_to_hidden = hk.Linear(self.hidden_size)
-    hidden_to_hidden = hk.Linear(self.hidden_size)
+    # TODO(b/173771088): Consider changing default to double_bias=False.
+    hidden_to_hidden = hk.Linear(self.hidden_size, with_bias=self.double_bias)
     out = jax.nn.relu(input_to_hidden(inputs) + hidden_to_hidden(prev_state))
     return out, out
 

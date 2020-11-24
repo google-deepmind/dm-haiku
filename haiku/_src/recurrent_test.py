@@ -108,6 +108,21 @@ class RecurrentTest(parameterized.TestCase):
     np.testing.assert_allclose(state, 8)
 
 
+class VanillaRNNTest(absltest.TestCase):
+
+  @test_utils.transform_and_run
+  def test_double_bias_length_parameters(self):
+    double_bias = recurrent.VanillaRNN(1, double_bias=True)
+    double_bias(jnp.zeros([1]), double_bias.initial_state(None))
+    double_bias_params = jax.tree_leaves(double_bias.params_dict())
+
+    vanilla = recurrent.VanillaRNN(1, double_bias=False)
+    vanilla(jnp.zeros([1]), vanilla.initial_state(None))
+    vanilla_params = jax.tree_leaves(vanilla.params_dict())
+
+    self.assertLen(double_bias_params, len(vanilla_params) + 1)
+
+
 class LSTMTest(absltest.TestCase):
 
   @test_utils.transform_and_run

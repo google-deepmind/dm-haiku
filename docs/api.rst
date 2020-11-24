@@ -307,7 +307,7 @@ DepthwiseConv2D
 SeparableDepthwiseConv2D
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: DepthwiseConv2D
+.. autoclass:: SeparableDepthwiseConv2D
    :members:
 
 Normalization

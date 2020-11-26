@@ -187,6 +187,7 @@ def dynamic_unroll(core, input_sequence, initial_state, time_major=True):
 
 
 def add_batch(nest, batch_size: Optional[int]):
+  """Adds a batch dimension at axis 0 to the leaves of a nested structure."""
   broadcast = lambda x: jnp.broadcast_to(x, (batch_size,) + x.shape)
   return jax.tree_map(broadcast, nest)
 
@@ -200,6 +201,8 @@ class VanillaRNN(RNNCore):
   .. math::
 
      h_t = \operatorname{ReLU}(w_i x_t + b_i + w_h h_{t-1} + b_h)
+
+  The output is equal to the new state, :math:`h_t`.
   """
 
   def __init__(
@@ -267,6 +270,8 @@ class LSTM(RNNCore):
   where :math:`i_t`, :math:`f_t`, :math:`o_t` are input, forget and
   output gate activations, and :math:`g_t` is a vector of cell updates.
 
+  The output is equal to the new hidden, :math:`h_t`.
+
   Notes:
     Forget gate initialization:
       Following :cite:`jozefowicz2015empirical` we add 1.0 to :math:`b_f`
@@ -330,6 +335,8 @@ class ConvNDLSTM(RNNCore):
   where :math:`*` denotes the convolution operator; :math:`i_t`,
   :math:`f_t`, :math:`o_t` are input, forget and output gate activations,
   and :math:`g_t` is a vector of cell updates.
+
+  The output is equal to the new hidden state, :math:`h_t`.
 
   Notes:
     Forget gate initialization:
@@ -498,6 +505,8 @@ class GRU(RNNCore):
      \end{array}
 
   where :math:`z_t` and :math:`r_t` are reset and update gates.
+
+  The output is equal to the new hidden state, :math:`h_t`.
 
   Warning: Backwards compatibility of GRU weights is currently unsupported.
 
@@ -685,7 +694,12 @@ class ResetCore(RNNCore):
 class _DeepRNN(RNNCore):
   """Underlying implementation of DeepRNN with skip connections."""
 
-  def __init__(self, layers, skip_connections, name: Optional[str] = None):
+  def __init__(
+      self,
+      layers: Sequence[Any],
+      skip_connections: bool,
+      name: Optional[str] = None
+  ):
     super().__init__(name=name)
     self.layers = layers
     self.skip_connections = skip_connections
@@ -742,7 +756,7 @@ class DeepRNN(_DeepRNN):
   tuple.
   """
 
-  def __init__(self, layers, name: Optional[str] = None):
+  def __init__(self, layers: Sequence[Any], name: Optional[str] = None):
     super().__init__(layers, skip_connections=False, name=name)
 
 

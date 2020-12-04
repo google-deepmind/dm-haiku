@@ -62,7 +62,7 @@ class Embed(hk.Module):
     Args:
       vocab_size: The number of unique tokens to embed. If not provided, an
         existing vocabulary matrix from which ``vocab_size`` can be inferred
-        must be provided as ``existing_vocab``.
+        must be provided as ``embedding_matrix``.
       embed_dim: Number of dimensions to assign to each embedding. If an
         existing vocabulary matrix initializes the module, this should not be
         provided as it will be inferred.

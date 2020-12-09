@@ -313,11 +313,24 @@ class GetterContext(NamedTuple):
       :func:`~haiku.get_state` was originally called with.
     original_dtype: The shape that :func:`~haiku.get_parameter` or
       :func:`~haiku.get_state` was originally called with.
+    module_name: The full name of enclosing modules.
+    name: The name of this parameter.
   """
   full_name: str
   module: Optional[Module]
   original_dtype: Any
   original_shape: Sequence[int]
+
+  @property
+  def module_name(self):
+    module_name, _ = self.full_name.rsplit("/", 1)
+    return module_name
+
+  @property
+  def name(self):
+    _, name = self.full_name.rsplit("/", 1)
+    return name
+
 
 NextCreator = Callable[[Sequence[int], Any, Initializer], jnp.ndarray]
 Creator = Callable[

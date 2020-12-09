@@ -140,6 +140,8 @@ class BaseTest(parameterized.TestCase):
   def test_init_custom_creator(self, get_x, custom_x, collect_x):
     def zeros_creator(next_creator, shape, dtype, init, context):
       self.assertEqual(context.full_name, "~/w")
+      self.assertEqual(context.module_name, "~")
+      self.assertEqual(context.name, "w")
       self.assertEqual(shape, [])
       self.assertEqual(dtype, jnp.float32)
       self.assertEqual(init, jnp.ones)
@@ -148,7 +150,6 @@ class BaseTest(parameterized.TestCase):
     with base.new_context() as ctx:
       with custom_x(zeros_creator):
         get_x("w", [], init=jnp.ones)
-
     self.assertEqual(getattr(ctx, collect_x)(), {"~": {"w": jnp.zeros([])}})
 
   @parameterized.parameters((base.get_parameter, base.custom_creator),

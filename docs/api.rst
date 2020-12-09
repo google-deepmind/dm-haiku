@@ -936,6 +936,7 @@ Data Structures
 .. autosummary::
 
     filter
+    map
     merge
     partition
     to_immutable_dict
@@ -947,6 +948,11 @@ filter
 ~~~~~~
 
 .. autofunction:: filter
+
+map
+~~~~~~
+
+.. autofunction:: map
 
 merge
 ~~~~~

@@ -15,13 +15,15 @@
 """Functions for filtering parameters and state in Haiku."""
 
 import collections
-from typing import Callable, Tuple, TypeVar
+from typing import Callable, Mapping, Tuple, TypeVar
 
 from haiku._src import data_structures
 from haiku._src.typing import Params, State  # pylint: disable=g-multiple-import
 import jax.numpy as jnp
 
 T = TypeVar("T", Params, State)
+InT = TypeVar("InT")
+OutT = TypeVar("OutT")
 
 
 def partition(
@@ -97,6 +99,38 @@ def filter(  # pylint: disable=redefined-builtin
     for name, value in bundle.items():
       if predicate(module_name, name, value):
         out[module_name][name] = value
+
+  return data_structures.to_immutable_dict(out)
+
+
+def map(  # pylint: disable=redefined-builtin
+    fn: Callable[[str, str, InT], OutT],
+    structure: Mapping[str, Mapping[str, InT]],
+) -> Mapping[str, Mapping[str, OutT]]:
+  """Maps a function to a input structure according.
+
+  >>> params = {'linear': {'w': 1.0, 'b': 2.0}}
+  >>> fn = lambda module_name, name, value: 2 * value if name == 'w' else value
+  >>> hk.data_structures.map(fn, params)
+  FlatMapping({'linear': FlatMapping({'w': 2.0, 'b': 2.0})})
+
+  Note: returns a new structure not a view.
+
+  Args:
+    fn: criterion to be used to map the input data.
+      The ``fn`` argument is expected to be a boolean function taking as
+      inputs the name of the module, the name of a given entry in the module
+      data bundle (e.g. parameter name) and the corresponding data.
+    structure: Haiku params or state data structure to be mapped.
+
+  Returns:
+    All the input parameters or state as mapped by the input fn.
+  """
+  out = collections.defaultdict(dict)
+
+  for module_name, bundle in structure.items():
+    for name, value in bundle.items():
+      out[module_name][name] = fn(module_name, name, value)
 
   return data_structures.to_immutable_dict(out)
 

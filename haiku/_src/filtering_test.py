@@ -205,5 +205,35 @@ class PartitionTest(absltest.TestCase):
         to_set(jf),
         set([("first_layer/w", (3.0, 6.0)), ("second_layer/w", (2.5, 5.0))]))
 
+
+class MapTest(absltest.TestCase):
+
+  def test_mapping(self):
+
+    init_fn, _ = transform.transform(get_net)
+    params = init_fn(jax.random.PRNGKey(428), jnp.ones((1, 1)))
+
+    # parse by layer
+    def map_fn(module_name, name, v):
+      del name
+      if "first_layer" in module_name:
+        return v
+      else:
+        return 2. * v
+
+    new_params = filtering.map(map_fn, params)
+    self.assertLen(jax.tree_leaves(new_params), 4)
+
+    first_layer_params, second_layer_params = filtering.partition(
+        lambda module_name, *_: module_name == "first_layer",
+        params)
+    for mn in first_layer_params:
+      for n in first_layer_params[mn]:
+        self.assertEqual(params[mn][n], new_params[mn][n])
+
+    for mn in second_layer_params:
+      for n in second_layer_params[mn]:
+        self.assertEqual(2. * params[mn][n], new_params[mn][n])
+
 if __name__ == "__main__":
   absltest.main()

@@ -318,7 +318,9 @@ For a more complete look at working with stochastic models, please see our
 **Note:** `hk.next_rng_key()` is not functionally pure which means you should
 avoid using it alongside JAX transformations which are inside `hk.transform`.
 For more information and possible workarounds, please consult the docs on
-[Haiku transforms](https://dm-haiku.readthedocs.io/en/latest/transforms.html).
+[Haiku transforms](https://dm-haiku.readthedocs.io/en/latest/notebooks/transforms.html)
+and available
+[wrappers for JAX transforms inside Haiku networks](https://dm-haiku.readthedocs.io/en/latest/api.html#haiku-transforms).
 
 ### Working with non-trainable state
 

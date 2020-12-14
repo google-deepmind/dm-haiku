@@ -51,6 +51,7 @@ We suggest installing the latest version of Haiku by running::
    :maxdepth: 1
 
    notebooks/jax2tf
+   notebooks/build_your_own_haiku
 
 Known issues
 ------------

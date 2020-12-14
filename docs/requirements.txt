@@ -9,3 +9,4 @@ ipykernel==5.3.4
 pandoc==1.0.2
 pygments==2.4.1
 jq==1.1.1
+matplotlib==3.3.3

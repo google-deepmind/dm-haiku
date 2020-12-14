@@ -162,24 +162,18 @@ class BatchNorm(hk.Module):
       axis = [i for i in range(inputs.ndim) if i != channel_index]
 
     if is_training or test_local_stats:
+      mean = jnp.mean(inputs, axis, keepdims=True)
+      mean_of_squares = jnp.mean(inputs**2, axis, keepdims=True)
       if self.cross_replica_axis:
-        mean = jnp.mean(inputs, axis, keepdims=True)
         mean = jax.lax.pmean(
             mean,
             axis_name=self.cross_replica_axis,
             axis_index_groups=self.cross_replica_axis_index_groups)
-        mean_of_squares = jnp.mean(inputs**2, axis, keepdims=True)
         mean_of_squares = jax.lax.pmean(
             mean_of_squares,
             axis_name=self.cross_replica_axis,
             axis_index_groups=self.cross_replica_axis_index_groups)
-        var = mean_of_squares - mean ** 2
-      else:
-        mean = jnp.mean(inputs, axis, keepdims=True)
-        # This uses E[(X - E[X])^2].
-        # TODO(tycai): Consider the faster, but possibly less stable
-        # E[X^2] - E[X]^2 method.
-        var = jnp.var(inputs, axis, keepdims=True)
+      var = mean_of_squares - mean ** 2
     else:
       mean = self.mean_ema.average
       var = self.var_ema.average

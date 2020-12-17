@@ -174,6 +174,23 @@ class StatefulTest(parameterized.TestCase):
       self.assertEqual(state, {"square_module": {"y": y}})
       self.assertEqual(out, y)
 
+  @test_utils.transform_and_run
+  def test_cond_traces_branches_with_same_id_once(self):
+    witness = []
+    def f(x):
+      witness.append(None)
+      return x ** 2
+
+    stateful.cond(False, f, f, 0)
+    hk_call_count = len(witness)
+    self.assertEqual(hk_call_count, 1)
+
+    # Ensure we are in sync with JAX.
+    del witness[:]
+    jax.lax.cond(False, f, f, 0)
+    jax_call_count = len(witness)
+    self.assertEqual(hk_call_count, jax_call_count)
+
   def test_cond_no_transform(self):
     x = jnp.array(3.)
     with self.assertRaises(ValueError, msg="Use jax.cond() instead"):
@@ -192,6 +209,34 @@ class StatefulTest(parameterized.TestCase):
       out, state = f.apply(params, state, None, i, x)
       self.assertEqual(state, {"square_module": {"y": y}})
       self.assertEqual(out, y)
+
+  @parameterized.parameters(1, 2, 4, 8)
+  @test_utils.transform_and_run
+  def test_switch_traces_cases_with_same_id_once(self, n):
+    f_witness = []
+    g_witness = []
+
+    def f(x):
+      f_witness.append(None)
+      return x ** 2
+
+    def g(x):
+      g_witness.append(None)
+      return x ** 2
+
+    stateful.switch(0, [f, g] * n, 2)
+    f_hk_call_count = len(f_witness)
+    g_hk_call_count = len(g_witness)
+    self.assertEqual(f_hk_call_count, 1)
+    self.assertEqual(g_hk_call_count, 1)
+
+    # Ensure we are in sync with JAX.
+    del f_witness[:], g_witness[:]
+    jax.lax.switch(0, [f, g] * n, 2)
+    f_jax_call_count = len(f_witness)
+    g_jax_call_count = len(g_witness)
+    self.assertEqual(f_hk_call_count, f_jax_call_count)
+    self.assertEqual(f_hk_call_count, g_jax_call_count)
 
   def test_switch_no_transform(self):
     i = jnp.array(2)

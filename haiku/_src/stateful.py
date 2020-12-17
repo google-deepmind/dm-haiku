@@ -388,6 +388,20 @@ def _old_cond(pred, true_operand, true_fun, false_operand, false_fun):
   del pred, true_operand, true_fun, false_operand, false_fun
 
 
+def _memoize_by_id(f):
+  """Memoizes the result of a higher order function on input function id."""
+  cache = {}
+  @functools.wraps(f)
+  def wrapper(g):
+    i = id(g)
+    try:
+      res = cache[i]
+    except KeyError:
+      res = cache[i] = f(g)
+    return res
+  return wrapper
+
+
 def cond(*args, **kwargs):
   """Equivalent to :func:`jax.lax.cond` but with Haiku state passed in/out."""
   if not base.inside_transform():
@@ -406,10 +420,11 @@ def cond(*args, **kwargs):
     operand = (true_operand, false_operand)
 
   reserve_up_to_full_rng_block()
+  stateful_branch_mem = _memoize_by_id(stateful_branch)
   state = internal_state()
   out, state = jax.lax.cond(pred,
-                            true_fun=stateful_branch(true_fun),
-                            false_fun=stateful_branch(false_fun),
+                            true_fun=stateful_branch_mem(true_fun),
+                            false_fun=stateful_branch_mem(false_fun),
                             operand=(state, operand))
   update_internal_state(state)
   return out
@@ -423,9 +438,10 @@ def switch(index, branches, operand):
         "Use jax.switch() instead.")
 
   reserve_up_to_full_rng_block()
+  stateful_branch_mem = _memoize_by_id(stateful_branch)
   state = internal_state()
   out, state = jax.lax.switch(
-      index, tuple(map(stateful_branch, branches)), (state, operand))
+      index, tuple(map(stateful_branch_mem, branches)), (state, operand))
   update_internal_state(state)
   return out
 

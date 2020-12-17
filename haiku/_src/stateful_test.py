@@ -540,6 +540,30 @@ class StatefulTest(parameterized.TestCase):
     c = jax.xla_computation(f)(2)
     self.assertIn("naming_things_is_hard", c.as_hlo_text())
 
+  def test_eval_shape(self):
+    def some_shape_changing_fun(x):
+      return x[0, :]
+
+    def f(x):
+      m = CountingModule(op=some_shape_changing_fun)
+      # state is not changed in this call
+      out_shape_struct = stateful.eval_shape(m, x)
+      return m(x), out_shape_struct
+
+    f = transform.transform_with_state(f)
+    key = jax.random.PRNGKey(42)
+    in_shape = (10, 10)
+    x = jnp.ones(in_shape)
+    params, state = f.init(key, x)
+    self.assertEqual(list(state), ["counting_module"])
+    self.assertEqual(list(state["counting_module"]), ["count"])
+    np.testing.assert_allclose(state["counting_module"]["count"], 0, rtol=1e-4)
+    (out, shape_struct), state = f.apply(params, state, key, x)
+    # Count is only advanced once
+    np.testing.assert_allclose(state["counting_module"]["count"], 1, rtol=1e-4)
+    np.testing.assert_allclose(out, some_shape_changing_fun(x), rtol=1e-4)
+    self.assertEqual(shape_struct.shape, (in_shape[1],))
+
 
 def _callback_prim(forward, backward):
   def f_impl(x):

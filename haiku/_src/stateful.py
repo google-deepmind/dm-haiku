@@ -623,3 +623,11 @@ def named_call(
     out = named_fun(*args, **kwargs)
     return out
   return wrapper
+
+
+def eval_shape(fun, *args, **kwargs):
+  """Equivalent to jax.eval_shape with any changed Haiku state discarded."""
+  with temporary_internal_state(internal_state()):
+    out_shape = jax.eval_shape(fun, *args, **kwargs)
+  # Don't update changed state
+  return out_shape

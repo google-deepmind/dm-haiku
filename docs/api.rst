@@ -802,11 +802,17 @@ JAX Transforms
 
 .. autosummary::
 
+    eval_shape
     grad
     jit
     remat
     value_and_grad
     vmap
+
+eval_shape
+~~~~
+
+.. autofunction:: eval_shape
 
 grad
 ~~~~

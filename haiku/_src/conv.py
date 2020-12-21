@@ -439,7 +439,8 @@ def compute_adjusted_padding(
       raise ValueError(f"The expected input size with the current set of input "
                        f"parameters is {expected_input_size} which doesn't "
                        f"match the actual input size {input_size}.")
-    padding_needed = (output_size - 1) * stride + kernel_size - output_size
+    padding_needed = max(0,
+                         (input_size - 1) * stride + kernel_size - output_size)
     padding_before = padding_needed // 2
   else:
     raise ValueError(f"`padding` must be 'VALID' or 'SAME'. Passed: {padding}.")

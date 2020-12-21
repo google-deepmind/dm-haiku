@@ -592,6 +592,21 @@ class ConvTransposeTest(parameterized.TestCase):
     self.assertLess(rel_diff, 0.5)
 
   @parameterized.parameters(
+      (10, 20, 5, 2, "SAME", (3, 2)),
+      (10, 23, 5, 2, "VALID", (4, 4)),
+  )
+  @test_utils.transform_and_run
+  def test_compute_adjusted_padding(self, input_size, output_size, kernel,
+                                    stride, padding, expected_adjusted_padding):
+    self.assertEqual(
+        conv.compute_adjusted_padding(
+            input_size=input_size,
+            output_size=output_size,
+            kernel_size=kernel,
+            stride=stride,
+            padding=padding), expected_adjusted_padding)
+
+  @parameterized.parameters(
       ([7, 9], None, 5, 3, "SAME", "channels_first"),
       ([7, 9, 16], None, 5, 2, "VALID", "channels_first"),
       ([9, 13], None, 5, 4, "VALID", "channels_last"),

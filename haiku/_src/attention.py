@@ -71,12 +71,12 @@ class MultiHeadAttention(hk.Module):
     value_heads = self._linear_projection(value, self.value_size, "value")
 
     attention_logits = jnp.einsum("bthd,bThd->bhtT", query_heads, key_heads)
+    sqrt_key_size = np.sqrt(self.key_size).astype(key.dtype)
+    attention_logits = attention_logits / sqrt_key_size
     if mask is not None:
       attention_logits -= 1e10 * (1. - mask)
 
     attention_weights = jax.nn.softmax(attention_logits)
-    sqrt_key_size = np.sqrt(self.key_size, dtype=key.dtype)
-    attention_weights = attention_weights / sqrt_key_size
     attention = jnp.einsum("bhtT,bThd->bthd", attention_weights, value_heads)
     # Concatenate attention matrix of all heads into a single vector.
     attention_vec = jnp.reshape(attention, (*query.shape[:2], -1))

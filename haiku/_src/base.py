@@ -88,8 +88,8 @@ class Frame(NamedTuple):
                  state=state,
                  rng_stack=rng_stack,
                  module_stack=self.module_stack.clone(),
-                 counter_stack=self.counter_stack.clone(),
-                 used_names_stack=self.used_names_stack.clone())
+                 counter_stack=self.counter_stack.map(collections.Counter),
+                 used_names_stack=self.used_names_stack.map(set))
 
   @contextlib.contextmanager
   def module(self, module_state: ModuleState):

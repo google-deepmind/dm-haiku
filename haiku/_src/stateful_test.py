@@ -564,6 +564,14 @@ class StatefulTest(parameterized.TestCase):
     np.testing.assert_allclose(out, some_shape_changing_fun(x), rtol=1e-4)
     self.assertEqual(shape_struct.shape, (in_shape[1],))
 
+  @test_utils.transform_and_run
+  def test_temporary_state_resets_names(self):
+    with stateful.temporary_internal_state(stateful.internal_state()):
+      mod1 = module.Module(name="foo")
+    mod2 = module.Module(name="foo")
+    self.assertEqual(mod1.module_name, "foo")
+    self.assertEqual(mod2.module_name, "foo")
+
 
 def _callback_prim(forward, backward):
   def f_impl(x):

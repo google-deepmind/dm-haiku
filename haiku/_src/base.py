@@ -764,8 +764,8 @@ def with_rng(key: PRNGKey):
 
   >>> with hk.with_rng(jax.random.PRNGKey(428)):
   ...   s = jax.random.uniform(hk.next_rng_key(), ())
-  >>> s
-  DeviceArray(0.501871, dtype=float32)
+  >>> print("{:.1f}".format(s))
+  0.5
 
   Args:
     key: The key to seed the sequence with.

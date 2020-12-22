@@ -70,7 +70,7 @@ class BlockV1(hk.Module):
     conv_0 = hk.Conv2D(
         output_channels=channels // channel_div,
         kernel_shape=1 if bottleneck else 3,
-        stride=1,
+        stride=1 if bottleneck else stride,
         with_bias=False,
         padding="SAME",
         name="conv_0")
@@ -79,7 +79,7 @@ class BlockV1(hk.Module):
     conv_1 = hk.Conv2D(
         output_channels=channels // channel_div,
         kernel_shape=3,
-        stride=stride,
+        stride=stride if bottleneck else 1,
         with_bias=False,
         padding="SAME",
         name="conv_1")
@@ -149,7 +149,7 @@ class BlockV2(hk.Module):
     conv_0 = hk.Conv2D(
         output_channels=channels // channel_div,
         kernel_shape=1 if bottleneck else 3,
-        stride=1,
+        stride=1 if bottleneck else stride,
         with_bias=False,
         padding="SAME",
         name="conv_0")
@@ -159,7 +159,7 @@ class BlockV2(hk.Module):
     conv_1 = hk.Conv2D(
         output_channels=channels // channel_div,
         kernel_shape=3,
-        stride=stride,
+        stride=stride if bottleneck else 1,
         with_bias=False,
         padding="SAME",
         name="conv_1")
@@ -238,6 +238,45 @@ def check_length(length, value, name):
 
 class ResNet(hk.Module):
   """ResNet model."""
+
+  CONFIGS = {
+      18: {
+          "blocks_per_group": (2, 2, 2, 2),
+          "bottleneck": False,
+          "channels_per_group": (64, 128, 256, 512),
+          "use_projection": (False, True, True, True),
+      },
+      34: {
+          "blocks_per_group": (3, 4, 6, 3),
+          "bottleneck": False,
+          "channels_per_group": (64, 128, 256, 512),
+          "use_projection": (False, True, True, True),
+      },
+      50: {
+          "blocks_per_group": (3, 4, 6, 3),
+          "bottleneck": True,
+          "channels_per_group": (256, 512, 1024, 2048),
+          "use_projection": (True, True, True, True),
+      },
+      101: {
+          "blocks_per_group": (3, 4, 23, 3),
+          "bottleneck": True,
+          "channels_per_group": (256, 512, 1024, 2048),
+          "use_projection": (True, True, True, True),
+      },
+      152: {
+          "blocks_per_group": (3, 8, 36, 3),
+          "bottleneck": True,
+          "channels_per_group": (256, 512, 1024, 2048),
+          "use_projection": (True, True, True, True),
+      },
+      200: {
+          "blocks_per_group": (3, 24, 36, 3),
+          "bottleneck": True,
+          "channels_per_group": (256, 512, 1024, 2048),
+          "use_projection": (True, True, True, True),
+      },
+  }
 
   BlockGroup = BlockGroup  # pylint: disable=invalid-name
   BlockV1 = BlockV1  # pylint: disable=invalid-name
@@ -364,15 +403,12 @@ class ResNet18(ResNet):
       logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
     """
-    super().__init__(blocks_per_group=(2, 2, 2, 2),
-                     num_classes=num_classes,
+    super().__init__(num_classes=num_classes,
                      bn_config=bn_config,
                      resnet_v2=resnet_v2,
-                     bottleneck=False,
-                     channels_per_group=(64, 128, 256, 512),
-                     use_projection=(False, True, True, True),
                      logits_config=logits_config,
-                     name=name)
+                     name=name,
+                     **ResNet.CONFIGS[18])
 
 
 class ResNet34(ResNet):
@@ -395,15 +431,12 @@ class ResNet34(ResNet):
       logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
     """
-    super().__init__(blocks_per_group=(3, 4, 6, 3),
-                     num_classes=num_classes,
+    super().__init__(num_classes=num_classes,
                      bn_config=bn_config,
                      resnet_v2=resnet_v2,
-                     bottleneck=False,
-                     channels_per_group=(64, 128, 256, 512),
-                     use_projection=(False, True, True, True),
                      logits_config=logits_config,
-                     name=name)
+                     name=name,
+                     **ResNet.CONFIGS[34])
 
 
 class ResNet50(ResNet):
@@ -426,13 +459,12 @@ class ResNet50(ResNet):
       logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
     """
-    super().__init__(blocks_per_group=(3, 4, 6, 3),
-                     num_classes=num_classes,
+    super().__init__(num_classes=num_classes,
                      bn_config=bn_config,
                      resnet_v2=resnet_v2,
-                     bottleneck=True,
                      logits_config=logits_config,
-                     name=name)
+                     name=name,
+                     **ResNet.CONFIGS[50])
 
 
 class ResNet101(ResNet):
@@ -455,13 +487,12 @@ class ResNet101(ResNet):
       logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
     """
-    super().__init__(blocks_per_group=(3, 4, 23, 3),
-                     num_classes=num_classes,
+    super().__init__(num_classes=num_classes,
                      bn_config=bn_config,
                      resnet_v2=resnet_v2,
-                     bottleneck=True,
                      logits_config=logits_config,
-                     name=name)
+                     name=name,
+                     **ResNet.CONFIGS[101])
 
 
 class ResNet152(ResNet):
@@ -484,13 +515,12 @@ class ResNet152(ResNet):
       logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
     """
-    super().__init__(blocks_per_group=(3, 8, 36, 3),
-                     num_classes=num_classes,
+    super().__init__(num_classes=num_classes,
                      bn_config=bn_config,
                      resnet_v2=resnet_v2,
-                     bottleneck=True,
                      logits_config=logits_config,
-                     name=name)
+                     name=name,
+                     **ResNet.CONFIGS[152])
 
 
 class ResNet200(ResNet):
@@ -513,10 +543,9 @@ class ResNet200(ResNet):
       logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
     """
-    super().__init__(blocks_per_group=(3, 24, 36, 3),
-                     num_classes=num_classes,
+    super().__init__(num_classes=num_classes,
                      bn_config=bn_config,
                      resnet_v2=resnet_v2,
-                     bottleneck=True,
                      logits_config=logits_config,
-                     name=name)
+                     name=name,
+                     **ResNet.CONFIGS[200])

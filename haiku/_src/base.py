@@ -521,7 +521,7 @@ class PRNGSequence(Iterator[PRNGKey]):
       self._subkeys = collections.deque()
 
   def reserve(self, num):
-    """Splits an additional ``num`` keys for later use."""
+    """Splits additional ``num`` keys for later use."""
     if num > 0:
       # When storing keys we adopt a pattern of key0 being reserved for future
       # splitting and all other keys being provided to the user in linear order.

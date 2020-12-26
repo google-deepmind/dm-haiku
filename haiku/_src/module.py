@@ -134,10 +134,10 @@ class ModuleMetaclass(abc.ABCMeta):
 class MethodContext(NamedTuple):
   r"""Read only state showing the calling context for a method.
 
-  For example lets define two interceptors and print the values in the context.
-  Additionally we will make the first interceptor conditionally short circuit,
+  For example, let's define two interceptors and print the values in the context.
+  Additionally, we will make the first interceptor conditionally short circuit,
   since interceptors stack and are run in order, an earlier interceptor can
-  decide to call the next interecptor, or short circuit and call the underlying
+  decide to call the next interceptor, or short circuit and call the underlying
   method directly:
 
   >>> module = hk.Linear(1, name="method_context_example")
@@ -169,7 +169,7 @@ class MethodContext(NamedTuple):
   - module.name:  method_context_example
   - method_name:  __call__
 
-  Setting ``short_circuit=True`` will cause the first interecptor to call the
+  Setting ``short_circuit=True`` will cause the first interceptor to call the
   original method (rather than ``next_fun`` which will trigger the next
   interceptor):
 

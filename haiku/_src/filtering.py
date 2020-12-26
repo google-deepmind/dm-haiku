@@ -74,7 +74,7 @@ def filter(  # pylint: disable=redefined-builtin
     predicate: Callable[[str, str, jnp.ndarray], bool],
     structure: T,
 ) -> T:
-  """Filters a input structure according to a user specified predicate.
+  """Filters an input structure according to a user specified predicate.
 
   >>> params = {'linear': {'w': None, 'b': None}}
   >>> predicate = lambda module_name, name, value: name == 'w'
@@ -107,7 +107,7 @@ def map(  # pylint: disable=redefined-builtin
     fn: Callable[[str, str, InT], OutT],
     structure: Mapping[str, Mapping[str, InT]],
 ) -> Mapping[str, Mapping[str, OutT]]:
-  """Maps a function to a input structure according.
+  """Maps a function to an input structure accordingly.
 
   >>> params = {'linear': {'w': 1.0, 'b': 2.0}}
   >>> fn = lambda module_name, name, value: 2 * value if name == 'w' else value

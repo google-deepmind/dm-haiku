@@ -18,7 +18,7 @@ import collections
 import contextlib
 import functools
 import html
-from typing import NamedTuple, List, Optional
+from typing import Any, Callable, NamedTuple, List, Optional
 
 from haiku._src import data_structures
 from haiku._src import module
@@ -54,41 +54,67 @@ class Graph(NamedTuple):
     return Graph(**{**self._asdict(), **kwargs})
 
 
-def to_dot(fun):
-  """Converts a function using Haiku modules to a dot graph."""
+def to_dot(fun: Callable[..., Any]) -> Callable[..., str]:
+  """Converts a function using Haiku modules to a dot graph.
+
+  To view the resulting graph in Google Colab or an iPython notebook use the
+  ``graphviz`` package:
+
+  .. code-block::
+
+      dot = hk.experimental.to_dot(f)(x)
+      import graphviz
+      graphviz.Source(dot)
+
+  Args:
+    fun: A function using Haiku modules.
+
+  Returns:
+    A function that returns the source code string to a graphviz graph
+    describing the operations executed by the given function clustered by Haiku
+    module.
+
+  See Also:
+    :func:`abstract_to_dot`: Generates a graphviz graph using abstract inputs.
+  """
   graph_fun = to_graph(fun)
   @functools.wraps(fun)
-  def wrapped_fun(*args):
+  def wrapped_fun(*args) -> str:
     # Disable namescopes so they don't show up in the generated dot
     current_setting = module.modules_with_named_call
     try:
       module.profiler_name_scopes(enabled=False)
-      gtd = _graph_to_dot(*graph_fun(*args))
+      return _graph_to_dot(*graph_fun(*args))
     finally:
       module.profiler_name_scopes(enabled=current_setting)
-    return gtd
   return wrapped_fun
 
 
-def abstract_to_dot(fun):
+def abstract_to_dot(fun: Callable[..., Any]) -> Callable[..., str]:
   """Converts a function using Haiku modules to a dot graph.
 
-  Same as `hk.experimental.to_dot` but uses JAX's abstract interpretation
+  Same as :func:`to_dot` but uses JAX's abstract interpretation
   machinery to evaluate the function without requiring concrete inputs.
-  Valid inputs for the wrapped function include `jax.ShapeDtypeStruct`.
+  Valid inputs for the wrapped function include
+  :class:`jax.ShapeDtypeStruct`.
 
-  `hk.experimental.abstract_to_dot` does not support data-dependent
+  :func:`abstract_to_dot` does not support data-dependent
   control-flow, because no concrete values are provided to the function.
 
   Args:
-    fun: function using Haiku modules.
+    fun: A function using Haiku modules.
 
   Returns:
-    wrapped function.
+    A function that returns the source code string to a graphviz graph
+    describing the operations executed by the given function clustered by Haiku
+    module.
+
+  See Also:
+    :func:`to_dot`: Generates a graphviz graph using concrete inputs.
   """
   @functools.wraps(fun)
-  def wrapped_fun(*args):
-    dot_out = None
+  def wrapped_fun(*args) -> str:
+    dot_out = ''
     # eval_shape cannot evaluate functions which return str, as str is not a
     # valid JAX types.
     # The following function extracts the created dot string during the
@@ -97,8 +123,7 @@ def abstract_to_dot(fun):
       nonlocal dot_out
       dot_out = to_dot(fun)(*inner_args)
     jax.eval_shape(dot_extractor_fn, *args)
-    msg = 'Failed to extract dot graph from abstract evaluation'
-    assert dot_out is not None, msg
+    assert dot_out, 'Failed to extract dot graph from abstract evaluation'
     return dot_out
   return wrapped_fun
 
@@ -235,7 +260,7 @@ def _scaled_font_size(depth: int) -> int:
   return int(1.4**depth * 14)
 
 
-def _graph_to_dot(graph: Graph, args, outputs):
+def _graph_to_dot(graph: Graph, args, outputs) -> str:
   """Converts from an internal graph IR to 'dot' format."""
   if tree is None:
     raise ImportError('hk.experimental.to_dot requires dm-tree>=0.1.1.')

@@ -314,6 +314,7 @@ class NameScope:
     try:
       return self.__stack.__exit__(exc_type, exc_value, traceback)
     finally:
+      self.__entered = False
       self.__stack = None
 
 

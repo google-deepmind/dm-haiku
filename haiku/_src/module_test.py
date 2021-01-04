@@ -441,6 +441,20 @@ class ModuleTest(parameterized.TestCase):
 
   @test_utils.transform_and_run
   def test_name_scope_reuse(self):
+    # NOTE: If you are considering lifting this restriction, please think
+    # carefully about the following case:
+    #
+    #     def f(x):
+    #       foo_scope = name_scope("foo")
+    #       with foo_scope: x = BarModule()(x)  # name: foo/bar_module
+    #       with foo_scope: x = BarModule()(x)  # name: foo/bar_module
+    #       return x
+    #
+    # We believe that the name reuse (when the scope is reused) will surprise
+    # users and lead to bugs. This behaviour does match what would happen if you
+    # put the body of the context manager into a method and called that method
+    # twice.
+
     scope = module.name_scope("foo")
     with scope:
       pass
@@ -449,12 +463,15 @@ class ModuleTest(parameterized.TestCase):
         pass
 
   @test_utils.transform_and_run
-  def test_name_scope_reenter(self):
+  def test_name_scope_reuse_after_error(self):
     scope = module.name_scope("foo")
-    with scope:
-      with self.assertRaisesRegex(ValueError, "name_scope is not reentrant"):
-        with scope:
-          pass
+    with self.assertRaisesRegex(AssertionError, "expected"):
+      with scope:
+        assert False, "expected"
+
+    with self.assertRaisesRegex(ValueError, "name_scope is not reusable"):
+      with scope:
+        pass
 
   @test_utils.transform_and_run
   def test_name_scope_leading_slash(self):

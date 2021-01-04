@@ -278,6 +278,11 @@ class ModuleTest(parameterized.TestCase):
                      [("scalar_module", "__call__", ("scalar_module/w",)),
                       ("captures_module", "__call__", ("scalar_module/w",))])
 
+  @test_utils.transform_and_run
+  def test_submodules_in_ctor_tracked(self):
+    m = CreatesSubmoduleWithCtorParam(name="parent")
+    self.assertEqual(m._submodules, {m.child.module_name})
+
   def test_context_reuse_same_instance(self):
     params = {"parent_module/~/child_module": {"w": jnp.array(2.)},
               "parent_module/~/child_module_1": {"w": jnp.array(3.)},
@@ -483,6 +488,20 @@ class CapturesModule(module.Module):
 
   def __call__(self):
     return self._mod()
+
+
+class CreatesSubmoduleWithCtorParam(module.Module):
+
+  def __init__(self, name=None):
+    super().__init__(name=name)
+    self.child = HasConstructorParam(name="child")
+
+
+class HasConstructorParam(module.Module):
+
+  def __init__(self, name=None):
+    super().__init__(name=name)
+    self.w = base.get_parameter("w", [], init=jnp.zeros)
 
 
 class EmptyModule(module.Module):

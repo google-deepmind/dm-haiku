@@ -405,10 +405,18 @@ def wrap_method(method_name, unbound_method):
 
       out = f(*args, **kwargs)
 
+      # Module names are set in the constructor. If `f` is the constructor then
+      # its name will only be set **after** `f` has run. For methods other
+      # than `__init__` we need the name before running in order to wrap their
+      # execution with `named_call`.
+      if module_name is None:
+        module_name = getattr(self, "module_name", None)
+
       # Notify parent modules about our existence.
       if module_name is not None:
         for module_state in frame.module_stack:
-          module_state.module._submodules.add(module_name)  # pylint: disable=protected-access
+          if module_state.module is not self:
+            module_state.module._submodules.add(module_name)  # pylint: disable=protected-access
     return out
 
   return wrapped

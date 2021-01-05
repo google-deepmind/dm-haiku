@@ -516,6 +516,38 @@ hk_py_test(
     ],
 )
 
+hk_py_library(
+    name = "summarise",
+    srcs = ["summarise.py"],
+    deps = [
+        ":base",
+        ":data_structures",
+        ":module",
+        ":transform",
+        ":utils",
+        # pip: dataclasses
+        # pip: jax
+        # pip: numpy
+        # pip: tabulate
+    ],
+)
+
+hk_py_test(
+    name = "summarise_test",
+    timeout = "long",
+    srcs = ["summarise_test.py"],
+    deps = [
+        ":base",
+        ":basic",
+        ":module",
+        ":summarise",
+        ":transform",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        # pip: jax
+    ],
+)
+
 hk_py_test(
     name = "spectral_norm_test",
     srcs = ["spectral_norm_test.py"],

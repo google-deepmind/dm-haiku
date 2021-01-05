@@ -121,6 +121,8 @@ def without_state(f: TransformedWithState) -> Transformed:
                        "then use `hk.transform_with_state`.")
     return out
 
+  tie_in_original_fn(f, init_fn, apply_fn)
+
   return Transformed(init=init_fn, apply=apply_fn)
 
 
@@ -132,16 +134,18 @@ def without_apply_rng(f: TransformedT) -> TransformedT:
   if isinstance(f, TransformedWithState):
     def apply_fn(params, state, *args, **kwargs):
       return f.apply(params, state, None, *args, **kwargs)
-    return TransformedWithState(init=f.init, apply=apply_fn)
 
   elif isinstance(f, Transformed):
     def apply_fn(params, *args, **kwargs):
       return f.apply(params, None, *args, **kwargs)
-    return Transformed(init=f.init, apply=apply_fn)
 
   else:
     raise ValueError("Must be called with the result of `hk.transformed` or "
                      f"`hk.transformed_with_state`, actual {type(f)}")
+
+  tie_in_original_fn(f, f.init, apply_fn)
+
+  return TransformedWithState(init=f.init, apply=apply_fn)
 
 
 # TODO(tomhennigan) Remove apply_rng.
@@ -293,11 +297,23 @@ def transform_with_state(f) -> TransformedWithState:
       out = f(*args, **kwargs)
     return out, ctx.collect_state()
 
+  tie_in_original_fn(f, init_fn, apply_fn)
+
+  return TransformedWithState(init_fn, apply_fn)
+
+
+def tie_in_original_fn(f, init_fn, apply_fn):
   # EXPERIMENTAL: Expose the original function as a private attribute.
+  if isinstance(f, (Transformed, TransformedWithState)):
+    f = getattr(f.init, "_original_fn")
   init_fn._original_fn = f  # pylint: disable=protected-access
   apply_fn._original_fn = f  # pylint: disable=protected-access
 
-  return TransformedWithState(init_fn, apply_fn)
+
+def get_original_fn(f: Union[TransformedT, Callable[..., Any]]):
+  if isinstance(f, (Transformed, TransformedWithState)):
+    f = f.init
+  return getattr(f, "_original_fn")
 
 
 def check_mapping(name: str, mapping: Optional[T]) -> T:

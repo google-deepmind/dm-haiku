@@ -15,12 +15,14 @@
 """Misc utility functions."""
 
 import collections
+import decimal
 import inspect
 import pprint
 import re
 from typing import Any, Sequence, Tuple, Type, TypeVar, Union
 
 import jax
+import jax.numpy as jnp
 
 T = TypeVar("T")
 
@@ -254,3 +256,19 @@ def simple_dtype(dtype) -> str:
   dtype = dtype.replace("uint", "u")
   dtype = dtype.replace("int", "s")
   return dtype
+
+
+def format_array(x: jnp.ndarray) -> str:
+  """Formats the given array showing dtype and shape info."""
+  return simple_dtype(x.dtype) + "[" + ",".join(map(str, x.shape)) + "]"
+
+
+def format_bytes(num_bytes) -> str:
+  suffix = "B"
+  suffixes = ["KB", "MB", "GB", "TB"]
+  num_bytes = decimal.Decimal(num_bytes)
+  one_thousand = decimal.Decimal(1000)
+  while suffixes and num_bytes >= one_thousand:
+    num_bytes /= one_thousand
+    suffix = suffixes.pop(0)
+  return f"{num_bytes:.2f} {suffix}"

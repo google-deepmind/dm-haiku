@@ -810,7 +810,7 @@ JAX Transforms
     vmap
 
 eval_shape
-~~~~
+~~~~~~~~~~
 
 .. autofunction:: eval_shape
 
@@ -844,44 +844,34 @@ vmap
 
 .. automodule:: haiku.experimental
 
+Getters and Interceptors
+------------------------
+
 .. autosummary::
 
-    abstract_to_dot
     custom_creator
     custom_getter
     GetterContext
     intercept_methods
     MethodContext
-    name_scope
-    named_call
-    optimize_rng_use
-    lift
-    profiler_name_scopes
-    to_dot
-
-
-abstract_to_dot
-------
-
-.. autofunction:: abstract_to_dot
 
 custom_creator
---------------
+~~~~~~~~~~~~~~
 
 .. autofunction:: custom_creator
 
 custom_getter
--------------
+~~~~~~~~~~~~~
 
 .. autofunction:: custom_getter
 
 GetterContext
--------------
+~~~~~~~~~~~~~
 
 .. autoclass:: GetterContext
 
 ParamContext
-------------
+~~~~~~~~~~~~
 
 .. deprecated:: 0.0.3
   Renamed to :class:`GetterContext` and used for both custom parameter getters
@@ -890,44 +880,119 @@ ParamContext
 .. autoclass:: ParamContext
 
 intercept_methods
------------------
+~~~~~~~~~~~~~~~~~
 
 .. autofunction:: intercept_methods
 
 MethodContext
--------------
+~~~~~~~~~~~~~
 
 .. autoclass:: MethodContext
 
-name_scope
-----------
+TensorFlow Profiler
+-------------------
 
-.. autofunction:: name_scope
+.. autosummary::
+
+    named_call
+    profiler_name_scopes
 
 named_call
-----------
+~~~~~~~~~~
 
 .. autofunction:: named_call
 
-optimize_rng_use
-----------------
-
-.. autofunction:: optimize_rng_use
-
-lift
-----
-
-.. autofunction:: lift
-
 profiler_name_scopes
---------------------
+~~~~~~~~~~~~~~~~~~~~
 
 .. autofunction:: profiler_name_scopes
 
+Graphviz Visualisation
+----------------------
+
+.. autosummary::
+
+    to_dot
+    abstract_to_dot
+
+abstract_to_dot
+~~~~~~~~~~~~~~~
+
+.. autofunction:: abstract_to_dot
+
 to_dot
-------
+~~~~~~
 
 .. autofunction:: to_dot
+
+Summarisation
+-------------
+
+.. autosummary::
+
+    tabulate
+    eval_summary
+    ArraySpec
+    MethodInvocation
+    ModuleDetails
+
+tabulate
+~~~~~~~~
+
+.. autofunction:: tabulate
+
+eval_summary
+~~~~~~~~~~~~
+
+.. autofunction:: eval_summary
+
+ArraySpec
+~~~~~~~~~
+
+.. autoclass:: ArraySpec
+  :members:
+
+MethodInvocation
+~~~~~~~~~~~~~~~~
+
+.. autoclass:: MethodInvocation
+  :members:
+
+ModuleDetails
+~~~~~~~~~~~~~
+
+.. autoclass:: ModuleDetails
+  :members:
+
+Managing State
+--------------
+
+.. autosummary::
+
+    name_scope
+    lift
+
+name_scope
+~~~~~~~~~~
+
+.. autofunction:: name_scope
+
+lift
+~~~~
+
+.. autofunction:: lift
+
+Optimizations
+-------------
+
+.. autosummary::
+
+    optimize_rng_use
+
+optimize_rng_use
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: optimize_rng_use
 
 Utilities
 =========

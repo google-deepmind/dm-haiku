@@ -29,22 +29,32 @@ from haiku._src.module import name_scope
 from haiku._src.module import profiler_name_scopes
 from haiku._src.random import optimize_rng_use
 from haiku._src.stateful import named_call
+from haiku._src.summarise import ArraySpec
+from haiku._src.summarise import eval_summary
+from haiku._src.summarise import MethodInvocation
+from haiku._src.summarise import ModuleDetails
+from haiku._src.summarise import tabulate
 
 # TODO(tomhennigan): Remove deprecated alias.
 ParamContext = GetterContext
 
 __all__ = (
     "abstract_to_dot",
+    "ArraySpec",
+    "eval_summary",
     "custom_creator",
     "custom_getter",
     "intercept_methods",
     "lift",
     "MethodContext",
+    "MethodInvocation",
+    "ModuleDetails",
     "name_scope",
     "named_call",
     "optimize_rng_use",
     "GetterContext",
     "ParamContext",
     "profiler_name_scopes",
+    "tabulate",
     "to_dot",
 )

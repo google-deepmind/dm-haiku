@@ -208,6 +208,22 @@ hk_py_test(
 )
 
 hk_py_test(
+    name = "summarise_test",
+    srcs = ["summarise_test.py"],
+    gpu = False,
+    shard_count = 50,
+    tpu = False,
+    deps = [
+        ":descriptors",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        "//haiku",
+        "//haiku/_src:test_utils",
+        # pip: jax
+    ],
+)
+
+hk_py_test(
     name = "shim_hk_test",
     srcs = ["shim_hk_test.py"],
     gpu = False,

@@ -63,6 +63,23 @@ class UtilsTest(parameterized.TestCase):
     expected_bytes = (np.prod(x.shape) if x.ndim else 1) * x.itemsize
     self.assertEqual(utils.tree_bytes(container(x)), expected_bytes)
 
+  def test_format_array(self):
+    self.assertEqual(utils.format_array(np.ones([], np.float32)), "f32[]")
+    self.assertEqual(utils.format_array(np.ones([1, 2], np.int8)), "s8[1,2]")
+    self.assertEqual(utils.format_array(np.ones([], jnp.bfloat16)), "bf16[]")
+
+  def test_format_bytes(self):
+    self.assertEqual(utils.format_bytes(0), "0.00 B")
+    self.assertEqual(utils.format_bytes(999), "999.00 B")
+    self.assertEqual(utils.format_bytes(1234), "1.23 KB")
+    self.assertEqual(utils.format_bytes(1235), "1.24 KB")
+    self.assertEqual(utils.format_bytes(999010), "999.01 KB")
+    self.assertEqual(utils.format_bytes(1e3), "1.00 KB")
+    self.assertEqual(utils.format_bytes(2e6), "2.00 MB")
+    self.assertEqual(utils.format_bytes(3e9), "3.00 GB")
+    self.assertEqual(utils.format_bytes(4e12), "4.00 TB")
+    self.assertEqual(utils.format_bytes(5e20), "500000000.00 TB")
+
 
 class ReplicateTest(parameterized.TestCase):
 

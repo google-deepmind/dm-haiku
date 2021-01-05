@@ -403,6 +403,20 @@ class TransformTest(parameterized.TestCase):
                                 "running_init.*used as part of.*transform"):
       transform.running_init()
 
+  @parameterized.parameters(
+      None,
+      transform.without_apply_rng,
+      transform.without_state,
+      lambda f: transform.without_state(transform.without_apply_rng(f)))
+  def test_persists_original_fn(self, without):
+    orig_f = lambda: None
+    f = transform.transform(orig_f)
+    if without is not None:
+      f = without(f)
+    self.assertIs(transform.get_original_fn(f), orig_f)
+    self.assertIs(transform.get_original_fn(f.init), orig_f)
+    self.assertIs(transform.get_original_fn(f.apply), orig_f)
+
 
 class ObjectWithTransform(object):
 

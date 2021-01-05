@@ -14,7 +14,9 @@
 # ==============================================================================
 """Tests for haiku._src.module."""
 
+import abc
 import contextlib
+import sys
 from typing import Callable, Optional, Sequence
 
 from absl.testing import absltest
@@ -26,6 +28,13 @@ from haiku._src import test_utils
 from haiku._src import transform
 import jax
 import jax.numpy as jnp
+
+# pylint: disable=g-import-not-at-top
+if sys.version_info < (3, 8):
+  from typing_extensions import Protocol
+else:
+  from typing import Protocol
+# pylint: enable=g-import-not-at-top
 
 
 # TODO(tomhennigan) Improve test coverage.
@@ -621,6 +630,24 @@ class NameScopeModule(module.Module):
     with module.name_scope("foo"):
       w_foo = base.get_parameter("w", [], init=jnp.zeros)
     return w, w_foo
+
+
+class SupportsFoo(Protocol):
+
+  @abc.abstractmethod
+  def foo(self) -> int:
+    ...
+
+
+# Check that we can declare a module that also inherits from a Protocol without
+# encountering a metaclass conflict.
+class ProtocolModule(module.Module, SupportsFoo):
+
+  # We should also be able to add new abstractmethods to the derived class,
+  # since its metaclass is a subclass of ABCMeta.
+  @abc.abstractmethod
+  def bar(self) -> str:
+    ...
 
 if __name__ == "__main__":
   absltest.main()

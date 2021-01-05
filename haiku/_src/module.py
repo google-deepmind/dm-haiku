@@ -14,11 +14,11 @@
 # ==============================================================================
 """Base Haiku module."""
 
-import abc
 import contextlib
 import functools
 import inspect
 import re
+import sys
 from typing import (Any, Callable, ContextManager, Dict, Mapping, NamedTuple,
                     Optional, Tuple, Type, TypeVar)
 
@@ -27,6 +27,13 @@ from haiku._src import data_structures
 from haiku._src import stateful
 from haiku._src import utils
 import jax.numpy as jnp
+
+# pylint: disable=g-import-not-at-top
+if sys.version_info < (3, 8):
+  from typing_extensions import Protocol
+else:
+  from typing import Protocol
+# pylint: enable=g-import-not-at-top
 
 ThreadLocalStack = data_structures.ThreadLocalStack
 T = TypeVar("T")
@@ -51,10 +58,13 @@ def profiler_name_scopes(enabled=True):
   return previously_enabled
 
 
-class ModuleMetaclass(abc.ABCMeta):
+# We subclass `type(Protocol)` in order to avoid metaclass conflicts when
+# defining modules that also inherit from `Protocol`. Note that `type(Protocol)`
+# already inherits from `abc.ABCMeta`.
+class ModuleMetaclass(type(Protocol)):
   """Metaclass for `Module`."""
 
-  def __new__(
+  def __new__(  # pylint: disable=bad-classmethod-argument
       mcs: Type[Type[T]],
       name: str,
       bases: Tuple[Type[Any], ...],
@@ -105,7 +115,7 @@ class ModuleMetaclass(abc.ABCMeta):
 
     return cls
 
-  def __call__(cls: Type[T], *args, **kwargs) -> T:
+  def __call__(cls: Type[T], *args, **kwargs) -> T:  # pylint: disable=no-self-argument
     # Call new such that we have an un-initialized module instance that we can
     # still reference even if there is an exception during __init__. This is
     # needed such that we can make sure the name_scope constructed in __init__

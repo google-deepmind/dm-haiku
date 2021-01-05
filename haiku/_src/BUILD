@@ -113,6 +113,7 @@ hk_py_library(
         ":stateful",
         ":utils",
         # pip: jax
+        # pip: typing_extensions
     ],
 )
 
@@ -128,6 +129,7 @@ hk_py_test(
         # pip: absl/testing:parameterized
         # pip: dataclasses
         # pip: jax
+        # pip: typing_extensions
     ],
 )
 

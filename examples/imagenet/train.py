@@ -41,6 +41,9 @@ flags.DEFINE_integer('train_device_batch_size', 128, help='')
 flags.DEFINE_integer('train_eval_every', -1, help='')
 flags.DEFINE_integer('train_init_random_seed', 42, help='')
 flags.DEFINE_integer('train_log_every', 1000, help='')
+flags.DEFINE_integer('train_epochs', 90, help='')
+flags.DEFINE_integer('train_lr_warmup_epochs', 5, help='')
+flags.DEFINE_float('train_lr_init', 0.1, help='')
 flags.DEFINE_float('train_smoothing', .1, lower_bound=0, upper_bound=1, help='')
 flags.DEFINE_enum('train_split', 'TRAIN_AND_VALID', SPLITS, help='')
 flags.DEFINE_float('train_weight_decay', 1e-4, help='')
@@ -66,22 +69,21 @@ forward = hk.transform_with_state(_forward)
 
 
 def lr_schedule(step: jnp.ndarray) -> jnp.ndarray:
-  """Linear scaling rule optimized for 90 epochs."""
+  """Cosine learning rate schedule."""
   train_split = dataset.Split.from_string(FLAGS.train_split)
 
-  # See Section 5.1 of https://arxiv.org/pdf/1706.02677.pdf.
   total_batch_size = FLAGS.train_device_batch_size * jax.device_count()
   steps_per_epoch = train_split.num_examples / total_batch_size
+  warmup_steps = FLAGS.train_lr_warmup_epochs * steps_per_epoch
+  training_steps = FLAGS.train_epochs * steps_per_epoch
 
-  current_epoch = step / steps_per_epoch  # type: float
-  lr = (0.1 * total_batch_size) / 256
-  lr_linear_till = 5
-  boundaries = jnp.array((30, 60, 80)) * steps_per_epoch
-  values = jnp.array([1., 0.1, 0.01, 0.001]) * lr
-
-  index = jnp.sum(boundaries < step)
-  lr = jnp.take(values, index)
-  return lr * jnp.minimum(1., current_epoch / lr_linear_till)
+  lr = FLAGS.train_lr_init * total_batch_size / 256
+  scaled_step = (jnp.maximum(step - warmup_steps, 0) /
+                 (training_steps - warmup_steps))
+  lr *= 0.5 * (1.0 + jnp.cos(jnp.pi * scaled_step))
+  if warmup_steps:
+    lr *= jnp.minimum(step / warmup_steps, 1.0)
+  return lr
 
 
 def make_optimizer():
@@ -228,7 +230,8 @@ def main(argv):
   # multi-host training setup each host will only see a batch size of
   # `total_train_batch_size / jax.host_count()`.
   total_train_batch_size = FLAGS.train_device_batch_size * jax.device_count()
-  num_train_steps = (train_split.num_examples * 90) // total_train_batch_size
+  num_train_steps = (
+      (train_split.num_examples * FLAGS.train_epochs) // total_train_batch_size)
 
   local_device_count = jax.local_device_count()
   train_dataset = dataset.load(

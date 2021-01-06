@@ -18,6 +18,7 @@ import enum
 from typing import Generator, Mapping, Optional, Sequence, Text, Tuple
 
 import jax
+import jax.numpy as jnp
 import numpy as np
 import tensorflow.compat.v2 as tf
 import tensorflow_datasets as tfds
@@ -52,6 +53,7 @@ def load(
     is_training: bool,
     batch_dims: Sequence[int],
     bfloat16: bool = False,
+    transpose: bool = False,
 ) -> Generator[Batch, None, None]:
   """Loads the given split of the dataset."""
   if is_training:
@@ -68,6 +70,7 @@ def load(
   options = ds.options()
   options.experimental_threading.private_threadpool_size = 48
   options.experimental_threading.max_intra_op_parallelism = 1
+  options.experimental_optimization.map_parallelization = True
   if is_training:
     options.experimental_deterministic = False
 
@@ -91,12 +94,42 @@ def load(
 
   ds = ds.map(preprocess, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
-  for batch_size in reversed(batch_dims):
+  def transpose_fn(batch):
+    # We use the "double transpose trick" to improve performance for TPUs. Note
+    # that this (typically) requires a matching HWCN->NHWC transpose in your
+    # model code. The compiler cannot make this optimization for us since our
+    # data pipeline and model are compiled separately.
+    batch = dict(**batch)
+    batch['images'] = tf.transpose(batch['images'], (1, 2, 3, 0))
+    return batch
+
+  def cast_fn(batch):
+    batch = dict(**batch)
+    batch['images'] = tf.cast(batch['images'], tf.bfloat16)
+    return batch
+
+  for i, batch_size in enumerate(reversed(batch_dims)):
     ds = ds.batch(batch_size)
+    if i == 0:
+      if transpose:
+        ds = ds.map(transpose_fn)  # NHWC -> HWCN
+      # NOTE: You may be tempted to move the casting earlier on in the pipeline,
+      # but for bf16 some operations will end up silently placed on the TPU and
+      # this causes stalls while TF and JAX battle for the accelerator.
+      if bfloat16:
+        ds = ds.map(cast_fn)
 
   ds = ds.prefetch(tf.data.experimental.AUTOTUNE)
+  ds = tfds.as_numpy(ds)
 
-  yield from tfds.as_numpy(ds)
+  if bfloat16:
+    # JAX and TF disagree on the NumPy bfloat16 type so we need to reinterpret
+    # tf_bfloat16->jnp.bfloat16.
+    for batch in ds:
+      batch['images'] = batch['images'].view(jnp.bfloat16)
+      yield batch
+  else:
+    yield from ds
 
 
 def _to_tfds_split(split: Split) -> tfds.Split:

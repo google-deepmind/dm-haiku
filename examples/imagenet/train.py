@@ -47,11 +47,17 @@ flags.DEFINE_float('train_lr_init', 0.1, help='')
 flags.DEFINE_float('train_smoothing', .1, lower_bound=0, upper_bound=1, help='')
 flags.DEFINE_enum('train_split', 'TRAIN_AND_VALID', SPLITS, help='')
 flags.DEFINE_float('train_weight_decay', 1e-4, help='')
+flags.DEFINE_bool('train_bfloat16', False, help='')
+flags.DEFINE_bool('dataset_transpose', False, help='')
 FLAGS = flags.FLAGS
 
 # Types.
 OptState = Tuple[optax.TraceState, optax.ScaleByScheduleState, optax.ScaleState]
 Scalars = Mapping[str, jnp.ndarray]
+
+# Utilities.
+to_bf16 = lambda x: x.astype(jnp.bfloat16) if x.dtype == jnp.float32 else x
+from_bf16 = lambda x: x.astype(jnp.float32) if x.dtype == jnp.bfloat16 else x
 
 
 def _forward(
@@ -59,10 +65,14 @@ def _forward(
     is_training: bool,
 ) -> jnp.ndarray:
   """Forward application of the resnet."""
+  images = batch['images']
+  if FLAGS.dataset_transpose:
+    # See note in dataset.py if you are curious about this.
+    images = jnp.transpose(images, (3, 0, 1, 2))  # HWCN -> NHWC
   net = hk.nets.ResNet50(1000,
                          resnet_v2=FLAGS.model_resnet_v2,
                          bn_config={'decay_rate': FLAGS.model_bn_decay})
-  return net(batch['images'], is_training=is_training)
+  return net(images, is_training=is_training)
 
 # Transform our forwards function into a pair of pure functions.
 forward = hk.transform_with_state(_forward)
@@ -142,8 +152,12 @@ def train_step(
     batch: dataset.Batch,
 ) -> Tuple[hk.Params, hk.State, OptState, Scalars]:
   """Applies an update to parameters and returns new state."""
+  in_params = params
+  if FLAGS.train_bfloat16:
+    in_params, state = jax.tree_map(to_bf16, (params, state))
+
   (loss, state), grads = (
-      jax.value_and_grad(loss_fn, has_aux=True)(params, state, batch))
+      jax.value_and_grad(loss_fn, has_aux=True)(in_params, state, batch))
 
   # Taking the mean across all replicas to keep params in sync.
   grads = jax.lax.pmean(grads, axis_name='i')
@@ -156,6 +170,9 @@ def train_step(
   scalars = {'train_loss': loss}
   scalars = jax.lax.pmean(scalars, axis_name='i')
 
+  if FLAGS.train_bfloat16:
+    state, scalars = jax.tree_map(from_bf16, (state, scalars))
+
   return params, state, opt_state, scalars
 
 
@@ -164,6 +181,8 @@ def make_initial_state(
     batch: dataset.Batch,
 ) -> Tuple[hk.Params, hk.State, OptState]:
   """Computes the initial network state."""
+  if FLAGS.train_bfloat16:
+    batch = jax.tree_map(from_bf16, batch)
   params, state = forward.init(rng, batch, is_training=True)
   opt_state = make_optimizer().init(params)
   return params, state, opt_state
@@ -200,12 +219,13 @@ def evaluate(
   params, state = jax.tree_map(lambda x: x[0], (params, state))
   test_dataset = dataset.load(split,
                               is_training=False,
-                              batch_dims=[FLAGS.eval_batch_size])
+                              batch_dims=[FLAGS.eval_batch_size],
+                              transpose=FLAGS.dataset_transpose)
   correct = jnp.array(0)
   total = 0
   for batch in test_dataset:
     correct += eval_batch(params, state, batch)
-    total += batch['images'].shape[0]
+    total += batch['labels'].shape[0]
   assert total == split.num_examples, total
   return {'top_1_acc': correct.item() / total}
 
@@ -237,7 +257,9 @@ def main(argv):
   train_dataset = dataset.load(
       train_split,
       is_training=True,
-      batch_dims=[local_device_count, FLAGS.train_device_batch_size])
+      batch_dims=[local_device_count, FLAGS.train_device_batch_size],
+      bfloat16=FLAGS.train_bfloat16,
+      transpose=FLAGS.dataset_transpose)
 
   # For initialization we need the same random key on each device.
   rng = jax.random.PRNGKey(FLAGS.train_init_random_seed)

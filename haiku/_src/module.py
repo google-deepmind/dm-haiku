@@ -20,7 +20,7 @@ import inspect
 import re
 import sys
 from typing import (Any, Callable, ContextManager, Dict, Mapping, NamedTuple,
-                    Optional, Tuple, Type, TypeVar)
+                    Optional, Set, Tuple, Type, TypeVar)
 
 from haiku._src import base
 from haiku._src import data_structures
@@ -486,7 +486,7 @@ class Module(object, metaclass=ModuleMetaclass):
       raise ValueError(
           "'{}' is not a valid module name (must be a valid Python identifier)"
           .format(name))
-    self._submodules = set()
+    self._submodules = set()  # type: Set[str]
     self.module_name = unique_and_canonical_name(name)
     self.name = self.module_name.split("/")[-1]
 
@@ -499,17 +499,34 @@ class Module(object, metaclass=ModuleMetaclass):
       raise ValueError(
           "`module.params_dict()` must be used as part of an `hk.transform`.")
 
-    params = {}
-    curr_name = self.module_name
-    for mod_name, mod_params in base.current_frame().params.items():
-      if (mod_name == curr_name
-          or mod_name.startswith(curr_name + "/")
-          or mod_name in self._submodules):
-        for param_name, param in mod_params.items():
-          fq_name = mod_name + "/" + param_name
-          params[fq_name] = param
+    return params_or_state_dict(self.module_name, self._submodules, "params")
 
-    return params
+  def state_dict(self) -> Mapping[str, jnp.array]:
+    """Returns state keyed by name for this module and submodules."""
+    if not base.frame_stack:
+      raise ValueError(
+          "`module.state_dict()` must be used as part of an `hk.transform`.")
+
+    return params_or_state_dict(self.module_name, self._submodules, "state")
+
+
+def params_or_state_dict(
+    module_name: str,
+    submodules: Set[str],
+    which: str,
+) -> Mapping[str, jnp.array]:
+  """Returns module parameters or state for the given module or submodules."""
+  assert which in ("params", "state")
+  out = {}
+  frame = base.current_frame()
+  for their_module_name, bundle in getattr(frame, which).items():
+    if (their_module_name == module_name
+        or their_module_name.startswith(module_name + "/")
+        or their_module_name in submodules):
+      for name, value in bundle.items():
+        fq_name = their_module_name + "/" + name
+        out[fq_name] = value.current if which == "state" else value
+  return out
 
 
 def transparent(method: T) -> T:

@@ -229,6 +229,31 @@ class ModuleTest(parameterized.TestCase):
     self.assertIs(w, mod())
     self.assertEqual(mod.params_dict(), {"captures_module/scalar_module/w": w})
 
+  @test_utils.transform_and_run
+  def test_state_dict(self):
+    mods = [ScalarStateModule() for _ in range(5)]
+    for i, mod in enumerate(mods):
+      w = mod()
+      if i:
+        self.assertEqual(mod.state_dict(),
+                         {"scalar_state_module_{}/w".format(i): w})
+      else:
+        self.assertEqual(mod.state_dict(), {"scalar_state_module/w": w})
+
+  @test_utils.transform_and_run
+  def test_state_dict_captured(self):
+    mod = CapturesModule(ScalarStateModule())
+    w = mod()
+    self.assertEqual(mod.state_dict(), {"scalar_state_module/w": w})
+
+  @test_utils.transform_and_run
+  def test_state_dict_captured_lambda(self):
+    mod = CapturesModule(lambda: ScalarStateModule()())  # pylint: disable=unnecessary-lambda
+    w = mod()
+    self.assertIs(w, mod())
+    self.assertEqual(mod.state_dict(),
+                     {"captures_module/scalar_state_module/w": w})
+
   def test_inline_use(self):
     def f():
       return ScalarModule()()
@@ -538,6 +563,12 @@ class ScalarModule(module.Module):
 
   def __call__(self):
     return base.get_parameter("w", [], init=jnp.zeros)
+
+
+class ScalarStateModule(module.Module):
+
+  def __call__(self):
+    return base.get_state("w", [], init=jnp.zeros)
 
 
 class ParentModule(module.Module):

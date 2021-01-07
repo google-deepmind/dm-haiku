@@ -149,3 +149,8 @@ def combined_named_parameters(*parameters):
 def named_bools(name) -> Sequence[Tuple[str, bool]]:
   """Returns a pair of booleans suitable for use with ``named_parameters``."""
   return (name, True), ("not_{}".format(name), False)
+
+
+def named_range(name, stop: int) -> Sequence[Tuple[str, int]]:
+  """Equivalent to `range()` but suitable for use with ``named_parameters``."""
+  return tuple(((f"{name}_{i}", i) for i in range(stop)))

@@ -23,6 +23,7 @@ from haiku._src import base
 from haiku._src import basic
 from haiku._src import module as module_lib
 from haiku._src import summarise
+from haiku._src import test_utils
 from haiku._src import transform
 import jax.numpy as jnp
 
@@ -71,6 +72,21 @@ class SummariseTest(parameterized.TestCase):
     for invocation in invocations[1:]:
       self.assertEqual(invocations[0].context.method_name,
                        invocation.context.method_name)
+
+  @test_utils.combined_named_parameters(test_utils.named_bools("params"),
+                                        test_utils.named_range("num_elems", 8))
+  def test_params_or_state(self, params, num_elems):
+    def cls():
+      for i in range(num_elems):
+        g = base.get_parameter if params else base.get_state
+        g(f"x{i}", [], init=jnp.zeros)
+
+    f = lambda: basic.to_module(cls)(name="foo")()
+    invocations = get_summary(f)
+    invocation, = invocations
+    details = invocation.module_details
+    d = details.params if params else details.state
+    self.assertEqual(list(d), [f"foo/x{i}" for i in range(num_elems)])
 
 
 class TabulateTest(parameterized.TestCase):

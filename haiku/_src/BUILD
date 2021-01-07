@@ -541,6 +541,7 @@ hk_py_test(
         ":basic",
         ":module",
         ":summarise",
+        ":test_utils",
         ":transform",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized

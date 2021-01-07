@@ -75,16 +75,20 @@ class ModuleDetails:
     module: A :class:`~haiku.Module` instance.
     method_name: The method name that was invoked on the module.
     params: The modules params dict with arrays converted to :class:`ArraySpec`.
+    state: The modules state dict with arrays converted to :class:`ArraySpec`.
   """
 
   module: hk.Module
   method_name: str
   params: Mapping[str, ArraySpec]
+  state: Mapping[str, ArraySpec]
 
   @classmethod
   def of(cls, module: hk.Module, method_name: str) -> "ModuleDetails":
     params = jax.tree_map(ArraySpec.from_array, module.params_dict())
-    return ModuleDetails(module=module, method_name=method_name, params=params)
+    state = jax.tree_map(ArraySpec.from_array, module.state_dict())
+    return ModuleDetails(module=module, method_name=method_name, params=params,
+                         state=state)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -126,7 +130,7 @@ def to_spec(tree):
       lambda x: ArraySpec.from_array(x) if isinstance(x, jnp.ndarray) else x,
       tree)
 
-IGNORED_METHODS = ("__init__", "params_dict")
+IGNORED_METHODS = ("__init__", "params_dict", "state_dict")
 
 
 def log_used_modules(

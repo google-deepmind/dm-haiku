@@ -53,6 +53,7 @@ We suggest installing the latest version of Haiku by running::
    notebooks/jax2tf
    notebooks/build_your_own_haiku
    notebooks/visualization
+   notebooks/non_trainable
 
 Known issues
 ------------

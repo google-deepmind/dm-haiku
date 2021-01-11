@@ -26,7 +26,7 @@ fi
 
 # Aim for hermetic Python environment.
 unset PYTHONPATH
-virtualenv -p python3 --no-site-packages .
+virtualenv -p python3 .
 source bin/activate
 python --version
 

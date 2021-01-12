@@ -28,6 +28,14 @@ ModuleFn = descriptors.ModuleFn
 
 class Float64Test(common.DTypeTestCase):
 
+  def setUp(self):
+    super().setUp()
+    config.update("jax_enable_x64", True)
+
+  def tearDown(self):
+    super().tearDown()
+    config.update("jax_enable_x64", False)
+
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
   def test_float32(self, module_fn: ModuleFn, shape, dtype):
     self.assert_dtype(jnp.float32, module_fn, shape, dtype)
@@ -37,5 +45,4 @@ class Float64Test(common.DTypeTestCase):
     self.assert_dtype(jnp.float64, module_fn, shape, dtype)
 
 if __name__ == "__main__":
-  config.update("jax_enable_x64", True)
   absltest.main()

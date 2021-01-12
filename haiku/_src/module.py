@@ -95,6 +95,12 @@ class ModuleMetaclass(type(Protocol)):
         # can trigger the descriptor binding them to the class.
         method_names.append(key)
 
+    # Without this any classes with @abc.abstract* elements in their dict fail
+    # isinstance checks.
+    # TODO(b/177339347): Remove this workaround once the underlying bug in
+    #                    `_ProtocolMeta.__instancecheck__` has been fixed.
+    clsdict.setdefault("_is_protocol", False)
+
     clsdict.setdefault(
         "__repr__",
         lambda module: module._auto_repr)  # pylint: disable=protected-access

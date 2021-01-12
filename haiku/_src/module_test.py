@@ -29,12 +29,12 @@ from haiku._src import transform
 import jax
 import jax.numpy as jnp
 
-# pylint: disable=g-import-not-at-top
+# pylint: disable=g-import-not-at-top,g-multiple-import
 if sys.version_info < (3, 8):
-  from typing_extensions import Protocol
+  from typing_extensions import Protocol, runtime_checkable
 else:
-  from typing import Protocol
-# pylint: enable=g-import-not-at-top
+  from typing import Protocol, runtime_checkable
+# pylint: enable=g-import-not-at-top,g-multiple-import
 
 
 # TODO(tomhennigan) Improve test coverage.
@@ -519,6 +519,24 @@ class ModuleTest(parameterized.TestCase):
       module.name_scope("foo")
 
 
+class ProtocolSupportTest(absltest.TestCase):
+
+  @test_utils.transform_and_run
+  def test_is_protocol(self):
+    self.assertFalse(getattr(module.Module, "_is_protocol"))
+    self.assertFalse(getattr(ConcreteProtocolModule, "_is_protocol"))
+    # NOTE: Technically this bit is set wrong (ProtocolModule) is a protocol.
+    self.assertFalse(getattr(ProtocolModule, "_is_protocol"))
+
+  @test_utils.transform_and_run
+  def test_instance_checks(self):
+    self.assertIsInstance(ConcreteProtocolModule(), module.Module)
+    self.assertIsInstance(ConcreteProtocolModule(), SupportsFoo)
+    self.assertIsInstance(ConcreteProtocolModule(), ProtocolModule)
+    self.assertNotIsInstance(module.Module(), SupportsFoo)
+    self.assertNotIsInstance(module.Module(), ProtocolModule)
+
+
 class IdentityModule(module.Module):
 
   def __call__(self, x):
@@ -663,6 +681,7 @@ class NameScopeModule(module.Module):
     return w, w_foo
 
 
+@runtime_checkable
 class SupportsFoo(Protocol):
 
   @abc.abstractmethod
@@ -679,6 +698,15 @@ class ProtocolModule(module.Module, SupportsFoo):
   @abc.abstractmethod
   def bar(self) -> str:
     ...
+
+
+class ConcreteProtocolModule(ProtocolModule):
+
+  def foo(self):
+    return 0
+
+  def bar(self):
+    return ""
 
 if __name__ == "__main__":
   absltest.main()

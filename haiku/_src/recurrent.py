@@ -52,6 +52,9 @@ class RNNCore(hk.Module):
   iteratively construct an output sequence from the given input sequence.
   """
 
+  # TODO(tomhennigan): Figure out why we need to set this in Python >=3.8.
+  _is_protocol = False
+
   @abc.abstractmethod
   def __call__(self, inputs, prev_state) -> Tuple[Any, Any]:
     """Run one step of the RNN.

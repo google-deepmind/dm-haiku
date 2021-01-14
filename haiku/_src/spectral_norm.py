@@ -178,7 +178,7 @@ class SNParamsTree(hk.Module):
         singular value of the input.
       ignore_regex: A string. Any parameter in the tree whose name matches this
         regex will not have spectral normalization applied to it. The empty
-        string means this module apply to all parameters.
+        string means this module applies to all parameters.
       name: The name of the module.
     """
     super().__init__(name=name)

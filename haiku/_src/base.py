@@ -522,7 +522,7 @@ class PRNGSequence(Iterator[PRNGKey]):
       self._subkeys = collections.deque()
 
   def reserve(self, num):
-    """Splits an additional ``num`` keys for later use."""
+    """Splits additional ``num`` keys for later use."""
     if num > 0:
       # When storing keys we adopt a pattern of key0 being reserved for future
       # splitting and all other keys being provided to the user in linear order.
@@ -620,7 +620,7 @@ def next_rng_key_internal() -> PRNGKey:
 
 
 def next_rng_keys(num: int) -> Tuple[PRNGKey, ...]:
-  """Returns one or more JAX random key split from the current global key.
+  """Returns one or more JAX random keys split from the current global key.
 
   >>> k1, k2 = hk.next_rng_keys(2)
   >>> assert (k1 != k2).all()
@@ -632,7 +632,7 @@ def next_rng_keys(num: int) -> Tuple[PRNGKey, ...]:
     num: The number of keys to split.
 
   Returns:
-    One or more unique (within a transformed function) JAX rng key that can be
+    One or more unique (within a transformed function) JAX rng keys that can be
     used with APIs such as :func:`jax.random.uniform`.
   """
   assert_context("next_rng_keys")

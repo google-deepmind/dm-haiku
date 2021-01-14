@@ -50,7 +50,7 @@ def optimize_rng_use(fun):
   ahead of time such that we only need to call :func:`jax.random.split` once.
 
   In the following example, we need three random samples for our weight
-  matricies in our 3 layer MLP. To draw these samples we use
+  matrices in our 3-layer MLP. To draw these samples we use
   :func:`~haiku.next_rng_key` which will split a new key for each sample. By
   using :func:`optimize_rng_use` Haiku will pre-allocate exactly enough RNGs for
   ``f`` to be evaluated by splitting the input key once and only once. For large

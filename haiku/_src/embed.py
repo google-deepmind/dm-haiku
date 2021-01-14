@@ -74,13 +74,13 @@ class Embed(hk.Module):
       w_init: An initializer for the embeddings matrix. As a default,
         embeddings are initialized via a truncated normal distribution.
       lookup_style: One of the enum values of :class:`EmbedLookupStyle`
-        determining how to access the value of the embbeddings given an ID.
+        determining how to access the value of the embeddings given an ID.
         Regardless the input should be a dense array of integer values
         representing ids. This setting changes how internally this module maps
-        those ides to embeddings. The result is the same, but the speed and
-        memory tradeoffs are different. It default to using numpy-style array
+        those ids to embeddings. The result is the same, but the speed and
+        memory tradeoffs are different. It defaults to using NumPy-style array
         indexing. This value is only the default for the module, and at any
-        given invocation can be overriden in :meth:`__call__`.
+        given invocation can be overridden in :meth:`__call__`.
       name: Optional name for this module.
 
     Raises:

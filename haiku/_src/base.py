@@ -509,7 +509,8 @@ class PRNGSequence(Iterator[PRNGKey]):
     if isinstance(key_or_seed, tuple):
       key, subkeys = key_or_seed
       assert_is_prng_key(key)
-      map(assert_is_prng_key, subkeys)
+      for subkey in subkeys:
+        assert_is_prng_key(subkey)
       self._key = key
       self._subkeys = collections.deque(subkeys)
     else:
@@ -550,7 +551,8 @@ class PRNGSequence(Iterator[PRNGKey]):
   def replace_internal_state(self, state: PRNGSequenceState):
     key, subkeys = state
     assert_is_prng_key(key)
-    map(assert_is_prng_key, subkeys)
+    for subkey in subkeys:
+      assert_is_prng_key(subkey)
     self._key = key
     self._subkeys = collections.deque(subkeys)
 

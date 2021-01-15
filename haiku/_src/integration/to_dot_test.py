@@ -20,7 +20,7 @@ import haiku as hk
 from haiku._src import test_utils
 from haiku._src.integration import descriptors
 import jax
-import jax.numpy as jnp
+import numpy as np
 
 ModuleFn = descriptors.ModuleFn
 
@@ -28,12 +28,13 @@ ModuleFn = descriptors.ModuleFn
 class DotTest(parameterized.TestCase):
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
-  def test_dot(self, module_fn: ModuleFn, shape, dtype):
+  def test_abstract_to_dot(self, module_fn: ModuleFn, shape, dtype):
     f = hk.transform_with_state(lambda x: module_fn()(x))  # pylint: disable=unnecessary-lambda
     rng = jax.random.PRNGKey(42)
-    x = jnp.ones(shape, dtype)
-    params, state = f.init(rng, x)
-    self.assertIsNotNone(hk.experimental.to_dot(f.apply)(params, state, rng, x))
+    x = np.ones(shape, dtype)
+    params, state = jax.eval_shape(f.init, rng, x)
+    self.assertIsNotNone(
+        hk.experimental.abstract_to_dot(f.apply)(params, state, rng, x))
 
 if __name__ == '__main__':
   absltest.main()

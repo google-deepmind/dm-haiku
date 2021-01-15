@@ -30,18 +30,9 @@ class DTypeTestCase(parameterized.TestCase):
 
   def assert_dtype(self, test_dtype, module_fn: ModuleFn, shape, input_dtype):
     """Checks that modules accepting float32 input_dtype output test_dtype."""
-    platform = jax.local_devices()[0].platform
-
-    if platform == 'gpu' and test_dtype == jnp.bfloat16:
-      self.skipTest('Skipping bf16 on GPU')
-
-    if platform == 'tpu' and test_dtype == jnp.float16:
-      self.skipTest('Skipping f16 on TPU')
 
     if input_dtype != jnp.float32:
       self.skipTest('Skipping module with non-f32 input')
-
-    rng = jax.random.PRNGKey(42)
 
     def ones_creator(next_creator, shape, dtype, init, context):
       if context.full_name == 'vector_quantizer/embeddings':
@@ -53,7 +44,7 @@ class DTypeTestCase(parameterized.TestCase):
 
       # NOTE: We need to do this since some initializers (e.g. random.uniform)
       # do not support <32bit dtypes. This also makes the test run a bit faster.
-      init = np.ones
+      init = jnp.ones
       return next_creator(shape, dtype, init)
 
     def g(x):
@@ -63,16 +54,20 @@ class DTypeTestCase(parameterized.TestCase):
 
     g = hk.transform_with_state(g)
 
-    x = jax.random.uniform(rng, shape).astype(test_dtype)
-    params, state = jax.jit(g.init)(rng, x)
-
     # No custom creator for state so we need to do this manually.
     def cast_if_floating(x):
       if jnp.issubdtype(x.dtype, jnp.floating):
         x = x.astype(test_dtype)
       return x
 
-    state = jax.tree_map(cast_if_floating, state)
+    def init_fn(rng, x):
+      params, state = g.init(rng, x)
+      state = jax.tree_map(cast_if_floating, state)
+      return params, state
+
+    x = np.ones(shape, test_dtype)
+    rng = jax.random.PRNGKey(42)
+    params, state = jax.eval_shape(init_fn, rng, x)
 
     for _ in range(2):
       y, state = jax.eval_shape(g.apply, params, state, rng, x)

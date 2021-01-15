@@ -81,8 +81,6 @@ hk_py_library(
         ":descriptors",
         # pip: absl/testing:parameterized
         "//haiku",
-        "//haiku/_src:test_utils",
-        "//haiku/_src:typing",
         # pip: jax
         # pip: numpy
         # pip: tree
@@ -93,8 +91,9 @@ hk_py_test(
     name = "half_test",
     timeout = "long",
     srcs = ["half_test.py"],
-    cpu = False,  # TODO(tomhennigan): Timing out on CPU.
+    gpu = False,
     shard_count = 50,
+    tpu = False,
     deps = [
         ":common",
         ":descriptors",
@@ -150,6 +149,7 @@ hk_py_test(
 hk_py_test(
     name = "float64_test",
     srcs = ["float64_test.py"],
+    gpu = False,
     shard_count = 50,
     tpu = False,
     deps = [
@@ -180,30 +180,34 @@ hk_py_test(
 hk_py_test(
     name = "rank_promotion_test",
     srcs = ["rank_promotion_test.py"],
+    gpu = False,
     shard_count = 50,
+    tpu = False,
     deps = [
         ":descriptors",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         "//haiku",
         "//haiku/_src:test_utils",
-        "//haiku/_src:typing",
         # pip: jax
+        # pip: numpy
     ],
 )
 
 hk_py_test(
     name = "to_dot_test",
     srcs = ["to_dot_test.py"],
+    gpu = False,
     shard_count = 50,
+    tpu = False,
     deps = [
         ":descriptors",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         "//haiku",
         "//haiku/_src:test_utils",
-        "//haiku/_src:typing",
         # pip: jax
+        # pip: numpy
     ],
 )
 

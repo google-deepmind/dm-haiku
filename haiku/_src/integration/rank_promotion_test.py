@@ -21,6 +21,7 @@ from haiku._src import test_utils
 from haiku._src.integration import descriptors
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 ModuleFn = descriptors.ModuleFn
 
@@ -43,9 +44,9 @@ class RankPromotionTest(parameterized.TestCase):
 
     f = hk.transform_with_state(lambda x: module_fn()(x))  # pylint: disable=unnecessary-lambda
     rng = jax.random.PRNGKey(42)
-    x = jnp.ones(shape, dtype)
-    params, state = f.init(rng, x)
-    self.assertIsNotNone(f.apply(params, state, rng, x))
+    x = np.ones(shape, dtype)
+    params, state = jax.eval_shape(f.init, rng, x)
+    self.assertIsNotNone(jax.eval_shape(f.apply, params, state, rng, x))
 
   def test_rank_promotion_exception(self):
     with self.assertRaises(ValueError) as cm:

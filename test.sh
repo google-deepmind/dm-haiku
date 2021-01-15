@@ -49,8 +49,13 @@ fi
 
 # Run tests using pytest.
 TEST_OPTS=()
-if [[ "${INTEGRATION}" -eq "false" ]]; then
+if [[ "${INTEGRATION}" == "false" ]]; then
   TEST_OPTS+=("--ignore=haiku/_src/integration/")
+else
+  # Isolate the float64 test because it needs to set a flag at start-up, so no
+  # other tests can be run before it.
+  python -m pytest haiku/_src/integration/float64_test.py
+  TEST_OPTS+=("--ignore=haiku/_src/integration/float64_test.py")
 fi
 python -m pytest -n "${N_JOBS}" haiku "${TEST_OPTS[@]}"
 

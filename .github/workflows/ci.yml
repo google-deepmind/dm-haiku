@@ -24,4 +24,7 @@ jobs:
     - name: Test with pytest
       run: |
         pip install pytest
-        pytest -n "$(grep -c ^processor /proc/cpuinfo)" haiku
+        # Isolate the float64 test because it needs to set a flag at start-up, 
+        # so no other tests can be run before it.
+        pytest haiku/_src/integration/float64_test.py
+        pytest -n "$(grep -c ^processor /proc/cpuinfo)" haiku --ignore=haiku/_src/integration/float64_test.py

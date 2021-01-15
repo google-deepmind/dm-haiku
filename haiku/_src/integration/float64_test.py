@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Tests for haiku._src.conformance.float64_test."""
-# This is put into a separate file since it requires enabling
-# float64 right after loading of jax.
+"""Running haiku._src.integration.common.DTypeTestCase with float64.
+
+This is put into a separate file since it requires enabling float64 right after
+loading jax.
+"""
 
 from absl.testing import absltest
 from haiku._src import test_utils
@@ -38,10 +40,12 @@ class Float64Test(common.DTypeTestCase):
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
   def test_float32(self, module_fn: ModuleFn, shape, dtype):
+    self.assertTrue(config.read("jax_enable_x64"))
     self.assert_dtype(jnp.float32, module_fn, shape, dtype)
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
   def test_float64(self, module_fn: ModuleFn, shape, dtype):
+    self.assertTrue(config.read("jax_enable_x64"))
     self.assert_dtype(jnp.float64, module_fn, shape, dtype)
 
 if __name__ == "__main__":

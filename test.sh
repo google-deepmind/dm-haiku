@@ -19,18 +19,20 @@
 set -e
 set -x
 
+readonly VENV_DIR=/tmp/haiku-env
+
 if [ -z "$(which pandoc)" ]; then
   echo 1>&2 "Requesting to install pandoc"
   sudo apt install -y pandoc
 fi
 
-# Aim for hermetic Python environment.
-unset PYTHONPATH
-virtualenv -p python3 .
-source bin/activate
+# Install deps in a virtual env.
+python3 -m venv "${VENV_DIR}"
+source "${VENV_DIR}/bin/activate"
 python --version
 
 # Install JAX.
+python -m pip install --upgrade pip setuptools
 python -m pip install -r requirements-jax.txt
 python -c 'import jax; print(jax.__version__)'
 

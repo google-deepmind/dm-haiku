@@ -44,14 +44,18 @@ class NumpyInputsTest(parameterized.TestCase):
     with self.subTest('init'):
       params2, state2 = f.init(np_rng, np_x)
       jax.tree_multimap(np.testing.assert_allclose, params, params2)
-      jax.tree_multimap(np.testing.assert_allclose, state, state2)
+      jax.tree_multimap(
+          lambda x, y: np.testing.assert_allclose(x, y, atol=1e-9),
+          state, state2)
 
     with self.subTest('apply'):
       np_params = jax.tree_map(np.asarray, params)
       np_state = jax.tree_map(np.asarray, state)
       out2, new_state2 = f.apply(np_params, np_state, np_rng, np_x)
       jax.tree_multimap(np.testing.assert_allclose, out, out2)
-      jax.tree_multimap(np.testing.assert_allclose, new_state, new_state2)
+      jax.tree_multimap(
+          lambda x, y: np.testing.assert_allclose(x, y, atol=1e-9),
+          new_state, new_state2)
 
 
 if __name__ == '__main__':

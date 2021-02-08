@@ -522,6 +522,22 @@ class StatefulTest(parameterized.TestCase):
     out = jax.jit(f, static_argnums=(0,))("not a Jaxtype", 1)
     self.assertEqual(out, 1)
 
+  @parameterized.parameters("hi", None, object(), object)
+  def test_named_call_non_jaxtype_result(self, non_jaxtype):
+    def fun_with_non_jaxtype_output(x, non_jaxtype):
+      return x, non_jaxtype
+
+    def jitted_fun(x, non_jaxtype):
+      named_fun = stateful.named_call(fun_with_non_jaxtype_output)
+      # The non-jaxtype is returned out of named_call (which is supported),
+      # but is not returned out of the jit (which should not be supported).
+      x, non_jaxtype = named_fun(x, non_jaxtype)
+      self.assertEqual(non_jaxtype, non_jaxtype)
+      return x
+
+    jitted_fun = jax.jit(jitted_fun, static_argnums=1)
+    self.assertEqual(jitted_fun(0, non_jaxtype), 0)
+
   def test_named_call_partial_function(self):
     f = stateful.named_call(lambda x, y: y if x else None)
     f = jax.jit(functools.partial(f, True))

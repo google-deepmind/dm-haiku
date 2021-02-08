@@ -613,14 +613,43 @@ def named_call(
     name: Optional[str] = None,
 ) -> Callable[..., Any]:
   """Wraps a function in an XLA name_scope and maintains Haiku state."""
+
+  def hide_non_jaxtype_outputs(fun, side_channel):
+    @functools.wraps(fun)
+    def named_call_hidden_outputs(*args, **kwargs):
+      out = fun(*args, **kwargs)
+      out_leaves, treedef = jax.tree_flatten(out)
+
+      # Partition the output into valid and invalid JAX output. The invalid
+      # output types are not returned from the function, but moved out
+      # through a side channel.
+      # In order to easily merge the output back later, replace the elements
+      # of the other partition with Nones.
+      out_leaves = [(x, None) if isinstance(x, jnp.ndarray) else (None, x)
+                    for x in out_leaves]
+      jax_types, non_jaxtypes = zip(*out_leaves)
+      side_channel["non_jaxtypes"] = non_jaxtypes
+      side_channel["treedef"] = treedef
+      return jax_types
+    return named_call_hidden_outputs
+
   @functools.wraps(fun)
   def wrapper(*args, **kwargs):
+    side_channel = {"non_jaxtypes": [], "treedef": None}
+    wrapped_fun = hide_non_jaxtype_outputs(fun, side_channel)
     if base.inside_transform():
-      stateful_named_call = thread_hk_state_in_kwargs(jax.named_call)
-      named_fun = stateful_named_call(fun, name=name)
+      wrapped_fun = thread_hk_state_in_kwargs(jax.named_call)(wrapped_fun,
+                                                              name=name)
     else:
-      named_fun = jax.named_call(fun, name=name)
-    out = named_fun(*args, **kwargs)
+      wrapped_fun = jax.named_call(wrapped_fun, name=name)
+
+    jax_types = wrapped_fun(*args, **kwargs)
+
+    non_jaxtypes = side_channel["non_jaxtypes"]
+    out_leaves = [y if x is None else x
+                  for x, y in zip(jax_types, non_jaxtypes)]
+    out = jax.tree_unflatten(side_channel["treedef"], out_leaves)
+
     return out
   return wrapper
 

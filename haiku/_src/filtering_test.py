@@ -14,9 +14,12 @@
 # ==============================================================================
 """Tests for haiku._src.filtering."""
 
+import itertools
 import re
 from typing import Any, Callable, Sequence, Set, Tuple
+
 from absl.testing import absltest
+from absl.testing import parameterized
 from haiku._src import basic
 from haiku._src import filtering
 from haiku._src import transform
@@ -92,9 +95,9 @@ def compile_regex(regex):
   return re.compile(regex)
 
 
-class PartitionTest(absltest.TestCase):
+class FilteringTest(parameterized.TestCase):
 
-  def test_partitioning(self):
+  def test_partition(self):
 
     init_fn, _ = transform.transform(get_net)
     params = init_fn(jax.random.PRNGKey(428), jnp.ones((1, 1)))
@@ -143,8 +146,39 @@ class PartitionTest(absltest.TestCase):
         get_names(not_matching),
         set(["first_layer/w", "second_layer/w", "second_layer/b"]))
 
-  def test_matching(self):
+  @parameterized.parameters(*range(1, 8))
+  def test_partition_n(self, n):
+    cnt = itertools.count()
+    fn = lambda m, n, v: next(cnt)
+    structure = {f"layer_{i}": {"w": None} for i in range(n)}
+    structures = filtering.partition_n(fn, structure, n)
+    self.assertLen(structures, n)
+    self.assertEqual(filtering.merge(*structures), structure)
+    for i, substructure in enumerate(structures):
+      expected = {f"layer_{i}": {"w": None}}
+      self.assertEqual(substructure, expected)
 
+  @parameterized.parameters(*range(1, 8))
+  def test_partition_n_merge_isomorphism(self, n):
+    cnt = itertools.count()
+    fn = lambda m, n, v: next(cnt)
+    input_structure = {f"layer_{i}": {"w": None} for i in range(n)}
+    structures = filtering.partition_n(fn, input_structure, n)
+    merged_structure = filtering.merge(*structures)
+    self.assertEqual(merged_structure, input_structure)
+
+  @parameterized.parameters(*range(1, 8))
+  def test_traverse(self, n):
+    structure = {f"layer_{i}": {"w": "wv", "b": "bv"}
+                 for i in reversed(range(n))}
+    expected = []
+    for i in range(n):
+      expected.append((f"layer_{i}", "b", "bv"))
+      expected.append((f"layer_{i}", "w", "wv"))
+    actual = list(filtering.traverse(structure))
+    self.assertEqual(expected, actual)
+
+  def test_filter(self):
     init_fn, _ = transform.transform(get_net)
     params = init_fn(jax.random.PRNGKey(428), jnp.ones((1, 1)))
 
@@ -205,11 +239,7 @@ class PartitionTest(absltest.TestCase):
         to_set(jf),
         set([("first_layer/w", (3.0, 6.0)), ("second_layer/w", (2.5, 5.0))]))
 
-
-class MapTest(absltest.TestCase):
-
-  def test_mapping(self):
-
+  def test_map(self):
     init_fn, _ = transform.transform(get_net)
     params = init_fn(jax.random.PRNGKey(428), jnp.ones((1, 1)))
 

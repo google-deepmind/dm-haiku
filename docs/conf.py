@@ -131,6 +131,8 @@ html_static_path = ['_static']
 
 doctest_test_doctest_blocks = 'true'
 doctest_global_setup = """
+import collections
+import itertools
 import unittest
 
 import haiku as hk

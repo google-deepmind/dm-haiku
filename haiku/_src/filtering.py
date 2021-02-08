@@ -15,7 +15,7 @@
 """Functions for filtering parameters and state in Haiku."""
 
 import collections
-from typing import Callable, Mapping, Tuple, TypeVar
+from typing import Any, Callable, Generator, Mapping, Tuple, TypeVar
 
 from haiku._src import data_structures
 from haiku._src.typing import Params, State  # pylint: disable=g-multiple-import
@@ -24,6 +24,24 @@ import jax.numpy as jnp
 T = TypeVar("T", Params, State)
 InT = TypeVar("InT")
 OutT = TypeVar("OutT")
+
+
+def traverse(structure: T) -> Generator[Tuple[str, str, Any], None, None]:
+  """Iterates over a structure yielding module names, names and values.
+
+  NOTE: Items are iterated in key sorted order.
+
+  Args:
+    structure: The structure to traverse.
+
+  Yields:
+    Tuples of the module name, name and value from the given structure.
+  """
+  for module_name in sorted(structure):
+    bundle = structure[module_name]
+    for name in sorted(bundle):
+      value = bundle[name]
+      yield module_name, name, value
 
 
 def partition(
@@ -56,18 +74,50 @@ def partition(
       predicate. Entries matching the predicate will be in the first structure,
       and the rest will be in the second.
   """
-  true = collections.defaultdict(dict)
-  false = collections.defaultdict(dict)
+  f = lambda m, n, v: int(not predicate(m, n, v))
+  return partition_n(f, structure, 2)
 
-  for module_name, bundle in structure.items():
-    for name, value in bundle.items():
-      out = true if predicate(module_name, name, value) else false
-      out[module_name][name] = value
 
-  true = data_structures.to_immutable_dict(true)
-  false = data_structures.to_immutable_dict(false)
+def partition_n(
+    fn: Callable[[str, str, jnp.ndarray], int],
+    structure: T,
+    n: int,
+) -> Tuple[T, ...]:
+  """Partitions a structure into `n` structures.
 
-  return true, false
+  For a given set of parameters, you can use :func:`partition_n` to split them
+  into ``n`` groups. For example, to split your parameters/gradients by module
+  name:
+
+  >>> def partition_by_module(structure):
+  ...   cnt = itertools.count()
+  ...   d = collections.defaultdict(lambda: next(cnt))
+  ...   fn = lambda m, n, v: d[m]
+  ...   return hk.data_structures.partition_n(fn, structure, len(structure))
+
+  >>> structure = {f'layer_{i}': {'w': None, 'b': None} for i in range(3)}
+  >>> for substructure in partition_by_module(structure):
+  ...   print(substructure)
+  FlatMapping({'layer_0': FlatMapping({'b': None, 'w': None})})
+  FlatMapping({'layer_1': FlatMapping({'b': None, 'w': None})})
+  FlatMapping({'layer_2': FlatMapping({'b': None, 'w': None})})
+
+  Args:
+    fn: Callable returning which bucket in ``[0, n)`` the given element should
+      be output.
+    structure: Haiku params or state data structure to be partitioned.
+    n: The total number of buckets.
+
+  Returns:
+    A tuple of size ``n``, where each element will contain the values for which
+    the function returned the current index.
+  """
+  out = [collections.defaultdict(dict) for _ in range(n)]
+  for module_name, name, value in traverse(structure):
+    i = fn(module_name, name, value)
+    assert 0 <= i < n, f"{i} must be in range [0, {n})"
+    out[i][module_name][name] = value
+  return tuple(data_structures.to_immutable_dict(o) for o in  out)
 
 
 def filter(  # pylint: disable=redefined-builtin
@@ -95,10 +145,9 @@ def filter(  # pylint: disable=redefined-builtin
   """
   out = collections.defaultdict(dict)
 
-  for module_name, bundle in structure.items():
-    for name, value in bundle.items():
-      if predicate(module_name, name, value):
-        out[module_name][name] = value
+  for module_name, name, value in traverse(structure):
+    if predicate(module_name, name, value):
+      out[module_name][name] = value
 
   return data_structures.to_immutable_dict(out)
 
@@ -112,7 +161,7 @@ def map(  # pylint: disable=redefined-builtin
   >>> params = {'linear': {'w': 1.0, 'b': 2.0}}
   >>> fn = lambda module_name, name, value: 2 * value if name == 'w' else value
   >>> hk.data_structures.map(fn, params)
-  FlatMapping({'linear': FlatMapping({'w': 2.0, 'b': 2.0})})
+  FlatMapping({'linear': FlatMapping({'b': 2.0, 'w': 2.0})})
 
   Note: returns a new structure not a view.
 
@@ -128,9 +177,8 @@ def map(  # pylint: disable=redefined-builtin
   """
   out = collections.defaultdict(dict)
 
-  for module_name, bundle in structure.items():
-    for name, value in bundle.items():
-      out[module_name][name] = fn(module_name, name, value)
+  for module_name, name, value in traverse(structure):
+    out[module_name][name] = fn(module_name, name, value)
 
   return data_structures.to_immutable_dict(out)
 
@@ -161,7 +209,6 @@ def merge(*structures: T) -> T:
   """
   out = collections.defaultdict(dict)
   for structure in structures:
-    for module_name, bundle in structure.items():
-      for name, value in bundle.items():
-        out[module_name][name] = value
+    for module_name, name, value in traverse(structure):
+      out[module_name][name] = value
   return data_structures.to_immutable_dict(out)

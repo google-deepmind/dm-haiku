@@ -20,6 +20,8 @@ from haiku._src.filtering import filter  # pylint: disable=redefined-builtin
 from haiku._src.filtering import map  # pylint: disable=redefined-builtin
 from haiku._src.filtering import merge
 from haiku._src.filtering import partition
+from haiku._src.filtering import partition_n
+from haiku._src.filtering import traverse
 from haiku._src.utils import tree_bytes
 from haiku._src.utils import tree_size
 
@@ -29,8 +31,10 @@ __all__ = (
     "map",
     "merge",
     "partition",
+    "partition_n",
     "to_mutable_dict",
     "to_immutable_dict",
+    "traverse",
     "tree_bytes",
     "tree_size",
 )

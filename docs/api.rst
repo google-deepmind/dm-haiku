@@ -1010,8 +1010,10 @@ Data Structures
     map
     merge
     partition
+    partition_n
     to_immutable_dict
     to_mutable_dict
+    traverse
     tree_bytes
     tree_size
 
@@ -1035,6 +1037,11 @@ partition
 
 .. autofunction:: partition
 
+partition_n
+~~~~~~~~~~~
+
+.. autofunction:: partition_n
+
 to_immutable_dict
 ~~~~~~~~~~~~~~~~~
 
@@ -1044,6 +1051,11 @@ to_mutable_dict
 ~~~~~~~~~~~~~~~
 
 .. autofunction:: to_mutable_dict
+
+traverse
+~~~~~~~~
+
+.. autofunction:: traverse
 
 tree_bytes
 ~~~~~~~~~~

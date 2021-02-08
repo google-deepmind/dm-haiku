@@ -684,6 +684,7 @@ hk_py_test(
         ":filtering",
         ":transform",
         # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
         # pip: jax
     ],
 )

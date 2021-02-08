@@ -14,9 +14,11 @@
 # ==============================================================================
 """Ensures that code samples in Haiku are accurate."""
 
+import collections
 import contextlib
 import doctest
 import inspect
+import itertools
 import unittest
 
 from absl import logging
@@ -37,11 +39,13 @@ class DoctestTest(parameterized.TestCase):
           module,
           optionflags=doctest.ELLIPSIS,
           extraglobs={
-              "unittest": unittest,
+              "itertools": itertools,
+              "collections": collections,
               "contextlib": contextlib,
+              "unittest": unittest,
               "hk": hk,
               "jnp": jnp,
-              "jax": jax
+              "jax": jax,
           })
       tests_symbols = ", ".join(module.__test__.keys())
       if num_attempted == 0:

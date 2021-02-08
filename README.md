@@ -20,13 +20,10 @@
 Haiku is a simple neural network library for [JAX] developed by some of the
 authors of [Sonnet], a neural network library for [TensorFlow].
 
+Documentation on Haiku can be found at https://dm-haiku.readthedocs.io/.
+
 **Disambiguation:** if you are looking for Haiku the operating system then
 please see https://haiku-os.org/.
-
-NOTE: Haiku is currently **beta**. A number of researchers have tested Haiku
-for several months and have reproduced a number of experiments at scale. Please
-feel free to use Haiku, and
-[let us know](https://github.com/deepmind/dm-haiku/issues) if you have issues!
 
 ## Overview
 

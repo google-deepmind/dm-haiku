@@ -531,8 +531,8 @@ class StatefulTest(parameterized.TestCase):
       named_fun = stateful.named_call(fun_with_non_jaxtype_output)
       # The non-jaxtype is returned out of named_call (which is supported),
       # but is not returned out of the jit (which should not be supported).
-      x, non_jaxtype = named_fun(x, non_jaxtype)
-      self.assertEqual(non_jaxtype, non_jaxtype)
+      x, non_jaxtype_out = named_fun(x, non_jaxtype)
+      self.assertEqual(non_jaxtype_out, non_jaxtype)
       return x
 
     jitted_fun = jax.jit(jitted_fun, static_argnums=1)

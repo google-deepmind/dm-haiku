@@ -25,6 +25,7 @@ from haiku._src import module as module_lib
 from haiku._src import summarise
 from haiku._src import test_utils
 from haiku._src import transform
+import jax
 import jax.numpy as jnp
 
 
@@ -87,6 +88,30 @@ class SummariseTest(parameterized.TestCase):
     details = invocation.module_details
     d = details.params if params else details.state
     self.assertEqual(list(d), [f"foo/x{i}" for i in range(num_elems)])
+
+  def test_jitted_f(self):
+    witness = []
+
+    def f(x):
+      witness.append(None)
+      return basic.Linear(1)(x)
+
+    f = transform.transform(f)
+    rng = jax.random.PRNGKey(42)
+    x = jnp.zeros([1, 1])
+    params = f.init(rng, x)
+    del witness[:]
+
+    # This layer of indirection (`g`) means summarise cannot unpack `f` and
+    # strip our jit.
+    jit_apply = jax.jit(f.apply)
+    g = lambda params, x: jit_apply(params, None, x)
+    for _ in range(2):
+      g(params, x)  # Warm up JIT.
+      self.assertLen(witness, 1)
+
+    summary = get_summary(g, params, x)
+    self.assertLen(summary, 1)
 
 
 class TabulateTest(parameterized.TestCase):

@@ -294,8 +294,9 @@ all_columns = {
         "right"),
 }
 
-DEFAULT_COLUMNS = tuple(all_columns.keys())
-DEFAULT_FILTERS = tuple(all_filters.keys())
+DEFAULT_COLUMNS = ("module", "config", "owned_params", "input", "output",
+                   "params_size", "params_bytes")
+DEFAULT_FILTERS = ("has_output",)
 
 
 def tabulate(
@@ -327,6 +328,21 @@ def tabulate(
   | mlp/~/linear_2 (Linear) | Linear(output_size=10, name='linear_2')  | w: f32[100,10]  | f32[8,100] | f32[8,10]  |         1,010 |       4.04 KB |
   |  └ mlp (MLP)            |                                          | b: f32[10]      |            |            |               |               |
   +-------------------------+------------------------------------------+-----------------+------------+------------+---------------+---------------+
+
+  Possible values for ``columns``:
+
+  * ``module``: Displays module and method name.
+  * ``config``: Displays the constructor arguments used for the module.
+  * ``owned_params``: Displays parameters directly owned by this module.
+  * ``input``: Displays module inputs.
+  * ``output``: Displays module output.
+  * ``params_size``: Displays the number of parameters
+  * ``params_bytes``: Displays parameter size in bytes.
+
+  Possible values for ``filters``:
+
+  * ``has_output``: Only include methods returning a value other than ``None``.
+  * ``has_params``: Removes methods from modules that do not have parameters.
 
   Args:
     f: A function to transform OR one of the init/apply functions from Haiku

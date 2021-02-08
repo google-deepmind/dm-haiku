@@ -95,9 +95,15 @@ class TabulateTest(parameterized.TestCase):
     f = lambda: NoOutputModule()()
     self.assertEmpty(tabulate_to_list(f))
 
-  def test_filters_no_param_modules(self):
-    f = lambda: NoParamsModule()(2)
-    self.assertEmpty(tabulate_to_list(f))
+  def test_includes_no_param_modules(self):
+    dropout_cls = basic.to_module(
+        lambda x: basic.dropout(base.next_rng_key(), 0.5, x))
+
+    x = jnp.ones([4])
+    f = lambda: dropout_cls(name="dropout")(x)
+    rows = tabulate_to_list(f, columns=("module",))
+    expected = [["dropout (ToModuleWrapper)"]]
+    self.assertEqual(rows, expected)
 
   def test_module_column(self):
     def f():
@@ -199,13 +205,6 @@ class IdentityModule(module_lib.Module):
   def __call__(self, x):
     base.get_parameter("w", [], init=jnp.zeros)
     return x
-
-
-class NoParamsModule(module_lib.Module):
-
-  def __call__(self, x):
-    base.get_state("s", [], init=jnp.zeros)
-    return x ** 2
 
 
 class NoOutputModule(module_lib.Module):

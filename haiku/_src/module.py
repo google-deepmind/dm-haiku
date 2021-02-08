@@ -263,7 +263,6 @@ def intercept_methods(interceptor: MethodGetter):
   Returns:
     Context manager under which the interceptor is active.
   """
-  base.assert_context("experimental.intercept_methods")
   return interceptor_stack(interceptor)
 
 

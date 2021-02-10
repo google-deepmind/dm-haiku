@@ -109,7 +109,7 @@ class GroupNorm(hk.Module):
       self.axis = axis
     elif isinstance(axis, int):
       self.axis = (axis,)
-    elif (isinstance(axis, collections.Iterable) and
+    elif (isinstance(axis, collections.abc.Iterable) and
           all(isinstance(ax, int) for ax in axis)):
       self.axis = axis
     else:

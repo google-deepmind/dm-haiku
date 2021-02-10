@@ -45,7 +45,7 @@ def internal_state(*, params=True) -> InternalState:
 
 def update_recursive(dst: MutableMapping[Any, Any], src: Mapping[Any, Any]):
   for k, v in src.items():
-    if isinstance(v, collections.Mapping):
+    if isinstance(v, collections.abc.Mapping):
       dst.setdefault(k, {})
       update_recursive(dst[k], v)
     else:

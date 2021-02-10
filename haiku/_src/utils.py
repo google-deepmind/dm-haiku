@@ -119,7 +119,7 @@ def replicate(
 ) -> Tuple[T]:
   """Replicates entry in `element` `num_times` if needed."""
   if (isinstance(element, (str, bytes)) or
-      not isinstance(element, collections.Sequence)):
+      not isinstance(element, collections.abc.Sequence)):
     return (element,) * num_times
   elif len(element) == 1:
     return tuple(element * num_times)

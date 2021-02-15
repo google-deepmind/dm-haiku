@@ -268,6 +268,12 @@ def main(argv):
   batch = next(train_dataset)
   params, state, opt_state = jax.pmap(make_initial_state)(rng, batch)
 
+  # Print a useful summary of the execution of our module.
+  summary = hk.experimental.tabulate(train_step)(params, state, opt_state,
+                                                 batch)
+  for line in summary.split('\n'):
+    logging.info(line)
+
   eval_every = FLAGS.train_eval_every
   log_every = FLAGS.train_log_every
 

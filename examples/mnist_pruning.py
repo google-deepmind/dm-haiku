@@ -243,16 +243,10 @@ def main(_):
     return updates, opt_state
 
   # We maintain avg_params, the exponential moving average of the "live" params.
-  # avg_params is used only for evaluation.
-  # For more, see: https://doi.org/10.1137/0330046
+  # avg_params is used only for evaluation (cf. https://doi.org/10.1137/0330046)
   @jax.jit
-  def ema_update(
-      avg_params: hk.Params,
-      new_params: hk.Params,
-      epsilon: float = 0.001,
-  ) -> hk.Params:
-    return jax.tree_multimap(lambda p1, p2: (1 - epsilon) * p1 + epsilon * p2,
-                             avg_params, new_params)
+  def ema_update(params, avg_params):
+    return optax.incremental_update(params, avg_params, step_size=0.001)
 
   # Make datasets.
   train = load_dataset("train", is_training=True, batch_size=1000)
@@ -301,7 +295,7 @@ def main(_):
     if step % 200 == 0:
       sparsity_fraction = zhugupta_func(progress)
       masks = update_mask(params, sparsity_fraction, module_sparsity)
-    avg_params = ema_update(avg_params, params)
+    avg_params = ema_update(params, avg_params)
   print(per_layer_sparsities)
 
 

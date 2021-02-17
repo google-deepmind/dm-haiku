@@ -90,16 +90,10 @@ def main(_):
     return new_params, opt_state
 
   # We maintain avg_params, the exponential moving average of the "live" params.
-  # avg_params is used only for evaluation.
-  # For more, see: https://doi.org/10.1137/0330046
+  # avg_params is used only for evaluation (cf. https://doi.org/10.1137/0330046)
   @jax.jit
-  def ema_update(
-      avg_params: hk.Params,
-      new_params: hk.Params,
-      epsilon: float = 0.001,
-  ) -> hk.Params:
-    return jax.tree_multimap(lambda p1, p2: (1 - epsilon) * p1 + epsilon * p2,
-                             avg_params, new_params)
+  def ema_update(params, avg_params):
+    return optax.incremental_update(params, avg_params, step_size=0.001)
 
   # Make datasets.
   train = load_dataset("train", is_training=True, batch_size=1000)
@@ -123,7 +117,7 @@ def main(_):
 
     # Do SGD on a batch of training examples.
     params, opt_state = update(params, opt_state, next(train))
-    avg_params = ema_update(avg_params, params)
+    avg_params = ema_update(params, avg_params)
 
 if __name__ == "__main__":
   app.run(main)

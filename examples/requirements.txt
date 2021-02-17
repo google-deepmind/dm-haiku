@@ -1,7 +1,7 @@
 git+git://github.com/deepmind/bsuite.git
+git+git://github.com/deepmind/optax.git
 git+git://github.com/deepmind/rlax.git
 dm-env>=1.2
 dm-tree>=0.1.1
 tensorflow>=2.4.0
 tensorflow-datasets>=2.0.0
-optax>=0.0.1

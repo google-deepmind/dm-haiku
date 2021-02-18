@@ -27,6 +27,10 @@ class LanguageDataset(NamedTuple):
 
 def load(batch_size: int, sequence_length: int) -> LanguageDataset:
   """Load LM1B dataset, returning it and vocab_size."""
+  if tfds.version.__version__ >= '4.2.0':
+    raise ValueError('This version of tfds (%s) is not supported,'
+                     'please use < 4.2.0 instead.' % tfds.version.__version__)
+
   ds, ds_info = tfds.load(
       'lm1b/subwords32k',
       split=tfds.Split.TRAIN,

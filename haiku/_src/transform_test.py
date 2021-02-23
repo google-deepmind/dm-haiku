@@ -417,6 +417,25 @@ class TransformTest(parameterized.TestCase):
     self.assertIs(transform.get_original_fn(f.init), orig_f)
     self.assertIs(transform.get_original_fn(f.apply), orig_f)
 
+  @parameterized.parameters(
+      transform.transform,
+      lambda f: transform.without_state(transform.transform_with_state(f)))
+  def test_calling_with_duplicate_state_kwarg(self, transform_fn):
+    def f(state):
+      del state
+    self.assert_raises_by_name_error(transform_fn(f))
+
+  @parameterized.parameters(transform.transform, transform.transform_with_state)
+  def test_calling_with_duplicate_rng_kwarg(self, transform_fn):
+    def f(rng):
+      del rng
+    self.assert_raises_by_name_error(
+        transform.without_apply_rng(transform_fn(f)))
+
+  def assert_raises_by_name_error(self, f):
+    with self.assertRaisesRegex(TypeError, "pass them positionally"):
+      f.apply(params=None, state=None, rng=None)
+
 
 class ObjectWithTransform(object):
 

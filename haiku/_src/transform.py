@@ -115,6 +115,13 @@ def without_state(f: TransformedWithState) -> Transformed:
     return params
 
   def apply_fn(params, *args, **kwargs):
+    if "state" in kwargs:
+      raise TypeError(
+          "Haiku transform adds three arguments (params, state, rng) to apply. "
+          "If the functions you are transforming use the same names you must "
+          "pass them positionally (e.g. `f.apply(.., my_state)` and not by "
+          "name (e.g. `f.apply(.., state=my_state)`)")
+
     out, state = f.apply(params, {}, *args, **kwargs)
     if state:
       raise ValueError("If your transformed function uses `hk.{get,set}_state` "
@@ -131,12 +138,22 @@ TransformedT = TypeVar("TransformedT", Transformed, TransformedWithState)
 
 def without_apply_rng(f: TransformedT) -> TransformedT:
   """Removes the rng argument from the apply function."""
+  def check_rng_kwarg(kwargs):
+    if "rng" in kwargs:
+      raise TypeError(
+          "Haiku transform adds three arguments (params, state, rng) to apply. "
+          "If the functions you are transforming use the same names you must "
+          "pass them positionally (e.g. `f.apply(.., my_rng)` and not by "
+          "name (e.g. `f.apply(.., rng=my_rng)`)")
+
   if isinstance(f, TransformedWithState):
     def apply_fn(params, state, *args, **kwargs):
+      check_rng_kwarg(kwargs)
       return f.apply(params, state, None, *args, **kwargs)
 
   elif isinstance(f, Transformed):
     def apply_fn(params, *args, **kwargs):
+      check_rng_kwarg(kwargs)
       return f.apply(params, None, *args, **kwargs)
 
   else:

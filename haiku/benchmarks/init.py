@@ -14,11 +14,10 @@
 # ==============================================================================
 """Benchmark trace/compile/run timings of init functions."""
 
+import google_benchmark
 import haiku as hk
 import jax
 import jax.numpy as jnp
-
-import google_benchmark
 
 
 def init_benchmark(model):

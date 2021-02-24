@@ -593,6 +593,7 @@ class ConvTransposeTest(parameterized.TestCase):
 
   @parameterized.parameters(
       (10, 20, 5, 2, "SAME", (3, 2)),
+      (11, 77, 4, 7, "SAME", (3, 6)),  # Tests max(0, padding_needed) branch.
       (10, 23, 5, 2, "VALID", (4, 4)),
   )
   @test_utils.transform_and_run

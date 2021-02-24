@@ -615,7 +615,10 @@ Paddings
 .. autosummary::
 
     PadFn
+    is_padfn
     create
+    create_from_padfn
+    create_from_tuple
     causal
     full
     reverse_causal
@@ -628,10 +631,25 @@ PadFn
 .. autoclass:: PadFn
    :members:
 
+is_padfn
+~~~~~~~~
+
+.. autofunction:: is_padfn
+
 create
 ~~~~~~
 
 .. autofunction:: create
+
+create_from_padfn
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: create_from_padfn
+
+create_from_tuple
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: create_from_tuple
 
 causal
 ~~~~~~

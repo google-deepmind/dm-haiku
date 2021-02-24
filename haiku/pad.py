@@ -15,18 +15,25 @@
 """Paddings."""
 
 from haiku._src.pad import causal
-from haiku._src.pad import create
+from haiku._src.pad import create_from_padfn
+from haiku._src.pad import create_from_tuple
 from haiku._src.pad import full
+from haiku._src.pad import is_padfn
 from haiku._src.pad import PadFn
 from haiku._src.pad import reverse_causal
 from haiku._src.pad import same
 from haiku._src.pad import valid
 
+create = create_from_padfn  # Legacy alias.
+
 __all__ = (
     "PadFn",
     "causal",
     "create",
+    "create_from_padfn",
+    "create_from_tuple",
     "full",
+    "is_padfn",
     "reverse_causal",
     "same",
     "valid",

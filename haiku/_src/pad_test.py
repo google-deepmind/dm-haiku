@@ -22,15 +22,16 @@ from haiku._src import pad
 class PadTest(parameterized.TestCase):
 
   def test_padding_2d(self):
-    a = pad.create((pad.causal, pad.full), (3), (1, 1), 2)
+    a = pad.create_from_padfn((pad.causal, pad.full), (3), (1, 1), 2)
     self.assertEqual(a, ((2, 0), (2, 2)))
 
   def test_padding_1d(self):
-    a = pad.create(pad.full, 3, 1, 1)
+    a = pad.create_from_padfn(pad.full, 3, 1, 1)
     self.assertEqual(a, ((2, 2),))
 
   def test_padding_3d(self):
-    a = pad.create((pad.causal, pad.full, pad.full), (3, 2, 3), (1), 3)
+    a = pad.create_from_padfn((pad.causal, pad.full, pad.full), (3, 2, 3), (1),
+                              3)
     self.assertEqual(a, ((2, 0), (1, 1), (2, 2)))
 
   @parameterized.parameters((2, (2, 2)), (3, (4, 4, 4, 4)), ((2, 2), 3),
@@ -39,27 +40,40 @@ class PadTest(parameterized.TestCase):
     with self.assertRaisesRegex(
         TypeError,
         r"must be a scalar or sequence of length 1 or sequence of length 3."):
-      pad.create(pad.full, kernel_size, rate, 3)
+      pad.create_from_padfn(pad.full, kernel_size, rate, 3)
 
   def test_padding_valid(self):
-    a = pad.create(pad.valid, 4, 3, 2)
+    a = pad.create_from_padfn(pad.valid, 4, 3, 2)
     self.assertEqual(a, ((0, 0), (0, 0)))
 
   def test_padding_same(self):
-    a = pad.create(pad.same, 4, 3, 2)
+    a = pad.create_from_padfn(pad.same, 4, 3, 2)
     self.assertEqual(a, ((4, 5), (4, 5)))
 
   def test_padding_full(self):
-    a = pad.create(pad.full, 4, 3, 2)
+    a = pad.create_from_padfn(pad.full, 4, 3, 2)
     self.assertEqual(a, ((9, 9), (9, 9)))
 
   def test_padding_causal(self):
-    a = pad.create(pad.causal, 4, 3, 2)
+    a = pad.create_from_padfn(pad.causal, 4, 3, 2)
     self.assertEqual(a, ((9, 0), (9, 0)))
 
   def test_padding_reverse_causal(self):
-    a = pad.create(pad.reverse_causal, 4, 3, 2)
+    a = pad.create_from_padfn(pad.reverse_causal, 4, 3, 2)
     self.assertEqual(a, ((0, 9), (0, 9)))
+
+  def test_pad_tuple(self):
+    a = pad.create_from_tuple((1, 1), 2)
+    self.assertEqual(a, ((1, 1), (1, 1)))
+
+  def test_pad_sequence_tuple(self):
+    a = pad.create_from_tuple([(1, 1), (2, 20)], 2)
+    self.assertEqual(a, ((1, 1), (2, 20)))
+
+  def test_pad_sequence_tuple_wrong_length(self):
+    with self.assertRaisesRegex(
+        TypeError, r"must be a Tuple\[int, int\] or sequence of length 1"):
+      pad.create_from_tuple([(1, 1), (2, 20)], 3)
 
 
 if __name__ == "__main__":

@@ -14,8 +14,9 @@
 # ==============================================================================
 """Padding module for Haiku."""
 
+import collections
 import types
-from typing import Callable, Sequence, Union, Tuple
+from typing import Any, Callable, Sequence, Union, Tuple
 
 from haiku._src import utils
 
@@ -52,7 +53,7 @@ def reverse_causal(effective_kernel_size: int) -> Tuple[int, int]:
   return (0, effective_kernel_size - 1)
 
 
-def create(
+def create_from_padfn(
     padding: Union[hk.pad.PadFn, Sequence[hk.pad.PadFn]],
     kernel: Union[int, Sequence[int]],
     rate: Union[int, Sequence[int]],
@@ -61,14 +62,16 @@ def create(
   """Generates the padding required for a given padding algorithm.
 
   Args:
-    padding: callable or list of callables of length n. The callables take an
-      integer representing the effective kernel size (kernel size when the rate
-      is 1) and return a list of two integers representing the padding before
-      and padding after for that dimension.
-    kernel: int or list of ints of length ``n``. The size of the kernel for each
-      dimension. If it is an int it will be replicated for the non channel and
-      batch dimensions.
-    rate: int or list of ints of length ``n``. The dilation rate for each
+    padding: callable/tuple or a sequence of callables/tuples. The callables
+      take an integer representing the effective kernel size (kernel size when
+      the rate is 1) and return a sequence of two integers representing the
+      padding before and padding after for that dimension. The tuples are
+      defined with two elements, padding before and after. If `padding` is a
+      sequence it must be of length 1 or `n`.
+    kernel: int or sequence of ints of length ``n``. The size of the kernel for
+      each dimension. If it is an int it will be replicated for the non channel
+      and batch dimensions.
+    rate: int or sequence of ints of length ``n``. The dilation rate for each
       dimension. If it is an int it will be replicated for the non channel and
       batch dimensions.
     n: the number of spatial dimensions.
@@ -85,5 +88,29 @@ def create(
   paddings = map(  # pylint: disable=deprecated-lambda
       lambda x, y: x(y), utils.replicate(padding, n, "padding"),
       effective_kernel_size)
-
   return tuple(paddings)
+
+
+def create_from_tuple(
+    padding: Union[Tuple[int, int], Sequence[Tuple[int, int]]],
+    n: int,
+) -> Sequence[Tuple[int, int]]:
+  """Create a padding tuple using partially specified padding tuple."""
+  assert padding, "Padding must not be empty."
+  if isinstance(padding[0], int):
+    padding = (padding,) * n
+  elif len(padding) == 1:
+    padding = tuple(padding) * n
+  elif len(padding) != n:
+    raise TypeError(
+        f"Padding {padding} must be a Tuple[int, int] or sequence of length 1"
+        f" or sequence of length {n}.")
+  padding = tuple(padding)  # type: Sequence[Tuple[int, int]]
+  return padding
+
+
+def is_padfn(padding: Union[hk.pad.PadFn, Sequence[hk.pad.PadFn], Any]) -> bool:
+  """Tests whether the given argument is a single or sequence of PadFns."""
+  if isinstance(padding, collections.Sequence):
+    padding = padding[0]
+  return callable(padding)

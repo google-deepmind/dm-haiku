@@ -142,11 +142,13 @@ class ConvND(hk.Module):
 
     if isinstance(padding, str):
       self.padding = padding.upper()
+    elif hk.pad.is_padfn(padding):
+      self.padding = hk.pad.create_from_padfn(padding=padding,
+                                              kernel=self.kernel_shape,
+                                              rate=self.kernel_dilation,
+                                              n=self.num_spatial_dims)
     else:
-      self.padding = hk.pad.create(padding=padding,
-                                   kernel=self.kernel_shape,
-                                   rate=self.kernel_dilation,
-                                   n=self.num_spatial_dims)
+      self.padding = hk.pad.create_from_tuple(padding, self.num_spatial_dims)
 
   def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:
     """Connects ``ConvND`` layer.
@@ -517,7 +519,7 @@ class ConvNDTranspose(hk.Module):
     self.w_init = w_init
     self.b_init = b_init or jnp.zeros
     self.mask = mask
-    # TODO(tomhennigan) Make use of hk.pad.create here?
+    # TODO(tomhennigan) Make use of hk.pad.create_from_tuple here?
     self.padding = padding
     self.data_format = data_format
     self.channel_index = utils.get_channel_index(data_format)

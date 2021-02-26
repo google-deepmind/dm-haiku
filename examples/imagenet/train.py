@@ -23,6 +23,7 @@ from absl import flags
 from absl import logging
 import haiku as hk
 from examples.imagenet import dataset
+import tensorflow_datasets as tfds
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -304,4 +305,7 @@ def main(argv):
   logging.info('[Eval FINAL]: %s', eval_scalars)
 
 if __name__ == '__main__':
+  if tfds.version.__version__ < '4.2.0':
+     raise ValueError('This version of tfds (%s) is not supported,'
+                      'please use >= 4.2.0 instead.' % tfds.version.__version__)
   app.run(main)

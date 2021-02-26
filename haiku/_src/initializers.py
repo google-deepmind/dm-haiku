@@ -15,7 +15,7 @@
 """Haiku initializers."""
 
 import types
-from typing import Sequence, Union
+from typing import Any, Sequence, Union
 
 from haiku._src import base
 from haiku._src.typing import Initializer
@@ -51,7 +51,7 @@ def _compute_fans(shape):
 class Constant(hk.initializers.Initializer):
   """Initializes with a constant."""
 
-  def __init__(self, constant):
+  def __init__(self, constant: Union[float, int, jnp.ndarray]):
     """Constructs a Constant initializer.
 
     Args:
@@ -59,7 +59,7 @@ class Constant(hk.initializers.Initializer):
     """
     self.constant = constant
 
-  def __call__(self, shape: Sequence[int], dtype) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype: Any) -> jnp.ndarray:
     return jnp.broadcast_to(self.constant, shape).astype(dtype)
 
 
@@ -85,7 +85,9 @@ class RandomNormal(hk.initializers.Initializer):
 class TruncatedNormal(hk.initializers.Initializer):
   """Initializes by sampling from a truncated normal distribution."""
 
-  def __init__(self, stddev=1., mean=0.):
+  def __init__(self,
+               stddev: Union[float, jnp.ndarray] = 1.,
+               mean: Union[float, jnp.ndarray] = 0.):
     """Constructs a :class:`TruncatedNormal` initializer.
 
     Args:
@@ -96,7 +98,7 @@ class TruncatedNormal(hk.initializers.Initializer):
     self.stddev = stddev
     self.mean = mean
 
-  def __call__(self, shape: Sequence[int], dtype) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype: Any) -> jnp.ndarray:
     m = jax.lax.convert_element_type(self.mean, dtype)
     s = jax.lax.convert_element_type(self.stddev, dtype)
     unscaled = jax.random.truncated_normal(hk.next_rng_key(), -2., 2., shape,
@@ -117,7 +119,7 @@ class RandomUniform(hk.initializers.Initializer):
     self.minval = minval
     self.maxval = maxval
 
-  def __call__(self, shape: Sequence[int], dtype) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype: Any) -> jnp.ndarray:
     return jax.random.uniform(hk.next_rng_key(), shape, dtype, self.minval,
                               self.maxval)
 
@@ -175,7 +177,7 @@ class VarianceScaling(hk.initializers.Initializer):
     self.mode = mode
     self.distribution = distribution
 
-  def __call__(self, shape: Sequence[int], dtype) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype: Any) -> jnp.ndarray:
     scale = self.scale
     fan_in, fan_out = _compute_fans(shape)
     if self.mode == 'fan_in':
@@ -216,7 +218,7 @@ class UniformScaling(hk.initializers.Initializer):
     """
     self.scale = scale
 
-  def __call__(self, shape: Sequence[int], dtype) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype: Any) -> jnp.ndarray:
     input_size = np.product(shape[:-1])
     max_val = np.sqrt(3 / input_size) * self.scale
     return RandomUniform(-max_val, max_val)(shape, dtype)
@@ -248,7 +250,7 @@ class Orthogonal(hk.initializers.Initializer):
     self.scale = scale
     self.axis = axis
 
-  def __call__(self, shape: Sequence[int], dtype) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype: Any) -> jnp.ndarray:
     if len(shape) < 2:
       raise ValueError('Orthogonal initializer requires at least a 2D shape.')
     n_rows = shape[self.axis]
@@ -279,7 +281,7 @@ class Identity(Initializer):
     """
     self.gain = gain
 
-  def __call__(self, shape: Sequence[int], dtype) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype: Any) -> jnp.ndarray:
     shape = tuple(shape)
     if len(shape) < 2:
       raise ValueError('Identity initializer requires at least a 2D shape.')

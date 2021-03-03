@@ -20,6 +20,7 @@ from typing import Generator, Mapping, Optional, Sequence, Text, Tuple
 import jax
 import jax.numpy as jnp
 import numpy as np
+from packaging import version
 import tensorflow.compat.v2 as tf
 import tensorflow_datasets as tfds
 
@@ -45,6 +46,14 @@ class Split(enum.Enum):
   def num_examples(self):
     return {Split.TRAIN_AND_VALID: 1281167, Split.TRAIN: 1271167,
             Split.VALID: 10000, Split.TEST: 50000}[self]
+
+
+def check_tfds_version():
+  tfds_version = version.parse(tfds.version.__version__)
+  required = version.parse('4.2.0')
+  if tfds_version < required:
+    raise ValueError(f'tensorflow_datasets >= {required} is required, you '
+                     f'have {tfds_version}')
 
 
 def load(

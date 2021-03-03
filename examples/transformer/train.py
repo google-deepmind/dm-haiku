@@ -39,7 +39,6 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import optax
-import tensorflow.compat.v2 as tf
 
 flags.DEFINE_integer('batch_size', 16, 'Train batch size per core')
 flags.DEFINE_integer('sequence_length', 128, 'Sequence length to learn on')
@@ -248,5 +247,5 @@ def main(_):
 
 
 if __name__ == '__main__':
-  tf.enable_v2_behavior()
+  dataset.check_tfds_version()
   app.run(main)

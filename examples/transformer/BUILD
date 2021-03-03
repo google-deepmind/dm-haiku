@@ -17,7 +17,6 @@ hk_py_binary(
         # pip: jax
         # pip: numpy
         # pip: optax
-        # pip: tensorflow
     ],
 )
 
@@ -25,6 +24,7 @@ hk_py_library(
     name = "dataset",
     srcs = ["dataset.py"],
     deps = [
+        # pip: packaging
         # pip: tensorflow
         # pip: tensorflow_datasets
     ],

@@ -16,7 +16,8 @@
 
 from typing import NamedTuple
 
-import tensorflow.compat.v2 as tf
+from packaging import version
+import tensorflow as tf
 import tensorflow_datasets as tfds
 
 
@@ -25,12 +26,16 @@ class LanguageDataset(NamedTuple):
   vocab_size: int
 
 
+def check_tfds_version():
+  tfds_version = version.parse(tfds.version.__version__)
+  maximum = version.parse('4.2.0')
+  if tfds_version >= maximum:
+    raise ValueError(f'tensorflow_datasets < {maximum} is required, you '
+                     f'have {tfds_version}')
+
+
 def load(batch_size: int, sequence_length: int) -> LanguageDataset:
   """Load LM1B dataset, returning it and vocab_size."""
-  if tfds.version.__version__ >= '4.2.0':
-    raise ValueError('This version of tfds (%s) is not supported,'
-                     'please use < 4.2.0 instead.' % tfds.version.__version__)
-
   ds, ds_info = tfds.load(
       'lm1b/subwords32k',
       split=tfds.Split.TRAIN,

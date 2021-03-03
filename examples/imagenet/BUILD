@@ -26,6 +26,7 @@ hk_py_library(
     deps = [
         # pip: jax
         # pip: numpy
+        # pip: packaging
         # pip: tensorflow
         # pip: tensorflow_datasets
     ],

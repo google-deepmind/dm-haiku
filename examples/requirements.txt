@@ -3,5 +3,6 @@ git+git://github.com/deepmind/optax.git
 git+git://github.com/deepmind/rlax.git
 dm-env>=1.2
 dm-tree>=0.1.1
-tensorflow>=2.4.0
+packaging>=20.9
 tensorflow-datasets>=2.0.0,<4.2.0
+tensorflow>=2.4.0

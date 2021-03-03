@@ -304,4 +304,5 @@ def main(argv):
   logging.info('[Eval FINAL]: %s', eval_scalars)
 
 if __name__ == '__main__':
+  dataset.check_tfds_version()
   app.run(main)

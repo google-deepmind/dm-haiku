@@ -31,7 +31,8 @@ def check_tfds_version():
   maximum = version.parse('4.2.0')
   if tfds_version >= maximum:
     raise ValueError(f'tensorflow_datasets < {maximum} is required, you '
-                     f'have {tfds_version}')
+                     f'have {tfds_version}. You can downgrade using:\n\n'
+                     '    pip install "tensorflow-datasets==4.1.0"')
 
 
 def load(batch_size: int, sequence_length: int) -> LanguageDataset:

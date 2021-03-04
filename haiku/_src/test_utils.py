@@ -18,16 +18,20 @@ import functools
 import inspect
 import itertools
 import types
-from typing import Generator, Optional, Sequence, Tuple, TypeVar
+from typing import Callable, Generator, Optional, Sequence, Tuple, TypeVar
 
 from absl.testing import parameterized
 from haiku._src import transform
 from jax import random
 
 T = TypeVar("T")
+Fn = Callable[..., T]
 
 
-def transform_and_run(f=None, seed: Optional[int] = 42, run_apply: bool = True):
+def transform_and_run(f: Fn = None,
+                      seed: Optional[int] = 42,
+                      run_apply: bool = True,
+                      jax_transform: Optional[Callable[[Fn], Fn]] = None) -> T:
   r"""Transforms the given function and runs init then (optionally) apply.
 
   Equivalent to:
@@ -49,6 +53,19 @@ def transform_and_run(f=None, seed: Optional[int] = 42, run_apply: bool = True):
   ...     out = mod(jnp.ones([1, 1]))
   ...     self.assertEqual(out.ndim, 2)
 
+  It can also be combined with ``chex`` to test all pure/jit/pmap versions of a
+  function:
+
+  >>> class MyTest(unittest.TestCase):
+  ...   @chex.all_variants
+  ...   def test_linear_output(self):
+  ...     @hk.testing.transform_and_run(jax_transform=self.variant)
+  ...     def f(inputs):
+  ...       mod = hk.Linear(1)
+  ...       return mod(inputs)
+  ...     out = f(jnp.ones([1, 1]))
+  ...     self.assertEqual(out.ndim, 2)
+
   And can also be useful in an interactive environment like ipython, Jupyter or
   Google Colaboratory:
 
@@ -62,22 +79,30 @@ def transform_and_run(f=None, seed: Optional[int] = 42, run_apply: bool = True):
     f: A function method to transform.
     seed: A seed to pass to init and apply.
     run_apply: Whether to run apply as well as init. Defaults to true.
+    jax_transform: An optional jax transform to apply on the init and apply
+      functions.
 
   Returns:
     A function that :func:`~haiku.transform`\ s ``f`` and runs ``init`` and
     optionally ``apply``.
   """
   if f is None:
-    return functools.partial(transform_and_run, seed=seed, run_apply=run_apply)
+    return functools.partial(
+        transform_and_run,
+        seed=seed,
+        run_apply=run_apply,
+        jax_transform=jax_transform)
 
   @functools.wraps(f)
   def wrapper(*a, **k):
     """Runs init and apply of f."""
     rng = random.PRNGKey(seed) if seed is not None else None
-    transformed = transform.transform_with_state(lambda: f(*a, **k))
-    params, state = transformed.init(rng)
+    init, apply = transform.transform_with_state(lambda: f(*a, **k))
+    if jax_transform:
+      init, apply = map(jax_transform, (init, apply))
+    params, state = init(rng)
     if run_apply:
-      out, state = transformed.apply(params, state, rng)
+      out, state = apply(params, state, rng)
       return out
 
   return wrapper

@@ -582,6 +582,7 @@ hk_py_library(
     deps = [
         ":transform",
         # pip: absl/testing:parameterized
+        # pip: chex
         # pip: jax
     ],
 )

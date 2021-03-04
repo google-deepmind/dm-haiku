@@ -135,6 +135,7 @@ import collections
 import itertools
 import unittest
 
+import chex
 import haiku as hk
 import jax
 import jax.numpy as jnp

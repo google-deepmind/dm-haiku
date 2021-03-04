@@ -24,6 +24,7 @@ import unittest
 from absl import logging
 from absl.testing import absltest
 from absl.testing import parameterized
+import chex
 import haiku as hk
 from haiku._src import test_utils
 import jax
@@ -40,6 +41,7 @@ class DoctestTest(parameterized.TestCase):
           optionflags=doctest.ELLIPSIS,
           extraglobs={
               "itertools": itertools,
+              "chex": chex,
               "collections": collections,
               "contextlib": contextlib,
               "unittest": unittest,

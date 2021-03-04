@@ -1,3 +1,4 @@
+chex>=0.0.4
 cloudpickle>=1.2.2
 dill
 mock>=3.0.5

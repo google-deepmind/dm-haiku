@@ -68,6 +68,7 @@ hk_py_test(
         # pip: absl/logging
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
+        # pip: chex
         "//haiku",
         "//haiku/_src:test_utils",
         # pip: jax

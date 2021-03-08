@@ -200,8 +200,8 @@ class LinearTest(absltest.TestCase):
 
     init_fn, apply_fn = transform.transform(f)
     params = init_fn(random.PRNGKey(428))
-    self.assertEqual(params.linear.w.shape, (6, 2))
-    self.assertEqual(params.linear.b.shape, (2,))
+    self.assertEqual(params["linear"]["w"].shape, (6, 2))
+    self.assertEqual(params["linear"]["b"].shape, (2,))
     self.assertEqual(apply_fn(params, None).shape, (2, 5, 2))
 
   def test_linear_without_bias_has_zero_in_null_space(self):

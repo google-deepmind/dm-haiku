@@ -148,8 +148,8 @@ class FlatMappingTest(parameterized.TestCase):
 
   def test_getattr(self):
     f = FlatMapping(dict(a=1, b=2))
-    self.assertEqual(f.a, 1)
-    self.assertEqual(f.b, 2)
+    with self.assertRaisesRegex(AttributeError, "not supported"):
+      _ = f.a
 
   def test_setattr(self):
     f = FlatMapping(dict(a=1))

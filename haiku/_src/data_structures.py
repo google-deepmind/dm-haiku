@@ -191,13 +191,8 @@ class FlatMapping(Mapping[K, V]):
     return self._to_mapping()[key]
 
   def __getattr__(self, key):
-    # TODO(tomhennigan) Remove getattr override.
-    # NOTE: Strictly speaking this is not part of the dict API, but it is quite
-    # convenient to be able to do `params.w` rather than `params['w']`.
-    try:
-      return self[key]
-    except KeyError as e:
-      raise AttributeError(e)
+    raise AttributeError(
+        f"`x.{key}` is not supported on FlatMapping, use `x['{key}']` instead.")
 
   def __iter__(self):
     return iter(self.keys())
@@ -260,13 +255,9 @@ class frozendict(Mapping[K, V]):  # pylint: disable=invalid-name
   def __len__(self):
     return len(self._storage)
 
-  def __getattr__(self, key: K) -> V:
-    # NOTE: Strictly speaking this is not part of the dict API, but it is quite
-    # convenient to be able to do `params.w` rather than `params['w']`.
-    try:
-      return self._storage[key]
-    except KeyError as e:
-      raise AttributeError(e)
+  def __getattr__(self, key):
+    raise AttributeError(
+        f"x.{key} is not supported on frozendict, use x['{key}'] instead.")
 
   def get(self, key: K, default: Optional[T] = None) -> Union[V, Optional[T]]:
     return self._storage.get(key, default)

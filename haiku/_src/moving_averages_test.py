@@ -191,8 +191,10 @@ class EMAParamsTreeTest(absltest.TestCase):
 
     # W should be the same!
     # ... but b should have changed!
-    self.assertTrue((changed_params.linear.b != ema_params.linear.b).all())
-    self.assertTrue((changed_params.linear.w == ema_params.linear.w).all())
+    self.assertTrue(
+        (changed_params["linear"]["b"] != ema_params["linear"]["b"]).all())
+    self.assertTrue(
+        (changed_params["linear"]["w"] == ema_params["linear"]["w"]).all())
 
   def test_tree_update_stats(self):
     def f():

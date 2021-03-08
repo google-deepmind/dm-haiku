@@ -53,7 +53,7 @@ def load(batch_size: int, sequence_length: int) -> LanguageDataset:
   ds = ds.map(lambda t: dict(obs=t[:-1], target=t[1:]))
   ds = ds.batch(batch_size, drop_remainder=True)
   ds = ds.prefetch(tf.data.experimental.AUTOTUNE)
-  ds = tfds.as_numpy(ds)
+  ds = iter(tfds.as_numpy(ds))
   return LanguageDataset(ds, ds_info.features['text'].encoder.vocab_size)
 
 

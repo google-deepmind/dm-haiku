@@ -48,7 +48,7 @@ def load(
   ds = ds.batch(batch_size)
   ds = ds.map(lambda b: tf.nest.map_structure(tf.transpose, b))  # Time major.
 
-  return tfds.as_numpy(ds)
+  return iter(tfds.as_numpy(ds))
 
 
 def decode(x: np.ndarray) -> str:

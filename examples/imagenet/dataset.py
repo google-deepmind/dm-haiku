@@ -76,12 +76,13 @@ def load(
 
   total_batch_size = np.prod(batch_dims)
 
-  options = ds.options()
+  options = tf.data.Options()
   options.experimental_threading.private_threadpool_size = 48
   options.experimental_threading.max_intra_op_parallelism = 1
   options.experimental_optimization.map_parallelization = True
   if is_training:
     options.experimental_deterministic = False
+  ds = ds.with_options(options)
 
   if is_training:
     if jax.host_count() > 1:

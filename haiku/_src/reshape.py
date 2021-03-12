@@ -149,6 +149,20 @@ class Flatten(Reshape):
   >>> x = jnp.ones([3])
   >>> flat(x).shape
   (3,)
+
+  Alternatively, a negative value of `preserve_dims` specifies the number of
+  trailing dimensions flattened:
+
+  >>> x = jnp.ones([3, 2, 4])
+  >>> negative_flat = hk.Flatten(preserve_dims=-2)
+  >>> negative_flat(x).shape
+  (3, 8)
+
+  This allows the same module to be seamlessly applied to a single element or a
+  batch of elements with the same element shape:
+
+  >> negative_flat(x[0]).shape
+  (8,)
   """
 
   def __init__(

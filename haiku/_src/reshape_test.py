@@ -87,6 +87,20 @@ class ReshapeTest(parameterized.TestCase):
     self.assertEqual(x.shape, y.shape)
 
   @test_utils.transform_and_run
+  def test_flatten_1d_out_negative(self):
+    mod = reshape.Flatten(preserve_dims=-2)
+    x = jnp.zeros([2, 3])
+    y = mod(x)
+    self.assertEqual(y.shape, (6,))
+
+  @test_utils.transform_and_run
+  def test_flatten_nd_out_negative(self):
+    mod = reshape.Flatten(preserve_dims=-2)
+    x = jnp.zeros([5, 2, 3])
+    y = mod(x)
+    self.assertEqual(y.shape, (5, 6))
+
+  @test_utils.transform_and_run
   def test_flatten_invalid_preserve_dims(self):
     with self.assertRaisesRegex(ValueError,
                                 "Argument preserve_dims should be non-zero."):

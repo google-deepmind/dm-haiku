@@ -518,9 +518,6 @@ class ModuleTest(parameterized.TestCase):
         ValueError, "name_scope.*must be used as part of an `hk.transform`"):
       module.name_scope("foo")
 
-
-class ProtocolSupportTest(absltest.TestCase):
-
   @test_utils.transform_and_run
   def test_is_protocol(self):
     self.assertFalse(getattr(module.Module, "_is_protocol"))
@@ -535,6 +532,61 @@ class ProtocolSupportTest(absltest.TestCase):
     self.assertIsInstance(ConcreteProtocolModule(), ProtocolModule)
     self.assertNotIsInstance(module.Module(), SupportsFoo)
     self.assertNotIsInstance(module.Module(), ProtocolModule)
+
+  @test_utils.transform_and_run
+  def test_name_like(self):
+    m = ModuleWithCustomName(name="parent")
+    m.foo()  # foo pretends to be __call__.
+    m.bar()  # bar pretends to be baz.
+    # baz and call are happy to be themselves.
+    m.baz()
+    m()
+    self.assertEqual(m.init_module.module_name, "parent/~/child")
+    self.assertEqual(m.foo_module.module_name, "parent/child")
+    self.assertEqual(m.bar_module.module_name, "parent/~baz/child")
+    self.assertEqual(m.baz_module.module_name, "parent/~baz/child")
+    self.assertEqual(m.call_module.module_name, "parent/child")
+
+  @test_utils.transform_and_run
+  def test_name_like_aliasing(self):
+    m = ModuleWithDoubleCall(name="parent")
+    m()
+    self.assertEqual(m.foo_module.module_name, "parent/child")  # pytype: disable=attribute-error
+    self.assertEqual(m.call_module.module_name, "parent/child")
+
+  @test_utils.transform_and_run
+  def test_name_like_on_call(self):
+    m = ModuleWithCustomNameOnCall(name="parent")
+    m.foo()
+    m()  # Call pretends to be foo.
+    self.assertEqual(m.init_module.module_name, "parent/~/child")
+    self.assertEqual(m.foo_module.module_name, "parent/~foo/child")
+    self.assertEqual(m.call_module.module_name, "parent/~foo/child")
+
+  @test_utils.transform_and_run
+  def test_name_like_on_init(self):
+    m = ModuleWithCustomNameOnInit(name="parent")  # init pretends to be call.
+    m()
+    self.assertEqual(m.init_module.module_name, "parent/child")
+    self.assertEqual(m.call_module.module_name, "parent/child")
+
+  @test_utils.transform_and_run
+  def test_name_like_interceptor_method_names_unchanged(self):
+    log = []
+    def log_parent_methods(f, args, kwargs, context: module.MethodContext):
+      if isinstance(context.module, ModuleWithCustomName):
+        log.append(context.method_name)
+      return f(*args, **kwargs)
+
+    with module.intercept_methods(log_parent_methods):
+      m = ModuleWithCustomName(name="parent")
+      m.foo()  # foo pretends to be __call__.
+      m.bar()  # bar pretends to be baz.
+      # baz and call are happy to be themselves.
+      m.baz()
+      m()
+
+    self.assertEqual(log, ["__init__", "foo", "bar", "baz", "__call__"])
 
 
 class IdentityModule(module.Module):
@@ -707,6 +759,63 @@ class ConcreteProtocolModule(ProtocolModule):
 
   def bar(self):
     return ""
+
+
+class ModuleWithCustomName(module.Module):
+
+  def __init__(self, name=None):
+    super().__init__(name=name)
+    self.init_module = module.Module(name="child")
+
+  @module.name_like("__call__")
+  def foo(self):
+    self.foo_module = module.Module(name="child")
+
+  @module.name_like("baz")
+  def bar(self):
+    self.bar_module = module.Module(name="child")
+
+  def baz(self):
+    self.baz_module = module.Module(name="child")
+
+  def __call__(self):
+    self.call_module = module.Module(name="child")
+
+
+class ModuleWithCustomNameOnCall(module.Module):
+
+  def __init__(self, name=None):
+    super().__init__(name=name)
+    self.init_module = module.Module(name="child")
+
+  def foo(self):
+    self.foo_module = module.Module(name="child")
+
+  @module.name_like("foo")
+  def __call__(self):
+    self.call_module = module.Module(name="child")
+
+
+class ModuleWithCustomNameOnInit(module.Module):
+
+  @module.name_like("__call__")
+  def __init__(self, name=None):
+    super().__init__(name=name)
+    self.init_module = module.Module(name="child")
+
+  def __call__(self):
+    self.call_module = module.Module(name="child")
+
+
+class ModuleWithDoubleCall(module.Module):
+
+  @module.name_like("__call__")
+  def foo(self):
+    self.foo_module = module.Module(name="child")
+
+  def __call__(self):
+    self.foo()
+    self.call_module = module.Module(name="child")
 
 if __name__ == "__main__":
   absltest.main()

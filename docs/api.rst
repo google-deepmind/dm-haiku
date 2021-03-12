@@ -988,12 +988,18 @@ Managing State
 .. autosummary::
 
     name_scope
+    name_like
     lift
 
 name_scope
 ~~~~~~~~~~
 
 .. autofunction:: name_scope
+
+name_like
+~~~~~~~~~
+
+.. autofunction:: name_like
 
 lift
 ~~~~

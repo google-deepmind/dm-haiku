@@ -38,6 +38,7 @@ else:
 ThreadLocalStack = data_structures.ThreadLocalStack
 T = TypeVar("T")
 _APPLY_NAME_SCOPE = "__haiku_name_scope"
+_CUSTOM_NAME = "__haiku_custom_name"
 modules_with_named_call = False
 
 
@@ -398,8 +399,15 @@ def wrap_method(method_name, unbound_method):
       raise ValueError(
           "All `hk.Module`s must be initialized inside an `hk.transform`.")
 
+    # Submodules are associated with this method. We allow users to associate
+    # submodules with a different method than the one being called via
+    # `@name_like("other_method")`. Interceptors and custom getters are still
+    # provided the actual method name (e.g. "submodule_method_name" is only used
+    # for naming submodules).
+    submodule_method_name = getattr(unbound_method, _CUSTOM_NAME, method_name)
+
     frame = base.current_frame()
-    state = base.ModuleState(module=self, method_name=method_name)
+    state = base.ModuleState(module=self, method_name=submodule_method_name)
     with frame.module(state), _module_method_call(self, method_name):
       # hk.Module enters the module name scope for all methods.
       module_name = getattr(self, "module_name", None)
@@ -548,6 +556,89 @@ def transparent(method: T) -> T:
   """
   setattr(method, _APPLY_NAME_SCOPE, False)
   return method
+
+
+def name_like(method_name: str) -> Callable[[T], T]:
+  """Allows a method to be named like some other method.
+
+  In Haiku submodules are named based on the name of their parent module and the
+  method in which they are created. When refactoring code it may be desirable to
+  maintain previous names in order to keep checkpoint compatibility, this can be
+  achieved using :func:`name_like`.
+
+  As an example, consider the following toy autoencoder:
+
+  >>> class Autoencoder(hk.Module):
+  ...   def __call__(self, x):
+  ...     z = hk.Linear(10, name="enc")(x)  # name: autoencoder/enc
+  ...     y = hk.Linear(10, name="dec")(z)  # name: autoencoder/dec
+  ...     return y
+
+  If we want to refactor this such that users can encode or decode, we would
+  create two methods (encode, decode) which would create and apply our modules.
+  In order to retain checkpoint compatibility with the original module we can
+  use :func:`name_like` to name those submodules as if they were created inside
+  ``__call__``:
+
+  >>> class Autoencoder(hk.Module):
+  ...   @hk.experimental.name_like("__call__")
+  ...   def encode(self, x):
+  ...     return hk.Linear(10, name="enc")(x)  # name: autoencoder/enc
+  ...
+  ...   @hk.experimental.name_like("__call__")
+  ...   def decode(self, z):
+  ...     return hk.Linear(10, name="dec")(z)  # name: autoencoder/dec
+  ...
+  ...   def __call__(self, x):
+  ...     return self.decode(self.encode(x))
+
+  One sharp edge is if users rely on Haiku's numbering to take care of giving
+  unique names and refactor using :func:`name_like`. For example when
+  refactoring the following:
+
+  >>> class Autoencoder(hk.Module):
+  ...   def __call__(self, x):
+  ...     y = hk.Linear(10)(z)  # name: autoencoder/linear_1
+  ...     z = hk.Linear(10)(x)  # name: autoencoder/linear
+  ...     return y
+
+  To use :func:`name_like`, the unnamed linear modules in encode/decode will end
+  up with the same name (both: ``autoencoder/linear``) because module numbering
+  is only applied within a method:
+
+  >>> class Autoencoder(hk.Module):
+  ...   @hk.experimental.name_like("__call__")
+  ...   def encode(self, x):
+  ...     return hk.Linear(10)(x)  # name: autoencoder/linear
+  ...
+  ...   @hk.experimental.name_like("__call__")
+  ...   def decode(self, z):
+  ...     return hk.Linear(10)(z)  # name: autoencoder/linear  <-- NOT INTENDED
+
+  To fix this case you need to explicitly name the modules within the method
+  with their former name:
+
+  >>> class Autoencoder(hk.Module):
+  ...   @hk.experimental.name_like("__call__")
+  ...   def encode(self, x):
+  ...     return hk.Linear(10, name="linear")(x)    # name: autoencoder/linear
+  ...
+  ...   @hk.experimental.name_like("__call__")
+  ...   def decode(self, z):
+  ...     return hk.Linear(10, name="linear_1")(z)  # name: autoencoder/linear_1
+
+  Args:
+    method_name: The name of a method whose name we should adopt. This method
+      does not actually have to be defined on the class.
+
+  Returns:
+    A decorator that when applied to a method marks it as having a different
+    name.
+  """
+  def decorator(method: T) -> T:
+    setattr(method, _CUSTOM_NAME, method_name)
+    return method
+  return decorator
 
 
 def unique_and_canonical_name(name: str) -> str:

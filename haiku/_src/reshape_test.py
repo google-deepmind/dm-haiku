@@ -29,9 +29,13 @@ class ReshapeTest(parameterized.TestCase):
 
   @parameterized.parameters(
       (1, (B, H * W * C, D)),
+      (-4, (B, H * W * C, D)),
       (2, (B, H, W * C, D)),
+      (-3, (B, H, W * C, D)),
       (3, (B, H, W, C, D)),
+      (-2, (B, H, W, C, D)),
       (4, (B, H, W, C, 1, D)),
+      (-1, (B, H, W, C, 1, D)),
   )
   def test_reshape(self, preserve_dims, expected_output_shape):
     def f(inputs):
@@ -85,8 +89,8 @@ class ReshapeTest(parameterized.TestCase):
   @test_utils.transform_and_run
   def test_flatten_invalid_preserve_dims(self):
     with self.assertRaisesRegex(ValueError,
-                                "Argument preserve_dims should be >= 1."):
-      reshape.Flatten(preserve_dims=-1)
+                                "Argument preserve_dims should be non-zero."):
+      reshape.Flatten(preserve_dims=0)
 
 
 if __name__ == "__main__":

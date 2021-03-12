@@ -74,6 +74,18 @@ class Reshape(hk.Module):
 
       >>> mod = hk.Reshape(output_shape=(-1, D), preserve_dims=4)
       >>> assert mod(x).shape == (B, H, W, C, 1, D)
+
+  Alternatively, a negative value of ``preserve_dims`` specifies
+  the number of trailing dimensions to replace with ``output_shape``::
+
+      >>> mod = hk.Reshape(output_shape=(-1, D), preserve_dims=-3)
+      >>> assert mod(x).shape == (B, H, W*C, D)
+
+  This is useful in the case of applying the same module to batched
+  and unbatched outputs::
+
+      >>> mod = hk.Reshape(output_shape=(-1, D), preserve_dims=-3)
+      >>> assert mod(x[0]).shape == (H, W*C, D)
   """
 
   def __init__(
@@ -91,14 +103,16 @@ class Reshape(hk.Module):
         inferred. Note that ``-1`` can only appear once in ``output_shape``.
         To flatten all non-batch dimensions use :class:`Flatten`.
       preserve_dims: Number of leading dimensions that will not be reshaped.
+        If negative, this is interpreted instead as the number of trailing
+        dimensions to replace with the new shape.
       name: Name of the module.
 
     Raises:
-      ValueError: If ``preserve_dims`` is not positive.
+      ValueError: If ``preserve_dims`` is zero.
     """
     super().__init__(name=name)
-    if preserve_dims <= 0:
-      raise ValueError("Argument preserve_dims should be >= 1.")
+    if preserve_dims == 0:
+      raise ValueError("Argument preserve_dims should be non-zero.")
     if output_shape.count(-1) > 1:
       raise ValueError("-1 can only occur once in `output_shape`.")
 

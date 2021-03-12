@@ -21,7 +21,9 @@ from typing import Any, Callable, Sequence, Set, Tuple
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import basic
+from haiku._src import data_structures
 from haiku._src import filtering
+from haiku._src import test_utils
 from haiku._src import transform
 import jax
 import jax.numpy as jnp
@@ -264,6 +266,39 @@ class FilteringTest(parameterized.TestCase):
     for mn in second_layer_params:
       for n in second_layer_params[mn]:
         self.assertEqual(2. * params[mn][n], new_params[mn][n])
+
+  @test_utils.with_environ("HAIKU_FLATMAPPING", None)
+  def test_output_type_default(self):
+    self.assert_output_type(data_structures.FlatMapping)
+
+  @test_utils.with_environ("HAIKU_FLATMAPPING", "0")
+  def test_output_type_env_var_0(self):
+    self.assert_output_type(dict)
+
+  @test_utils.with_environ("HAIKU_FLATMAPPING", "1")
+  def test_output_type_env_var_1(self):
+    self.assert_output_type(data_structures.FlatMapping)
+
+  def assert_output_type(self, out_cls):
+    def assert_type_recursive(s):
+      self.assertEqual(type(s), out_cls)
+
+    for in_cls in (dict, data_structures.FlatMapping):
+      with self.subTest(str(in_cls)):
+        structure_a = in_cls({"m1": in_cls({"w": None})})
+        structure_b = in_cls({"m2": in_cls({"w": None})})
+        structure_c = in_cls({f"{i}": in_cls({"w": None}) for i in range(5)})
+        assert_type_recursive(
+            filtering.filter(lambda m, n, v: True, structure_a))
+        assert_type_recursive(filtering.map(lambda m, n, v: v, structure_a))
+        assert_type_recursive(filtering.merge(structure_a, structure_b))
+        parts = filtering.partition(lambda m, n, v: int(m) > 1, structure_c)
+        for part in parts:
+          assert_type_recursive(part)
+        parts = filtering.partition_n(lambda m, n, v: int(m), structure_c, 5)
+        for part in parts:
+          assert_type_recursive(part)
+
 
 if __name__ == "__main__":
   absltest.main()

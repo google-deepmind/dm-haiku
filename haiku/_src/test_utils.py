@@ -17,6 +17,7 @@
 import functools
 import inspect
 import itertools
+import os
 import types
 from typing import Callable, Generator, Optional, Sequence, Tuple, TypeVar
 
@@ -179,3 +180,25 @@ def named_bools(name) -> Sequence[Tuple[str, bool]]:
 def named_range(name, stop: int) -> Sequence[Tuple[str, int]]:
   """Equivalent to `range()` but suitable for use with ``named_parameters``."""
   return tuple(((f"{name}_{i}", i) for i in range(stop)))
+
+
+def with_environ(key: str, value: Optional[str]):
+  """Runs the given test with envrionment variables set."""
+  def set_env(new_value):
+    if new_value is None:
+      if key in os.environ:
+        del os.environ[key]
+    else:
+      os.environ[key] = new_value
+
+  def decorator(f):
+    def wrapper(*a, **k):
+      value_before = os.environ.get(key, None)
+      set_env(value)
+      try:
+        return f(*a, **k)
+      finally:
+        set_env(value_before)
+    return wrapper
+
+  return decorator

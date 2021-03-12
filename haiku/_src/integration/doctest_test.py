@@ -19,6 +19,7 @@ import contextlib
 import doctest
 import inspect
 import itertools
+import os
 import unittest
 
 from absl import logging
@@ -38,7 +39,7 @@ class DoctestTest(parameterized.TestCase):
     def run_test():
       num_failed, num_attempted = doctest.testmod(
           module,
-          optionflags=doctest.ELLIPSIS,
+          optionflags=doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE,
           extraglobs={
               "itertools": itertools,
               "chex": chex,
@@ -101,4 +102,5 @@ class DoctestTest(parameterized.TestCase):
 
 
 if __name__ == "__main__":
+  os.environ["HAIKU_FLATMAPPING"] = "0"
   absltest.main()

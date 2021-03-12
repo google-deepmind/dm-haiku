@@ -21,9 +21,10 @@
 
 import collections
 import contextlib
+import os
 import pprint
 import threading
-from typing import (Any, Callable, Generic, Mapping, NamedTuple, Optional,
+from typing import (Any, Callable, Dict, Generic, Mapping, NamedTuple, Optional,
                     Sequence, TypeVar, Union)
 
 from haiku._src import utils
@@ -117,6 +118,41 @@ def to_mutable_dict(mapping):
     if value_type is FlatMapping:
       value = to_mutable_dict(value)
     out[key] = value
+  return out
+
+
+def to_haiku_dict(
+    structure: Mapping[str, Mapping[str, T]],
+) -> Mapping[str, Mapping[str, T]]:
+  if os.environ.get("HAIKU_FLATMAPPING", "1").lower() not in ("", "0", "false"):
+    return to_immutable_dict(structure)
+  return to_dict(structure)
+
+
+def _copy_structure(tree):
+  """Returns a copy of the given structure."""
+  leaves, treedef = jax.tree_flatten(tree)
+  return jax.tree_unflatten(treedef, leaves)
+
+
+def to_dict(mapping: Mapping[str, Mapping[str, T]]) -> Dict[str, Dict[str, T]]:
+  """Returns a ``dict`` copy of the given two level structure.
+
+  This method is guaranteed to return a copy of the input structure (e.g. even
+  if the input is already a ``dict``).
+
+  Args:
+    mapping: A two level mapping as returned by ``init`` functions of Haiku
+        transforms.
+
+  Returns:
+    A new two level mapping with the same contents as the input.
+  """
+  out = {}
+  for module_name, bundle in mapping.items():
+    out_bundle = out[module_name] = {}
+    for name, value in bundle.items():
+      out_bundle[name] = _copy_structure(value)
   return out
 
 

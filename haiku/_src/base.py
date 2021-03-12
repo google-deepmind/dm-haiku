@@ -59,20 +59,23 @@ class Frame(NamedTuple):
   rng_stack: Stack[Optional["PRNGSequence"]]
 
   # Pure python values.
+  freeze_params: bool
   module_stack: Stack[ModuleState]
   counter_stack: Stack[collections.Counter]
   used_names_stack: Stack[Set[str]]
 
   @property
   def params_frozen(self):
-    return isinstance(self.params, data_structures.FlatMapping)
+    return self.freeze_params
 
   @classmethod
-  def create(cls, params, state, rng: Optional["PRNGSequence"]):
+  def create(cls, params, state, rng: Optional["PRNGSequence"],
+             freeze_params: bool) -> "Frame":
     """Creates a new frame."""
     frame = Frame(params=params,
                   state=state,
                   rng_stack=Stack(),
+                  freeze_params=freeze_params,
                   module_stack=Stack(),
                   counter_stack=Stack(),
                   used_names_stack=Stack())
@@ -81,12 +84,13 @@ class Frame(NamedTuple):
     frame.used_names_stack.push(set())
     return frame
 
-  def evolve(self, params, state, rng):
+  def evolve(self, params, state, rng) -> "Frame":
     rng_stack = self.rng_stack.clone()
     rng_stack.push(rng)
     return Frame(params=params,
                  state=state,
                  rng_stack=rng_stack,
+                 freeze_params=self.freeze_params,
                  module_stack=self.module_stack.clone(),
                  counter_stack=self.counter_stack.map(collections.Counter),
                  used_names_stack=self.used_names_stack.map(set))
@@ -105,7 +109,7 @@ current_frame = frame_stack.peek
 class HaikuContext(object):
   """Collects and injects values for computations."""
 
-  __slots__ = ("__params", "__state", "__rng",
+  __slots__ = ("__params", "__state", "__rng", "__freeze_params",
                "__expected_stack", "__names", "__counter")
 
   def __init__(
@@ -113,18 +117,20 @@ class HaikuContext(object):
       params: Union[Params, MutableParams],
       state: Union[State, MutableState],
       rng: Optional["PRNGSequence"],
+      freeze_params: bool,
   ):
     # NOTE: Using __ vs. _ since these are "really" private (as in using these
     # properties directly could result in broken behaviour).
     self.__params = params
     self.__state = state
     self.__rng = rng
+    self.__freeze_params = freeze_params
     self.__expected_stack = ThreadLocalStack()
     self.__names = set()
     self.__counter = collections.Counter()
 
   def collect_params(self) -> Params:
-    return data_structures.to_immutable_dict(self.__params)
+    return data_structures.to_haiku_dict(self.__params)
 
   def collect_initial_state(self) -> State:
     return extract_state(self.__state, initial=True)
@@ -133,8 +139,10 @@ class HaikuContext(object):
     return extract_state(self.__state, initial=False)
 
   def __enter__(self):
-    frame = Frame.create(
-        params=self.__params, state=self.__state, rng=self.__rng)
+    frame = Frame.create(params=self.__params,
+                         state=self.__state,
+                         rng=self.__rng,
+                         freeze_params=self.__freeze_params)
     frame.used_names_stack.push(self.__names)
     frame.counter_stack.push(self.__counter)
     self.__expected_stack.push(frame)
@@ -178,8 +186,10 @@ def new_context(
   """
   if params is None:
     params = collections.defaultdict(dict)
+    freeze_params = False
   else:
-    params = data_structures.to_immutable_dict(params)
+    params = data_structures.to_haiku_dict(params)
+    freeze_params = True
 
   if state is None:
     state = collections.defaultdict(dict)
@@ -191,7 +201,7 @@ def new_context(
   if rng is not None and not isinstance(rng, PRNGSequence):
     rng = PRNGSequence(rng)
 
-  return HaikuContext(params, state, rng)
+  return HaikuContext(params, state, rng, freeze_params)
 
 
 def inside_transform():
@@ -650,7 +660,7 @@ def maybe_next_rng_key() -> Optional[PRNGKey]:
 def extract_state(state: MutableState, *, initial) -> State:
   state = {m: {k: (v.initial if initial else v.current) for k, v in p.items()}
            for m, p in state.items()}
-  state = data_structures.to_immutable_dict(state)
+  state = data_structures.to_haiku_dict(state)
   return state
 
 

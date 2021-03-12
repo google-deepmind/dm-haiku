@@ -14,6 +14,7 @@
 # ==============================================================================
 """Tests for haiku._src.data_structures."""
 
+import collections
 import copy
 import pickle
 import threading
@@ -26,6 +27,7 @@ from haiku._src import data_structures
 import jax
 import tree
 
+frozendict = data_structures.frozendict
 FlatMapping = data_structures.FlatMapping
 
 
@@ -339,7 +341,29 @@ class FlatMappingTest(parameterized.TestCase):
             outerdef, innerdef, FlatMapping({"a": [3, 4], "b": [5, 6]})))
 
 
-class DataStructuresTest(absltest.TestCase):
+class DataStructuresTest(parameterized.TestCase):
+
+  @parameterized.parameters(dict, frozendict, FlatMapping,
+                            lambda x: collections.defaultdict(object, x))
+  def test_to_dict(self, cls):
+    mapping_in = cls(
+        {f"a{i}": cls({f"b{j}": 0 for j in range(2)}) for i in range(10)})
+    mapping_out = data_structures.to_dict(mapping_in)
+    self.assertEqual(mapping_in, mapping_out)
+    self.assertIs(type(mapping_out), dict)
+    self.assertIsNot(mapping_in, mapping_out)
+    for key in mapping_in:
+      self.assertIs(type(mapping_out[key]), dict)
+      self.assertIsNot(mapping_in[key], mapping_out[key])
+
+  def test_to_dict_copies_value_structure(self):
+    v = [1, 2, 3]
+    mapping_in = {"m": {"w": v}}
+    mapping_out = data_structures.to_dict(mapping_in)
+    self.assertEqual(mapping_in, mapping_out)
+    self.assertIsNot(mapping_in["m"]["w"], mapping_out["m"]["w"])
+    v.append(4)
+    self.assertNotEqual(mapping_in, mapping_out)
 
   def test_to_immutable_dict(self):
     before = {"a": {"b": 1, "c": 2}}

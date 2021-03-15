@@ -15,7 +15,7 @@
 """Variational Autoencoder example on binarized MNIST dataset."""
 
 
-from typing import Any, Generator, Mapping, Tuple, NamedTuple, Sequence
+from typing import Generator, Mapping, Tuple, NamedTuple, Sequence
 
 from absl import app
 from absl import flags
@@ -35,7 +35,6 @@ flags.DEFINE_integer("eval_frequency", 100, "How often to evaluate the model.")
 FLAGS = flags.FLAGS
 
 
-OptState = Any
 PRNGKey = jnp.ndarray
 Batch = Mapping[str, np.ndarray]
 
@@ -181,9 +180,9 @@ def main(_):
   def update(
       params: hk.Params,
       rng_key: PRNGKey,
-      opt_state: OptState,
+      opt_state: optax.OptState,
       batch: Batch,
-  ) -> Tuple[hk.Params, OptState]:
+  ) -> Tuple[hk.Params, optax.OptState]:
     """Single SGD update step."""
     grads = jax.grad(loss_fn)(params, rng_key, batch)
     updates, new_opt_state = optimizer.update(grads, opt_state)

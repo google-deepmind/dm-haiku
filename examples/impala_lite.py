@@ -36,8 +36,6 @@ import numpy as np
 import optax
 import rlax
 
-OptState = Any
-
 
 class Transition(NamedTuple):
   timestep: dm_env.TimeStep
@@ -198,9 +196,9 @@ class Learner:
   def update(
       self,
       params: hk.Params,
-      opt_state: OptState,
+      opt_state: optax.OptState,
       trajs: Transition,
-  ) -> Tuple[hk.Params, OptState]:
+  ) -> Tuple[hk.Params, optax.OptState]:
     g = jax.grad(self._agent.loss)(params, trajs)
     updates, new_opt_state = self._opt_update(g, opt_state)
     return optax.apply_updates(params, updates), new_opt_state

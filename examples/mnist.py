@@ -14,7 +14,7 @@
 # ==============================================================================
 """MNIST classifier example."""
 
-from typing import Any, Generator, Mapping, Tuple
+from typing import Generator, Mapping, Tuple
 
 from absl import app
 import haiku as hk
@@ -24,7 +24,6 @@ import numpy as np
 import optax
 import tensorflow_datasets as tfds
 
-OptState = Any
 Batch = Mapping[str, np.ndarray]
 
 
@@ -80,9 +79,9 @@ def main(_):
   @jax.jit
   def update(
       params: hk.Params,
-      opt_state: OptState,
+      opt_state: optax.OptState,
       batch: Batch,
-  ) -> Tuple[hk.Params, OptState]:
+  ) -> Tuple[hk.Params, optax.OptState]:
     """Learning rule (stochastic gradient descent)."""
     grads = jax.grad(loss)(params, batch)
     updates, opt_state = opt.update(grads, opt_state)

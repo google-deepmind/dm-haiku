@@ -30,18 +30,16 @@ import numpy as np
 import optax
 import tensorflow_datasets as tfds
 
-flags.DEFINE_integer('train_batch_size', 32, '')
-flags.DEFINE_integer('eval_batch_size', 1000, '')
-flags.DEFINE_integer('sequence_length', 128, '')
-flags.DEFINE_integer('hidden_size', 256, '')
-flags.DEFINE_integer('sample_length', 128, '')
-flags.DEFINE_float('learning_rate', 1e-3, '')
-flags.DEFINE_integer('training_steps', 100_000, '')
-flags.DEFINE_integer('evaluation_interval', 100, '')
-flags.DEFINE_integer('sampling_interval', 100, '')
-flags.DEFINE_integer('seed', 42, '')
-
-FLAGS = flags.FLAGS
+TRAIN_BATCH_SIZE = flags.DEFINE_integer('train_batch_size', 32, '')
+EVAL_BATCH_SIZE = flags.DEFINE_integer('eval_batch_size', 1000, '')
+SEQUENCE_LENGTH = flags.DEFINE_integer('sequence_length', 128, '')
+HIDDEN_SIZE = flags.DEFINE_integer('hidden_size', 256, '')
+SAMPLE_LENGTH = flags.DEFINE_integer('sample_length', 128, '')
+LEARNING_RATE = flags.DEFINE_float('learning_rate', 1e-3, '')
+TRAINING_STEPS = flags.DEFINE_integer('training_steps', 100_000, '')
+EVALUATION_INTERVAL = flags.DEFINE_integer('evaluation_interval', 100, '')
+SAMPLING_INTERVAL = flags.DEFINE_integer('sampling_interval', 100, '')
+SEED = flags.DEFINE_integer('seed', 42, '')
 
 
 class LoopValues(NamedTuple):
@@ -52,24 +50,24 @@ class LoopValues(NamedTuple):
 
 class TrainingState(NamedTuple):
   params: hk.Params
-  opt_state: Any
+  opt_state: optax.OptState
 
 
 def make_network() -> hk.RNNCore:
   """Defines the network architecture."""
   model = hk.DeepRNN([
       lambda x: jax.nn.one_hot(x, num_classes=dataset.NUM_CHARS),
-      hk.LSTM(FLAGS.hidden_size),
+      hk.LSTM(HIDDEN_SIZE.value),
       jax.nn.relu,
-      hk.LSTM(FLAGS.hidden_size),
-      hk.nets.MLP([FLAGS.hidden_size, dataset.NUM_CHARS]),
+      hk.LSTM(HIDDEN_SIZE.value),
+      hk.nets.MLP([HIDDEN_SIZE.value, dataset.NUM_CHARS]),
   ])
   return model
 
 
 def make_optimizer() -> optax.GradientTransformation:
   """Defines the optimizer."""
-  return optax.adam(FLAGS.learning_rate)
+  return optax.adam(LEARNING_RATE.value)
 
 
 def sequence_loss(batch: dataset.Batch) -> jnp.ndarray:
@@ -125,20 +123,20 @@ def sample(
 
 
 def main(_):
-  FLAGS.alsologtostderr = True
+  flags.FLAGS.alsologtostderr = True
 
   # Make training dataset.
   train_data = dataset.load(
       tfds.Split.TRAIN,
-      batch_size=FLAGS.train_batch_size,
-      sequence_length=FLAGS.sequence_length)
+      batch_size=TRAIN_BATCH_SIZE.value,
+      sequence_length=SEQUENCE_LENGTH.value)
 
   # Make evaluation dataset(s).
   eval_data = {  # pylint: disable=g-complex-comprehension
       split: dataset.load(
           split,
-          batch_size=FLAGS.eval_batch_size,
-          sequence_length=FLAGS.sequence_length)
+          batch_size=EVAL_BATCH_SIZE.value,
+          sequence_length=SEQUENCE_LENGTH.value)
       for split in [tfds.Split.TRAIN, tfds.Split.TEST]
   }
 
@@ -151,23 +149,23 @@ def main(_):
   sample_fn = jax.jit(sample_fn, static_argnums=[3])
 
   # Initialize training state.
-  rng = hk.PRNGSequence(FLAGS.seed)
+  rng = hk.PRNGSequence(SEED.value)
   initial_params = params_init(next(rng), next(train_data))
   initial_opt_state = opt_init(initial_params)
   state = TrainingState(params=initial_params, opt_state=initial_opt_state)
 
   # Training loop.
-  for step in range(FLAGS.training_steps + 1):
+  for step in range(TRAINING_STEPS.value + 1):
     # Do a batch of SGD.
     train_batch = next(train_data)
     state = update(state, train_batch)
 
     # Periodically generate samples.
-    if step % FLAGS.sampling_interval == 0:
+    if step % SAMPLING_INTERVAL.value == 0:
       context = train_batch['input'][:, 0]  # First element of training batch.
       assert context.ndim == 1
       rng_key = next(rng)
-      samples = sample_fn(state.params, rng_key, context, FLAGS.sample_length)
+      samples = sample_fn(state.params, rng_key, context, SAMPLE_LENGTH.value)
 
       prompt = dataset.decode(context)
       continuation = dataset.decode(samples)
@@ -176,7 +174,7 @@ def main(_):
       logging.info('Continuation: %s', continuation)
 
     # Periodically evaluate training and test loss.
-    if step % FLAGS.evaluation_interval == 0:
+    if step % EVALUATION_INTERVAL.value == 0:
       for split, ds in eval_data.items():
         eval_batch = next(ds)
         loss = loss_fn(state.params, eval_batch)

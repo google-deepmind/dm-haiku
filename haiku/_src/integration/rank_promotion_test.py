@@ -38,10 +38,6 @@ class RankPromotionTest(parameterized.TestCase):
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
   def test_strict_promotion(self, module_fn: ModuleFn, shape, dtype):
-    if descriptors.module_type(module_fn) in (hk.nets.VectorQuantizer,
-                                              hk.nets.VectorQuantizerEMA):
-      self.skipTest('Requires: https://github.com/google/jax/pull/2901')
-
     f = hk.transform_with_state(lambda x: module_fn()(x))  # pylint: disable=unnecessary-lambda
     rng = jax.random.PRNGKey(42)
     x = np.ones(shape, dtype)

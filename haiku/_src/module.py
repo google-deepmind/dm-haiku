@@ -355,8 +355,10 @@ def name_scope(name: str) -> ContextManager[None]:
   >>> f = hk.transform(lambda x: MyModule()(x))
   >>> params = f.init(jax.random.PRNGKey(42), jnp.ones([1, 1]))
   >>> jax.tree_map(jnp.shape, params)
-  {'my_module/my_name_scope': {'w': ()},
-   'my_module/my_name_scope/submodule': {'b': (1,), 'w': (1, 1)}}
+  FlatMapping({
+    'my_module/my_name_scope': FlatMapping({'w': ()}),
+    'my_module/my_name_scope/submodule': FlatMapping({'b': (1,), 'w': (1, 1)}),
+  })
 
   Name scopes are very similar to putting all of the code inside the context
   manager inside a method on a :class:`Module` with the name you provide. Behind

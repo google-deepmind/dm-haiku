@@ -202,8 +202,10 @@ def transform(f, *, apply_rng=True) -> Transformed:
 
   >>> params = f.init(None, 1)
   >>> params
-  {'my_module': {'w': DeviceArray(0., dtype=float32)},
-   'my_module_1': {'w': DeviceArray(0., dtype=float32)}}
+  FlatMapping({
+    'my_module': FlatMapping({'w': DeviceArray(0., dtype=float32)}),
+    'my_module_1': FlatMapping({'w': DeviceArray(0., dtype=float32)}),
+  })
 
   You can then apply the function with the given parameters by calling
   ``apply`` (note that since we don't use Haiku's random number APIs to apply

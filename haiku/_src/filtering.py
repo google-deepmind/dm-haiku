@@ -56,9 +56,9 @@ def partition(
   >>> predicate = lambda module_name, name, value: name == 'w'
   >>> weights, biases = hk.data_structures.partition(predicate, params)
   >>> weights
-  {'linear': {'w': None}}
+  FlatMapping({'linear': FlatMapping({'w': None})})
   >>> biases
-  {'linear': {'b': None}}
+  FlatMapping({'linear': FlatMapping({'b': None})})
 
   Note: returns new structures not a view.
 
@@ -98,9 +98,9 @@ def partition_n(
   >>> structure = {f'layer_{i}': {'w': None, 'b': None} for i in range(3)}
   >>> for substructure in partition_by_module(structure):
   ...   print(substructure)
-  {'layer_0': {'b': None, 'w': None}}
-  {'layer_1': {'b': None, 'w': None}}
-  {'layer_2': {'b': None, 'w': None}}
+  FlatMapping({'layer_0': FlatMapping({'b': None, 'w': None})})
+  FlatMapping({'layer_1': FlatMapping({'b': None, 'w': None})})
+  FlatMapping({'layer_2': FlatMapping({'b': None, 'w': None})})
 
   Args:
     fn: Callable returning which bucket in ``[0, n)`` the given element should
@@ -126,10 +126,11 @@ def filter(  # pylint: disable=redefined-builtin
 ) -> T:
   """Filters an input structure according to a user specified predicate.
 
-  >>> params = {'linear': {'w': None, 'b': None}}
+  >>> params = hk.data_structures.to_immutable_dict(
+  ...   {'linear': {'w': None, 'b': None}})
   >>> predicate = lambda module_name, name, value: name == 'w'
   >>> hk.data_structures.filter(predicate, params)
-  {'linear': {'w': None}}
+  FlatMapping({'linear': FlatMapping({'w': None})})
 
   Note: returns a new structure not a view.
 
@@ -158,10 +159,11 @@ def map(  # pylint: disable=redefined-builtin
 ) -> Mapping[str, Mapping[str, OutT]]:
   """Maps a function to an input structure accordingly.
 
-  >>> params = {'linear': {'w': 1.0, 'b': 2.0}}
-  >>> fn = lambda module_name, name, value: 2 * value if name == 'w' else value
+  >>> params = hk.data_structures.to_immutable_dict(
+  ...   {'linear': {'w': 1.0, 'b': 2.0}})
+  >>> fn = lambda module_name, name, value: 3 * value if name == 'w' else value
   >>> hk.data_structures.map(fn, params)
-  {'linear': {'b': 2.0, 'w': 2.0}}
+  FlatMapping({'linear': FlatMapping({'b': 2.0, 'w': 3.0})})
 
   Note: returns a new structure not a view.
 
@@ -184,18 +186,18 @@ def map(  # pylint: disable=redefined-builtin
 def merge(*structures: T) -> T:
   """Merges multiple input structures.
 
-  >>> weights = {'linear': {'w': None}}
-  >>> biases = {'linear': {'b': None}}
+  >>> weights = hk.data_structures.to_immutable_dict({'linear': {'w': None}})
+  >>> biases = hk.data_structures.to_immutable_dict({'linear': {'b': None}})
   >>> hk.data_structures.merge(weights, biases)
-  {'linear': {'w': None, 'b': None}}
+  FlatMapping({'linear': FlatMapping({'w': None, 'b': None})})
 
   When structures are not disjoint the output will contain the value from the
   last structure for each path:
 
-  >>> weights1 = {'linear': {'w': 1}}
-  >>> weights2 = {'linear': {'w': 2}}
+  >>> weights1 = hk.data_structures.to_immutable_dict({'linear': {'w': 1}})
+  >>> weights2 = hk.data_structures.to_immutable_dict({'linear': {'w': 2}})
   >>> hk.data_structures.merge(weights1, weights2)
-  {'linear': {'w': 2}}
+  FlatMapping({'linear': FlatMapping({'w': 2})})
 
   Note: returns a new structure not a view.
 

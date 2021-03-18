@@ -34,6 +34,14 @@ import jax.numpy as jnp
 
 class DoctestTest(parameterized.TestCase):
 
+  def setUp(self):
+    super().setUp()
+    os.environ["HAIKU_FLATMAPPING"] = "0"
+
+  def tearDown(self):
+    super().tearDown()
+    del os.environ["HAIKU_FLATMAPPING"]
+
   @parameterized.named_parameters(test_utils.find_internal_python_modules(hk))
   def test_doctest(self, module):
     def run_test():
@@ -102,5 +110,4 @@ class DoctestTest(parameterized.TestCase):
 
 
 if __name__ == "__main__":
-  os.environ["HAIKU_FLATMAPPING"] = "0"
   absltest.main()

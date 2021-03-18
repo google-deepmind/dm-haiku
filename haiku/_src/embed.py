@@ -159,7 +159,8 @@ class Embed(hk.Module):
       # one of the dimensions of the array. The error only surfaces when
       # indexing with DeviceArray, while indexing with numpy.ndarray works fine.
       # See https://github.com/google/jax/issues/620 for more details.
-      return self.embeddings[(ids,)]
+      # Cast to a jnp array in case `ids` is a tracer (eg un a dynamic_unroll).
+      return jnp.asarray(self.embeddings)[(ids,)]
 
     elif lookup_style == hk.EmbedLookupStyle.ONE_HOT:
       one_hot_ids = jax.nn.one_hot(ids, self.vocab_size)[..., None]

@@ -14,6 +14,9 @@
 # ==============================================================================
 """Tests whether modules produce similar output given np.ndarray inputs."""
 
+import functools
+from typing import Tuple
+
 from absl.testing import absltest
 from absl.testing import parameterized
 import haiku as hk
@@ -26,36 +29,61 @@ import numpy as np
 ModuleFn = descriptors.ModuleFn
 
 
+def tree_assert_allclose(a, b, *, atol=1e-6):
+  jax.tree_multimap(
+      functools.partial(np.testing.assert_allclose, atol=atol), a, b)
+
+
 class NumpyInputsTest(parameterized.TestCase):
 
-  @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
-  def test_numpy_and_jax_results_close(self, module_fn: ModuleFn, shape, dtype):
+  @test_utils.combined_named_parameters(
+      descriptors.ALL_MODULES,
+      test_utils.named_bools('np_inputs'),
+      test_utils.named_bools('np_params'),
+      test_utils.named_bools('close_over_params'))
+  def test_numpy_and_jax_results_close(
+      self,
+      module_fn: ModuleFn,
+      shape: Tuple[int, ...],
+      dtype: jnp.dtype,
+      np_params: bool,
+      np_inputs: bool,
+      close_over_params: bool,
+  ):
+    if not (np_params or np_inputs):
+      self.skipTest('Pure JAX variants tested elsewhere')
 
     f = hk.transform_with_state(lambda x: module_fn()(x))  # pylint: disable=unnecessary-lambda
 
     rng = jax.random.PRNGKey(42)
     x = jnp.ones(shape, dtype)
     params, state = f.init(rng, x)
-    out, new_state = f.apply(params, state, rng, x)
+    if close_over_params:
+      apply_fn = functools.partial(f.apply, params, state)
+      out, new_state = jax.jit(apply_fn)(rng, x)
+    else:
+      out, new_state = jax.jit(f.apply)(params, state, rng, x)
 
-    np_rng = np.asarray(rng)
-    np_x = np.asarray(x)
+    if np_inputs:
+      rng, x = jax.device_get((rng, x))
 
-    with self.subTest('init'):
-      params2, state2 = f.init(np_rng, np_x)
-      jax.tree_multimap(np.testing.assert_allclose, params, params2)
-      jax.tree_multimap(
-          lambda x, y: np.testing.assert_allclose(x, y, atol=1e-9),
-          state, state2)
+      with self.subTest('init'):
+        params2, state2 = f.init(rng, x)
+        tree_assert_allclose(params, params2)
+        tree_assert_allclose(state, state2)
 
     with self.subTest('apply'):
-      np_params = jax.tree_map(np.asarray, params)
-      np_state = jax.tree_map(np.asarray, state)
-      out2, new_state2 = f.apply(np_params, np_state, np_rng, np_x)
-      jax.tree_multimap(np.testing.assert_allclose, out, out2)
-      jax.tree_multimap(
-          lambda x, y: np.testing.assert_allclose(x, y, atol=1e-9),
-          new_state, new_state2)
+      if np_params:
+        params, state = jax.device_get((params, state))
+
+      if close_over_params:
+        apply_fn = functools.partial(f.apply, params, state)
+        out2, new_state2 = jax.jit(apply_fn)(rng, x)
+      else:
+        out2, new_state2 = jax.jit(f.apply)(params, state, rng, x)
+
+      tree_assert_allclose(out, out2)
+      tree_assert_allclose(new_state, new_state2)
 
 
 if __name__ == '__main__':

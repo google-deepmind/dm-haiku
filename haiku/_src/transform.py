@@ -150,19 +150,20 @@ def without_apply_rng(f: TransformedT) -> TransformedT:
     def apply_fn(params, state, *args, **kwargs):
       check_rng_kwarg(kwargs)
       return f.apply(params, state, None, *args, **kwargs)
+    f_new = TransformedWithState(init=f.init, apply=apply_fn)
 
   elif isinstance(f, Transformed):
     def apply_fn(params, *args, **kwargs):
       check_rng_kwarg(kwargs)
       return f.apply(params, None, *args, **kwargs)
+    f_new = Transformed(init=f.init, apply=apply_fn)
 
   else:
     raise ValueError("Must be called with the result of `hk.transformed` or "
                      f"`hk.transformed_with_state`, actual {type(f)}")
 
-  tie_in_original_fn(f, f.init, apply_fn)
-
-  return TransformedWithState(init=f.init, apply=apply_fn)
+  tie_in_original_fn(f, f_new.init, f_new.apply)
+  return f_new
 
 
 # TODO(tomhennigan) Remove apply_rng.

@@ -32,6 +32,7 @@ flags.DEFINE_integer("batch_size", 128, "Size of the batch to train on.")
 flags.DEFINE_float("learning_rate", 0.001, "Learning rate for the optimizer.")
 flags.DEFINE_integer("training_steps", 5000, "Number of training steps to run.")
 flags.DEFINE_integer("eval_frequency", 100, "How often to evaluate the model.")
+flags.DEFINE_integer("random_seed", 42, "Random seed.")
 FLAGS = flags.FLAGS
 
 
@@ -42,8 +43,9 @@ MNIST_IMAGE_SHAPE: Sequence[int] = (28, 28, 1)
 
 
 def load_dataset(split: str, batch_size: int) -> Generator[Batch, None, None]:
-  ds = tfds.load("binarized_mnist", split=split, shuffle_files=True)
-  ds = ds.shuffle(buffer_size=10 * batch_size)
+  ds = tfds.load("binarized_mnist", split=split, shuffle_files=True,
+                 read_config=tfds.ReadConfig(shuffle_seed=FLAGS.random_seed))
+  ds = ds.shuffle(buffer_size=10 * batch_size, seed=FLAGS.random_seed)
   ds = ds.batch(batch_size)
   ds = ds.prefetch(buffer_size=5)
   ds = ds.repeat()
@@ -162,6 +164,8 @@ def kl_gaussian(mean: jnp.ndarray, var: jnp.ndarray) -> jnp.ndarray:
 
 
 def main(_):
+  FLAGS.alsologtostderr = True
+
   model = hk.transform(lambda x: VariationalAutoEncoder()(x))  # pylint: disable=unnecessary-lambda
   optimizer = optax.adam(FLAGS.learning_rate)
 
@@ -189,7 +193,7 @@ def main(_):
     new_params = optax.apply_updates(params, updates)
     return new_params, new_opt_state
 
-  rng_seq = hk.PRNGSequence(42)
+  rng_seq = hk.PRNGSequence(FLAGS.random_seed)
   params = model.init(next(rng_seq), np.zeros((1, *MNIST_IMAGE_SHAPE)))
   opt_state = optimizer.init(params)
 

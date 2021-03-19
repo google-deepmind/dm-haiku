@@ -364,6 +364,17 @@ class TransformTest(parameterized.TestCase):
     self.assertNotEqual(without_decorator_out, expected_output)
     self.assertEqual(with_decorator_out, expected_output)
 
+  def test_without_apply_rng_output_type(self):
+    def f():
+      w = base.get_parameter("w", [], init=jnp.zeros)
+      return w
+
+    f = transform.without_apply_rng(transform.transform_with_state(f))
+    self.assertIsInstance(f, transform.TransformedWithState)
+
+    f = transform.without_apply_rng(transform.transform(f))
+    self.assertIsInstance(f, transform.Transformed)
+
   def test_new_context(self):
     with base.new_context() as ctx:
       pass

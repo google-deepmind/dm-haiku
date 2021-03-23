@@ -22,7 +22,6 @@ from haiku._src import initializers
 from haiku._src import module
 import jax
 import jax.numpy as jnp
-import numpy as np
 
 # If you are forking replace this with `import haiku as hk`.
 hk = types.ModuleType("haiku")
@@ -65,13 +64,13 @@ class MultiHeadAttention(hk.Module):
       value: jnp.ndarray,
       mask: Optional[jnp.ndarray] = None,
   ) -> jnp.ndarray:
-    """Compute (optionally masked) MHA with queries, keys & values."""
+    """Compute (optionally masked) MHA with batched queries, keys & values."""
     query_heads = self._linear_projection(query, self.query_size, "query")
     key_heads = self._linear_projection(key, self.key_size, "key")
     value_heads = self._linear_projection(value, self.value_size, "value")
 
     attention_logits = jnp.einsum("bthd,bThd->bhtT", query_heads, key_heads)
-    sqrt_key_size = np.sqrt(self.key_size).astype(key.dtype)
+    sqrt_key_size = jnp.sqrt(self.key_size).astype(key.dtype)
     attention_logits = attention_logits / sqrt_key_size
     if mask is not None:
       attention_logits -= 1e10 * (1. - mask)

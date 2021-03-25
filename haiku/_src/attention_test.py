@@ -19,7 +19,9 @@ from absl.testing import parameterized
 
 from haiku._src import attention
 from haiku._src import test_utils
+from haiku._src.transform import transform
 
+import jax
 import jax.numpy as jnp
 
 
@@ -59,6 +61,26 @@ class MultiHeadAttentionTest(parameterized.TestCase):
     self.assertEqual(mha.query_size, mha.key_size)
     self.assertEqual(mha.value_size, mha.key_size)
     self.assertEqual(mha.model_size, mha.key_size * mha.num_heads)
+
+  def test_vmap(self):
+    def f(query, key, value):
+      return attention.MultiHeadAttention(
+        key_size=3, num_heads=5, w_init_scale=1.0)(query, key, value)
+    rng = jax.random.PRNGKey(42)
+    init, apply = transform(f)
+    # Transform as single-instance function:
+    query = key = value = jnp.zeros((7, 11))
+    params = init(rng, query, key, value)
+    y = apply(params, rng, query, key, value)
+    self.assertEqual(y.shape, (7, 15,))
+    # Use vmap to get batched function:
+    vapply = jax.vmap(apply, in_axes=(None, 0, 0, 0, 0), out_axes=0)
+    query = key = value = jnp.zeros((13, 7, 11))  # prepend batch axis
+    rngs = jax.random.split(rng, 13)  # give each instance its own rng
+    y = vapply(params, rngs, query, key, value)
+    self.assertEqual(y.shape, (13, 7, 15))
+
+
 
 
 if __name__ == "__main__":

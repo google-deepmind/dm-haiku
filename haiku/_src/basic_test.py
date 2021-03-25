@@ -169,7 +169,7 @@ class BasicTest(parameterized.TestCase):
     self.assertIsNone(undocumented.__call__.__doc__)
 
 
-class LinearTest(absltest.TestCase):
+class LinearTest(parameterized.TestCase):
 
   def test_linear_rank1(self):
 
@@ -216,6 +216,27 @@ class LinearTest(absltest.TestCase):
     np.testing.assert_array_almost_equal(
         apply_fn(params, None), jnp.zeros((5, 6)))
 
+  @parameterized.parameters(None,
+                            jax.lax.Precision.DEFAULT,
+                            jax.lax.Precision.HIGH,
+                            jax.lax.Precision.HIGHEST)
+  def test_precision(self, precision):
+
+    def f(x):
+      return basic.Linear(1)(x, precision=precision)
+
+    f = transform.transform(f)
+    rng = jax.random.PRNGKey(42)
+    x = np.ones([1, 1])
+    params = f.init(rng, x)
+    c = jax.xla_computation(lambda x: f.apply(params, None, x))(x)
+    hlo = c.as_hlo_text()
+    op_line = next(l for l in hlo.split("\n") if "dot(" in l)
+    if precision is not None and precision != jax.lax.Precision.DEFAULT:
+      name = str(precision).lower()
+      self.assertRegex(op_line, f"operand_precision={{{name},{name}}}")
+    else:
+      self.assertNotIn("operand_precision", op_line)
 
 if __name__ == "__main__":
   absltest.main()

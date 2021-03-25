@@ -20,6 +20,7 @@ from haiku._src import conv
 from haiku._src import initializers
 from haiku._src import test_utils
 from haiku._src import transform
+import jax
 from jax import random
 import jax.numpy as jnp
 import numpy as np
@@ -818,6 +819,34 @@ class Conv3DTransposeTest(parameterized.TestCase):
     out = np.squeeze(out, axis=(0, 4))
     np.testing.assert_allclose(out, expected_out, rtol=1e-5)
 
+PRECISIONS = (None, jax.lax.Precision.DEFAULT, jax.lax.Precision.HIGH,
+              jax.lax.Precision.HIGHEST)
+NAMED_PRECISIONS = ((str(p), p) for p in PRECISIONS)
+
+
+class PrecisionTest(parameterized.TestCase):
+
+  @test_utils.combined_named_parameters(
+      NAMED_PRECISIONS,
+      (("ConvND", conv.ConvND), ("ConvNDTranspose", conv.ConvNDTranspose)))
+  def test_precision(self, precision, cls):
+
+    def f(x):
+      net = cls(2, output_channels=3, kernel_shape=3, padding="VALID")
+      return net(x, precision=precision)
+
+    f = transform.transform(f)
+    rng = jax.random.PRNGKey(42)
+    x = jnp.zeros([2, 16, 16, 4])
+    params = f.init(rng, x)
+    c = jax.xla_computation(lambda x: f.apply(params, None, x))(x)
+    hlo = c.as_hlo_text()
+    op_line = next(l for l in hlo.split("\n") if "convolution(" in l)
+    if precision is not None and precision != jax.lax.Precision.DEFAULT:
+      name = str(precision).lower()
+      self.assertRegex(op_line, f"operand_precision={{{name},{name}}}")
+    else:
+      self.assertNotIn("operand_precision", op_line)
 
 if __name__ == "__main__":
   absltest.main()

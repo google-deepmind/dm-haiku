@@ -150,12 +150,19 @@ class ConvND(hk.Module):
     else:
       self.padding = hk.pad.create_from_tuple(padding, self.num_spatial_dims)
 
-  def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:
+  def __call__(
+      self,
+      inputs: jnp.ndarray,
+      *,
+      precision: Optional[lax.Precision] = None,
+  ) -> jnp.ndarray:
     """Connects ``ConvND`` layer.
 
     Args:
       inputs: An array of shape ``[spatial_dims, C]`` and rank-N+1 if unbatched,
         or an array of shape ``[N, spatial_dims, C]`` and rank-N+2 if batched.
+      precision: Optional :class:`jax.lax.Precision` to pass to
+        :func:`jax.lax.conv_general_dilated`.
 
     Returns:
       An array of shape ``[spatial_dims, output_channels]`` and rank-N+1 if
@@ -201,7 +208,8 @@ class ConvND(hk.Module):
                                    lhs_dilation=self.lhs_dilation,
                                    rhs_dilation=self.kernel_dilation,
                                    dimension_numbers=self.dimension_numbers,
-                                   feature_group_count=self.feature_group_count)
+                                   feature_group_count=self.feature_group_count,
+                                   precision=precision)
 
     if self.with_bias:
       if self.channel_index == -1:
@@ -527,12 +535,19 @@ class ConvNDTranspose(hk.Module):
         num_spatial_dims, channels_last=(self.channel_index == -1),
         transpose=True)
 
-  def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:
+  def __call__(
+      self,
+      inputs: jnp.ndarray,
+      *,
+      precision: Optional[lax.Precision] = None,
+  ) -> jnp.ndarray:
     """Computes the transposed convolution of the input.
 
     Args:
       inputs: An array of shape ``[spatial_dims, C]`` and rank-N+1 if unbatched,
         or an array of shape ``[N, spatial_dims, C]`` and rank-N+2 if batched.
+      precision: Optional :class:`jax.lax.Precision` to pass to
+        :func:`jax.lax.conv_transpose`.
 
     Returns:
       An array of shape ``[spatial_dims, output_channels]`` and rank-N+1 if
@@ -578,7 +593,8 @@ class ConvNDTranspose(hk.Module):
                              w,
                              strides=self.stride,
                              padding=padding,
-                             dimension_numbers=self.dimension_numbers)
+                             dimension_numbers=self.dimension_numbers,
+                             precision=precision)
 
     if self.with_bias:
       if self.channel_index == -1:

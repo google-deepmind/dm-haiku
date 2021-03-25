@@ -23,6 +23,7 @@ from haiku._src import initializers
 from haiku._src import module
 from haiku._src.typing import PRNGKey
 import jax
+from jax import lax
 import jax.numpy as jnp
 import numpy as np
 
@@ -156,7 +157,12 @@ class Linear(hk.Module):
     self.w_init = w_init
     self.b_init = b_init or jnp.zeros
 
-  def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:
+  def __call__(
+      self,
+      inputs: jnp.ndarray,
+      *,
+      precision: Optional[lax.Precision] = None,
+  ) -> jnp.ndarray:
     """Computes a linear transform of the input."""
     if not inputs.shape:
       raise ValueError("Input must not be scalar.")
@@ -171,7 +177,7 @@ class Linear(hk.Module):
       w_init = hk.initializers.TruncatedNormal(stddev=stddev)
     w = hk.get_parameter("w", [input_size, output_size], dtype, init=w_init)
 
-    out = jnp.dot(inputs, w)
+    out = jnp.dot(inputs, w, precision=precision)
 
     if self.with_bias:
       b = hk.get_parameter("b", [self.output_size], dtype, init=self.b_init)

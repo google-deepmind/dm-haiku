@@ -27,8 +27,10 @@ hk_py_test(
     deps = [
         ":attention",
         ":test_utils",
+        ":transform",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
+        # pip: jax
         # pip: numpy
     ],
 )

@@ -45,7 +45,6 @@ class MultiHeadAttention(hk.Module):
       num_heads: int,
       key_size: int,
       w_init_scale: float,
-      query_size: Optional[int] = None,
       value_size: Optional[int] = None,
       model_size: Optional[int] = None,
       name: Optional[str] = None,
@@ -53,7 +52,6 @@ class MultiHeadAttention(hk.Module):
     super().__init__(name=name)
     self.num_heads = num_heads
     self.key_size = key_size
-    self.query_size = query_size or key_size
     self.value_size = value_size or key_size
     self.model_size = model_size or key_size * num_heads
     self.w_init = hk.initializers.VarianceScaling(w_init_scale)
@@ -66,7 +64,7 @@ class MultiHeadAttention(hk.Module):
       mask: Optional[jnp.ndarray] = None,
   ) -> jnp.ndarray:
     """Compute (optionally masked) MHA with queries, keys & values."""
-    query_heads = self._linear_projection(query, self.query_size, "query")
+    query_heads = self._linear_projection(query, self.key_size, "query")
     key_heads = self._linear_projection(key, self.key_size, "key")
     value_heads = self._linear_projection(value, self.value_size, "value")
 
@@ -79,7 +77,7 @@ class MultiHeadAttention(hk.Module):
     attn_weights = jax.nn.softmax(attn_logits)
     attn = jnp.einsum("...htT,...Thd->...thd", attn_weights, value_heads)
     # Concatenate attention matrix of all heads into a single vector.
-    attn_vec = jnp.reshape(attn, (*query.shape[:-1], -1))
+    attn_vec = jnp.reshape(attn, (*value.shape[:-1], -1))
 
     return hk.Linear(self.model_size, w_init=self.w_init)(attn_vec)
 

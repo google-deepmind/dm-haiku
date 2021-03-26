@@ -58,7 +58,6 @@ class MultiHeadAttentionTest(parameterized.TestCase):
   def test_default_sizes(self):
     mha = attention.MultiHeadAttention(
         key_size=3, num_heads=5, w_init_scale=1.0)
-    self.assertEqual(mha.query_size, mha.key_size)
     self.assertEqual(mha.value_size, mha.key_size)
     self.assertEqual(mha.model_size, mha.key_size * mha.num_heads)
 

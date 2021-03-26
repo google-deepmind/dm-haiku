@@ -390,6 +390,19 @@ class StatefulTest(parameterized.TestCase):
     self.assertEqual(y, jnp.square(upper - 1))
     self.assertEqual(m.count, upper - lower)
 
+  @test_utils.transform_and_run
+  def test_fori_traced_length(self):
+    m = CountingModule()
+
+    def f(lower, upper):
+      y = stateful.fori_loop(lower, upper, lambda i, x: m(i), 2)
+      return y
+
+    # Because of the jit, lower and upper will be tracers.
+    out = stateful.jit(f)(0, 3)
+    self.assertEqual(out, 4)
+    self.assertEqual(m.count, 3)
+
   def test_vmap(self):
     def g(x):
       return CountingModule()(x)

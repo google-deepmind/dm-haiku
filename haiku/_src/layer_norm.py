@@ -140,7 +140,8 @@ class LayerNorm(hk.Module):
     offset = jnp.broadcast_to(offset, inputs.shape)
     mean = jnp.broadcast_to(mean, inputs.shape)
 
-    inv = scale * jax.lax.rsqrt(variance + self.eps)
+    eps = jax.lax.convert_element_type(self.eps, variance.dtype)
+    inv = scale * jax.lax.rsqrt(variance + eps)
     return inv * (inputs - mean) + offset
 
 

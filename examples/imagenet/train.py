@@ -261,6 +261,10 @@ def main(argv):
       bfloat16=FLAGS.train_bfloat16,
       transpose=FLAGS.dataset_transpose)
 
+  if jax.default_backend() == 'gpu':
+    # TODO(tomhennigan): This could be removed if XLA:GPU's allocator changes.
+    train_dataset = dataset.double_buffer(train_dataset)
+
   # For initialization we need the same random key on each device.
   rng = jax.random.PRNGKey(FLAGS.train_init_random_seed)
   rng = jnp.broadcast_to(rng, (local_device_count,) + rng.shape)

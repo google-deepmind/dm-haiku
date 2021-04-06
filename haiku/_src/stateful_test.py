@@ -157,6 +157,47 @@ class StatefulTest(parameterized.TestCase):
     with self.assertRaises(ValueError, msg="Use jax.remat() instead"):
       stateful.remat(lambda x: x**2)(x)
 
+  @test_utils.combined_named_parameters(
+      test_utils.named_bools("jax_remat"),
+      test_utils.named_bools("inline_hk_remat"))
+  def test_create_module_inside_remat(self, jax_remat, inline_hk_remat):
+    log = []
+    def forward(x):
+      def create_and_use_layer(x):
+        m = SquareModule(name="layer")
+        log.append(m.module_name)
+        return m(x)
+
+      if not inline_hk_remat:
+        create_and_use_layer = stateful.remat(create_and_use_layer)
+
+      for _ in range(2):
+        if inline_hk_remat:
+          x = stateful.remat(create_and_use_layer)(x)
+        else:
+          x = create_and_use_layer(x)
+      return x
+
+    def reset():
+      del log[:]
+      self.assertEmpty(log)
+
+    # Test forward.
+    x = jnp.float32(3)
+    forward = transform.transform_with_state(forward)
+    params, state = forward.init(None, x)
+    self.assertEqual(log, ["layer", "layer_1"])
+    reset()
+
+    # Test backward.
+    for _ in range(3):
+      grad_fn = jax.grad(lambda x: forward.apply(params, state, None, x)[0])
+      if jax_remat:
+        grad_fn = jax.remat(grad_fn)
+      self.assertEqual(int(grad_fn(x)), int(4 * (x ** 3)))
+      self.assertEqual(log, ["layer", "layer_1"])
+      reset()
+
   @parameterized.parameters(True, False)
   def test_cond(self, single_arg):
     def f(x):

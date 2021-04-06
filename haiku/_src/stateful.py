@@ -64,7 +64,7 @@ def update_internal_state(state: InternalState):
     frame.rng_stack.peek().replace_internal_state(rng)
 
 
-def temporary_internal_state(state: InternalState):
+def temporary_internal_state(state: InternalState, *, share_python_state=False):
   """Pushes a temporary copy of the internal state."""
   state = copy_structure(state)
   rng = state.rng
@@ -78,7 +78,8 @@ def temporary_internal_state(state: InternalState):
   if state is None:
     state = current_state.state
   frame = base.current_frame()
-  frame = frame.evolve(params=params, state=state, rng=rng)
+  frame = frame.evolve(params=params, state=state, rng=rng,
+                       decoupled=(not share_python_state))
   return base.frame_stack(frame)
 
 
@@ -346,7 +347,7 @@ def thread_hk_state_in_kwargs(dec_fun):
     @functools.wraps(fun)
     def stateful_fun(*args, **kwargs):
       state_in = kwargs.pop("hk_state")
-      with temporary_internal_state(state_in):
+      with temporary_internal_state(state_in, share_python_state=True):
         out = fun(*args, **kwargs)
         return out, difference(state_in, internal_state())
 

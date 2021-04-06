@@ -84,16 +84,25 @@ class Frame(NamedTuple):
     frame.used_names_stack.push(set())
     return frame
 
-  def evolve(self, params, state, rng) -> "Frame":
+  def evolve(self, params, state, rng, *, decoupled=True) -> "Frame":
+    """Creates a new frame with JAX state as passed in."""
     rng_stack = self.rng_stack.clone()
     rng_stack.push(rng)
+    if decoupled:
+      module_stack = self.module_stack.clone()
+      counter_stack = self.counter_stack.map(collections.Counter)
+      used_names_stack = self.used_names_stack.map(set)
+    else:
+      module_stack = self.module_stack
+      counter_stack = self.counter_stack
+      used_names_stack = self.used_names_stack
     return Frame(params=params,
                  state=state,
                  rng_stack=rng_stack,
                  freeze_params=self.freeze_params,
-                 module_stack=self.module_stack.clone(),
-                 counter_stack=self.counter_stack.map(collections.Counter),
-                 used_names_stack=self.used_names_stack.map(set))
+                 module_stack=module_stack,
+                 counter_stack=counter_stack,
+                 used_names_stack=used_names_stack)
 
   @contextlib.contextmanager
   def module(self, module_state: ModuleState):

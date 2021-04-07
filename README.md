@@ -25,7 +25,7 @@ Documentation on Haiku can be found at https://dm-haiku.readthedocs.io/.
 **Disambiguation:** if you are looking for Haiku the operating system then
 please see https://haiku-os.org/.
 
-## Overview
+## Overview<a id="overview"></a>
 
 [JAX] is a numerical computing library that combines NumPy, automatic
 differentiation, and first-class GPU/TPU support.
@@ -44,7 +44,7 @@ other modules, and methods that apply functions on user inputs.
 "impure" modules into pure functions that can be used with `jax.jit`,
 `jax.grad`, `jax.pmap`, etc.
 
-## Why Haiku?
+## Why Haiku?<a id="why-haiku"></a>
 
 There are a number of neural network libraries for JAX. Why should you choose
 Haiku?
@@ -89,7 +89,7 @@ Haiku?
   passed into the top-level transformed function, and are thus safe to use with
   JAX program transformations.
 
-## Quickstart
+## Quickstart<a id="quickstart"></a>
 
 Let's take a look at an example neural network and loss function.
 
@@ -195,7 +195,7 @@ The
 [MNIST example](https://github.com/deepmind/dm-haiku/tree/master/examples/mnist.py)
 is a good place to start.
 
-## Installation
+## Installation<a id="installation"></a>
 
 Haiku is written in pure Python, but depends on C++ code via JAX.
 
@@ -217,7 +217,7 @@ Our examples rely on additional libraries (e.g. [bsuite](https://github.com/deep
 $ pip install -r examples/requirements.txt
 ```
 
-## User manual
+## User manual<a id="user-manual"></a>
 
 ### Writing your own modules
 
@@ -410,7 +410,7 @@ for _ in range(10):
 For a more complete look at distributed Haiku training, take a look at our
 [ResNet-50 on ImageNet example](https://github.com/deepmind/dm-haiku/tree/master/examples/imagenet/).
 
-## Citing Haiku
+## Citing Haiku<a id="citing-haiku"></a>
 
 To cite this repository:
 

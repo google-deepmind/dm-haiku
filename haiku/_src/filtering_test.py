@@ -14,8 +14,10 @@
 # ==============================================================================
 """Tests for haiku._src.filtering."""
 
+import collections
 import itertools
 import re
+import types
 from typing import Any, Callable, Sequence, Set, Tuple
 
 from absl.testing import absltest
@@ -278,6 +280,15 @@ class FilteringTest(parameterized.TestCase):
   @test_utils.with_environ("HAIKU_FLATMAPPING", "1")
   def test_output_type_env_var_1(self):
     self.assert_output_type(data_structures.FlatMapping)
+
+  @test_utils.with_environ("HAIKU_FLATMAPPING", "0")
+  def test_merge_different_mappings(self):
+    a = collections.defaultdict(dict)
+    a["foo"]["bar"] = 1
+    b = {"foo": {"baz": 2}}
+    c = types.MappingProxyType({"foo": {"bat": 3}})
+    d = filtering.merge(a, b, c)
+    self.assertEqual(d, {"foo": {"bar": 1, "baz": 2, "bat": 3}})
 
   def assert_output_type(self, out_cls):
     def assert_type_recursive(s):

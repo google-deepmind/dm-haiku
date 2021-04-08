@@ -181,7 +181,9 @@ def map(  # pylint: disable=redefined-builtin
   return data_structures.to_haiku_dict(out)
 
 
-def merge(*structures: T) -> T:
+def merge(
+    *structures: Mapping[str, Mapping[str, Any]]
+) -> Mapping[str, Mapping[str, Any]]:
   """Merges multiple input structures.
 
   >>> weights = {'linear': {'w': None}}

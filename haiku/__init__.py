@@ -79,6 +79,7 @@ from haiku._src.recurrent import static_unroll
 from haiku._src.recurrent import VanillaRNN
 from haiku._src.reshape import Flatten
 from haiku._src.reshape import Reshape
+from haiku._src.rms_norm import RMSNorm
 from haiku._src.spectral_norm import SNParamsTree
 from haiku._src.spectral_norm import SpectralNorm
 from haiku._src.stateful import cond
@@ -143,6 +144,7 @@ __all__ = (
     "RNNCore",
     "ResetCore",
     "Reshape",
+    "RMSNorm",
     "SNParamsTree",
     "Sequential",
     "SpectralNorm",

@@ -9,7 +9,6 @@ hk_py_library(
     srcs = ["descriptors.py"],
     deps = [
         "//haiku",
-        "//haiku/_src:typing",
         # pip: jax
         # pip: numpy
     ],

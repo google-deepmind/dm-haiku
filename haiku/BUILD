@@ -44,6 +44,7 @@ py_library(
         "//haiku/_src:random",
         "//haiku/_src:recurrent",
         "//haiku/_src:reshape",
+        "//haiku/_src:rms_norm",
         "//haiku/_src:spectral_norm",
         "//haiku/_src:stateful",
         "//haiku/_src:summarise",

@@ -1,0 +1,13 @@
+{
+  "module": [
+    "RMSNorm(axis=1)"
+  ],
+  "input": "f32[8, 3, 2]",
+  "param_size": 2,
+  "param_bytes": 8,
+  "params": {
+    "rms_norm": {
+      "scale": "f32[2]"
+    }
+  }
+}

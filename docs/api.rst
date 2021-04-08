@@ -321,6 +321,7 @@ Normalization
     GroupNorm
     InstanceNorm
     LayerNorm
+    RMSNorm
     SpectralNorm
     ExponentialMovingAverage
     SNParamsTree
@@ -348,6 +349,12 @@ LayerNorm
 ~~~~~~~~~
 
 .. autoclass:: LayerNorm
+   :members:
+
+RMSNorm
+~~~~~~~~~
+
+.. autoclass:: RMSNorm
    :members:
 
 SpectralNorm

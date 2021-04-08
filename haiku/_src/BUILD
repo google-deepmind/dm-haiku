@@ -717,3 +717,32 @@ hk_py_test(
         # pip: numpy
     ],
 )
+
+hk_py_library(
+    name = "rms_norm",
+    srcs = ["rms_norm.py"],
+    srcs_version = "PY3",
+    deps = [
+        ":base",
+        ":initializers",
+        ":module",
+        # pip: jax
+    ],
+)
+
+hk_py_test(
+    name = "rms_norm_test",
+    srcs = ["rms_norm_test.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        ":initializers",
+        ":rms_norm",
+        ":test_utils",
+        ":transform",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        # pip: jax
+        # pip: numpy
+    ],
+)

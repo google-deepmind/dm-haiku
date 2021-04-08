@@ -165,6 +165,10 @@ BATCH_MODULES = (
             num_inputs=3),
         shape=(BATCH_SIZE, 3, 2)),
     ModuleDescriptor(
+        name="RMSNorm",
+        create=lambda: hk.RMSNorm(1),
+        shape=(BATCH_SIZE, 3, 2)),
+    ModuleDescriptor(
         name="SpectralNorm",
         create=lambda: hk.SpectralNorm(),
         shape=(BATCH_SIZE, 3, 2)),

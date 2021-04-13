@@ -105,7 +105,7 @@ def create_from_tuple(
     raise TypeError(
         f"Padding {padding} must be a Tuple[int, int] or sequence of length 1"
         f" or sequence of length {n}.")
-  padding = tuple(padding)  # type: Sequence[Tuple[int, int]]
+  padding = tuple(padding)  # type: Sequence[Tuple[int, int]]  # pytype: disable=annotation-type-mismatch
   return padding
 
 

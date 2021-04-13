@@ -145,7 +145,7 @@ def log_used_modules(
     return next_f(*args, **kwargs)
 
   idx = len(used_modules)
-  used_modules.append(None)
+  used_modules.append(None)  # pytype: disable=container-type-mismatch
   out = next_f(*args, **kwargs)
   used_modules[idx] = MethodInvocation(
       module_details=ModuleDetails.of(context.module, context.method_name),

@@ -44,6 +44,7 @@ class MultiHeadAttention(hk.Module):
       self,
       num_heads: int,
       key_size: int,
+      # TODO(romanring, tycai): migrate to a more generic `w_init` initializer.
       w_init_scale: float,
       value_size: Optional[int] = None,
       model_size: Optional[int] = None,
@@ -72,7 +73,8 @@ class MultiHeadAttention(hk.Module):
     sqrt_key_size = np.sqrt(self.key_size).astype(key.dtype)
     attn_logits = attn_logits / sqrt_key_size
     if mask is not None:
-      attn_logits -= 1e10 * (1. - mask)
+      assert mask.shape == attn_logits.shape
+      attn_logits = jnp.where(mask, attn_logits, -1e30)
 
     attn_weights = jax.nn.softmax(attn_logits)
     attn = jnp.einsum("...htT,...Thd->...thd", attn_weights, value_heads)

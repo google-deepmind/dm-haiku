@@ -304,7 +304,7 @@ def dropout(rng: PRNGKey, rate: float, x: jnp.ndarray) -> jnp.ndarray:
   Args:
     rng: A JAX random key.
     rate: Probability that each element of ``x`` is discarded. Must be a scalar
-    in the range ``[0, 1)``.
+      in the range ``[0, 1)``.
     x: The value to be dropped out.
 
   Returns:

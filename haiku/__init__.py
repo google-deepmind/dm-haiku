@@ -17,6 +17,7 @@
 from haiku import data_structures
 from haiku import experimental
 from haiku import initializers
+from haiku import mixed_precision
 from haiku import nets
 from haiku import pad
 from haiku import testing
@@ -168,6 +169,7 @@ __all__ = (
     "jit",
     "max_pool",
     "maybe_next_rng_key",
+    "mixed_precision",
     "multinomial",
     "nets",
     "next_rng_key",

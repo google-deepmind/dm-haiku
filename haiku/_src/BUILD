@@ -325,6 +325,32 @@ hk_py_test(
 )
 
 hk_py_library(
+    name = "mixed_precision",
+    srcs = ["mixed_precision.py"],
+    deps = [
+        ":base",
+        ":data_structures",
+        ":module",
+        # pip: jmp
+    ],
+)
+
+hk_py_test(
+    name = "mixed_precision_test",
+    srcs = ["mixed_precision_test.py"],
+    deps = [
+        ":base",
+        ":mixed_precision",
+        ":module",
+        ":transform",
+        # pip: absl/testing:absltest
+        # pip: jax
+        # pip: jmp
+        # pip: numpy
+    ],
+)
+
+hk_py_library(
     name = "pad",
     srcs = ["pad.py"],
     deps = [":utils"],

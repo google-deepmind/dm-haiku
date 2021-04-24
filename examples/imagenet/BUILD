@@ -14,6 +14,7 @@ hk_py_binary(
         # pip: absl/logging
         "//haiku",
         # pip: jax
+        # pip: jmp
         # pip: numpy
         # pip: optax
         # pip: tree

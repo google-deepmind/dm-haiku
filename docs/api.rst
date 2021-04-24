@@ -864,6 +864,29 @@ vmap
 
 .. autofunction:: vmap
 
+Mixed Precision
+===============
+
+.. automodule:: haiku.mixed_precision
+
+Automatic Mixed Precision
+-------------------------
+
+.. autosummary::
+
+    set_policy
+    clear_policy
+
+set_policy
+~~~~~~~~~~
+
+.. autofunction:: set_policy
+
+clear_policy
+~~~~~~~~~~~~
+
+.. autofunction:: clear_policy
+
 🚧 Experimental
 ===============
 

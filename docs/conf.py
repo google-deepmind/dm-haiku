@@ -140,6 +140,7 @@ import chex
 import haiku as hk
 import jax
 import jax.numpy as jnp
+import jmp
 
 # Use dict instead of FlatMapping (soon to be the default).
 os.environ["HAIKU_FLATMAPPING"] = "0"

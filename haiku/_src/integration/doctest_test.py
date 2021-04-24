@@ -30,6 +30,7 @@ import haiku as hk
 from haiku._src import test_utils
 import jax
 import jax.numpy as jnp
+import jmp
 
 
 class DoctestTest(parameterized.TestCase):
@@ -57,6 +58,7 @@ class DoctestTest(parameterized.TestCase):
               "hk": hk,
               "jnp": jnp,
               "jax": jax,
+              "jmp": jmp,
           })
       tests_symbols = ", ".join(module.__test__.keys())
       if num_attempted == 0:

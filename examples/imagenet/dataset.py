@@ -15,6 +15,8 @@
 """ImageNet dataset with typical pre-processing."""
 
 import enum
+import itertools as it
+import types
 from typing import Generator, Iterable, Mapping, Optional, Sequence, Text, Tuple
 
 import jax
@@ -48,12 +50,16 @@ class Split(enum.Enum):
             Split.VALID: 10000, Split.TEST: 50000}[self]
 
 
-def check_tfds_version():
-  tfds_version = version.parse(tfds.version.__version__)
-  required = version.parse('4.2.0')
-  if tfds_version < required:
-    raise ValueError(f'tensorflow_datasets >= {required} is required, you '
-                     f'have {tfds_version}')
+def _check_min_version(mod: types.ModuleType, min_ver: str):
+  actual_ver = getattr(mod, '__version__')
+  if version.parse(actual_ver) < version.parse(min_ver):
+    raise ValueError(
+        f'{mod.__name__} >= {min_ver} is required, you have {actual_ver}')
+
+
+def check_versions():
+  _check_min_version(tf, '2.5.0')
+  _check_min_version(tfds, '4.2.0')
 
 
 def load(
@@ -61,10 +67,25 @@ def load(
     *,
     is_training: bool,
     batch_dims: Sequence[int],
-    bfloat16: bool = False,
+    dtype: jnp.dtype = jnp.float32,
     transpose: bool = False,
+    zeros: bool = False,
 ) -> Generator[Batch, None, None]:
   """Loads the given split of the dataset."""
+  if zeros:
+    h, w, c = 224, 224, 3
+    if transpose:
+      image_dims = (*batch_dims[:-1], h, w, c, batch_dims[0])
+    else:
+      image_dims = (*batch_dims, h, w, c)
+    batch = {'images': np.zeros(image_dims, dtype=dtype),
+             'labels': np.zeros(batch_dims, dtype=np.uint32)}
+    if is_training:
+      yield from it.repeat(batch)
+    else:
+      num_batches = split.num_examples // np.prod(batch_dims)
+      yield from it.repeat(batch, num_batches)
+
   if is_training:
     start, end = _shard(split, jax.host_id(), jax.host_count())
   else:
@@ -97,8 +118,6 @@ def load(
 
   def preprocess(example):
     image = _preprocess_image(example['image'], is_training)
-    if bfloat16:
-      image = tf.cast(image, tf.bfloat16)
     label = tf.cast(example['label'], tf.int32)
     return {'images': image, 'labels': label}
 
@@ -115,7 +134,7 @@ def load(
 
   def cast_fn(batch):
     batch = dict(**batch)
-    batch['images'] = tf.cast(batch['images'], tf.bfloat16)
+    batch['images'] = tf.cast(batch['images'], tf.dtypes.as_dtype(dtype))
     return batch
 
   for i, batch_size in enumerate(reversed(batch_dims)):
@@ -126,20 +145,11 @@ def load(
       # NOTE: You may be tempted to move the casting earlier on in the pipeline,
       # but for bf16 some operations will end up silently placed on the TPU and
       # this causes stalls while TF and JAX battle for the accelerator.
-      if bfloat16:
+      if dtype != jnp.float32:
         ds = ds.map(cast_fn)
 
   ds = ds.prefetch(tf.data.experimental.AUTOTUNE)
-  ds = tfds.as_numpy(ds)
-
-  if bfloat16:
-    # JAX and TF disagree on the NumPy bfloat16 type so we need to reinterpret
-    # tf_bfloat16->jnp.bfloat16.
-    for batch in ds:
-      batch['images'] = batch['images'].view(jnp.bfloat16)
-      yield batch
-  else:
-    yield from ds
+  yield from tfds.as_numpy(ds)
 
 
 def _device_put_sharded(sharded_tree, devices):

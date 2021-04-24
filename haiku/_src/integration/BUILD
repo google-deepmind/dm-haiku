@@ -63,6 +63,7 @@ hk_py_test(
     name = "doctest_test",
     timeout = "long",
     srcs = ["doctest_test.py"],
+    cpu = False,  # Takes 10x longer than GPU/TPU.
     deps = [
         # pip: absl/logging
         # pip: absl/testing:absltest
@@ -71,6 +72,7 @@ hk_py_test(
         "//haiku",
         "//haiku/_src:test_utils",
         # pip: jax
+        # pip: jmp
     ],
 )
 

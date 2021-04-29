@@ -32,7 +32,11 @@ source "${VENV_DIR}/bin/activate"
 python --version
 
 # Install JAX.
-python -m pip install --upgrade pip setuptools
+# pip is fixed to 21.0.1 due to issue https://github.com/pypa/pip/pull/9835
+# TODO(lenamartens): unpin when next pip patch is released
+python -m pip install -U pip==21.0.1
+pip --version
+python -m pip install --upgrade setuptools
 python -m pip install -r requirements-jax.txt
 python -c 'import jax; print(jax.__version__)'
 

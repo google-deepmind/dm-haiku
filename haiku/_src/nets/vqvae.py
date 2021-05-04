@@ -85,10 +85,17 @@ class VectorQuantizer(hk.Module):
     self.num_embeddings = num_embeddings
     self.commitment_cost = commitment_cost
 
-    embedding_shape = [embedding_dim, num_embeddings]
+    self._embedding_shape = [embedding_dim, num_embeddings]
+    self._embedding_dtype = dtype
+
+  @property
+  def embeddings(self):
     initializer = hk.initializers.VarianceScaling(distribution="uniform")
-    self.embeddings = hk.get_parameter("embeddings", embedding_shape, dtype,
-                                       init=initializer)
+    return hk.get_parameter(
+        "embeddings",
+        self._embedding_shape,
+        self._embedding_dtype,
+        init=initializer)
 
   def __call__(self, inputs, is_training):
     """Connects the module to some inputs.
@@ -230,21 +237,28 @@ class VectorQuantizerEMA(hk.Module):
     self.epsilon = epsilon
     self.cross_replica_axis = cross_replica_axis
 
-    embedding_shape = [embedding_dim, num_embeddings]
-    initializer = hk.initializers.VarianceScaling(distribution="uniform")
-    embeddings = hk.get_state("embeddings", embedding_shape, dtype,
-                              init=initializer)
+    self._embedding_shape = [embedding_dim, num_embeddings]
+    self._dtype = dtype
 
-    self.ema_cluster_size = hk.ExponentialMovingAverage(decay=self.decay,
-                                                        name="ema_cluster_size")
-    self.ema_cluster_size.initialize([num_embeddings], dtype)
-
-    self.ema_dw = hk.ExponentialMovingAverage(decay=self.decay, name="ema_dw")
-    self.ema_dw.initialize(embeddings.shape, embeddings.dtype)
+    self._ema_cluster_size = hk.ExponentialMovingAverage(
+        decay=self.decay, name="ema_cluster_size")
+    self._ema_dw = hk.ExponentialMovingAverage(decay=self.decay, name="ema_dw")
 
   @property
   def embeddings(self):
-    return hk.get_state("embeddings")
+    initializer = hk.initializers.VarianceScaling(distribution="uniform")
+    return hk.get_state(
+        "embeddings", self._embedding_shape, self._dtype, init=initializer)
+
+  @property
+  def ema_cluster_size(self):
+    self._ema_cluster_size.initialize([self.num_embeddings], self._dtype)
+    return self._ema_cluster_size
+
+  @property
+  def ema_dw(self):
+    self._ema_dw.initialize(self._embedding_shape, self._dtype)
+    return self._ema_dw
 
   def __call__(self, inputs, is_training):
     """Connects the module to some inputs.

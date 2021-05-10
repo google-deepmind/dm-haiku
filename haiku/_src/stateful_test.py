@@ -634,6 +634,11 @@ class StatefulTest(parameterized.TestCase):
     np.testing.assert_allclose(out, some_shape_changing_fun(x), rtol=1e-4)
     self.assertEqual(shape_struct.shape, (in_shape[1],))
 
+  def test_eval_shape_no_transform(self):
+    x = jnp.array(3.)
+    with self.assertRaises(ValueError, msg="Use jax.eval_shape() instead"):
+      stateful.eval_shape(lambda x: x**2)(x)
+
   @test_utils.transform_and_run
   def test_temporary_state_resets_names(self):
     with stateful.temporary_internal_state(stateful.internal_state()):

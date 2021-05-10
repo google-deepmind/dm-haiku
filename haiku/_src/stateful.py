@@ -661,6 +661,11 @@ def named_call(
 
 def eval_shape(fun, *args, **kwargs):
   """Equivalent to jax.eval_shape with any changed Haiku state discarded."""
+  if not base.inside_transform():
+    raise ValueError(
+        "hk.eval_shape() should not be used outside of hk.transform(). "
+        "Use jax.eval_shape() instead.")
+
   with temporary_internal_state(internal_state()):
     out_shape = jax.eval_shape(fun, *args, **kwargs)
   # Don't update changed state

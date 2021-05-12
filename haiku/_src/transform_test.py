@@ -284,6 +284,19 @@ class TransformTest(parameterized.TestCase):
     with self.assertRaisesRegex(ValueError, "use.*transform_with_state"):
       init_fn(None)
 
+  def test_with_empty_state(self):
+    def f():
+      w = base.get_parameter("w", [], init=jnp.zeros)
+      return w
+
+    init_fn, apply_fn = transform.with_empty_state(
+        transform.transform(f))
+    params, state = init_fn(None)
+    self.assertEmpty(state)
+    out, state = apply_fn(params, state, None)
+    self.assertEqual(out, 0)
+    self.assertEmpty(state)
+
   def test_inline_use(self):
     def f():
       w = base.get_parameter("w", [], init=jnp.zeros)
@@ -425,6 +438,19 @@ class TransformTest(parameterized.TestCase):
     f = transform.transform(orig_f)
     if without is not None:
       f = without(f)
+    self.assertPersistsOriginal(f, orig_f)
+
+  @parameterized.parameters(
+      None,
+      lambda f: transform.with_empty_state(transform.without_state(f)))
+  def test_persists_original_fn_transform_with_state(self, without):
+    orig_f = lambda: None
+    f = transform.transform_with_state(orig_f)
+    if without is not None:
+      f = without(f)
+    self.assertPersistsOriginal(f, orig_f)
+
+  def assertPersistsOriginal(self, f, orig_f):
     self.assertIs(transform.get_original_fn(f), orig_f)
     self.assertIs(transform.get_original_fn(f.init), orig_f)
     self.assertIs(transform.get_original_fn(f.apply), orig_f)

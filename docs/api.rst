@@ -33,6 +33,11 @@ without_state
 
 .. autofunction:: without_state
 
+with_empty_state
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: with_empty_state
+
 Modules, Parameters and State
 -----------------------------
 

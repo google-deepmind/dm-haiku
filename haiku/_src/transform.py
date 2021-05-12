@@ -19,6 +19,7 @@ from typing import Any, Callable, Mapping, NamedTuple, Optional, Tuple, TypeVar,
 
 from haiku._src import analytics
 from haiku._src import base
+from haiku._src import data_structures
 from haiku._src import typing
 
 # If you are forking replace this with `import haiku as hk`.
@@ -131,6 +132,49 @@ def without_state(f: TransformedWithState) -> Transformed:
   tie_in_original_fn(f, init_fn, apply_fn)
 
   return Transformed(init=init_fn, apply=apply_fn)
+
+
+def with_empty_state(f: Transformed) -> TransformedWithState:
+  """Wraps a transformed tuple and passes empty state in/out.
+
+  The example below is equivalent to ``f = hk.transform_with_state(f)``:
+
+  >>> def f(x):
+  ...   mod = hk.Linear(10)
+  ...   return mod(x)
+  >>> f = hk.with_empty_state(hk.transform(f))
+  >>> rng = jax.random.PRNGKey(42)
+  >>> x = jnp.zeros([1, 1])
+  >>> params, state = f.init(rng, x)
+  >>> state
+  {}
+  >>> out, state = f.apply(params, state, rng, x)
+  >>> out
+  DeviceArray([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]], dtype=float32)
+  >>> state
+  {}
+
+  Args:
+    f: A transformed function.
+
+  Returns:
+    A transformed function that does accepts and returns state.
+  """
+
+  def init_fn(*args, **kwargs):
+    params = f.init(*args, **kwargs)
+    state = data_structures.to_haiku_dict({})
+    return params, state
+
+  def apply_fn(params, state, *args, **kwargs):
+    del state
+    out = f.apply(params, *args, **kwargs)
+    state = data_structures.to_haiku_dict({})
+    return out, state
+
+  tie_in_original_fn(f, init_fn, apply_fn)
+
+  return TransformedWithState(init=init_fn, apply=apply_fn)
 
 
 TransformedT = TypeVar("TransformedT", Transformed, TransformedWithState)

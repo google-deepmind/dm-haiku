@@ -64,6 +64,7 @@ hk_py_library(
     deps = [
         ":analytics",
         ":base",
+        ":data_structures",
         ":typing",
     ],
 )

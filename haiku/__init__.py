@@ -99,6 +99,7 @@ from haiku._src.transform import transform
 from haiku._src.transform import transform_with_state
 from haiku._src.transform import Transformed
 from haiku._src.transform import TransformedWithState
+from haiku._src.transform import with_empty_state
 from haiku._src.transform import without_apply_rng
 from haiku._src.transform import without_state
 from haiku._src.typing import Params
@@ -191,6 +192,7 @@ __all__ = (
     "value_and_grad",
     "vmap",
     "while_loop",
+    "with_empty_state",
     "with_rng",
     "without_apply_rng",
     "without_state",

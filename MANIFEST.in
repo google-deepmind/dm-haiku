@@ -1,3 +1,6 @@
 include README.md
 include LICENSE
+include requirements.txt
+include requirements-jax.txt
+include requirements-test.txt
 include haiku/py.typed

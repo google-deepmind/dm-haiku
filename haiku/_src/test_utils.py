@@ -29,7 +29,7 @@ T = TypeVar("T")
 Fn = Callable[..., T]
 
 
-def transform_and_run(f: Fn = None,
+def transform_and_run(f: Optional[Fn] = None,
                       seed: Optional[int] = 42,
                       run_apply: bool = True,
                       jax_transform: Optional[Callable[[Fn], Fn]] = None) -> T:

@@ -478,7 +478,7 @@ class ConvNDTranspose(hk.Module):
       b_init: Optional[hk.initializers.Initializer] = None,
       data_format: str = "channels_last",
       mask: Optional[jnp.ndarray] = None,
-      name: str = None,
+      name: Optional[str] = None,
   ):
     """Initializes the module.
 

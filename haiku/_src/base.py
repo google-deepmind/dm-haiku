@@ -259,7 +259,7 @@ def get_parameter(
     name: str,
     shape: Sequence[int],
     dtype: Any = jnp.float32,
-    init: Initializer = None,
+    init: Optional[Initializer] = None,
 ) -> jnp.ndarray:
   """Creates or reuses a parameter for the given transformed function.
 
@@ -361,7 +361,7 @@ def run_creators(
     context: GetterContext,
     shape: Sequence[int],
     dtype: Any = jnp.float32,
-    init: Initializer = None,
+    init: Optional[Initializer] = None,
 ) -> jnp.ndarray:
   """See :func:`custom_creator` for usage."""
   if not stack:

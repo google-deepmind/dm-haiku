@@ -47,7 +47,7 @@ class Graph(NamedTuple):
   subgraphs: List['Graph']
 
   @classmethod
-  def create(cls, title: str = None):
+  def create(cls, title: Optional[str] = None):
     return Graph(title=title, nodes=[], edges=[], subgraphs=[])
 
   def evolve(self, **kwargs) -> 'Graph':

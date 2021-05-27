@@ -67,7 +67,7 @@ class VectorQuantizer(hk.Module):
       num_embeddings: int,
       commitment_cost: float,
       dtype: Any = jnp.float32,
-      name: str = None,
+      name: Optional[str] = None,
   ):
     """Initializes a VQ-VAE module.
 
@@ -205,7 +205,7 @@ class VectorQuantizerEMA(hk.Module):
       epsilon: float = 1e-5,
       dtype: Any = jnp.float32,
       cross_replica_axis: Optional[str] = None,
-      name: str = None,
+      name: Optional[str] = None,
   ):
     """Initializes a VQ-VAE EMA module.
 

@@ -11,4 +11,4 @@ pygments==2.7.4
 jq==1.1.1
 matplotlib==3.3.3
 seaborn==0.11.1
-Jinja2==2.11
+Jinja2==2.11.3

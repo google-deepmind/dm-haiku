@@ -163,7 +163,7 @@ class BatchNorm(hk.Module):
 
     if is_training or test_local_stats:
       mean = jnp.mean(inputs, axis, keepdims=True)
-      mean_of_squares = jnp.mean(inputs**2, axis, keepdims=True)
+      mean_of_squares = jnp.mean(jnp.square(inputs), axis, keepdims=True)
       if self.cross_replica_axis:
         mean = jax.lax.pmean(
             mean,

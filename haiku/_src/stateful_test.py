@@ -41,7 +41,7 @@ class StatefulTest(parameterized.TestCase):
   def test_grad_no_transform(self):
     x = jnp.array(3.)
     with self.assertRaises(ValueError, msg="Use jax.grad() instead"):
-      stateful.grad(lambda x: x**2)(x)
+      stateful.grad(jnp.square)(x)
 
   @test_utils.transform_and_run
   def test_value_and_grad(self):
@@ -53,7 +53,7 @@ class StatefulTest(parameterized.TestCase):
   def test_value_and_grad_no_transform(self):
     x = jnp.array(3.)
     with self.assertRaises(ValueError, msg="Use jax.grad() instead"):
-      stateful.value_and_grad(lambda x: x**2)(x)
+      stateful.value_and_grad(jnp.square)(x)
 
   @test_utils.transform_and_run
   def test_grad_aux(self):
@@ -115,7 +115,7 @@ class StatefulTest(parameterized.TestCase):
   def test_jit_no_transform(self):
     x = jnp.array(2)
     with self.assertRaises(ValueError, msg="Use jax.jit() instead"):
-      stateful.jit(lambda x: x**2)(x)
+      stateful.jit(jnp.square)(x)
 
   @test_utils.transform_and_run
   def test_remat(self):
@@ -155,7 +155,7 @@ class StatefulTest(parameterized.TestCase):
   def test_remat_no_transform(self):
     x = jnp.array(3.)
     with self.assertRaises(ValueError, msg="Use jax.remat() instead"):
-      stateful.remat(lambda x: x**2)(x)
+      stateful.remat(jnp.square)(x)
 
   @test_utils.combined_named_parameters(
       test_utils.named_bools("jax_remat"),
@@ -235,7 +235,7 @@ class StatefulTest(parameterized.TestCase):
   def test_cond_no_transform(self):
     x = jnp.array(3.)
     with self.assertRaises(ValueError, msg="Use jax.cond() instead"):
-      stateful.cond(x == 2, x, lambda x: x**2, x, lambda x: (x + 1)**2)
+      stateful.cond(x == 2, x, jnp.square, x, lambda x: jnp.square(x + 1))
 
   def test_switch(self):
     def f(i, x):
@@ -283,7 +283,7 @@ class StatefulTest(parameterized.TestCase):
     i = jnp.array(2)
     x = jnp.array(42.)
     with self.assertRaises(ValueError, msg="Use jax.switch() instead"):
-      stateful.switch(i, [lambda x: x**2] * 3, x)
+      stateful.switch(i, [jnp.square] * 3, x)
 
   @test_utils.transform_and_run
   def test_difference_empty(self):
@@ -637,7 +637,7 @@ class StatefulTest(parameterized.TestCase):
   def test_eval_shape_no_transform(self):
     x = jnp.array(3.)
     with self.assertRaises(ValueError, msg="Use jax.eval_shape() instead"):
-      stateful.eval_shape(lambda x: x**2)(x)
+      stateful.eval_shape(jnp.square)(x)
 
   @test_utils.transform_and_run
   def test_temporary_state_resets_names(self):

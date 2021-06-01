@@ -119,9 +119,9 @@ class VectorQuantizer(hk.Module):
     flat_inputs = jnp.reshape(inputs, [-1, self.embedding_dim])
 
     distances = (
-        jnp.sum(flat_inputs**2, 1, keepdims=True) -
+        jnp.sum(jnp.square(flat_inputs), 1, keepdims=True) -
         2 * jnp.matmul(flat_inputs, self.embeddings) +
-        jnp.sum(self.embeddings**2, 0, keepdims=True))
+        jnp.sum(jnp.square(self.embeddings), 0, keepdims=True))
 
     encoding_indices = jnp.argmax(-distances, 1)
     encodings = jax.nn.one_hot(encoding_indices,
@@ -136,8 +136,10 @@ class VectorQuantizer(hk.Module):
     encoding_indices = jnp.reshape(encoding_indices, inputs.shape[:-1])
     quantized = self.quantize(encoding_indices)
 
-    e_latent_loss = jnp.mean((jax.lax.stop_gradient(quantized) - inputs)**2)
-    q_latent_loss = jnp.mean((quantized - jax.lax.stop_gradient(inputs))**2)
+    e_latent_loss = jnp.mean(
+        jnp.square(jax.lax.stop_gradient(quantized) - inputs))
+    q_latent_loss = jnp.mean(
+        jnp.square(quantized - jax.lax.stop_gradient(inputs)))
     loss = q_latent_loss + self.commitment_cost * e_latent_loss
 
     # Straight Through Estimator
@@ -285,9 +287,9 @@ class VectorQuantizerEMA(hk.Module):
     embeddings = self.embeddings
 
     distances = (
-        jnp.sum(flat_inputs**2, 1, keepdims=True) -
+        jnp.sum(jnp.square(flat_inputs), 1, keepdims=True) -
         2 * jnp.matmul(flat_inputs, embeddings) +
-        jnp.sum(embeddings**2, 0, keepdims=True))
+        jnp.sum(jnp.square(embeddings), 0, keepdims=True))
 
     encoding_indices = jnp.argmax(-distances, 1)
     encodings = jax.nn.one_hot(encoding_indices,
@@ -301,7 +303,8 @@ class VectorQuantizerEMA(hk.Module):
     # creates various other problems related to device placement / TPUs.
     encoding_indices = jnp.reshape(encoding_indices, inputs.shape[:-1])
     quantized = self.quantize(encoding_indices)
-    e_latent_loss = jnp.mean((jax.lax.stop_gradient(quantized) - inputs)**2)
+    e_latent_loss = jnp.mean(
+        jnp.square(jax.lax.stop_gradient(quantized) - inputs))
 
     if is_training:
       cluster_size = jnp.sum(encodings, axis=0)

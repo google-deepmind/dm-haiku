@@ -62,9 +62,9 @@ class VqvaeTest(parameterized.TestCase):
                      (kwargs['embedding_dim'], kwargs['num_embeddings']))
 
     # Check that each input was assigned to the embedding it is closest to.
-    distances = ((inputs_np**2).sum(axis=1, keepdims=True) -
+    distances = (jnp.square(inputs_np).sum(axis=1, keepdims=True) -
                  2 * np.dot(inputs_np, embeddings_np) +
-                 (embeddings_np**2).sum(axis=0, keepdims=True))
+                 jnp.square(embeddings_np).sum(axis=0, keepdims=True))
     closest_index = np.argmax(-distances, axis=1)
     # On TPU, distances can be different by ~1% due to precision. This can cause
     # the distanc to the closest embedding to flip, leading to a difference

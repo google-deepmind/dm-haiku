@@ -160,7 +160,7 @@ def kl_gaussian(mean: jnp.ndarray, var: jnp.ndarray) -> jnp.ndarray:
   Returns:
     A scalar representing KL divergence of the two Gaussian distributions.
   """
-  return 0.5 * jnp.sum(-jnp.log(var) - 1.0 + var + mean**2, axis=-1)
+  return 0.5 * jnp.sum(-jnp.log(var) - 1.0 + var + jnp.square(mean), axis=-1)
 
 
 def main(_):
@@ -175,7 +175,7 @@ def main(_):
     outputs: VAEOutput = model.apply(params, rng_key, batch["image"])
 
     log_likelihood = -binary_cross_entropy(batch["image"], outputs.logits)
-    kl = kl_gaussian(outputs.mean, outputs.stddev**2)
+    kl = kl_gaussian(outputs.mean, jnp.square(outputs.stddev))
     elbo = log_likelihood - kl
 
     return -jnp.mean(elbo)

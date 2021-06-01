@@ -41,6 +41,7 @@ py_library(
         "//haiku/_src:mixed_precision",
         "//haiku/_src:module",
         "//haiku/_src:moving_averages",
+        "//haiku/_src:multi_transform",
         "//haiku/_src:pad",
         "//haiku/_src:pool",
         "//haiku/_src:random",

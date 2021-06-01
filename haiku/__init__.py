@@ -60,6 +60,10 @@ from haiku._src.module import Module
 from haiku._src.module import transparent
 from haiku._src.moving_averages import EMAParamsTree
 from haiku._src.moving_averages import ExponentialMovingAverage
+from haiku._src.multi_transform import multi_transform
+from haiku._src.multi_transform import multi_transform_with_state
+from haiku._src.multi_transform import MultiTransformed
+from haiku._src.multi_transform import MultiTransformedWithState
 from haiku._src.pool import avg_pool
 from haiku._src.pool import AvgPool
 from haiku._src.pool import max_pool
@@ -141,6 +145,8 @@ __all__ = (
     "MaxPool",
     "Module",
     "MultiHeadAttention",
+    "MultiTransformed",
+    "MultiTransformedWithState",
     "PRNGSequence",
     "Params",
     "RNNCore",
@@ -171,6 +177,8 @@ __all__ = (
     "max_pool",
     "maybe_next_rng_key",
     "mixed_precision",
+    "multi_transform",
+    "multi_transform_with_state",
     "multinomial",
     "nets",
     "next_rng_key",

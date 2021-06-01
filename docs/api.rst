@@ -10,6 +10,8 @@ Haiku Transforms
 
     transform
     transform_with_state
+    multi_transform
+    multi_transform_with_state
     without_apply_rng
     without_state
 
@@ -22,6 +24,16 @@ transform_with_state
 ~~~~~~~~~~~~~~~~~~~~
 
 .. autofunction:: transform_with_state
+
+multi_transform
+~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_transform
+
+multi_transform_with_state
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_transform_with_state
 
 without_apply_rng
 ~~~~~~~~~~~~~~~~~

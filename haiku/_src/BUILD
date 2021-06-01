@@ -84,6 +84,31 @@ hk_py_test(
 )
 
 hk_py_library(
+    name = "multi_transform",
+    srcs = ["multi_transform.py"],
+    deps = [
+        ":analytics",
+        ":transform",
+        ":typing",
+        # pip: dataclasses
+        # pip: jax
+    ],
+)
+
+hk_py_test(
+    name = "multi_transform_test",
+    srcs = ["multi_transform_test.py"],
+    deps = [
+        ":base",
+        ":multi_transform",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        # pip: jax
+        # pip: numpy
+    ],
+)
+
+hk_py_library(
     name = "bias",
     srcs = ["bias.py"],
     deps = [

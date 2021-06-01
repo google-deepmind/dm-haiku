@@ -146,6 +146,8 @@ Type Hints
     State
     Transformed
     TransformedWithState
+    MultiTransformed
+    MultiTransformedWithState
 
 LSTMState
 ~~~~~~~~~
@@ -171,6 +173,16 @@ TransformedWithState
 ~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: TransformedWithState
+
+MultiTransformed
+~~~~~~~~~~~~~~~~
+
+.. autoclass:: MultiTransformed
+
+MultiTransformedWithState
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: MultiTransformedWithState
 
 Common Modules
 ==============

@@ -10,6 +10,8 @@
 | [**Citing Haiku**](#citing-haiku)
 
 ![pytest](https://github.com/deepmind/dm-haiku/workflows/pytest/badge.svg)
+![docs](https://readthedocs.org/projects/dm-haiku/badge/?version=latest)
+![pypi](https://img.shields.io/pypi/v/dm-haiku)
 
 ## What is Haiku?
 

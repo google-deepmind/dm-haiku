@@ -213,3 +213,29 @@ def merge(
     for module_name, name, value in traverse(structure):
       out[module_name][name] = value
   return data_structures.to_haiku_dict(out)
+
+
+def is_subset(
+    *,
+    subset: Mapping[str, Mapping[str, Any]],
+    superset: Mapping[str, Mapping[str, Any]],
+) -> bool:
+  """Checks whether the leaves of subset appear in superset.
+
+  Note that this is vacuously true in the case that both structures have no
+  leaves:
+
+  >>> hk.data_structures.is_subset({'a': {}}, {})
+  True
+
+  Args:
+    subset: The subset to check.
+    superset: The superset to check.
+
+  Returns:
+    A boolean indicating whether all elements in subset are contained in
+    superset.
+  """
+  subset = set((m, n) for m, n, _ in traverse(subset))
+  superset = set((m, n) for m, n, _ in traverse(superset))
+  return subset.issubset(superset)

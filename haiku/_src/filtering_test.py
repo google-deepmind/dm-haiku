@@ -182,6 +182,30 @@ class FilteringTest(parameterized.TestCase):
     actual = list(filtering.traverse(structure))
     self.assertEqual(expected, actual)
 
+  @parameterized.parameters(({}, {}, True),
+                            ({"a": {}}, {}, True),
+                            ({}, {"a": {}}, True),
+                            ({"a": {}}, {"a": {}}, True),
+                            ({"a": {"b": 1}}, {"a": {}}, False))
+  def test_is_subset(self, structure1, structure2, is_subset):
+    if is_subset:
+      self.assertTrue(
+          filtering.is_subset(subset=structure1, superset=structure2))
+    else:
+      self.assertFalse(
+          filtering.is_subset(subset=structure1, superset=structure2))
+
+  @parameterized.parameters(*range(1, 4))
+  def test_is_subset_layers(self, n):
+    structure_small = {f"layer_{i}": {"w": "wv", "b": "bv"}
+                       for i in reversed(range(n - 1))}
+    structure_large = {f"layer_{i}": {"w": "wv", "b": "bv"}
+                       for i in reversed(range(n))}
+    self.assertTrue(
+        filtering.is_subset(subset=structure_small, superset=structure_large))
+    self.assertFalse(
+        filtering.is_subset(subset=structure_large, superset=structure_small))
+
   def test_filter(self):
     init_fn, _ = transform.transform(get_net)
     params = init_fn(jax.random.PRNGKey(428), jnp.ones((1, 1)))
@@ -200,7 +224,7 @@ class FilteringTest(parameterized.TestCase):
         get_names(biases),
         set(["first_layer/b", "second_layer/b"]))
 
-  def test_transforms_with_filer(self):
+  def test_transforms_with_filter(self):
     # Note to make sense of test:
     #
     # out = (w0 + b0) * w1 + b1

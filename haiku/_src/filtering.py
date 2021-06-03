@@ -225,7 +225,7 @@ def is_subset(
   Note that this is vacuously true in the case that both structures have no
   leaves:
 
-  >>> hk.data_structures.is_subset({'a': {}}, {})
+  >>> hk.data_structures.is_subset(subset={'a': {}}, superset={})
   True
 
   Args:

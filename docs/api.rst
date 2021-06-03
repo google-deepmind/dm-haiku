@@ -1090,6 +1090,7 @@ Data Structures
 .. autosummary::
 
     filter
+    is_subset
     map
     merge
     partition
@@ -1104,6 +1105,11 @@ filter
 ~~~~~~
 
 .. autofunction:: filter
+
+is_subset
+~~~~~~~~~
+
+.. autofunction:: is_subset
 
 map
 ~~~~~~

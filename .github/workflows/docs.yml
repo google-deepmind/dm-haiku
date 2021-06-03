@@ -1,10 +1,10 @@
-name: pytest
+name: docs
 
 on: [push, pull_request]
 
 jobs:
   test-ubuntu:
-    name: "pytest on ${{ matrix.python-version }} on ${{ matrix.os }}"
+    name: "docs on ${{ matrix.python-version }} on ${{ matrix.os }}"
     runs-on: "${{ matrix.os }}"
     strategy:
       matrix:
@@ -18,13 +18,16 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
+        sudo apt install -y pandoc
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install -r requirements-jax.txt
         pip install -r requirements-test.txt
+        pip install -r docs/requirements.txt
         pip install .
-    - name: Test with pytest
+    - name: Test docs
       run: |
-        pip install pytest
-        # TODO(lenamartens): Add separate integration test action which doesn't block merges.
-        pytest -n "$(grep -c ^processor /proc/cpuinfo)" haiku --ignore=haiku/_src/integration/
+        cd docs
+        make coverage_check
+        make doctest
+        make html

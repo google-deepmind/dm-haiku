@@ -31,9 +31,15 @@ jobs:
         pip install -r requirements-test.txt
         pip install -r docs/requirements.txt
         pip install .
-    - name: Test docs
+    - name: Test coverage
       run: |
         cd docs
         make coverage_check
+    - name: Test doctests
+      run: |
+        cd docs
         make doctest
+    - name: Test docs to HTML
+      run: |
+        cd docs
         make html

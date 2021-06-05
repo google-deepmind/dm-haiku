@@ -32,6 +32,10 @@ installing JAX.
 We suggest installing the latest version of Haiku by running::
 
     $ pip install git+https://github.com/deepmind/dm-haiku
+    
+Alternatively, you can install via PyPI:
+
+    $ pip install -U dm-haiku
 
 .. toctree::
    :caption: Guides

@@ -1,4 +1,4 @@
-name: pytest
+name: integration
 
 on:
   pull_request:
@@ -10,11 +10,11 @@ on:
 
 jobs:
   test-ubuntu:
-    name: "pytest on ${{ matrix.python-version }} on ${{ matrix.os }}"
+    name: "integration tests on ${{ matrix.python-version }} on ${{ matrix.os }}"
     runs-on: "${{ matrix.os }}"
     strategy:
       matrix:
-        python-version: [3.7, 3.8]
+        python-version: [3.6, 3.7, 3.8]
         os: [ubuntu-latest]
     steps:
     - uses: actions/checkout@v2
@@ -29,7 +29,10 @@ jobs:
         pip install -r requirements-jax.txt
         pip install -r requirements-test.txt
         pip install .
-    - name: Test with pytest
+    - name: Test with pytest (integration tests)
       run: |
         pip install pytest
-        pytest -n "$(grep -c ^processor /proc/cpuinfo)" haiku --ignore=haiku/_src/integration/
+        # Isolate the float64 test because it needs to set a flag at start-up,
+        # so no other tests can be run before it.
+        pytest haiku/_src/integration/float64_test.py
+        pytest -n "$(grep -c ^processor /proc/cpuinfo)" haiku/_src/integration/ --ignore=haiku/_src/integration/float64_test.py

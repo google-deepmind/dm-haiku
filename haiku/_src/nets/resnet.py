@@ -33,6 +33,7 @@ hk.Conv2D = conv.Conv2D
 hk.Linear = basic.Linear
 hk.max_pool = pool.max_pool
 del basic, batch_norm, conv, module, pool
+FloatStrOrBool = Union[str, float, bool]
 
 
 class BlockV1(hk.Module):
@@ -43,7 +44,7 @@ class BlockV1(hk.Module):
       channels: int,
       stride: Union[int, Sequence[int]],
       use_projection: bool,
-      bn_config: Mapping[str, float],
+      bn_config: Mapping[str, FloatStrOrBool],
       bottleneck: bool,
       name: Optional[str] = None,
   ):
@@ -125,7 +126,7 @@ class BlockV2(hk.Module):
       channels: int,
       stride: Union[int, Sequence[int]],
       use_projection: bool,
-      bn_config: Mapping[str, float],
+      bn_config: Mapping[str, FloatStrOrBool],
       bottleneck: bool,
       name: Optional[str] = None,
   ):
@@ -204,7 +205,7 @@ class BlockGroup(hk.Module):
       channels: int,
       num_blocks: int,
       stride: Union[int, Sequence[int]],
-      bn_config: Mapping[str, float],
+      bn_config: Mapping[str, FloatStrOrBool],
       resnet_v2: bool,
       bottleneck: bool,
       use_projection: bool,
@@ -286,7 +287,7 @@ class ResNet(hk.Module):
       self,
       blocks_per_group: Sequence[int],
       num_classes: int,
-      bn_config: Optional[Mapping[str, float]] = None,
+      bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
       resnet_v2: bool = False,
       bottleneck: bool = True,
       channels_per_group: Sequence[int] = (256, 512, 1024, 2048),
@@ -379,7 +380,7 @@ class ResNet(hk.Module):
     if self.resnet_v2:
       out = self.final_batchnorm(out, is_training, test_local_stats)
       out = jax.nn.relu(out)
-    out = jnp.mean(out, axis=[1, 2])
+    out = jnp.mean(out, axis=(1, 2))
     return self.logits(out)
 
 
@@ -388,7 +389,7 @@ class ResNet18(ResNet):
 
   def __init__(self,
                num_classes: int,
-               bn_config: Optional[Mapping[str, float]] = None,
+               bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
                resnet_v2: bool = False,
                logits_config: Optional[Mapping[str, Any]] = None,
                name: Optional[str] = None):
@@ -416,7 +417,7 @@ class ResNet34(ResNet):
 
   def __init__(self,
                num_classes: int,
-               bn_config: Optional[Mapping[str, float]] = None,
+               bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
                resnet_v2: bool = False,
                logits_config: Optional[Mapping[str, Any]] = None,
                name: Optional[str] = None):
@@ -444,7 +445,7 @@ class ResNet50(ResNet):
 
   def __init__(self,
                num_classes: int,
-               bn_config: Optional[Mapping[str, float]] = None,
+               bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
                resnet_v2: bool = False,
                logits_config: Optional[Mapping[str, Any]] = None,
                name: Optional[str] = None):
@@ -472,7 +473,7 @@ class ResNet101(ResNet):
 
   def __init__(self,
                num_classes: int,
-               bn_config: Optional[Mapping[str, float]] = None,
+               bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
                resnet_v2: bool = False,
                logits_config: Optional[Mapping[str, Any]] = None,
                name: Optional[str] = None):
@@ -500,7 +501,7 @@ class ResNet152(ResNet):
 
   def __init__(self,
                num_classes: int,
-               bn_config: Optional[Mapping[str, float]] = None,
+               bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
                resnet_v2: bool = False,
                logits_config: Optional[Mapping[str, Any]] = None,
                name: Optional[str] = None):
@@ -528,7 +529,7 @@ class ResNet200(ResNet):
 
   def __init__(self,
                num_classes: int,
-               bn_config: Optional[Mapping[str, float]] = None,
+               bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
                resnet_v2: bool = False,
                logits_config: Optional[Mapping[str, Any]] = None,
                name: Optional[str] = None):

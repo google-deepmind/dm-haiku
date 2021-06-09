@@ -215,7 +215,7 @@ def run(*, trajectories_per_actor, num_actors, unroll_len):
 
   # Construct the agent and learner.
   agent = Agent(net.apply)
-  opt = optax.rmsprop(1e-1, decay=0.99, eps=0.1)
+  opt = optax.rmsprop(5e-3, decay=0.99, eps=1e-7)
   learner = Learner(agent, opt.update)
 
   # Initialize the optimizer state.

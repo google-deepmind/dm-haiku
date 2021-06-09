@@ -46,13 +46,6 @@ python -m pip install .
 # Python test dependencies.
 python -m pip install -r requirements-test.txt
 
-# CPU count on macos or linux
-if [ "$(uname)" == "Darwin" ]; then
-  N_JOBS=$(sysctl -n hw.logicalcpu)
-else
-  N_JOBS=$(grep -c ^processor /proc/cpuinfo)
-fi
-
 # Run tests using pytest.
 TEST_OPTS=()
 if [[ "${INTEGRATION}" == "false" ]]; then
@@ -63,7 +56,7 @@ else
   python -m pytest haiku/_src/integration/float64_test.py
   TEST_OPTS+=("--ignore=haiku/_src/integration/float64_test.py")
 fi
-python -m pytest -n "${N_JOBS}" haiku "${TEST_OPTS[@]}"
+python -m pytest -n auto haiku "${TEST_OPTS[@]}"
 
 # Test docs still build.
 cd docs/

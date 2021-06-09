@@ -31,5 +31,5 @@ jobs:
         pip install .
     - name: Test with pytest
       run: |
-        pip install pytest
-        pytest -n "$(grep -c ^processor /proc/cpuinfo)" haiku --ignore=haiku/_src/integration/
+        pip install pytest pytest-xdist
+        pytest -n auto haiku --ignore=haiku/_src/integration/

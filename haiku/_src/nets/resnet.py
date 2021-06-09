@@ -294,6 +294,7 @@ class ResNet(hk.Module):
       use_projection: Sequence[bool] = (True, True, True, True),
       logits_config: Optional[Mapping[str, Any]] = None,
       name: Optional[str] = None,
+      initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
   ):
     """Constructs a ResNet model.
 
@@ -314,6 +315,8 @@ class ResNet(hk.Module):
         residual block should use projection.
       logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
+      initial_conv_config: Keyword arguments passed to the constructor of the
+        initial :class:`~haiku.Conv2D` module.
     """
     super().__init__(name=name)
     self.resnet_v2 = resnet_v2
@@ -332,13 +335,15 @@ class ResNet(hk.Module):
     check_length(4, blocks_per_group, "blocks_per_group")
     check_length(4, channels_per_group, "channels_per_group")
 
-    self.initial_conv = hk.Conv2D(
-        output_channels=64,
-        kernel_shape=7,
-        stride=2,
-        with_bias=False,
-        padding="SAME",
-        name="initial_conv")
+    initial_conv_config = dict(initial_conv_config or {})
+    initial_conv_config.setdefault("output_channels", 64)
+    initial_conv_config.setdefault("kernel_shape", 7)
+    initial_conv_config.setdefault("stride", 2)
+    initial_conv_config.setdefault("with_bias", False)
+    initial_conv_config.setdefault("padding", "SAME")
+    initial_conv_config.setdefault("name", "initial_conv")
+
+    self.initial_conv = hk.Conv2D(**initial_conv_config)
 
     if not self.resnet_v2:
       self.initial_batchnorm = hk.BatchNorm(name="initial_batchnorm",
@@ -387,12 +392,15 @@ class ResNet(hk.Module):
 class ResNet18(ResNet):
   """ResNet18."""
 
-  def __init__(self,
-               num_classes: int,
-               bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
-               resnet_v2: bool = False,
-               logits_config: Optional[Mapping[str, Any]] = None,
-               name: Optional[str] = None):
+  def __init__(
+      self,
+      num_classes: int,
+      bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      resnet_v2: bool = False,
+      logits_config: Optional[Mapping[str, Any]] = None,
+      name: Optional[str] = None,
+      initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+  ):
     """Constructs a ResNet model.
 
     Args:
@@ -403,9 +411,12 @@ class ResNet18(ResNet):
         to ``False``.
       logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
+      initial_conv_config: Keyword arguments passed to the constructor of the
+        initial :class:`~haiku.Conv2D` module.
     """
     super().__init__(num_classes=num_classes,
                      bn_config=bn_config,
+                     initial_conv_config=initial_conv_config,
                      resnet_v2=resnet_v2,
                      logits_config=logits_config,
                      name=name,
@@ -415,12 +426,15 @@ class ResNet18(ResNet):
 class ResNet34(ResNet):
   """ResNet34."""
 
-  def __init__(self,
-               num_classes: int,
-               bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
-               resnet_v2: bool = False,
-               logits_config: Optional[Mapping[str, Any]] = None,
-               name: Optional[str] = None):
+  def __init__(
+      self,
+      num_classes: int,
+      bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      resnet_v2: bool = False,
+      logits_config: Optional[Mapping[str, Any]] = None,
+      name: Optional[str] = None,
+      initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+  ):
     """Constructs a ResNet model.
 
     Args:
@@ -431,9 +445,12 @@ class ResNet34(ResNet):
         to ``False``.
       logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
+      initial_conv_config: Keyword arguments passed to the constructor of the
+        initial :class:`~haiku.Conv2D` module.
     """
     super().__init__(num_classes=num_classes,
                      bn_config=bn_config,
+                     initial_conv_config=initial_conv_config,
                      resnet_v2=resnet_v2,
                      logits_config=logits_config,
                      name=name,
@@ -443,12 +460,15 @@ class ResNet34(ResNet):
 class ResNet50(ResNet):
   """ResNet50."""
 
-  def __init__(self,
-               num_classes: int,
-               bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
-               resnet_v2: bool = False,
-               logits_config: Optional[Mapping[str, Any]] = None,
-               name: Optional[str] = None):
+  def __init__(
+      self,
+      num_classes: int,
+      bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      resnet_v2: bool = False,
+      logits_config: Optional[Mapping[str, Any]] = None,
+      name: Optional[str] = None,
+      initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+  ):
     """Constructs a ResNet model.
 
     Args:
@@ -459,9 +479,12 @@ class ResNet50(ResNet):
         to ``False``.
       logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
+      initial_conv_config: Keyword arguments passed to the constructor of the
+        initial :class:`~haiku.Conv2D` module.
     """
     super().__init__(num_classes=num_classes,
                      bn_config=bn_config,
+                     initial_conv_config=initial_conv_config,
                      resnet_v2=resnet_v2,
                      logits_config=logits_config,
                      name=name,
@@ -471,12 +494,15 @@ class ResNet50(ResNet):
 class ResNet101(ResNet):
   """ResNet101."""
 
-  def __init__(self,
-               num_classes: int,
-               bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
-               resnet_v2: bool = False,
-               logits_config: Optional[Mapping[str, Any]] = None,
-               name: Optional[str] = None):
+  def __init__(
+      self,
+      num_classes: int,
+      bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      resnet_v2: bool = False,
+      logits_config: Optional[Mapping[str, Any]] = None,
+      name: Optional[str] = None,
+      initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+  ):
     """Constructs a ResNet model.
 
     Args:
@@ -487,9 +513,12 @@ class ResNet101(ResNet):
         to ``False``.
       logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
+      initial_conv_config: Keyword arguments passed to the constructor of the
+        initial :class:`~haiku.Conv2D` module.
     """
     super().__init__(num_classes=num_classes,
                      bn_config=bn_config,
+                     initial_conv_config=initial_conv_config,
                      resnet_v2=resnet_v2,
                      logits_config=logits_config,
                      name=name,
@@ -499,12 +528,15 @@ class ResNet101(ResNet):
 class ResNet152(ResNet):
   """ResNet152."""
 
-  def __init__(self,
-               num_classes: int,
-               bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
-               resnet_v2: bool = False,
-               logits_config: Optional[Mapping[str, Any]] = None,
-               name: Optional[str] = None):
+  def __init__(
+      self,
+      num_classes: int,
+      bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      resnet_v2: bool = False,
+      logits_config: Optional[Mapping[str, Any]] = None,
+      name: Optional[str] = None,
+      initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+  ):
     """Constructs a ResNet model.
 
     Args:
@@ -515,9 +547,12 @@ class ResNet152(ResNet):
         to ``False``.
       logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
+      initial_conv_config: Keyword arguments passed to the constructor of the
+        initial :class:`~haiku.Conv2D` module.
     """
     super().__init__(num_classes=num_classes,
                      bn_config=bn_config,
+                     initial_conv_config=initial_conv_config,
                      resnet_v2=resnet_v2,
                      logits_config=logits_config,
                      name=name,
@@ -527,12 +562,15 @@ class ResNet152(ResNet):
 class ResNet200(ResNet):
   """ResNet200."""
 
-  def __init__(self,
-               num_classes: int,
-               bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
-               resnet_v2: bool = False,
-               logits_config: Optional[Mapping[str, Any]] = None,
-               name: Optional[str] = None):
+  def __init__(
+      self,
+      num_classes: int,
+      bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      resnet_v2: bool = False,
+      logits_config: Optional[Mapping[str, Any]] = None,
+      name: Optional[str] = None,
+      initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+  ):
     """Constructs a ResNet model.
 
     Args:
@@ -543,9 +581,12 @@ class ResNet200(ResNet):
         to ``False``.
       logits_config: A dictionary of keyword arguments for the logits layer.
       name: Name of the module.
+      initial_conv_config: Keyword arguments passed to the constructor of the
+        initial :class:`~haiku.Conv2D` module.
     """
     super().__init__(num_classes=num_classes,
                      bn_config=bn_config,
+                     initial_conv_config=initial_conv_config,
                      resnet_v2=resnet_v2,
                      logits_config=logits_config,
                      name=name,

@@ -153,6 +153,16 @@ class ResnetTest(parameterized.TestCase):
     w_logits = params[logits_keys[0]]["w"]
     np.testing.assert_allclose(jnp.ones_like(w_logits), w_logits)
 
+  @test_utils.combined_named_parameters(
+      [(i, getattr(resnet, i)) for i in _RESNETS],
+  )
+  @test_utils.transform_and_run
+  def test_initial_conv_config(self, resnet_cls):
+    config = dict(name="custom_name", output_channels=32, kernel_shape=(3, 3),
+                  stride=(1, 1), padding="VALID", with_bias=True)
+    net = resnet_cls(1000, initial_conv_config=config)
+    for key, value in config.items():
+      self.assertEqual(getattr(net.initial_conv, key), value)
 
 if __name__ == "__main__":
   absltest.main()

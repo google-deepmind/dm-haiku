@@ -57,7 +57,7 @@ def main(_):
 
   # Construct the optimizer.
   max_updates = MAX_ENV_FRAMES / FRAMES_PER_ITER
-  opt = optax.rmsprop(1e-1, decay=0.99, eps=0.1)
+  opt = optax.rmsprop(5e-3, decay=0.99, eps=1e-7)
 
   # Construct the learner.
   learner = learner_lib.Learner(

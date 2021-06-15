@@ -330,7 +330,7 @@ class GetterContext(NamedTuple):
       parameter exists outside any module.
     original_dtype: The dtype that :func:`~haiku.get_parameter` or
       :func:`~haiku.get_state` was originally called with.
-    original_dtype: The shape that :func:`~haiku.get_parameter` or
+    original_shape: The shape that :func:`~haiku.get_parameter` or
       :func:`~haiku.get_state` was originally called with.
     module_name: The full name of enclosing modules.
     name: The name of this parameter.

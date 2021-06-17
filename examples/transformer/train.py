@@ -120,9 +120,9 @@ class Updater:
     self._opt = optimizer
 
   @functools.partial(jax.jit, static_argnums=0)
-  def init(self, master_rng, data):
+  def init(self, rng, data):
     """Initializes state of the updater."""
-    out_rng, init_rng = jax.random.split(master_rng)
+    out_rng, init_rng = jax.random.split(rng)
     params = self._net_init(init_rng, data)
     opt_state = self._opt.init(params)
     out = dict(

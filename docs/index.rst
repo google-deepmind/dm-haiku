@@ -1,4 +1,4 @@
-:github_url: https://github.com/deepmind/dm-haiku/tree/master/docs
+:github_url: https://github.com/deepmind/dm-haiku/tree/main/docs
 
 Haiku Documentation
 ===================
@@ -72,7 +72,7 @@ Contribute
 ----------
 
 - Issue tracker: https://github.com/deepmind/dm-haiku/issues
-- Source code: https://github.com/deepmind/dm-haiku/tree/master
+- Source code: https://github.com/deepmind/dm-haiku/tree/main
 
 Support
 -------

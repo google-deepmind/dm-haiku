@@ -4,7 +4,7 @@
 | [**Why Haiku?**](#why-haiku)
 | [**Quickstart**](#quickstart)
 | [**Installation**](#installation)
-| [**Examples**](https://github.com/deepmind/dm-haiku/tree/master/examples/)
+| [**Examples**](https://github.com/deepmind/dm-haiku/tree/main/examples/)
 | [**User manual**](#user-manual)
 | [**Documentation**](https://dm-haiku.readthedocs.io/)
 | [**Citing Haiku**](#citing-haiku)
@@ -192,9 +192,9 @@ entries in `params` and `grads`. The result has the same structure as the previo
 `params` and can again be used with `apply`.
 
 For more, see our
-[examples directory](https://github.com/deepmind/dm-haiku/tree/master/examples/).
+[examples directory](https://github.com/deepmind/dm-haiku/tree/main/examples/).
 The
-[MNIST example](https://github.com/deepmind/dm-haiku/tree/master/examples/mnist.py)
+[MNIST example](https://github.com/deepmind/dm-haiku/tree/main/examples/mnist.py)
 is a good place to start.
 
 ## Installation<a id="installation"></a>
@@ -318,7 +318,7 @@ prediction = forward.apply(params, key2, x)
 ```
 
 For a more complete look at working with stochastic models, please see our
-[VAE example](https://github.com/deepmind/dm-haiku/tree/master/examples/vae.py).
+[VAE example](https://github.com/deepmind/dm-haiku/tree/main/examples/vae.py).
 
 **Note:** `hk.next_rng_key()` is not functionally pure which means you should
 avoid using it alongside JAX transformations which are inside `hk.transform`.
@@ -416,7 +416,7 @@ for _ in range(10):
 ```
 
 For a more complete look at distributed Haiku training, take a look at our
-[ResNet-50 on ImageNet example](https://github.com/deepmind/dm-haiku/tree/master/examples/imagenet/).
+[ResNet-50 on ImageNet example](https://github.com/deepmind/dm-haiku/tree/main/examples/imagenet/).
 
 ## Citing Haiku<a id="citing-haiku"></a>
 
@@ -433,7 +433,7 @@ To cite this repository:
 ```
 
 In this bibtex entry, the version number is intended to be from
-[`haiku/__init__.py`](https://github.com/deepmind/dm-haiku/blob/master/haiku/__init__.py),
+[`haiku/__init__.py`](https://github.com/deepmind/dm-haiku/blob/main/haiku/__init__.py),
 and the year corresponds to the project's open-source release.
 
 [JAX]: https://github.com/google/jax

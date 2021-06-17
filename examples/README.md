@@ -9,13 +9,13 @@ $ python -m examples.mnist
 
 ## Supervised learning
 
-* [MLP on MNIST](https://github.com/deepmind/dm-haiku/blob/master/examples/mnist.py).
-* [Sparse MLP via Pruning on MNIST](https://github.com/deepmind/dm-haiku/blob/master/examples/mnist_pruning.py).
-* [ResNet50 on ImageNet](https://github.com/deepmind/dm-haiku/tree/master/examples/imagenet/).
-* [Transformer on LM1B](https://github.com/deepmind/dm-haiku/blob/master/examples/transformer/train.py)
-* [LSTMs](https://colab.research.google.com/github/deepmind/dm-haiku/blob/master/examples/haiku_lstms.ipynb)
+* [MLP on MNIST](https://github.com/deepmind/dm-haiku/blob/main/examples/mnist.py).
+* [Sparse MLP via Pruning on MNIST](https://github.com/deepmind/dm-haiku/blob/main/examples/mnist_pruning.py).
+* [ResNet50 on ImageNet](https://github.com/deepmind/dm-haiku/tree/main/examples/imagenet/).
+* [Transformer on LM1B](https://github.com/deepmind/dm-haiku/blob/main/examples/transformer/train.py)
+* [LSTMs](https://colab.research.google.com/github/deepmind/dm-haiku/blob/main/examples/haiku_lstms.ipynb)
 
 ## Reinforcement learning
 
-* [Impala lite](https://github.com/deepmind/dm-haiku/blob/master/examples/impala_lite.py).
-* [Impala on Catch](https://github.com/deepmind/dm-haiku/blob/master/examples/impala/run_catch.py).
+* [Impala lite](https://github.com/deepmind/dm-haiku/blob/main/examples/impala_lite.py).
+* [Impala on Catch](https://github.com/deepmind/dm-haiku/blob/main/examples/impala/run_catch.py).

@@ -154,8 +154,8 @@ def to_graph(fun):
 
     with graph_stack(graph), \
          module.hook_methods(method_hook), \
-         jax.core.new_main(DotTrace) as master:
-      out_flat = _interpret_subtrace(flat_fun, master).call_wrapped(*args_flat)
+         jax.core.new_main(DotTrace) as main:
+      out_flat = _interpret_subtrace(flat_fun, main).call_wrapped(*args_flat)
     out = jax.tree_unflatten(out_tree(), out_flat)
 
     return graph, args, out
@@ -164,8 +164,8 @@ def to_graph(fun):
 
 
 @jax.linear_util.transformation
-def _interpret_subtrace(master, *in_vals):
-  trace = DotTrace(master, jax.core.cur_sublevel())
+def _interpret_subtrace(main, *in_vals):
+  trace = DotTrace(main, jax.core.cur_sublevel())
   in_tracers = [DotTracer(trace, val) for val in in_vals]
   outs = yield in_tracers, {}
   out_tracers = map(trace.full_raise, outs)

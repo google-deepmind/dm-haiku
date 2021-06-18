@@ -17,7 +17,7 @@
 import enum
 import itertools as it
 import types
-from typing import Generator, Iterable, Mapping, Optional, Sequence, Text, Tuple
+from typing import Generator, Iterable, Mapping, Optional, Sequence, Tuple
 
 import jax
 import jax.numpy as jnp
@@ -26,7 +26,7 @@ from packaging import version
 import tensorflow.compat.v2 as tf
 import tensorflow_datasets as tfds
 
-Batch = Mapping[Text, np.ndarray]
+Batch = Mapping[str, np.ndarray]
 MEAN_RGB = (0.485 * 255, 0.456 * 255, 0.406 * 255)
 STDDEV_RGB = (0.229 * 255, 0.224 * 255, 0.225 * 255)
 
@@ -39,7 +39,7 @@ class Split(enum.Enum):
   TEST = 4
 
   @classmethod
-  def from_string(cls, name: Text) -> 'Split':
+  def from_string(cls, name: str) -> 'Split':
     return {'TRAIN': Split.TRAIN, 'TRAIN_AND_VALID': Split.TRAIN_AND_VALID,
             'VALID': Split.VALID, 'VALIDATION': Split.VALID,
             'TEST': Split.TEST}[name.upper()]

@@ -115,7 +115,7 @@ class Frame(NamedTuple):
 current_frame = frame_stack.peek
 
 
-class HaikuContext(object):
+class HaikuContext:
   """Collects and injects values for computations."""
 
   __slots__ = ("__params", "__state", "__rng", "__freeze_params",

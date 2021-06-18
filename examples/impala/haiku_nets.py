@@ -27,7 +27,7 @@ class CatchNet(hk.RNNCore):
   """A simple neural network for catch."""
 
   def __init__(self, num_actions, name=None):
-    super(CatchNet, self).__init__(name=name)
+    super().__init__(name=name)
     self._num_actions = num_actions
 
   def initial_state(self, batch_size):
@@ -58,7 +58,7 @@ class AtariShallowTorso(hk.Module):
   """Shallow torso for Atari, from the DQN paper."""
 
   def __init__(self, name=None):
-    super(AtariShallowTorso, self).__init__(name=name)
+    super().__init__(name=name)
 
   def __call__(self, x):
     torso_net = hk.Sequential([
@@ -80,7 +80,7 @@ class ResidualBlock(hk.Module):
   """Residual block."""
 
   def __init__(self, num_channels, name=None):
-    super(ResidualBlock, self).__init__(name=name)
+    super().__init__(name=name)
     self._num_channels = num_channels
 
   def __call__(self, x):
@@ -105,7 +105,7 @@ class AtariDeepTorso(hk.Module):
   """Deep torso for Atari, from the IMPALA paper."""
 
   def __init__(self, name=None):
-    super(AtariDeepTorso, self).__init__(name=name)
+    super().__init__(name=name)
 
   def __call__(self, x):
     torso_out = x / 255.
@@ -134,7 +134,7 @@ class AtariNet(hk.RNNCore):
   """Network for Atari."""
 
   def __init__(self, num_actions, use_resnet, use_lstm, name=None):
-    super(AtariNet, self).__init__(name=name)
+    super().__init__(name=name)
     self._num_actions = num_actions
     self._use_resnet = use_resnet
     self._use_lstm = use_lstm

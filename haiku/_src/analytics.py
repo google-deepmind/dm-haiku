@@ -14,9 +14,7 @@
 # ==============================================================================
 """Logs usage of certain functions in Haiku."""
 
-from typing import Text
 
-
-def log_once(event: Text):
+def log_once(event: str):
   # NOTE: We only log events when running inside DeepMind.
   del event

@@ -604,7 +604,7 @@ class RaisesModule(module.Module):
 class CapturesModule(module.Module):
 
   def __init__(self, mod):
-    super(CapturesModule, self).__init__()
+    super().__init__()
     self._mod = mod
 
   def __call__(self):
@@ -644,7 +644,7 @@ class ScalarStateModule(module.Module):
 class ParentModule(module.Module):
 
   def __init__(self):
-    super(ParentModule, self).__init__()
+    super().__init__()
     self.child1 = ScalarModule(name="child_module")
     self.child2 = ScalarModule(name="child_module")
 
@@ -652,7 +652,7 @@ class ParentModule(module.Module):
 class MultipleForwardMethods(module.Module):
 
   def __init__(self, name=None):
-    super(MultipleForwardMethods, self).__init__(name=name)
+    super().__init__(name=name)
     s = ScalarModule()
     s()
     self.ctor_mod = s

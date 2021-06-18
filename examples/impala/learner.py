@@ -18,7 +18,7 @@ import functools
 import itertools
 import queue
 import threading
-from typing import Dict, Tuple, Text
+from typing import Dict, Tuple
 import warnings
 
 import dm_env
@@ -92,7 +92,7 @@ class Learner:
       self,
       theta: hk.Params,
       trajectories: util.Transition,
-  ) -> Tuple[jnp.ndarray, Dict[Text, jnp.ndarray]]:
+  ) -> Tuple[jnp.ndarray, Dict[str, jnp.ndarray]]:
     """Compute vtrace-based actor-critic loss."""
     initial_state = jax.tree_map(lambda t: t[0], trajectories.agent_state)
     learner_outputs = self._agent.unroll(theta, trajectories.timestep,

@@ -14,7 +14,6 @@
 # ==============================================================================
 """Variational Autoencoder example on binarized MNIST dataset."""
 
-
 from typing import Generator, Mapping, Tuple, NamedTuple, Sequence
 
 from absl import app

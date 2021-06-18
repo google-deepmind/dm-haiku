@@ -14,6 +14,8 @@
 # ==============================================================================
 """Tests for haiku._src.dot."""
 
+from unittest import mock
+
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import dot
@@ -22,7 +24,6 @@ from haiku._src import stateful
 from haiku._src import test_utils
 import jax
 import jax.numpy as jnp
-import mock
 
 module.profiler_name_scopes(False)
 

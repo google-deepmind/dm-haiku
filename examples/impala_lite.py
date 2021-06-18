@@ -47,7 +47,7 @@ class SimpleNet(hk.Module):
   """A simple network."""
 
   def __init__(self, num_actions: int):
-    super(SimpleNet, self).__init__()
+    super().__init__()
     self._num_actions = num_actions
 
   def __call__(

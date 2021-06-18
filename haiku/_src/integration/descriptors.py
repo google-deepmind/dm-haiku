@@ -27,7 +27,7 @@ ModuleFn = Callable[[], Callable[[jnp.ndarray], jnp.ndarray]]
 class Wrapped(hk.Module):
 
   def __init__(self, wrapped):
-    super(Wrapped, self).__init__()
+    super().__init__()
     self.wrapped = wrapped
 
 

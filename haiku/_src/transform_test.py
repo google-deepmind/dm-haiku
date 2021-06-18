@@ -503,7 +503,7 @@ class TransformTest(parameterized.TestCase):
     self.assertEqual(type(state_out["~"]), cls)
 
 
-class ObjectWithTransform(object):
+class ObjectWithTransform:
 
   def __init__(self):
     self.trampoline = transform.transform(self._trampoline)

@@ -41,7 +41,7 @@ def compare_or_false(a, b) -> bool:
 def auto_repr(cls: Type[Any], *args, **kwargs) -> str:
   """Derives a `__repr__` from constructor arguments of a given class.
 
-      >>> class Foo(object):
+      >>> class Foo:
       ...   def __init__(self, x=None, y=42):
       ...      pass
       ...

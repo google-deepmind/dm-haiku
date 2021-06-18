@@ -185,7 +185,7 @@ def reversed_mlp(**kwargs):
   return mod.reverse()
 
 
-class CountingActivation(object):
+class CountingActivation:
 
   def __init__(self):
     self.count = 0
@@ -195,7 +195,7 @@ class CountingActivation(object):
     return x
 
 
-class CountingInitializer(object):
+class CountingInitializer:
 
   def __init__(self):
     self.count = 0

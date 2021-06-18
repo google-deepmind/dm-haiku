@@ -15,7 +15,7 @@
 """MNIST classifier with pruning as in https://arxiv.org/abs/1710.01878 ."""
 
 import functools
-from typing import Callable, Generator, Mapping, Sequence, Text, Tuple
+from typing import Callable, Generator, Mapping, Sequence, Tuple
 
 from absl import app
 import haiku as hk
@@ -26,7 +26,7 @@ import optax
 import tensorflow_datasets as tfds
 
 Batch = Mapping[str, np.ndarray]
-Predicate = Callable[[Text, Text, jnp.ndarray], bool]
+Predicate = Callable[[str, str, jnp.ndarray], bool]
 PredicateMap = Mapping[Predicate, jnp.ndarray]
 ModuleSparsity = Sequence[Tuple[Predicate, jnp.ndarray]]
 
@@ -107,7 +107,7 @@ def _create_partitions(
   return list_of_trees, sparsity_list, tail
 
 
-def sparsity_ignore(m: Text, n: Text, v: jnp.ndarray) -> bool:
+def sparsity_ignore(m: str, n: str, v: jnp.ndarray) -> bool:
   """Any parameter matching these conditions should generally not be pruned."""
   # n == 'b' when param is a bias
   return n == "b" or v.ndim == 1 or "batchnorm" in m or "batch_norm" in m

@@ -121,7 +121,7 @@ class ReplicateTest(parameterized.TestCase):
       utils.replicate(v, 3, "value")
 
 
-class SomeClass(object):
+class SomeClass:
 
   def __init__(self, a, b, c=2):
     pass

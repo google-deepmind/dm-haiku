@@ -14,7 +14,6 @@
 # ==============================================================================
 """Tests for haiku._src.rms_norm."""
 
-
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import initializers

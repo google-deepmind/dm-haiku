@@ -13,6 +13,8 @@
 # limitations under the License.
 # ==============================================================================
 """Actor test."""
+from unittest import mock
+
 from absl.testing import absltest
 from bsuite.environments import catch
 import dm_env
@@ -22,7 +24,6 @@ from examples.impala import haiku_nets
 from examples.impala import learner as learner_lib
 from examples.impala import util
 import jax
-import mock
 import numpy as np
 import tree
 
@@ -30,7 +31,7 @@ import tree
 class CatchTest(absltest.TestCase):
 
   def setUp(self):
-    super(CatchTest, self).setUp()
+    super().setUp()
     self.env = catch.Catch()
     self.action_spec = self.env.action_spec()
     self.num_actions = self.action_spec.num_values

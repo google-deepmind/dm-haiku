@@ -55,7 +55,7 @@ setup(
     install_requires=_parse_requirements('requirements.txt'),
     extras_require=EXTRA_PACKAGES,
     tests_require=_parse_requirements('requirements-test.txt'),
-    requires_python='>=3.6',
+    requires_python='>=3.7',
     include_package_data=True,
     zip_safe=False,
     # PyPI package information.

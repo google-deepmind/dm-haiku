@@ -14,6 +14,7 @@
 # ==============================================================================
 """Public Haiku data structures."""
 
+from haiku._src.data_structures import to_haiku_dict
 from haiku._src.data_structures import to_immutable_dict
 from haiku._src.data_structures import to_mutable_dict
 from haiku._src.filtering import filter  # pylint: disable=redefined-builtin
@@ -34,6 +35,7 @@ __all__ = (
     "merge",
     "partition",
     "partition_n",
+    "to_haiku_dict",
     "to_mutable_dict",
     "to_immutable_dict",
     "traverse",

@@ -1095,6 +1095,7 @@ Data Structures
     merge
     partition
     partition_n
+    to_haiku_dict
     to_immutable_dict
     to_mutable_dict
     traverse
@@ -1130,6 +1131,11 @@ partition_n
 ~~~~~~~~~~~
 
 .. autofunction:: partition_n
+
+to_haiku_dict
+~~~~~~~~~~~~~
+
+.. autofunction:: to_haiku_dict
 
 to_immutable_dict
 ~~~~~~~~~~~~~~~~~

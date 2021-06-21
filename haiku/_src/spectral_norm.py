@@ -202,4 +202,4 @@ class SNParamsTree(hk.Module):
           k: maybe_sn("/".join([module_name, k]), v)
           for k, v in param_dict.items()
       }
-    return hk.data_structures.to_immutable_dict(new_values)
+    return hk.data_structures.to_haiku_dict(new_values)

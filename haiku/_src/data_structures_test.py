@@ -365,6 +365,12 @@ class DataStructuresTest(parameterized.TestCase):
     v.append(4)
     self.assertNotEqual(mapping_in, mapping_out)
 
+  def test_to_dict_recursively_changes_leaf_types(self):
+    mapping_in = {"m": {"w": FlatMapping(a=FlatMapping(b=0))}}
+    mapping_out = data_structures.to_dict(mapping_in)
+    self.assertEqual(type(mapping_out["m"]["w"]), dict)
+    self.assertEqual(type(mapping_out["m"]["w"]["a"]), dict)
+
   def test_to_immutable_dict(self):
     before = {"a": {"b": 1, "c": 2}}
     after = data_structures.to_immutable_dict(before)

@@ -124,6 +124,17 @@ def to_mutable_dict(mapping):
 def to_haiku_dict(
     structure: Mapping[str, Mapping[str, T]],
 ) -> Mapping[str, Mapping[str, T]]:
+  """Returns a copy of the given two level structure.
+
+  Uses the same mapping type as Haiku will return from ``init`` or ``apply``
+  functions.
+
+  Args:
+    structure: A two level mapping to copy.
+
+  Returns:
+    A new two level mapping with the same contents as the input.
+  """
   if os.environ.get("HAIKU_FLATMAPPING", "1").lower() not in ("", "0", "false"):
     return to_immutable_dict(structure)
   return to_dict(structure)
@@ -133,6 +144,13 @@ def _copy_structure(tree):
   """Returns a copy of the given structure."""
   leaves, treedef = jax.tree_flatten(tree)
   return jax.tree_unflatten(treedef, leaves)
+
+
+def _to_dict_recurse(value: Any):
+  if isinstance(value, Mapping):
+    return {k: _to_dict_recurse(v) for k, v in value.items()}
+  else:
+    return _copy_structure(value)
 
 
 def to_dict(mapping: Mapping[str, Mapping[str, T]]) -> Dict[str, Dict[str, T]]:
@@ -148,12 +166,7 @@ def to_dict(mapping: Mapping[str, Mapping[str, T]]) -> Dict[str, Dict[str, T]]:
   Returns:
     A new two level mapping with the same contents as the input.
   """
-  out = {}
-  for module_name, bundle in mapping.items():
-    out_bundle = out[module_name] = {}
-    for name, value in bundle.items():
-      out_bundle[name] = _copy_structure(value)
-  return out
+  return _to_dict_recurse(mapping)
 
 
 def _repr_item(k, v):

@@ -80,7 +80,7 @@ def optimize_rng_use(fun):
     frame = base.current_frame()
     params = frame.params or None
     if params is not None:
-      params = data_structures.to_immutable_dict(params)
+      params = data_structures.to_haiku_dict(params)
     state = frame.state or None
     if state is not None:
       state = base.extract_state(state, initial=True)

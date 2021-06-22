@@ -33,7 +33,7 @@ def unpack_from_dict(src, prefix):
   for key, value in src.items():
     if key.startswith(prefix):
       result[key[len(prefix):]] = value
-  return data_structures.to_immutable_dict(result)
+  return data_structures.to_haiku_dict(result)
 
 
 # TODO(tycai): Accept state=True.

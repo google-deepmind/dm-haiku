@@ -295,7 +295,7 @@ class FilteringTest(parameterized.TestCase):
 
   @test_utils.with_environ("HAIKU_FLATMAPPING", None)
   def test_output_type_default(self):
-    self.assert_output_type(data_structures.FlatMapping)
+    self.assert_output_type(data_structures.FlatMap)
 
   @test_utils.with_environ("HAIKU_FLATMAPPING", "0")
   def test_output_type_env_var_0(self):
@@ -303,7 +303,7 @@ class FilteringTest(parameterized.TestCase):
 
   @test_utils.with_environ("HAIKU_FLATMAPPING", "1")
   def test_output_type_env_var_1(self):
-    self.assert_output_type(data_structures.FlatMapping)
+    self.assert_output_type(data_structures.FlatMap)
 
   @test_utils.with_environ("HAIKU_FLATMAPPING", "0")
   def test_merge_different_mappings(self):
@@ -318,7 +318,7 @@ class FilteringTest(parameterized.TestCase):
     def assert_type_recursive(s):
       self.assertEqual(type(s), out_cls)
 
-    for in_cls in (dict, data_structures.FlatMapping):
+    for in_cls in (dict, data_structures.FlatMap):
       with self.subTest(str(in_cls)):
         structure_a = in_cls({"m1": in_cls({"w": None})})
         structure_b = in_cls({"m2": in_cls({"w": None})})

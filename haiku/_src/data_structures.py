@@ -98,7 +98,7 @@ class KeysOnlyKeysView(collections.abc.KeysView):
 
 def to_immutable_dict(mapping: Mapping[K, V]) -> Mapping[K, V]:
   """Returns an immutable copy of the given mapping."""
-  if type(mapping) is FlatMapping:
+  if type(mapping) is FlatMap:
     return mapping
   items = []
   for key, value in mapping.items():
@@ -106,7 +106,7 @@ def to_immutable_dict(mapping: Mapping[K, V]) -> Mapping[K, V]:
     if value_type is dict:
       value = to_immutable_dict(value)
     items.append((key, value))
-  return FlatMapping(items)
+  return FlatMap(items)
 
 
 # TODO(tomhennigan) Better types here (Mapping[K, V]) -> MutableMapping[K, V]?
@@ -115,7 +115,7 @@ def to_mutable_dict(mapping):
   out = {}
   for key, value in mapping.items():
     value_type = type(value)
-    if value_type is FlatMapping:
+    if value_type is FlatMap:
       value = to_mutable_dict(value)
     out[key] = value
   return out
@@ -178,7 +178,7 @@ class FlatComponents(NamedTuple):
   structure: PyTreeDef
 
 
-class FlatMapping(Mapping[K, V]):
+class FlatMap(Mapping[K, V]):
   """Immutable mapping with O(1) flatten and O(n) unflatten operation.
 
   Warning: this type is only efficient when used with ``jax.tree_*``. When used
@@ -227,7 +227,7 @@ class FlatMapping(Mapping[K, V]):
     if other is None:
       return False
     t = type(other)
-    if t is FlatMapping:
+    if t is FlatMap:
       other = other._to_mapping()
     return self._to_mapping() == other
 
@@ -261,6 +261,8 @@ class FlatMapping(Mapping[K, V]):
   __repr__ = __str__
 
   def __reduce__(self):
+    # NOTE: Using FlatMapping (not FlatMap) here for backwards compatibility
+    # with old pickles.
     return FlatMapping, (self._to_mapping(),)
 
   # Workaround for https://github.com/python/typing/issues/498.
@@ -268,9 +270,30 @@ class FlatMapping(Mapping[K, V]):
 
 
 jax.tree_util.register_pytree_node(
-    FlatMapping,
+    FlatMap,
     lambda s: (s._leaves, s._structure),  # pylint: disable=protected-access
-    lambda treedef, leaves: FlatMapping(FlatComponents(leaves, treedef)))
+    lambda treedef, leaves: FlatMap(FlatComponents(leaves, treedef)))
+
+
+# This is only needed because some naughty people reach in to Haiku internals
+# and use `isinstance(x, haiku._src.data_structures.FlatMapping` (which was
+# renamed to FlatMap).
+# TODO(tomhennigan): If to_immutable_dict is remove this metaclass can go too.
+class FlatMappingMeta(type(FlatMap)):
+
+  def __instancecheck__(cls, instance) -> bool:
+    return isinstance(instance, FlatMap)
+
+
+class FlatMapping(FlatMap, metaclass=FlatMappingMeta):
+  """Only called from old checkpoints."""
+
+  def __new__(cls, data):
+    return to_haiku_dict(data)
+
+  def __init__(self, *args, **kwargs):  # pylint: disable=super-init-not-called
+    del args, kwargs
+    assert False, "This should never happen."
 
 #      _                               _           _
 #   __| | ___ _ __  _ __ ___  ___ __ _| |_ ___  __| |

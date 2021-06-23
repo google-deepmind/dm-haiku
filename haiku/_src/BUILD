@@ -427,8 +427,10 @@ hk_py_library(
 hk_py_test(
     name = "data_structures_test",
     srcs = ["data_structures_test.py"],
+    data = glob(["testdata/**"]),
     deps = [
         ":data_structures",
+        ":test_utils",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: cloudpickle

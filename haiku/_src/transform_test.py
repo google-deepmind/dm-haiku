@@ -476,7 +476,7 @@ class TransformTest(parameterized.TestCase):
 
   @test_utils.with_environ("HAIKU_FLATMAPPING", None)
   def test_output_type_default(self):
-    self.assert_output_type(data_structures.FlatMapping)
+    self.assert_output_type(data_structures.FlatMap)
 
   @test_utils.with_environ("HAIKU_FLATMAPPING", "0")
   def test_output_type_env_var_0(self):
@@ -484,7 +484,7 @@ class TransformTest(parameterized.TestCase):
 
   @test_utils.with_environ("HAIKU_FLATMAPPING", "1")
   def test_output_type_env_var_1(self):
-    self.assert_output_type(data_structures.FlatMapping)
+    self.assert_output_type(data_structures.FlatMap)
 
   def assert_output_type(self, cls):
     def f():

@@ -638,7 +638,7 @@ def next_rng_key_internal() -> PRNGKey:
   return next(rng_seq)
 
 
-def next_rng_keys(num: int) -> Tuple[PRNGKey, ...]:
+def next_rng_keys(num: int) -> jnp.ndarray:
   """Returns one or more JAX random keys split from the current global key.
 
   >>> k1, k2 = hk.next_rng_keys(2)
@@ -651,12 +651,12 @@ def next_rng_keys(num: int) -> Tuple[PRNGKey, ...]:
     num: The number of keys to split.
 
   Returns:
-    One or more unique (within a transformed function) JAX rng keys that can be
-    used with APIs such as :func:`jax.random.uniform`.
+    An array of shape ``[num, 2]`` unique (within a transformed function) JAX
+    rng keys that can be used with APIs such as :func:`jax.random.uniform`.
   """
   assert_context("next_rng_keys")
   rng_seq = rng_seq_or_fail()
-  return rng_seq.take(num)
+  return jnp.vstack(rng_seq.take(num))
 
 
 def maybe_next_rng_key() -> Optional[PRNGKey]:

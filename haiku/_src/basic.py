@@ -309,6 +309,13 @@ def dropout(rng: PRNGKey, rate: float, x: jnp.ndarray) -> jnp.ndarray:
 
   Returns:
     x, but dropped out and scaled by ``1 / (1 - rate)``.
+
+  Note:
+    This involves generating `x.size` pseudo-random samples from U([0, 1))
+    computed with the full precision required to compare them with `rate`. When
+    `rate` is a Python float, this is typically 32 bits, which is often more
+    than what applications require. A work-around is to pass `rate` with a lower
+    precision, e.g. using `np.float16(rate)`.
   """
   if rate < 0 or rate >= 1:
     raise ValueError("rate must be in [0, 1).")

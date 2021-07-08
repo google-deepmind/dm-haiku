@@ -230,6 +230,7 @@ def value_and_grad(fun, argnums=0, has_aux=False, holomorphic=False):
 
 class Box:
   """A pytree leaf that acts as a box."""
+  __slots__ = ("value",)
 
   def __init__(self, value):
     self.value = value
@@ -258,13 +259,14 @@ def box_and_fill_missing(
   """
   out_a = {k: {} for k in b}
   out_b = {k: {} for k in b}
+  missing = Box(None)
   for k1, v1 in b.items():
     for k2 in v1:
       out_b[k1][k2] = Box(b[k1][k2])
-      if k1 in a and k2 in a[k1]:
+      try:
         out_a[k1][k2] = Box(a[k1][k2])
-      else:
-        out_a[k1][k2] = Box(None)
+      except KeyError:
+        out_a[k1][k2] = missing
   return out_a, out_b
 
 

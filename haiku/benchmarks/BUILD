@@ -13,3 +13,12 @@ hk_py_binary(
         # pip: jax
     ],
 )
+
+hk_py_binary(
+    name = "stateful",
+    srcs = ["stateful.py"],
+    deps = [
+        # pip: google_benchmark
+        "//haiku/_src:stateful",
+    ],
+)

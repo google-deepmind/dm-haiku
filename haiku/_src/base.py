@@ -284,7 +284,8 @@ def get_parameter(
     A jnp.ndarray with the parameter of the given shape.
   """
   assert_context("get_parameter")
-  assert init is not None, "Initializer must be specified."
+  if init is None:
+    raise ValueError("Initializer must be specified.")
 
   bundle_name = current_bundle_name()
   frame = current_frame()
@@ -314,9 +315,10 @@ def get_parameter(
   # get_parameter. For example casting values to some dtype.
   param = run_getters(param_getter_stack, context, param)
 
-  assert param.shape == tuple(shape), (
-      "{!r} with shape {!r} does not match shape={!r} dtype={!r}".format(
-          fq_name, param.shape, shape, dtype))
+  if param.shape != tuple(shape):
+    raise ValueError(
+        "{!r} with shape {!r} does not match shape={!r} dtype={!r}".format(
+            fq_name, param.shape, shape, dtype))
 
   return param
 

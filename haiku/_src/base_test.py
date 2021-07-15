@@ -69,7 +69,7 @@ class BaseTest(parameterized.TestCase):
 
   def test_get_parameter_wrong_shape(self):
     with base.new_context():
-      with self.assertRaisesRegex(AssertionError, "does not match shape"):
+      with self.assertRaisesRegex(ValueError, "does not match shape"):
         base.get_parameter("w", (1,), init=jnp.zeros)
         base.get_parameter("w", (2,), init=jnp.zeros)
 

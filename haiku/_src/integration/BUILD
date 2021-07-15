@@ -26,6 +26,22 @@ hk_py_test(
 )
 
 hk_py_test(
+    name = "check_tracer_leaks_test",
+    timeout = "long",
+    srcs = ["check_tracer_leaks_test.py"],
+    shard_count = 50,
+    deps = [
+        ":descriptors",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        "//haiku",
+        "//haiku/_src:test_utils",
+        "//haiku/_src:typing",
+        # pip: jax
+    ],
+)
+
+hk_py_test(
     name = "jax_transforms_test",
     timeout = "long",
     srcs = ["jax_transforms_test.py"],

@@ -146,6 +146,7 @@ def grad(fun, argnums=0, has_aux=False, holomorphic=False):
   value_and_grad_fun = value_and_grad(fun, argnums=argnums, has_aux=has_aux,
                                       holomorphic=holomorphic)
 
+  @functools.wraps(fun)
   def grad_fn(*args, **kwargs):
     value, grads = value_and_grad_fun(*args, **kwargs)
     if has_aux:
@@ -336,6 +337,7 @@ def difference(before: InternalState, after: InternalState) -> InternalState:
 def thread_hk_state_in_kwargs(dec_fun):
   """Equivalent to jax.{} but passing Haiku state.""".format(dec_fun.__name__)
 
+  @functools.wraps(dec_fun)
   def wrapped_dec_fun(fun, *dec_args, **dec_kwargs):
     """Decorates a modified version of ``fun`` that passes Haiku state."""
 
@@ -480,6 +482,7 @@ def scan(f, init, xs, length=None, reverse=False, unroll=1):
     if not length:
       return init, y0
 
+  @functools.wraps(f)
   def stateful_fun(carry, x):
     carry, state = carry
     with temporary_internal_state(state):
@@ -518,6 +521,7 @@ def fori_loop(lower, upper, body_fun, init_val):
         "hk.fori_loop() should not be used outside of hk.transform(). "
         "Use jax.lax.fori_loop() instead.")
 
+  @functools.wraps(body_fun)
   def pure_body_fun(i, val):
     state, val = val
     with temporary_internal_state(state):
@@ -553,6 +557,7 @@ def vmap(fun, in_axes=0, out_axes=0, axis_name=None):
   in_axes = in_axes, None
   out_axes = out_axes, None
 
+  @functools.wraps(fun)
   def pure_fun(args, state_in):
     with temporary_internal_state(state_in):
       out = fun(*args)
@@ -586,6 +591,7 @@ def while_loop(cond_fun, body_fun, init_val):
         "    else:\n"
         "      val = hk.while_loop(lambda val: val.mean() < 1, module, val)\n")
 
+  @functools.wraps(cond_fun)
   def pure_cond_fun(val):
     val, _ = val
     try:
@@ -599,6 +605,7 @@ def while_loop(cond_fun, body_fun, init_val):
           "(et al) in `cond_fun`."
       ) from e
 
+  @functools.wraps(body_fun)
   def pure_body_fun(val):
     val, state = val
     with temporary_internal_state(state):
@@ -619,6 +626,7 @@ def named_call(
 ) -> Callable[..., Any]:
   """Wraps a function in an XLA name_scope and maintains Haiku state."""
 
+  @functools.wraps(fun)
   def hide_non_jaxtype_outputs(fun, side_channel):
     @functools.wraps(fun)
     def named_call_hidden_outputs(*args, **kwargs):

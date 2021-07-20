@@ -55,6 +55,15 @@ class MultiHeadAttentionTest(parameterized.TestCase):
     self.assertEqual(mha.shape, (seq_len, d_out))
 
   @test_utils.transform_and_run
+  def test_different_seq_lengths(self):
+    query = jnp.zeros((2, 3))
+    key = value = jnp.zeros((5, 3))
+    mha = attention.MultiHeadAttention(
+        key_size=7, num_heads=11, value_size=13,
+        model_size=15, w_init_scale=1.0)(query, key, value)
+    self.assertEqual(mha.shape, (2, 15))
+
+  @test_utils.transform_and_run
   def test_default_sizes(self):
     mha = attention.MultiHeadAttention(
         key_size=3, num_heads=5, w_init_scale=1.0)

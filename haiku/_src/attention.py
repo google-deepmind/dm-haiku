@@ -79,7 +79,7 @@ class MultiHeadAttention(hk.Module):
     attn_weights = jax.nn.softmax(attn_logits)
     attn = jnp.einsum("...htT,...Thd->...thd", attn_weights, value_heads)
     # Concatenate attention matrix of all heads into a single vector.
-    attn_vec = jnp.reshape(attn, (*value.shape[:-1], -1))
+    attn_vec = jnp.reshape(attn, (*query.shape[:-1], -1))
 
     return hk.Linear(self.model_size, w_init=self.w_init)(attn_vec)
 

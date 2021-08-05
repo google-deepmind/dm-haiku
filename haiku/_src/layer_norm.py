@@ -121,7 +121,8 @@ class LayerNorm(hk.Module):
       axis = tuple(range(inputs.ndim)[axis])
 
     mean = jnp.mean(inputs, axis=axis, keepdims=True)
-    variance = jnp.var(inputs, axis=axis, keepdims=True)
+    mean2 = jnp.mean(jax.lax.square(inputs), axis=axis, keepdims=True)
+    variance = mean2 - jax.lax.square(mean)
 
     param_shape = inputs.shape[-1:]
     if self.create_scale:

@@ -215,6 +215,12 @@ class DotTrace(jax.core.Trace):
 
   def process_call(self, call_primitive, f, tracers, params):
     assert call_primitive.multiple_results
+    if (call_primitive is jax.interpreters.xla.xla_call_p and
+        params.get('inline', False)):
+      f = _interpret_subtrace(f, self.main)
+      vals_out = f.call_wrapped(*[t.val for t in tracers])
+      return [DotTracer(self, v) for v in vals_out]
+
     graph = Graph.create(title=f'{call_primitive} ({name_or_str(f.f)})')
     graph_stack.peek().subgraphs.append(graph)
     with graph_stack(graph):

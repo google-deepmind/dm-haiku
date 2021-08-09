@@ -173,7 +173,7 @@ class BatchNorm(hk.Module):
             mean_of_squares,
             axis_name=self.cross_replica_axis,
             axis_index_groups=self.cross_replica_axis_index_groups)
-      var = mean_of_squares - mean ** 2
+      var = mean_of_squares - jnp.square(mean)
     else:
       mean = self.mean_ema.average
       var = self.var_ema.average

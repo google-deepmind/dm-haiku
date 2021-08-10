@@ -46,12 +46,13 @@ class LayerNormTest(parameterized.TestCase):
 
     return norms
 
-  @parameterized.parameters(itertools.permutations([True, False], 2))
-  def test_bf16(self, create_scale, create_offset):
+  @parameterized.parameters(itertools.product([True, False], repeat=3))
+  def test_bf16(self, create_scale, create_offset, use_fast_variance):
     """For all configurations, ensure bf16 outputs from bf16 inputs."""
     def f(x):
       ln = layer_norm.LayerNorm(
-          axis=-1, create_scale=create_scale, create_offset=create_offset)
+          axis=-1, create_scale=create_scale, create_offset=create_offset,
+          use_fast_variance=use_fast_variance)
       return ln(x)
 
     fwd = transform.transform(f)
@@ -60,24 +61,28 @@ class LayerNormTest(parameterized.TestCase):
     bf16_params = jax.tree_map(lambda t: t.astype(jnp.bfloat16), params)
     self.assertEqual(fwd.apply(bf16_params, None, data).dtype, jnp.bfloat16)
 
+  @parameterized.parameters(True, False)
   @test_utils.transform_and_run
-  def test_simple_case(self):
+  def test_simple_case(self, use_fast_variance):
     layer = layer_norm.LayerNorm([1, 2],
                                  create_scale=False,
-                                 create_offset=False)
+                                 create_offset=False,
+                                 use_fast_variance=use_fast_variance)
     inputs = np.ones([2, 3, 3, 5])
 
     outputs = layer(inputs)
     for x in np.nditer(outputs):
       self.assertEqual(x, 0.0)
 
+  @parameterized.parameters(True, False)
   @test_utils.transform_and_run
-  def test_simple_case_var(self):
+  def test_simple_case_var(self, use_fast_variance):
     layer = layer_norm.LayerNorm([1, 2],
                                  create_scale=True,
                                  create_offset=True,
                                  scale_init=initializers.Constant(0.5),
-                                 offset_init=initializers.Constant(2.0))
+                                 offset_init=initializers.Constant(2.0),
+                                 use_fast_variance=use_fast_variance)
 
     inputs = np.ones([2, 3, 3, 5])
 
@@ -137,13 +142,18 @@ class LayerNormTest(parameterized.TestCase):
         "Cannot pass `offset` at call time if `create_offset=True`."):
       layer(np.ones([2, 3, 4]), offset=np.ones([4]))
 
+  @parameterized.parameters(True, False)
   @test_utils.transform_and_run
-  def test_slice_axis(self):
+  def test_slice_axis(self, use_fast_variance):
     slice_layer = layer_norm.LayerNorm(
-        slice(1, -1), create_scale=False, create_offset=False)
+        slice(1, -1),
+        create_scale=False,
+        create_offset=False,
+        use_fast_variance=use_fast_variance)
     axis_layer = layer_norm.LayerNorm((1, 2),
                                       create_scale=False,
-                                      create_offset=False)
+                                      create_offset=False,
+                                      use_fast_variance=use_fast_variance)
 
     inputs = np.random.uniform(size=[3, 4, 4, 5], low=0, high=10)
     scale = np.random.normal(size=(5,), loc=1.0)

@@ -48,6 +48,7 @@ class LayerNorm(hk.Module):
       eps: float = 1e-5,
       scale_init: Optional[hk.initializers.Initializer] = None,
       offset_init: Optional[hk.initializers.Initializer] = None,
+      use_fast_variance: bool = False,
       name: Optional[str] = None,
   ):
     """Constructs a LayerNorm module.
@@ -63,6 +64,8 @@ class LayerNorm(hk.Module):
         as in the paper and Sonnet.
       scale_init: Optional initializer for gain (aka scale). By default, one.
       offset_init: Optional initializer for bias (aka offset). By default, zero.
+      use_fast_variance: If true, use a faster but less numerically stable
+        formulation for computing variance.
       name: The module name.
     """
     super().__init__(name=name)
@@ -86,6 +89,7 @@ class LayerNorm(hk.Module):
     self.create_offset = create_offset
     self.scale_init = scale_init or jnp.ones
     self.offset_init = offset_init or jnp.zeros
+    self.use_fast_variance = use_fast_variance
 
   def __call__(
       self,
@@ -121,7 +125,11 @@ class LayerNorm(hk.Module):
       axis = tuple(range(inputs.ndim)[axis])
 
     mean = jnp.mean(inputs, axis=axis, keepdims=True)
-    variance = jnp.var(inputs, axis=axis, keepdims=True)
+    if self.use_fast_variance:
+      mean_of_squares = jnp.mean(jnp.square(inputs), axis=axis, keepdims=True)
+      variance = mean_of_squares - jnp.square(mean)
+    else:
+      variance = jnp.var(inputs, axis=axis, keepdims=True)
 
     param_shape = inputs.shape[-1:]
     if self.create_scale:

@@ -198,6 +198,7 @@ class GroupNorm(hk.Module):
 
     x = x.reshape(self.group_shape)
     mean = jnp.mean(x, self.axis, keepdims=True)
+    # TODO(tycai): Consider faster but less precise variance formulation.
     var = jnp.var(x, self.axis, keepdims=True)
     x = (x - mean) * jax.lax.rsqrt(var + self.eps)
     x = x.reshape(self.first_input_shape)

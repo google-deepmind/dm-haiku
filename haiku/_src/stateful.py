@@ -509,7 +509,10 @@ def scan(f, init, xs, length=None, reverse=False, unroll=1):
   update_internal_state(state)
 
   if running_init_fn:
-    ys = jax.tree_multimap(lambda y0, ys: jnp.concatenate([y0, ys]), y0, ys)
+    if reverse:
+      ys = jax.tree_multimap(lambda y0, ys: jnp.concatenate([ys, y0]), y0, ys)
+    else:
+      ys = jax.tree_multimap(lambda y0, ys: jnp.concatenate([y0, ys]), y0, ys)
 
   return carry, ys
 

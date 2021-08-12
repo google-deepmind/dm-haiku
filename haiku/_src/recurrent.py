@@ -140,7 +140,11 @@ def _swap_batch_time(inputs):
   return jax.tree_map(lambda x: jnp.swapaxes(x, 0, 1), inputs)
 
 
-def dynamic_unroll(core, input_sequence, initial_state, time_major=True):
+def dynamic_unroll(core,
+                   input_sequence,
+                   initial_state,
+                   time_major=True,
+                   reverse=False):
   """Performs a dynamic unroll of an RNN.
 
   An *unroll* corresponds to calling the core on each element of the
@@ -162,6 +166,10 @@ def dynamic_unroll(core, input_sequence, initial_state, time_major=True):
     initial_state: An initial state of the given core.
     time_major: If True, inputs are expected time-major, otherwise they are
       expected batch-major.
+    reverse: If True, inputs are scanned in the reversed order. Equivalent to
+      reversing the time dimension in both inputs and outputs. See
+      https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.scan.html for
+      more details.
 
   Returns:
     A tuple with two elements:
@@ -180,7 +188,8 @@ def dynamic_unroll(core, input_sequence, initial_state, time_major=True):
   final_state, output_sequence = scan(
       scan_f,
       initial_state,
-      input_sequence)
+      input_sequence,
+      reverse=reverse)
   if not time_major:
     output_sequence = _swap_batch_time(output_sequence)
   return output_sequence, final_state

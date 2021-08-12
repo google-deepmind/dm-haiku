@@ -327,6 +327,28 @@ class ResetCoreTest(parameterized.TestCase):
     ])
     np.testing.assert_allclose(result, expected_result, rtol=1e-6, atol=1e-6)
 
+  @parameterized.parameters(None, 3)
+  @test_utils.transform_and_run
+  def test_reversed_dynamic_unroll(self, batch_size):
+    reset_time = 2
+    seq_len = 7
+    state_size = 4
+
+    core = recurrent.ResetCore(_IncrementByOneCore(state_size=state_size))
+    initial_state = core.initial_state(batch_size)
+
+    inputs = jnp.arange(0, seq_len)  # seq_len
+    if batch_size is not None:
+      # seq_len x batch_size
+      inputs = jnp.stack([inputs] * batch_size, axis=1)
+
+    should_reset = inputs == reset_time
+    fwd_result, _ = recurrent.dynamic_unroll(
+        core, (inputs[::-1], should_reset[::-1]), initial_state, reverse=False)
+    rev_result, _ = recurrent.dynamic_unroll(
+        core, (inputs, should_reset), initial_state, reverse=True)
+    np.testing.assert_allclose(fwd_result[::-1], rev_result)
+
   @test_utils.transform_and_run
   def test_allow_batched_only_cores(self):
     # Ensures batched-only cores can be wrapped with ResetCore.

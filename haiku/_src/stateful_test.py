@@ -647,6 +647,11 @@ class StatefulTest(parameterized.TestCase):
     self.assertEqual(mod1.module_name, "foo")
     self.assertEqual(mod2.module_name, "foo")
 
+  @test_utils.transform_and_run(run_apply=False)
+  def test_eval_shape_no_leaked_tracers_under_leak_checker(self):
+    with jax.checking_leaks():
+      stateful.eval_shape(SquareModule(), jnp.ones(()))  # does not crash
+
 
 def _callback_prim(forward, backward):
   def f_impl(x):

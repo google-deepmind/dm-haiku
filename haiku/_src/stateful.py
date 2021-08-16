@@ -677,7 +677,12 @@ def eval_shape(fun, *args, **kwargs):
         "hk.eval_shape() should not be used outside of hk.transform(). "
         "Use jax.eval_shape() instead.")
 
-  with temporary_internal_state(internal_state()):
-    out_shape = jax.eval_shape(fun, *args, **kwargs)
-  # Don't update changed state
+  @functools.wraps(fun)
+  def stateless_fun(state, *args, **kwargs):
+    with temporary_internal_state(state):
+      out = fun(*args, **kwargs)
+      # Don't return changed state
+      return out
+
+  out_shape = jax.eval_shape(stateless_fun, internal_state(), *args, **kwargs)
   return out_shape

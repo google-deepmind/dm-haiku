@@ -6,5 +6,5 @@ pytest-xdist
 virtualenv
 dm-tree>=0.1.1
 dataclasses==0.7 ; python_version<'3.7'
-tensorflow==2.5.0
+tensorflow==2.5.1
 optax==0.0.1

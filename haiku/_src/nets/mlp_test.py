@@ -178,6 +178,13 @@ class MLPTest(parameterized.TestCase):
           repr(linear),
           "Linear(output_size={}, name='linear_{}')".format(index + 1, index))
 
+  @parameterized.parameters(([30, 15],), ([8],), ([],))
+  @test_utils.transform_and_run
+  def test_output_size(self, output_sizes):
+    mod = mlp.MLP(output_sizes)
+    expected_output_size = output_sizes[-1] if output_sizes else None
+    self.assertEqual(mod.output_size, expected_output_size)
+
 
 def reversed_mlp(**kwargs):
   mod = mlp.MLP([2, 3, 4], **kwargs)

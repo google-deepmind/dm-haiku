@@ -74,6 +74,7 @@ class MLP(hk.Module):
     self.activation = activation
     self.activate_final = activate_final
     layers = []
+    output_sizes = tuple(output_sizes)
     for index, output_size in enumerate(output_sizes):
       layers.append(hk.Linear(output_size=output_size,
                               w_init=w_init,
@@ -81,6 +82,7 @@ class MLP(hk.Module):
                               with_bias=with_bias,
                               name="linear_%d" % index))
     self.layers = tuple(layers)
+    self.output_size = output_sizes[-1] if output_sizes else None
 
   def __call__(
       self,

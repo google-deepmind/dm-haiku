@@ -55,6 +55,21 @@ class MultiHeadAttentionTest(parameterized.TestCase):
     self.assertEqual(mha.shape, (seq_len, d_out))
 
   @test_utils.transform_and_run
+  def test_mask_arg(self):
+    seq_len = 3
+    embed_size = 2
+    model_size = 15
+    query = key = value = jnp.zeros((seq_len, embed_size))
+    causal_mask = jnp.tril(jnp.ones((seq_len, seq_len)))
+    causal_mask = causal_mask[None, :, :]
+
+    mha = attention.MultiHeadAttention(
+        key_size=7, num_heads=11, value_size=13,
+        model_size=model_size, w_init_scale=1.0)(
+            query, key, value, mask=causal_mask)
+    self.assertEqual(mha.shape, (seq_len, model_size))
+
+  @test_utils.transform_and_run
   def test_different_seq_lengths(self):
     query = jnp.zeros((2, 3))
     key = value = jnp.zeros((5, 3))

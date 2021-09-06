@@ -35,11 +35,6 @@ def _parse_requirements(requirements_txt_path):
 
 _VERSION = _get_version()
 
-EXTRA_PACKAGES = {
-    'jax': ['jax>=0.1.71'],
-    'jaxlib': ['jaxlib>=0.1.49'],
-}
-
 setup(
     name='dm-haiku',
     version=_VERSION,
@@ -53,7 +48,7 @@ setup(
     # Contained modules and scripts.
     packages=find_namespace_packages(exclude=['*_test.py', 'examples']),
     install_requires=_parse_requirements('requirements.txt'),
-    extras_require=EXTRA_PACKAGES,
+    extras_require={'jax': _parse_requirements('requirements-jax.txt')},
     tests_require=_parse_requirements('requirements-test.txt'),
     requires_python='>=3.7',
     include_package_data=True,

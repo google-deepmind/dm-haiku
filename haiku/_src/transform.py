@@ -264,7 +264,7 @@ def transform(f, *, apply_rng=True) -> Transformed:
   >>> new_params = {"my_module": {"w": jnp.array(2.)},
   ...               "my_module_1": {"w": jnp.array(3.)}}
   >>> f.apply(new_params, None, 2)
-  DeviceArray(9., dtype=float32)
+  DeviceArray(9., dtype=float32, weak_type=True)
 
   If your transformed function needs to maintain internal state (e.g. moving
   averages in batch norm) then see :func:`transform_with_state`.

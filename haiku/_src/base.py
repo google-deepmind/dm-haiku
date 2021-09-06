@@ -495,16 +495,21 @@ def custom_getter(
 
 def assert_is_prng_key(key: PRNGKey):
   """Asserts that the given input looks like a `jax.random.PRNGKey`."""
-  if not hasattr(key, "shape") or not hasattr(key, "dtype"):
+  # TODO(lenamartens): When `jax.config.enable_custom_prng` has been defaulted
+  # to True and jax.prng.PRNGKeyArray is a public type, make this a type check.
+  if not hasattr(key, "shape"):
     raise ValueError("The provided key is not a JAX PRNGKey but a "
                      f"{type(key)}:\n{key}")
-  elif key.shape != (2,) or key.dtype != jnp.uint32:
-    # Keys are expected to be uint32 vectors of length 2.
-    # c.f. https://jax.rtfd.io/en/latest/jax.random.html#jax.random.PRNGKey
-    raise ValueError(
-        "Provided key did not have expected shape and/or dtype "
-        f"expected=(shape=(2,), dtype=uint32) "
-        f"actual=(shape={key.shape}, dtype={key.dtype})")
+  elif hasattr(key, "dtype"):
+    # In this case the key is array-like (ndarray or Tracer), and not a custom
+    # PRNG, so we can check for the threefry key shape and dtype
+    if key.shape != (2,) or key.dtype != jnp.uint32:
+      # Keys are expected to be uint32 vectors of length 2.
+      # c.f. https://jax.rtfd.io/en/latest/jax.random.html#jax.random.PRNGKey
+      raise ValueError(
+          "Provided key did not have expected shape and/or dtype "
+          f"expected=(shape=(2,), dtype=uint32) "
+          f"actual=(shape={key.shape}, dtype={key.dtype})")
 
 PRNGSequenceState = Tuple[PRNGKey, Iterable[PRNGKey]]
 

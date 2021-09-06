@@ -21,6 +21,8 @@ from haiku._src import base
 from haiku._src import random
 from haiku._src import transform
 import jax
+from jax import prng
+import jax.numpy as jnp
 import numpy as np
 
 
@@ -49,10 +51,48 @@ class RandomTest(absltest.TestCase):
                       tuple(split_for_n(key, 2)))
 
 
+class CustomRNGTest(absltest.TestCase):
+
+  def setUp(self):
+    super().setUp()
+    jax.config.update("jax_enable_custom_prng", True)
+
+  def tearDown(self):
+    super().tearDown()
+    jax.config.update("jax_enable_custom_prng", False)
+
+  def test_custom_key(self):
+    count = 0
+    def count_splits(_, num):
+      nonlocal count
+      count += 1
+      return jnp.zeros((num, 2, 2), np.uint32)
+
+    double_shape_prng_impl = prng.PRNGImpl(
+        # Testing a different key shape to make sure it's accepted by Haiku
+        key_shape=(2, 2),
+        seed=lambda _: jnp.zeros((2, 2), np.uint32),
+        split=count_splits,
+        random_bits=lambda *_, data: jnp.zeros(data, np.uint32),
+        fold_in=lambda key, _: key)
+
+    def splits_haiku_key():
+      base.next_rng_key()
+
+    init, _ = transform.transform(splits_haiku_key)
+    key = prng.seed_with_impl(double_shape_prng_impl, 42)
+    init(key)
+    self.assertEqual(count, 1)
+    # testing if Tracers with a different key shape are accepted
+    jax.jit(init)(key)
+    self.assertEqual(count, 2)
+
+
 def split_for_n(key, n):
   for _ in range(n):
     key, subkey = jax.random.split(key)
     yield subkey
+
 
 if __name__ == "__main__":
   absltest.main()

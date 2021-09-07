@@ -42,14 +42,8 @@ class LeakCheckerTest(parameterized.TestCase):
     super().tearDown()
     jax.config.update('jax_check_tracer_leaks', False)
 
-  @test_utils.combined_named_parameters(descriptors.OPTIONAL_BATCH_MODULES +
-                                        descriptors.BATCH_MODULES)
+  @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
   def test_run(self, module_fn: ModuleFn, shape, dtype):
-    cls = get_module_cls(module_fn)
-    if cls in (hk.nets.MobileNetV1, hk.nets.ResNet, hk.nets.MLP):
-      # TODO(tomhennigan,lenamartens): Debug if these are false positives.
-      self.skipTest('Currently leaking tracers.')
-
     def g(x):
       return module_fn()(x)
 

@@ -291,6 +291,7 @@ class ResNet(hk.Module):
       resnet_v2: bool = False,
       bottleneck: bool = True,
       channels_per_group: Sequence[int] = (256, 512, 1024, 2048),
+      strides: Sequence[int] = (1, 2, 2, 2),
       use_projection: Sequence[bool] = (True, True, True, True),
       logits_config: Optional[Mapping[str, Any]] = None,
       name: Optional[str] = None,
@@ -311,6 +312,7 @@ class ResNet(hk.Module):
         ``True``.
       channels_per_group: A sequence of length 4 that indicates the number
         of channels used for each block in each group.
+      strides:
       use_projection: A sequence of length 4 that indicates whether each
         residual block should use projection.
       logits_config: A dictionary of keyword arguments for the logits layer.
@@ -334,6 +336,7 @@ class ResNet(hk.Module):
     # Number of blocks in each group for ResNet.
     check_length(4, blocks_per_group, "blocks_per_group")
     check_length(4, channels_per_group, "channels_per_group")
+    check_length(4, strides, "strides")
 
     initial_conv_config = dict(initial_conv_config or {})
     initial_conv_config.setdefault("output_channels", 64)
@@ -350,12 +353,11 @@ class ResNet(hk.Module):
                                             **bn_config)
 
     self.block_groups = []
-    strides = (1, 2, 2, 2)
-    for i in range(4):
+    for i, stride in enumerate(strides):
       self.block_groups.append(
           BlockGroup(channels=channels_per_group[i],
                      num_blocks=blocks_per_group[i],
-                     stride=strides[i],
+                     stride=stride,
                      bn_config=bn_config,
                      resnet_v2=resnet_v2,
                      bottleneck=bottleneck,
@@ -397,6 +399,7 @@ class ResNet18(ResNet):
       num_classes: int,
       bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
       resnet_v2: bool = False,
+      strides: Sequence[int] = (1, 2, 2, 2),
       logits_config: Optional[Mapping[str, Any]] = None,
       name: Optional[str] = None,
       initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
@@ -418,6 +421,7 @@ class ResNet18(ResNet):
                      bn_config=bn_config,
                      initial_conv_config=initial_conv_config,
                      resnet_v2=resnet_v2,
+                     strides=strides,
                      logits_config=logits_config,
                      name=name,
                      **ResNet.CONFIGS[18])
@@ -431,6 +435,7 @@ class ResNet34(ResNet):
       num_classes: int,
       bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
       resnet_v2: bool = False,
+      strides: Sequence[int] = (1, 2, 2, 2),
       logits_config: Optional[Mapping[str, Any]] = None,
       name: Optional[str] = None,
       initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
@@ -452,6 +457,7 @@ class ResNet34(ResNet):
                      bn_config=bn_config,
                      initial_conv_config=initial_conv_config,
                      resnet_v2=resnet_v2,
+                     strides=strides,
                      logits_config=logits_config,
                      name=name,
                      **ResNet.CONFIGS[34])
@@ -465,6 +471,7 @@ class ResNet50(ResNet):
       num_classes: int,
       bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
       resnet_v2: bool = False,
+      strides: Sequence[int] = (1, 2, 2, 2),
       logits_config: Optional[Mapping[str, Any]] = None,
       name: Optional[str] = None,
       initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
@@ -486,6 +493,7 @@ class ResNet50(ResNet):
                      bn_config=bn_config,
                      initial_conv_config=initial_conv_config,
                      resnet_v2=resnet_v2,
+                     strides=strides,
                      logits_config=logits_config,
                      name=name,
                      **ResNet.CONFIGS[50])
@@ -499,6 +507,7 @@ class ResNet101(ResNet):
       num_classes: int,
       bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
       resnet_v2: bool = False,
+      strides: Sequence[int] = (1, 2, 2, 2),
       logits_config: Optional[Mapping[str, Any]] = None,
       name: Optional[str] = None,
       initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
@@ -520,6 +529,7 @@ class ResNet101(ResNet):
                      bn_config=bn_config,
                      initial_conv_config=initial_conv_config,
                      resnet_v2=resnet_v2,
+                     strides=strides,
                      logits_config=logits_config,
                      name=name,
                      **ResNet.CONFIGS[101])
@@ -533,6 +543,7 @@ class ResNet152(ResNet):
       num_classes: int,
       bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
       resnet_v2: bool = False,
+      strides: Sequence[int] = (1, 2, 2, 2),
       logits_config: Optional[Mapping[str, Any]] = None,
       name: Optional[str] = None,
       initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
@@ -554,6 +565,7 @@ class ResNet152(ResNet):
                      bn_config=bn_config,
                      initial_conv_config=initial_conv_config,
                      resnet_v2=resnet_v2,
+                     strides=strides,
                      logits_config=logits_config,
                      name=name,
                      **ResNet.CONFIGS[152])
@@ -567,6 +579,7 @@ class ResNet200(ResNet):
       num_classes: int,
       bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
       resnet_v2: bool = False,
+      strides: Sequence[int] = (1, 2, 2, 2),
       logits_config: Optional[Mapping[str, Any]] = None,
       name: Optional[str] = None,
       initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
@@ -588,6 +601,7 @@ class ResNet200(ResNet):
                      bn_config=bn_config,
                      initial_conv_config=initial_conv_config,
                      resnet_v2=resnet_v2,
+                     strides=strides,
                      logits_config=logits_config,
                      name=name,
                      **ResNet.CONFIGS[200])

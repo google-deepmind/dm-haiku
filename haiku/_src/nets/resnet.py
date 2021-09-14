@@ -295,6 +295,7 @@ class ResNet(hk.Module):
       logits_config: Optional[Mapping[str, Any]] = None,
       name: Optional[str] = None,
       initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      strides: Sequence[int] = (1, 2, 2, 2),
   ):
     """Constructs a ResNet model.
 
@@ -317,6 +318,8 @@ class ResNet(hk.Module):
       name: Name of the module.
       initial_conv_config: Keyword arguments passed to the constructor of the
         initial :class:`~haiku.Conv2D` module.
+      strides: A sequence of length 4 that indicates the size of stride
+        of convolutions for each block in each group.
     """
     super().__init__(name=name)
     self.resnet_v2 = resnet_v2
@@ -334,6 +337,7 @@ class ResNet(hk.Module):
     # Number of blocks in each group for ResNet.
     check_length(4, blocks_per_group, "blocks_per_group")
     check_length(4, channels_per_group, "channels_per_group")
+    check_length(4, strides, "strides")
 
     initial_conv_config = dict(initial_conv_config or {})
     initial_conv_config.setdefault("output_channels", 64)
@@ -350,12 +354,11 @@ class ResNet(hk.Module):
                                             **bn_config)
 
     self.block_groups = []
-    strides = (1, 2, 2, 2)
-    for i in range(4):
+    for i, stride in enumerate(strides):
       self.block_groups.append(
           BlockGroup(channels=channels_per_group[i],
                      num_blocks=blocks_per_group[i],
-                     stride=strides[i],
+                     stride=stride,
                      bn_config=bn_config,
                      resnet_v2=resnet_v2,
                      bottleneck=bottleneck,
@@ -400,6 +403,7 @@ class ResNet18(ResNet):
       logits_config: Optional[Mapping[str, Any]] = None,
       name: Optional[str] = None,
       initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      strides: Sequence[int] = (1, 2, 2, 2),
   ):
     """Constructs a ResNet model.
 
@@ -413,11 +417,14 @@ class ResNet18(ResNet):
       name: Name of the module.
       initial_conv_config: Keyword arguments passed to the constructor of the
         initial :class:`~haiku.Conv2D` module.
+      strides: A sequence of length 4 that indicates the size of stride
+        of convolutions for each block in each group.
     """
     super().__init__(num_classes=num_classes,
                      bn_config=bn_config,
                      initial_conv_config=initial_conv_config,
                      resnet_v2=resnet_v2,
+                     strides=strides,
                      logits_config=logits_config,
                      name=name,
                      **ResNet.CONFIGS[18])
@@ -434,6 +441,7 @@ class ResNet34(ResNet):
       logits_config: Optional[Mapping[str, Any]] = None,
       name: Optional[str] = None,
       initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      strides: Sequence[int] = (1, 2, 2, 2),
   ):
     """Constructs a ResNet model.
 
@@ -447,11 +455,14 @@ class ResNet34(ResNet):
       name: Name of the module.
       initial_conv_config: Keyword arguments passed to the constructor of the
         initial :class:`~haiku.Conv2D` module.
+      strides: A sequence of length 4 that indicates the size of stride
+        of convolutions for each block in each group.
     """
     super().__init__(num_classes=num_classes,
                      bn_config=bn_config,
                      initial_conv_config=initial_conv_config,
                      resnet_v2=resnet_v2,
+                     strides=strides,
                      logits_config=logits_config,
                      name=name,
                      **ResNet.CONFIGS[34])
@@ -468,6 +479,7 @@ class ResNet50(ResNet):
       logits_config: Optional[Mapping[str, Any]] = None,
       name: Optional[str] = None,
       initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      strides: Sequence[int] = (1, 2, 2, 2),
   ):
     """Constructs a ResNet model.
 
@@ -481,11 +493,14 @@ class ResNet50(ResNet):
       name: Name of the module.
       initial_conv_config: Keyword arguments passed to the constructor of the
         initial :class:`~haiku.Conv2D` module.
+      strides: A sequence of length 4 that indicates the size of stride
+        of convolutions for each block in each group.
     """
     super().__init__(num_classes=num_classes,
                      bn_config=bn_config,
                      initial_conv_config=initial_conv_config,
                      resnet_v2=resnet_v2,
+                     strides=strides,
                      logits_config=logits_config,
                      name=name,
                      **ResNet.CONFIGS[50])
@@ -502,6 +517,7 @@ class ResNet101(ResNet):
       logits_config: Optional[Mapping[str, Any]] = None,
       name: Optional[str] = None,
       initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      strides: Sequence[int] = (1, 2, 2, 2),
   ):
     """Constructs a ResNet model.
 
@@ -515,11 +531,14 @@ class ResNet101(ResNet):
       name: Name of the module.
       initial_conv_config: Keyword arguments passed to the constructor of the
         initial :class:`~haiku.Conv2D` module.
+      strides: A sequence of length 4 that indicates the size of stride
+        of convolutions for each block in each group.
     """
     super().__init__(num_classes=num_classes,
                      bn_config=bn_config,
                      initial_conv_config=initial_conv_config,
                      resnet_v2=resnet_v2,
+                     strides=strides,
                      logits_config=logits_config,
                      name=name,
                      **ResNet.CONFIGS[101])
@@ -536,6 +555,7 @@ class ResNet152(ResNet):
       logits_config: Optional[Mapping[str, Any]] = None,
       name: Optional[str] = None,
       initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      strides: Sequence[int] = (1, 2, 2, 2),
   ):
     """Constructs a ResNet model.
 
@@ -549,11 +569,14 @@ class ResNet152(ResNet):
       name: Name of the module.
       initial_conv_config: Keyword arguments passed to the constructor of the
         initial :class:`~haiku.Conv2D` module.
+      strides: A sequence of length 4 that indicates the size of stride
+        of convolutions for each block in each group.
     """
     super().__init__(num_classes=num_classes,
                      bn_config=bn_config,
                      initial_conv_config=initial_conv_config,
                      resnet_v2=resnet_v2,
+                     strides=strides,
                      logits_config=logits_config,
                      name=name,
                      **ResNet.CONFIGS[152])
@@ -570,6 +593,7 @@ class ResNet200(ResNet):
       logits_config: Optional[Mapping[str, Any]] = None,
       name: Optional[str] = None,
       initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      strides: Sequence[int] = (1, 2, 2, 2),
   ):
     """Constructs a ResNet model.
 
@@ -583,11 +607,14 @@ class ResNet200(ResNet):
       name: Name of the module.
       initial_conv_config: Keyword arguments passed to the constructor of the
         initial :class:`~haiku.Conv2D` module.
+      strides: A sequence of length 4 that indicates the size of stride
+        of convolutions for each block in each group.
     """
     super().__init__(num_classes=num_classes,
                      bn_config=bn_config,
                      initial_conv_config=initial_conv_config,
                      resnet_v2=resnet_v2,
+                     strides=strides,
                      logits_config=logits_config,
                      name=name,
                      **ResNet.CONFIGS[200])

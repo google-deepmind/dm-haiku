@@ -21,6 +21,7 @@ from haiku._src import analytics
 from haiku._src import base
 from haiku._src import data_structures
 from haiku._src import typing
+import jax
 
 # If you are forking replace this with `import haiku as hk`.
 hk = types.ModuleType("haiku")
@@ -330,6 +331,14 @@ def transform_with_state(f) -> TransformedWithState:
   """
   analytics.log_once("transform_with_state")
 
+  unexpected_tracer_hint = (
+      "An UnexpectedTracerError was raised while inside a Haiku transformed "
+      "function (see error above).\n"
+      "Hint: are you using a JAX transform or JAX control-flow function "
+      "(jax.vmap/jax.scan/...) inside a Haiku transform? You might want to use "
+      "the Haiku version of the transform instead (hk.vmap/hk.scan/...).\n"
+      "See https://dm-haiku.readthedocs.io/en/latest/notebooks/transforms.html "
+      "on why you can't use JAX transforms inside a Haiku module.")
   def init_fn(
       rng: Optional[Union[PRNGKey, int]],
       *args,
@@ -338,7 +347,10 @@ def transform_with_state(f) -> TransformedWithState:
     """Initializes your function collecting parameters and state."""
     rng = to_prng_sequence(rng, err_msg=INIT_RNG_ERROR)
     with base.new_context(rng=rng) as ctx:
-      f(*args, **kwargs)
+      try:
+        f(*args, **kwargs)
+      except jax.errors.UnexpectedTracerError as e:
+        raise jax.errors.UnexpectedTracerError(unexpected_tracer_hint) from e
     return ctx.collect_params(), ctx.collect_initial_state()
 
   def apply_fn(
@@ -354,7 +366,10 @@ def transform_with_state(f) -> TransformedWithState:
     rng = to_prng_sequence(
         rng, err_msg=(APPLY_RNG_STATE_ERROR if state else APPLY_RNG_ERROR))
     with base.new_context(params=params, state=state, rng=rng) as ctx:
-      out = f(*args, **kwargs)
+      try:
+        out = f(*args, **kwargs)
+      except jax.errors.UnexpectedTracerError as e:
+        raise jax.errors.UnexpectedTracerError(unexpected_tracer_hint) from e
     return out, ctx.collect_state()
 
   tie_in_original_fn(f, init_fn, apply_fn)

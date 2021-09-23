@@ -502,6 +502,16 @@ class TransformTest(parameterized.TestCase):
     self.assertEqual(type(state_in["~"]), cls)
     self.assertEqual(type(state_out["~"]), cls)
 
+  def test_unexpected_tracer_error_hint(self):
+    def leaks_and_uses_tracer():
+      jax.jit(base.next_rng_key)()
+      base.next_rng_key()
+
+    init, _ = transform.transform(leaks_and_uses_tracer)
+    with self.assertRaisesRegex(jax.errors.UnexpectedTracerError,
+                                "want to use the Haiku version"):
+      init(jax.random.PRNGKey(42))
+
 
 class ObjectWithTransform:
 

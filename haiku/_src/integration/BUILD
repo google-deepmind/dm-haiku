@@ -79,7 +79,8 @@ hk_py_test(
     name = "doctest_test",
     timeout = "long",
     srcs = ["doctest_test.py"],
-    cpu = False,  # Takes 10x longer than GPU/TPU.
+    cpu = False,  # Takes 10x longer than GPU.
+    tpu = False,  # Sometimes generates different numerical results
     deps = [
         # pip: absl/logging
         # pip: absl/testing:absltest

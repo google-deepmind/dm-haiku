@@ -15,7 +15,8 @@
 """Tests for haiku._src.summarise."""
 # pylint: disable=unnecessary-lambda
 
-from typing import Sequence
+import typing
+from typing import Sequence, Union
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -38,13 +39,14 @@ def tabulate_to_list(
   old_tabulate = summarise.tabulate_lib.tabulate
   summarise.tabulate_lib.tabulate = lambda rows, **_: rows
   try:
-    out = summarise.tabulate(f, columns=columns, filters=filters)(*args)
+    out = summarise.tabulate(f, columns=columns, filters=filters)(*args)  # type: Union[str, Sequence[Sequence[str]]]
   finally:
     summarise.tabulate_lib.tabulate = old_tabulate
   if out == "No modules matching filters.":
     return []
   else:
-    return out  # pytype: disable=bad-return-type  # kwargs-checking
+    out = typing.cast(Sequence[Sequence[str]], out)
+    return out
 
 
 def get_summary(f, *args):

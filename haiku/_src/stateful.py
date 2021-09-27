@@ -364,6 +364,7 @@ def thread_hk_state_in_kwargs(dec_fun):
 
     return wrapper
 
+  wrapped_dec_fun.__doc__ = f"Equivalent to jax.{dec_fun.__name__} but passing Haiku state."
   return wrapped_dec_fun
 
 

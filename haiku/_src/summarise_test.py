@@ -44,7 +44,7 @@ def tabulate_to_list(
   if out == "No modules matching filters.":
     return []
   else:
-    return out
+    return out  # pytype: disable=bad-return-type  # kwargs-checking
 
 
 def get_summary(f, *args):

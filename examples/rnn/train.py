@@ -24,7 +24,6 @@ import haiku as hk
 from examples.rnn import dataset
 import jax
 from jax import lax
-from jax import ops
 import jax.numpy as jnp
 import numpy as np
 import optax
@@ -108,14 +107,14 @@ def sample(
     next_logits, next_state = core(token, v.state)
     key, subkey = jax.random.split(v.rng_key)
     next_token = jax.random.categorical(subkey, next_logits, axis=-1)
-    new_tokens = ops.index_update(v.tokens, ops.index[t + 1], next_token)
+    new_tokens = v.tokens.at[t + 1].set(next_token)
     return LoopValues(tokens=new_tokens, state=next_state, rng_key=key)
 
   logits, state = hk.dynamic_unroll(core, context, core.initial_state(None))
   key, subkey = jax.random.split(rng_key)
   first_token = jax.random.categorical(subkey, logits[-1])
   tokens = np.zeros(sample_length, dtype=np.int32)
-  tokens = ops.index_update(tokens, ops.index[0], first_token)
+  tokens = tokens.at[0].set(first_token)
   initial_values = LoopValues(tokens=tokens, state=state, rng_key=key)
   values: LoopValues = lax.fori_loop(0, sample_length, body_fn, initial_values)
 

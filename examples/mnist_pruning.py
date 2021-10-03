@@ -53,7 +53,7 @@ def topk_mask(value: jnp.ndarray, density_fraction: float) -> jnp.ndarray:
     indices = jnp.argsort(value)
     k = jnp.round(density_fraction * jnp.size(value)).astype(jnp.int32)
     mask = jnp.greater_equal(np.arange(value.size), value.size - k)
-    mask = jax.ops.index_update(jnp.zeros_like(mask), indices, mask)
+    mask = jnp.zeros_like(mask).at[indices].set(mask)
     return mask.astype(np.int32)
 
   # shuffle value so that identical values aren't always pruned
@@ -64,8 +64,7 @@ def topk_mask(value: jnp.ndarray, density_fraction: float) -> jnp.ndarray:
       jax.random.PRNGKey(42), jnp.arange(0, jnp.size(value), dtype=jnp.int32))
 
   shuffled_mask = topk_mask_internal(value[shuffled_indices])
-  mask = jax.ops.index_update(
-      jnp.zeros_like(shuffled_mask), shuffled_indices, shuffled_mask)
+  mask = jnp.zeros_like(shuffled_mask).at[shuffled_indices].set(shuffled_mask)
   mask = jnp.reshape(mask, orig_shape)
   return mask
 

@@ -317,8 +317,8 @@ def get_parameter(
 
   if param.shape != tuple(shape):
     raise ValueError(
-        "{!r} with shape {!r} does not match shape={!r} dtype={!r}".format(
-            fq_name, param.shape, shape, dtype))
+        "{!r} with retrieved shape {!r} does not match shape={!r} dtype={!r}"
+        .format(fq_name, param.shape, shape, dtype))
 
   return param
 

@@ -61,6 +61,7 @@ Modules, Parameters and State
     get_state
     set_state
     transparent
+    lift
 
 Module
 ~~~~~~
@@ -92,6 +93,57 @@ transparent
 ~~~~~~~~~~~~
 
 .. autofunction:: transparent
+
+lift
+~~~~
+
+.. autofunction:: lift
+
+Getters and Interceptors
+------------------------
+
+.. autosummary::
+
+    custom_creator
+    custom_getter
+    GetterContext
+    intercept_methods
+    MethodContext
+
+custom_creator
+~~~~~~~~~~~~~~
+
+.. autofunction:: custom_creator
+
+custom_getter
+~~~~~~~~~~~~~
+
+.. autofunction:: custom_getter
+
+GetterContext
+~~~~~~~~~~~~~
+
+.. autoclass:: GetterContext
+
+ParamContext
+~~~~~~~~~~~~
+
+.. deprecated:: 0.0.3
+  Renamed to :class:`GetterContext` and used for both custom parameter getters
+  and custom state getters.
+
+.. autoclass:: ParamContext
+
+intercept_methods
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: intercept_methods
+
+MethodContext
+~~~~~~~~~~~~~
+
+.. autoclass:: MethodContext
+
 
 Random Numbers
 --------------
@@ -921,50 +973,6 @@ clear_policy
 
 .. automodule:: haiku.experimental
 
-Getters and Interceptors
-------------------------
-
-.. autosummary::
-
-    custom_creator
-    custom_getter
-    GetterContext
-    intercept_methods
-    MethodContext
-
-custom_creator
-~~~~~~~~~~~~~~
-
-.. autofunction:: custom_creator
-
-custom_getter
-~~~~~~~~~~~~~
-
-.. autofunction:: custom_getter
-
-GetterContext
-~~~~~~~~~~~~~
-
-.. autoclass:: GetterContext
-
-ParamContext
-~~~~~~~~~~~~
-
-.. deprecated:: 0.0.3
-  Renamed to :class:`GetterContext` and used for both custom parameter getters
-  and custom state getters.
-
-.. autoclass:: ParamContext
-
-intercept_methods
-~~~~~~~~~~~~~~~~~
-
-.. autofunction:: intercept_methods
-
-MethodContext
-~~~~~~~~~~~~~
-
-.. autoclass:: MethodContext
 
 TensorFlow Profiler
 -------------------
@@ -1059,11 +1067,6 @@ name_like
 ~~~~~~~~~
 
 .. autofunction:: name_like
-
-lift
-~~~~
-
-.. autofunction:: lift
 
 Optimizations
 -------------

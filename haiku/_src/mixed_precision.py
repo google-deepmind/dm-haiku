@@ -27,11 +27,10 @@ import jmp
 
 # If you are forking replace this with `import haiku as hk`.
 hk = types.ModuleType('haiku')
-hk.experimental = types.ModuleType('experimental')
-hk.experimental.custom_getter = base.custom_getter
-hk.experimental.custom_creator = base.custom_creator
-hk.experimental.intercept_methods = module.intercept_methods
-hk.experimental.MethodContext = module.MethodContext
+hk.custom_getter = base.custom_getter
+hk.custom_creator = base.custom_creator
+hk.intercept_methods = module.intercept_methods
+hk.MethodContext = module.MethodContext
 hk.Module = module.Module
 Stack = data_structures.Stack
 del base, data_structures, module
@@ -63,8 +62,7 @@ class _ThreadState(threading.local):
 
   def set_policy(self, cls: Type[hk.Module], policy: jmp.Policy):
     if self._interceptor is None:
-      self._interceptor = (
-          hk.experimental.intercept_methods(_mixed_precision_interceptor))
+      self._interceptor = hk.intercept_methods(_mixed_precision_interceptor)
       self._interceptor.__enter__()
     self._cls_policy[cls] = policy
 
@@ -161,7 +159,7 @@ def _mixed_precision_getter(next_getter, value, context):
 
 
 def _mixed_precision_interceptor(next_f, args, kwargs,
-                                 context: hk.experimental.MethodContext):
+                                 context: hk.MethodContext):
   """Method interceptor used to apply mixed precision policies to classes."""
   policy = _thread_local_state.get_policy(type(context.module))
   if policy is None:
@@ -170,10 +168,8 @@ def _mixed_precision_interceptor(next_f, args, kwargs,
   ctx = contextlib.ExitStack()
   with ctx:
     if not _thread_local_state.has_current_policy:
-      ctx.enter_context(
-          hk.experimental.custom_creator(_mixed_precision_creator))
-      ctx.enter_context(
-          hk.experimental.custom_getter(_mixed_precision_getter, state=True))
+      ctx.enter_context(hk.custom_creator(_mixed_precision_creator))
+      ctx.enter_context(hk.custom_getter(_mixed_precision_getter, state=True))
     ctx.enter_context(_thread_local_state.push_current_policy(policy))
 
     args, kwargs = policy.cast_to_compute((args, kwargs))

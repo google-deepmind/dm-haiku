@@ -22,8 +22,11 @@ from haiku import nets
 from haiku import pad
 from haiku import testing
 from haiku._src.attention import MultiHeadAttention
+from haiku._src.base import custom_creator
+from haiku._src.base import custom_getter
 from haiku._src.base import get_parameter
 from haiku._src.base import get_state
+from haiku._src.base import GetterContext
 from haiku._src.base import maybe_next_rng_key
 from haiku._src.base import next_rng_key
 from haiku._src.base import next_rng_keys
@@ -56,6 +59,9 @@ from haiku._src.embed import EmbedLookupStyle
 from haiku._src.group_norm import GroupNorm
 from haiku._src.layer_norm import InstanceNorm
 from haiku._src.layer_norm import LayerNorm
+from haiku._src.lift import lift
+from haiku._src.module import intercept_methods
+from haiku._src.module import MethodContext
 from haiku._src.module import Module
 from haiku._src.module import transparent
 from haiku._src.moving_averages import EMAParamsTree
@@ -134,6 +140,7 @@ __all__ = (
     "EmbedLookupStyle",
     "ExponentialMovingAverage",
     "Flatten",
+    "GetterContext",
     "GRU",
     "GroupNorm",
     "IdentityCore",
@@ -143,6 +150,7 @@ __all__ = (
     "LayerNorm",
     "Linear",
     "MaxPool",
+    "MethodContext",
     "Module",
     "MultiHeadAttention",
     "MultiTransformed",
@@ -163,6 +171,8 @@ __all__ = (
     "avg_pool",
     "cond",
     "eval_shape",
+    "custom_creator",
+    "custom_getter",
     "data_structures",
     "deep_rnn_with_skip_connections",
     "dropout",
@@ -173,7 +183,9 @@ __all__ = (
     "get_state",
     "grad",
     "initializers",
+    "intercept_methods",
     "jit",
+    "lift",
     "max_pool",
     "maybe_next_rng_key",
     "mixed_precision",

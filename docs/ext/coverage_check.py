@@ -22,12 +22,22 @@ from sphinx import application
 from sphinx import builders
 from sphinx import errors
 
+HIDDEN_SYMBOLS = ("haiku.experimental.GetterContext",
+                  "haiku.experimental.MethodContext",
+                  "haiku.experimental.ParamContext",
+                  "haiku.experimental.custom_creator",
+                  "haiku.experimental.custom_getter",
+                  "haiku.experimental.intercept_methods",
+                  "haiku.experimental.lift")
+
 
 def haiku_public_symbols():
   names = set()
   for module_name, module in test_utils.find_internal_python_modules(hk):
     for name in module.__all__:
-      names.add(module_name + "." + name)
+      symbol_name = f"{module_name}.{name}"
+      if symbol_name not in HIDDEN_SYMBOLS:
+        names.add(symbol_name)
   return names
 
 

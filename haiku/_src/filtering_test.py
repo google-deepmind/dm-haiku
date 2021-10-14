@@ -162,6 +162,17 @@ class FilteringTest(parameterized.TestCase):
       expected = {f"layer_{i}": {"w": None}}
       self.assertEqual(substructure, expected)
 
+  def test_partition_n_nested(self):
+    nested_structure = {"layer": {"a": [1, 2, 3],
+                                  "b": set([object()]),
+                                  "c": {"a": "b"}}}
+    cnt = itertools.count()
+    fn = lambda m, n, v: next(cnt)
+    out1, out2, out3 = filtering.partition_n(fn, nested_structure, 3)
+    self.assertEqual(out1, {"layer": {"a": nested_structure["layer"]["a"]}})
+    self.assertEqual(out2, {"layer": {"b": nested_structure["layer"]["b"]}})
+    self.assertEqual(out3, {"layer": {"c": nested_structure["layer"]["c"]}})
+
   @parameterized.parameters(*range(1, 8))
   def test_partition_n_merge_isomorphism(self, n):
     cnt = itertools.count()
@@ -180,6 +191,16 @@ class FilteringTest(parameterized.TestCase):
       expected.append((f"layer_{i}", "b", "bv"))
       expected.append((f"layer_{i}", "w", "wv"))
     actual = list(filtering.traverse(structure))
+    self.assertEqual(expected, actual)
+
+  def test_traverse_nested(self):
+    nested_structure = {"layer": {"a": [1, 2, 3],
+                                  "b": set([object()]),
+                                  "c": {"a": "b"}}}
+    expected = [
+        ("layer", x, nested_structure["layer"][x]) for x in ("a", "b", "c")
+    ]
+    actual = list(filtering.traverse(nested_structure))
     self.assertEqual(expected, actual)
 
   @parameterized.parameters(({}, {}, True),
@@ -313,6 +334,16 @@ class FilteringTest(parameterized.TestCase):
     c = types.MappingProxyType({"foo": {"bat": 3}})
     d = filtering.merge(a, b, c)
     self.assertEqual(d, {"foo": {"bar": 1, "baz": 2, "bat": 3}})
+
+  def test_merge_nested(self):
+    a = {"layer": {"a": [1, 2, 3]}}
+    b = {"layer": {"b": set([object()])}}
+    c = {"layer": {"c": {"a": "b"}}}
+    actual = filtering.merge(a, b, c)
+    expected = {"layer": {"a": a["layer"]["a"],
+                          "b": b["layer"]["b"],
+                          "c": c["layer"]["c"]}}
+    self.assertEqual(expected, actual)
 
   def assert_output_type(self, out_cls):
     def assert_type_recursive(s):

@@ -502,13 +502,12 @@ def assert_is_prng_key(key: PRNGKey):
                      f"{type(key)}:\n{key}")
   elif hasattr(key, "dtype"):
     # In this case the key is array-like (ndarray or Tracer), and not a custom
-    # PRNG, so we can check for the threefry key shape and dtype
-    if key.shape != (2,) or key.dtype != jnp.uint32:
-      # Keys are expected to be uint32 vectors of length 2.
-      # c.f. https://jax.rtfd.io/en/latest/jax.random.html#jax.random.PRNGKey
+    # PRNG, so we can check for the key shape and dtypes of the available
+    # default PRNG implementations (threefry and RBG)
+    if (key.shape not in ((2,), (4,))) or key.dtype != jnp.uint32:
       raise ValueError(
           "Provided key did not have expected shape and/or dtype "
-          f"expected=(shape=(2,), dtype=uint32) "
+          "expected=(shape=(2,), dtype=uint32) or (shape=(4,), dtype=uint32) "
           f"actual=(shape={key.shape}, dtype={key.dtype})")
 
 PRNGSequenceState = Tuple[PRNGKey, Iterable[PRNGKey]]

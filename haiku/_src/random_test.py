@@ -50,6 +50,14 @@ class RandomTest(absltest.TestCase):
                       f.apply({}, key),
                       tuple(split_for_n(key, 2)))
 
+  def test_rbg_default_impl(self):
+    with jax.default_prng_impl("rbg"):
+      key = jax.random.PRNGKey(42)
+      self.assertEqual(key.shape, (4,))
+      _, apply = transform.transform(base.next_rng_key)
+      out_key = apply({}, key)
+      self.assertEqual(out_key.shape, (4,))
+
 
 class CustomRNGTest(absltest.TestCase):
 
@@ -66,21 +74,18 @@ class CustomRNGTest(absltest.TestCase):
     def count_splits(_, num):
       nonlocal count
       count += 1
-      return jnp.zeros((num, 2, 2), np.uint32)
+      return jnp.zeros((num, 13), np.uint32)
 
-    double_shape_prng_impl = prng.PRNGImpl(
+    differently_shaped_prng_impl = prng.PRNGImpl(
         # Testing a different key shape to make sure it's accepted by Haiku
-        key_shape=(2, 2),
-        seed=lambda _: jnp.zeros((2, 2), np.uint32),
+        key_shape=(13,),
+        seed=lambda _: jnp.zeros((13,), np.uint32),
         split=count_splits,
         random_bits=lambda *_, data: jnp.zeros(data, np.uint32),
         fold_in=lambda key, _: key)
 
-    def splits_haiku_key():
-      base.next_rng_key()
-
-    init, _ = transform.transform(splits_haiku_key)
-    key = prng.seed_with_impl(double_shape_prng_impl, 42)
+    init, _ = transform.transform(base.next_rng_key)
+    key = prng.seed_with_impl(differently_shaped_prng_impl, 42)
     init(key)
     self.assertEqual(count, 1)
     # testing if Tracers with a different key shape are accepted

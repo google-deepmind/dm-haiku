@@ -182,7 +182,20 @@ TransformedT = TypeVar("TransformedT", Transformed, TransformedWithState)
 
 
 def without_apply_rng(f: TransformedT) -> TransformedT:
-  """Removes the rng argument from the apply function."""
+  """Removes the rng argument from the apply function.
+
+  This is a convenience wrapper that makes the ``rng`` argument to
+  ``f.apply`` default to ``None``. This is useful when ``f`` doesn't actually
+  use random numbers as part of its computation, such that the ``rng`` argument
+  wouldn't be used. Note that if ``f`` `does` use random numbers, this will
+  cause an error to be thrown complaining that ``f`` needs a non-None PRNGKey.
+
+  Args:
+    f: A transformed function.
+
+  Returns:
+    The same transformed function, with a modified ``apply``.
+  """
   def check_rng_kwarg(kwargs):
     if "rng" in kwargs:
       raise TypeError(

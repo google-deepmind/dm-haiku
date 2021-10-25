@@ -93,7 +93,12 @@ Haiku?
 
 ## Quickstart<a id="quickstart"></a>
 
-Let's take a look at an example neural network and loss function.
+Let's take a look at an example neural network, loss function, and training
+loop. (For more examples, see our
+[examples directory](https://github.com/deepmind/dm-haiku/tree/main/examples/).
+The
+[MNIST example](https://github.com/deepmind/dm-haiku/tree/main/examples/mnist.py)
+is a good place to start.)
 
 ```python
 import haiku as hk
@@ -112,45 +117,40 @@ def loss_fn(images, labels):
   logits = mlp(images)
   return jnp.mean(softmax_cross_entropy(logits, labels))
 
-# There are two transforms in Haiku, hk.transform and hk.transform_with_state.
-# If our network updated state during the forward pass (e.g. like the moving
-# averages in hk.BatchNorm) we would need hk.transform_with_state, but for our
-# simple MLP we can just use hk.transform.
 loss_fn_t = hk.transform(loss_fn)
-
-# MLP is deterministic once we have our parameters, as such we will not need to
-# pass an RNG key to apply. without_apply_rng is a convenience wrapper that will
-# make the rng argument to `loss_fn_t.apply` default to `None`.
 loss_fn_t = hk.without_apply_rng(loss_fn_t)
+
+rng = jax.random.PRNGKey(42)
+dummy_images, dummy_labels = next(input_dataset)
+params = loss_fn_t.init(rng, dummy_images, dummy_labels)
+
+def update_rule(param, update):
+  return param - 0.01 * update
+
+for images, labels in input_dataset:
+  grads = jax.grad(loss_fn_t.apply)(params, images, labels)
+  params = jax.tree_multimap(update_rule, params, grads)
 ```
 
-`hk.transform` allows us to turn this function into a pair of pure functions:
-`init` and `apply`. All JAX transformations (e.g. `jax.grad`) require you to pass
-in a pure function for correct behaviour. Haiku makes it easy to write them.
+The core of Haiku is `hk.transform`. The `transform` function allows you to
+write neural network functions that rely on parameters (here the weights of the
+`Linear` layers) without requiring you to explicitly write the boilerplate
+for initialising those parameters. `transform` does this by transforming the
+function into a pair of functions that are _pure_ (as required by JAX) `init`
+and `apply`.
 
-The `init` function returned by `hk.transform` allows you to **collect** the
+### `init`
+
+The `init` function, with signature `params = init(rng, ...)` (where `...` are
+the arguments to the untransformed function), allows you to **collect** the
 initial value of any parameters in the network. Haiku does this by running your
 function, keeping track of any parameters requested through `hk.get_parameter`
-and returning them to you:
+(called by e.g. `hk.Linear`) and returning them to you.
 
-```python
-# Initial parameter values are typically random. In JAX you need a key in order
-# to generate random numbers and so Haiku requires you to pass one in.
-rng = jax.random.PRNGKey(42)
-
-# `init` runs your function, as such we need an example input. Typically you can
-# pass "dummy" inputs (e.g. ones of the same shape and dtype) since initialization
-# is not usually data dependent.
-images, labels = next(input_dataset)
-
-# The result of `init` is a nested data structure of all the parameters in your
-# network. You can pass this into `apply`.
-params = loss_fn_t.init(rng, images, labels)
-```
-
-The `params` object is designed for you to inspect and manipulate. It is a
-mapping of module name to module parameters, where a module parameter is a mapping
-of parameter name to parameter value. For example:
+The `params` object returned is a nested data structure of all the
+parameters in your network, designed for your to inspect and manipulate. 
+Concretely, it is a mapping of module name to module parameters, where a module
+parameter is a mapping of parameter name to parameter value. For example:
 
 ```
 {'linear': {'b': ndarray(..., shape=(300,), dtype=float32),
@@ -161,12 +161,26 @@ of parameter name to parameter value. For example:
               'w': ndarray(..., shape=(100, 10), dtype=float32)}}
 ```
 
-The `apply` function allows you to **inject** parameter values into your
-function. Whenever `hk.get_parameter` is called the value returned will come
-from the `params` you provide as input to `apply`:
+### `apply`
+
+The `apply` function, with signature `result = apply(params, rng, ...)`, allows
+you to **inject** parameter values into your function. Whenever
+`hk.get_parameter` is called, the value returned will come from the `params` you
+provide as input to `apply`:
 
 ```python
-loss = loss_fn_t.apply(params, images, labels)
+loss = loss_fn_t.apply(params, rng, images, labels)
+```
+
+Note that since the actual computation performed by our loss function doesn't
+rely on random numbers, passing in a random number generator is unnecessary, so
+we could also pass in `None` for the `rng` argument. (Note that if your
+computation _does_ use random numbers, passing in `None` for `rng` will cause
+an error to be raised.) In our example above, we ask Haiku to do this for us
+automatically with:
+
+```python
+loss_fn_t = hk.without_apply_rng(loss_fn_t)
 ```
 
 Since `apply` is a pure function we can pass it to `jax.grad` (or any of JAX's
@@ -176,26 +190,13 @@ other transforms):
 grads = jax.grad(loss_fn_t.apply)(params, images, labels)
 ```
 
-Finally, we put this all together into a simple training loop:
+### Training
 
-```python
-def sgd(param, update):
-  return param - 0.01 * update
+The training loop in this example is very simple. One detail to note is the use
+of `jax.tree_multimap` to apply the `sgd` function across all matching
+entries in `params` and `grads`. The result has the same structure as the
+previous `params` and can again be used with `apply`.
 
-for images, labels in input_dataset:
-  grads = jax.grad(loss_fn_t.apply)(params, images, labels)
-  params = jax.tree_multimap(sgd, params, grads)
-```
-
-Here we used `jax.tree_multimap` to apply the `sgd` function across all matching
-entries in `params` and `grads`. The result has the same structure as the previous
-`params` and can again be used with `apply`.
-
-For more, see our
-[examples directory](https://github.com/deepmind/dm-haiku/tree/main/examples/).
-The
-[MNIST example](https://github.com/deepmind/dm-haiku/tree/main/examples/mnist.py)
-is a good place to start.
 
 ## Installation<a id="installation"></a>
 

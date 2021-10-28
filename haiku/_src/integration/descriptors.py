@@ -306,10 +306,11 @@ RECURRENT_MODULES = (
 
 ALL_MODULES = OPTIONAL_BATCH_MODULES + BATCH_MODULES + RECURRENT_MODULES
 
-IGNORED_MODULES = {
+IGNORED_MODULES = frozenset({
     # Stateless or abstract.
     hk.BatchApply,
     hk.Module,
+    hk.CallableModule,
     hk.Reshape,
     hk.AvgPool,
     hk.MaxPool,
@@ -333,4 +334,4 @@ IGNORED_MODULES = {
     hk.nets.ResNet101,
     hk.nets.ResNet152,
     hk.nets.ResNet200,
-}
+})

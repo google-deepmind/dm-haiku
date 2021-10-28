@@ -35,6 +35,7 @@ from haiku._src.base import reserve_rng_keys
 from haiku._src.base import set_state
 from haiku._src.base import with_rng
 from haiku._src.basic import BatchApply
+from haiku._src.basic import CallableModule
 from haiku._src.basic import dropout
 from haiku._src.basic import expand_apply
 from haiku._src.basic import Linear

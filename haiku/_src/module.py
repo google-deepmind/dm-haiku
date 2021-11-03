@@ -45,8 +45,8 @@ modules_with_named_call = False
 def profiler_name_scopes(enabled=True):
   """Enable/disable profiler name_scopes on all haiku module methods.
 
-  Note: currently only enables for ``__call__``. See: :function:`named_call` if
-  you want to annotate other methods explicitly.
+  Note: currently only enables for ``__call__``. See: :func:`named_call` if you
+  want to annotate other methods explicitly.
 
   Args:
     enabled: Whether to enable name scopes or not.

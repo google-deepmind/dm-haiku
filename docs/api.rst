@@ -125,15 +125,6 @@ GetterContext
 
 .. autoclass:: GetterContext
 
-ParamContext
-~~~~~~~~~~~~
-
-.. deprecated:: 0.0.3
-  Renamed to :class:`GetterContext` and used for both custom parameter getters
-  and custom state getters.
-
-.. autoclass:: ParamContext
-
 intercept_methods
 ~~~~~~~~~~~~~~~~~
 

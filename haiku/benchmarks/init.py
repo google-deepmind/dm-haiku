@@ -41,7 +41,7 @@ def init_benchmark(model):
     k = jax.random.PRNGKey(42)
 
     c = jax.xla_computation(init)(k, x)
-    b = jax.lib.xla_client.get_local_backend()
+    b = jax.lib.xla_bridge.get_backend()
 
     while state:
       b.compile(c)

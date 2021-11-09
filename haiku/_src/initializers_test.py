@@ -150,6 +150,35 @@ class InitializersTest(parameterized.TestCase):
     np.testing.assert_almost_equal(value.mean(), gain / shape[-1], decimal=4)
     np.testing.assert_almost_equal(value.max(), gain, decimal=4)
 
+  @test_utils.transform_and_run
+  def test_complex_dtype(self):
+    if jax.local_devices()[0].platform == "tpu":
+      self.skipTest("Complex dtype not supported by TPU")
+    # This just makes sure we can call the initializers in accordance to the
+    # API and get the right shapes and dtypes out.
+    inits = [
+        initializers.Constant(42. + 1j * 1729.),
+        initializers.RandomNormal(),
+        initializers.RandomNormal(2.0),
+        initializers.RandomNormal(2. - 3j),
+        initializers.TruncatedNormal(),
+        initializers.TruncatedNormal(2.),
+        initializers.TruncatedNormal(2., 1. - 1j),
+
+        # Users are supposed to be able to use these.
+        jnp.zeros,
+        jnp.ones,
+    ]
+
+    shape = (5, 13, 17)
+
+    dtype = jnp.complex64
+    for init in inits:
+      generated = init(shape, dtype)
+      self.assertEqual(generated.shape, shape)
+      self.assertEqual(generated.dtype, dtype)
+
+
 if __name__ == "__main__":
   config.update("jax_enable_x64", True)
   absltest.main()

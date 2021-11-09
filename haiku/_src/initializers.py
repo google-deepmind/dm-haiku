@@ -99,10 +99,16 @@ class TruncatedNormal(hk.initializers.Initializer):
     self.mean = mean
 
   def __call__(self, shape: Sequence[int], dtype: Any) -> jnp.ndarray:
+    real_dtype = jnp.finfo(dtype).dtype
     m = jax.lax.convert_element_type(self.mean, dtype)
-    s = jax.lax.convert_element_type(self.stddev, dtype)
+    s = jax.lax.convert_element_type(self.stddev, real_dtype)
+    is_complex = jnp.issubdtype(dtype, jnp.complexfloating)
+    if is_complex:
+      shape = [2, *shape]
     unscaled = jax.random.truncated_normal(hk.next_rng_key(), -2., 2., shape,
-                                           dtype)
+                                           real_dtype)
+    if is_complex:
+      unscaled = unscaled[0] + 1j * unscaled[1]
     return s * unscaled + m
 
 

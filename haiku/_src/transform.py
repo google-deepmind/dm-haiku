@@ -377,7 +377,9 @@ def transform_with_state(f) -> TransformedWithState:
     params = check_mapping("params", params)
     state = check_mapping("state", state)
     rng = to_prng_sequence(
-        rng, err_msg=(APPLY_RNG_STATE_ERROR if state else APPLY_RNG_ERROR))
+        rng,
+        err_msg=(APPLY_RNG_STATE_ERROR
+                 if state is not None else APPLY_RNG_ERROR))
     with base.new_context(params=params, state=state, rng=rng) as ctx:
       try:
         out = f(*args, **kwargs)

@@ -512,6 +512,18 @@ class TransformTest(parameterized.TestCase):
                                 "want to use the Haiku version"):
       init(jax.random.PRNGKey(42))
 
+  @test_utils.combined_named_parameters(
+      (("jit", jax.jit),
+       ("pmap", jax.pmap)),
+      (("transform", transform.transform),
+       ("transform_with_state", transform.transform_with_state)))
+  def test_passing_function_to_transform(self, jax_transform, hk_transform):
+    f = jax_transform(lambda: 0)
+    with self.assertRaisesRegex(
+        ValueError,
+        r"instead .*jax.jit\(hk.transform\(f\).apply\)"):
+      hk_transform(f)
+
 
 class ObjectWithTransform:
 

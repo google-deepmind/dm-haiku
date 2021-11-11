@@ -303,6 +303,21 @@ def transform(f, *, apply_rng=True) -> Transformed:
   return without_state(transform_with_state(f))
 
 
+def check_not_jax_transformed(f):
+  # TODO(tomhennigan): Consider `CompiledFunction = type(jax.jit(lambda: 0))`.
+  if isinstance(f, (jax.xla.xe.CompiledFunction, jax.xla.xe.PmapFunction)):  # pytype: disable=name-error
+    raise ValueError("A common error with Haiku is to pass an already jit "
+                     "(or pmap) decorated function into hk.transform (e.g. "
+                     "`hk.transform(jax.jit(f)))`. You should instead jit/pmap "
+                     "the init or apply function you get back from Haiku (e.g. "
+                     "`jax.jit(hk.transform(f).apply)`).\n\n"
+                     "This is because the function you pass into hk.transform "
+                     "is not a pure function (because you don't explicitly "
+                     "pass in/out params/rng). jit and pmap require you to "
+                     "pass in a pure function (such as the init or apply "
+                     "functions Haiku gives you back from hk.transform).")
+
+
 def transform_with_state(f) -> TransformedWithState:
   """Transforms a function using Haiku modules into a pair of pure functions.
 
@@ -343,6 +358,7 @@ def transform_with_state(f) -> TransformedWithState:
     functions.
   """
   analytics.log_once("transform_with_state")
+  check_not_jax_transformed(f)
 
   unexpected_tracer_hint = (
       "An UnexpectedTracerError was raised while inside a Haiku transformed "
@@ -352,6 +368,7 @@ def transform_with_state(f) -> TransformedWithState:
       "the Haiku version of the transform instead (hk.vmap/hk.scan/...).\n"
       "See https://dm-haiku.readthedocs.io/en/latest/notebooks/transforms.html "
       "on why you can't use JAX transforms inside a Haiku module.")
+
   def init_fn(
       rng: Optional[Union[PRNGKey, int]],
       *args,

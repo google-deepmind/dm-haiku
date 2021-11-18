@@ -210,13 +210,28 @@ class TabulateTest(parameterized.TestCase):
     output = summarise.tabulate(f, tabulate_kwargs=tabulate_kwargs)()
     self.assertIn("<table>", output)
 
-  def test_equivalent_when_passing_transformed_fn(self):
+  @parameterized.parameters(lambda f: f, jax.jit, jax.pmap)
+  def test_jax_transformed_wrapper(self, jax_transform):
+    # Happens in practice if someone asks for a `summary(pmap(train_step))`
+    f = lambda: CallsOtherModule(MultipleParametersModule())()
+    f = transform.transform(f)
+    rng = jax.random.PRNGKey(42)
+    if jax_transform == jax.pmap:
+      rng = jnp.broadcast_to(rng, (1, *rng.shape))
+    params = jax_transform(f.init)(rng)
+    g = jax_transform(lambda params, rng: f.apply(params, rng))
+    rows = tabulate_to_list(g, params, rng)
+    self.assertNotEmpty(rows)
+
+  @parameterized.parameters(lambda f: f, jax.jit, jax.pmap)
+  def test_equivalent_when_passing_transformed_fn(self, jax_transform):
     f = lambda: CallsOtherModule(MultipleParametersModule())()
     f_transform = transform.transform(f)
     rows = tabulate_to_list(f)
+    self.assertNotEmpty(rows)
     self.assertEqual(rows, tabulate_to_list(f_transform))
-    self.assertEqual(rows, tabulate_to_list(f_transform.init))
-    self.assertEqual(rows, tabulate_to_list(f_transform.apply))
+    self.assertEqual(rows, tabulate_to_list(jax_transform(f_transform.init)))
+    self.assertEqual(rows, tabulate_to_list(jax_transform(f_transform.apply)))
 
 
 class MultipleParametersModule(module_lib.Module):

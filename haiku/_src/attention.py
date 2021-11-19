@@ -73,7 +73,9 @@ class MultiHeadAttention(hk.Module):
     sqrt_key_size = np.sqrt(self.key_size).astype(key.dtype)
     attn_logits = attn_logits / sqrt_key_size
     if mask is not None:
-      assert len(mask.shape) == len(attn_logits.shape)
+      if mask.ndim != attn_logits.ndim:
+        raise ValueError(f"Mask dimensionality {mask.ndim} must match logits "
+                         f"{attn_logits.ndim}.")
       attn_logits = jnp.where(mask, attn_logits, -1e30)
 
     attn_weights = jax.nn.softmax(attn_logits)

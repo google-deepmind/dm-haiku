@@ -12,13 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Train a transformer for language modeling on LM1B.
+r"""Train a transformer for language modeling on a small text dataset.
 
 This example serves to demonstrate:
   - A clean Haiku transformer implementation.
   - An example minimal training loop around it.
 
-We have not tuned the hyperparameters for LM1B at all.
+This example runs on ASCII text files.
+We have not tuned the hyperparameters at all.
+
+Example, using Karpathy's tiny_shakespeare dataset:
+$ wget -O /tmp/shakespeare.txt \
+    https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
+$ python3 examples/transformer/train.py --dataset_path=/tmp/shakespeare.txt
 
 Note: Run with --alsologtostderr to see outputs.
 """
@@ -40,18 +46,20 @@ import jax.numpy as jnp
 import numpy as np
 import optax
 
-flags.DEFINE_integer('batch_size', 16, 'Train batch size per core')
-flags.DEFINE_integer('sequence_length', 128, 'Sequence length to learn on')
+flags.DEFINE_string('dataset_path', None, 'Single-file ASCII dataset location.')
 
-flags.DEFINE_integer('d_model', 256, 'model width')
+flags.DEFINE_integer('batch_size', 2, 'Train batch size per core')
+flags.DEFINE_integer('sequence_length', 64, 'Sequence length to learn on')
+
+flags.DEFINE_integer('d_model', 128, 'model width')
 flags.DEFINE_integer('num_heads', 4, 'Number of attention heads')
-flags.DEFINE_integer('num_layers', 6, 'Number of transformer layers')
+flags.DEFINE_integer('num_layers', 4, 'Number of transformer layers')
 flags.DEFINE_float('dropout_rate', 0.1, 'Dropout rate')
 
-flags.DEFINE_float('learning_rate', 2e-4, 'Max learning-rate')
-flags.DEFINE_float('grad_clip_value', 0.25, 'Gradient norm clip value')
+flags.DEFINE_float('learning_rate', 3e-4, 'Max learning-rate')
+flags.DEFINE_float('grad_clip_value', 1, 'Gradient norm clip value')
 
-flags.DEFINE_string('checkpoint_dir', '/tmp/haiku-lm1b',
+flags.DEFINE_string('checkpoint_dir', '/tmp/haiku-transformer',
                     'Directory to store checkpoints.')
 
 FLAGS = flags.FLAGS
@@ -209,9 +217,12 @@ class CheckpointingUpdater:
 
 
 def main(_):
+  FLAGS.alsologtostderr = True  # Always log visibly.
   # Create the dataset.
-  train_dataset, vocab_size = dataset.load(FLAGS.batch_size,
-                                           FLAGS.sequence_length)
+  train_dataset = dataset.AsciiDataset(
+      FLAGS.dataset_path, FLAGS.batch_size, FLAGS.sequence_length)
+  vocab_size = train_dataset.vocab_size
+
   # Set up the model, loss, and updater.
   forward_fn = build_forward_fn(vocab_size, FLAGS.d_model, FLAGS.num_heads,
                                 FLAGS.num_layers, FLAGS.dropout_rate)
@@ -247,5 +258,5 @@ def main(_):
 
 
 if __name__ == '__main__':
-  dataset.check_tfds_version()
+  flags.mark_flag_as_required('dataset_path')
   app.run(main)

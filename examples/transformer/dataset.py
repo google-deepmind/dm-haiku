@@ -12,57 +12,67 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Transformer datasets."""
+"""Transformer example dataset."""
 
-from typing import NamedTuple
+import itertools
+import random
 
-from packaging import version
-import tensorflow as tf
-import tensorflow_datasets as tfds
-
-
-class LanguageDataset(NamedTuple):
-  records: tf.data.Dataset
-  vocab_size: int
+import numpy as np
 
 
-def check_tfds_version():
-  tfds_version = version.parse(tfds.version.__version__)
-  maximum = version.parse('4.2.0')
-  if tfds_version >= maximum:
-    raise ValueError(f'tensorflow_datasets < {maximum} is required, you '
-                     f'have {tfds_version}. You can downgrade using:\n\n'
-                     '    pip install "tensorflow-datasets==4.1.0"')
+def _infinite_shuffle(iterable, buffer_size):
+  """Infinitely repeat and shuffle data from iterable."""
+  ds = itertools.cycle(iterable)
+  buf = [next(ds) for _ in range(buffer_size)]
+  random.shuffle(buf)
+  while True:
+    item = next(ds)
+    idx = random.randint(0, buffer_size - 1)  # Inclusive.
+    result, buf[idx] = buf[idx], item
+    yield result
 
 
-def load(batch_size: int, sequence_length: int) -> LanguageDataset:
-  """Load LM1B dataset, returning it and vocab_size."""
-  ds, ds_info = tfds.load(
-      'lm1b/subwords32k',
-      split=tfds.Split.TRAIN,
-      shuffle_files=True,
-      with_info=True)
+class AsciiDataset:
+  """In-memory dataset of a single-file ASCII dataset."""
 
-  crop_size = sequence_length + 1
-  ds = ds.repeat()
-  # Convert the dataset to constant-size int32 tensors.
-  ds = ds.map(lambda d: tf.cast(d['text'], tf.int32))
-  ds = ds.map(lambda t: _crop_or_pad(t, crop_size, pad_token=0))
-  ds = ds.shuffle(batch_size * 10)
-  # Create the language modeling observation/target pairs and batch them up.
-  ds = ds.map(lambda t: dict(obs=t[:-1], target=t[1:]))
-  ds = ds.batch(batch_size, drop_remainder=True)
-  ds = ds.prefetch(tf.data.experimental.AUTOTUNE)
-  ds = iter(tfds.as_numpy(ds))
-  return LanguageDataset(ds, ds_info.features['text'].encoder.vocab_size)
+  def __init__(self, path: str, batch_size: int, sequence_length: int):
+    """Load a single-file ASCII dataset in memory."""
+    self.vocab_size = 128
+    self._batch_size = batch_size
 
+    with open(path, 'r') as f:
+      corpus = f.read()
 
-# TODO(tycai): Do a split-to-crop instead so we don't throw away data.
-def _crop_or_pad(value, size, pad_token):
-  """Either crop or pad value to be of size size."""
-  val_size = tf.size(value)
-  pad = lambda: tf.pad(  # pylint: disable=g-long-lambda
-      value, [[0, size - val_size]],
-      'CONSTANT',
-      constant_values=pad_token)
-  return tf.cond(val_size < size, pad, lambda: value[:size])
+    if not corpus.isascii():
+      raise ValueError('Loaded corpus is not ASCII.')
+
+    if '\0' in corpus:
+      # Reserve 0 codepoint for pad token.
+      raise ValueError('Corpus must not contain null byte.')
+
+    # Tokenize by taking ASCII codepoints.
+    corpus = np.array([ord(c) for c in corpus]).astype(np.int32)
+    assert np.min(corpus) > 0
+    assert np.max(corpus) < self.vocab_size  # Double-checking ASCII codepoints.
+
+    crop_len = sequence_length + 1
+    num_batches, ragged = divmod(corpus.size, batch_size * crop_len)
+    if ragged:
+      corpus = corpus[:-ragged]
+    corpus = corpus.reshape([-1, crop_len])
+
+    if num_batches < 10:
+      raise ValueError(f'Only {num_batches} batches; consider a shorter '
+                       'sequence or a smaller batch.')
+
+    self._ds = _infinite_shuffle(corpus, batch_size * 10)
+
+  def __next__(self):
+    """Yield next mini-batch."""
+    batch = [next(self._ds) for _ in range(self._batch_size)]
+    batch = np.stack(batch)
+    # Create the language modeling observation/target pairs.
+    return dict(obs=batch[:, :-1], target=batch[:, 1:])
+
+  def __iter__(self):
+    return self

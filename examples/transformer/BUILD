@@ -24,9 +24,7 @@ hk_py_library(
     name = "dataset",
     srcs = ["dataset.py"],
     deps = [
-        # pip: packaging
-        # pip: tensorflow
-        # pip: tensorflow_datasets
+        # pip: numpy
     ],
 )
 

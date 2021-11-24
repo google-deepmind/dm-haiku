@@ -211,9 +211,9 @@ def eval_summary(
   f_logged = hk.transform_with_state(f_logged)
 
   def init_apply(*args, **kwargs):
-    rng = jax.random.PRNGKey(42)
-    params, state = f_orig.init(rng, *args, **kwargs)
-    f_logged.apply(params, state, rng, *args, **kwargs)
+    init_rng, apply_rng = jax.random.split(jax.random.PRNGKey(42))
+    params, state = f_orig.init(init_rng, *args, **kwargs)
+    f_logged.apply(params, state, apply_rng, *args, **kwargs)
 
   def wrapper(*args, **kwargs) -> Sequence[MethodInvocation]:
     used_modules = []

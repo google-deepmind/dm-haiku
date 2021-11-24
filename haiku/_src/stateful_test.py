@@ -348,12 +348,13 @@ class StatefulTest(parameterized.TestCase):
 
     f = transform.transform_with_state(f)
     key = jax.random.PRNGKey(42)
+    init_key, apply_key = jax.random.split(key)
     xs = jnp.arange(unroll_length)
-    params, state = f.init(key, xs)
+    params, state = f.init(init_key, xs)
     self.assertEqual(list(state), ["counting_module"])
     self.assertEqual(list(state["counting_module"]), ["count"])
     np.testing.assert_allclose(state["counting_module"]["count"], 0, rtol=1e-4)
-    ys, state = f.apply(params, state, key, xs)
+    ys, state = f.apply(params, state, apply_key, xs)
     np.testing.assert_allclose(state["counting_module"]["count"], unroll_length,
                                rtol=1e-4)
     np.testing.assert_allclose(ys, xs ** 2, rtol=1e-4)

@@ -90,16 +90,17 @@ class MultiHeadAttentionTest(parameterized.TestCase):
       return attention.MultiHeadAttention(
           key_size=3, num_heads=5, w_init_scale=1.0)(query, key, value)
     rng = jax.random.PRNGKey(42)
+    init_rng, apply_rng, vmap_rng = jax.random.split(rng, num=3)
     init, apply = transform.transform(f)
     # Transform as single-instance function:
     query = key = value = jnp.zeros((7, 11))
-    params = init(rng, query, key, value)
-    y = apply(params, rng, query, key, value)
+    params = init(init_rng, query, key, value)
+    y = apply(params, apply_rng, query, key, value)
     self.assertEqual(y.shape, (7, 15,))
     # Use vmap to get batched function:
     vapply = jax.vmap(apply, in_axes=(None, 0, 0, 0, 0), out_axes=0)
     query = key = value = jnp.zeros((13, 7, 11))  # prepend batch axis
-    rngs = jax.random.split(rng, 13)  # give each instance its own rng
+    rngs = jax.random.split(vmap_rng, 13)  # give each instance its own rng
     y = vapply(params, rngs, query, key, value)
     self.assertEqual(y.shape, (13, 7, 15))
 

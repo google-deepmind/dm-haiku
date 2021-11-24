@@ -97,13 +97,16 @@ def transform_and_run(f: Optional[Fn] = None,
   @functools.wraps(f)
   def wrapper(*a, **k):
     """Runs init and apply of f."""
-    rng = random.PRNGKey(seed) if seed is not None else None
+    if seed is not None:
+      init_rng, apply_rng = random.PRNGKey(seed), random.PRNGKey(seed+1)
+    else:
+      init_rng, apply_rng = None, None
     init, apply = transform.transform_with_state(lambda: f(*a, **k))
     if jax_transform:
       init, apply = map(jax_transform, (init, apply))
-    params, state = init(rng)
+    params, state = init(init_rng)
     if run_apply:
-      out, state = apply(params, state, rng)
+      out, state = apply(params, state, apply_rng)
       return out
 
   return wrapper

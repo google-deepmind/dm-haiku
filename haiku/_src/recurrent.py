@@ -570,6 +570,61 @@ class GRU(RNNCore):
     return state
 
 
+class LEM(RNNCore):
+  """Long Expressive Memory.
+
+  The implementation is based on: "Long Expressive Memory for Sequence Modeling"
+  https://arxiv.org/abs/2110.04744
+  """
+
+  def __init__(self, hidden_size: int,
+               dt: float = 1.0,
+               dt_bias: float = 0.0,
+               name: Optional[str] = None):
+    r"""Constructs a LEM.
+
+    Args:
+      hidden_size: Hidden layer size.
+      dt: The :math:`\Delta t` hyperparameter.
+      dt_bias: An extra bias to the activation function for :math:`\Delta t_n`
+        and :math:`\mathbf{\overline{\Delta t_n}}`. For example, use
+        ``dt_bias=-4.0`` to initialize the network for remembering.
+      name: Name of the module.
+    """
+    super().__init__(name=name)
+    self.hidden_size = hidden_size
+    self.dt = dt
+    self.dt_bias = dt_bias
+
+  def __call__(
+      self,
+      inputs: jnp.ndarray,
+      prev_state: LSTMState,
+  ) -> Tuple[jnp.ndarray, LSTMState]:
+    if len(inputs.shape) > 2 or not inputs.shape:
+      raise ValueError("LEM input must be rank-1 or rank-2.")
+    y_and_u = jnp.concatenate([prev_state.hidden, inputs], axis=-1)
+    to_gate = hk.Linear(3 * self.hidden_size)(y_and_u)
+    to_dt1, to_dt2, to_update1 = jnp.split(
+        to_gate, indices_or_sections=3, axis=-1)
+    dt1 = self.dt * jax.nn.sigmoid(to_dt1 + self.dt_bias)
+    dt2 = self.dt * jax.nn.sigmoid(to_dt2 + self.dt_bias)
+
+    partial_to_update2 = hk.Linear(self.hidden_size)(inputs)
+    z = (1 - dt1) * prev_state.cell + dt1 * jnp.tanh(to_update1)
+    projected_z = hk.Linear(self.hidden_size, with_bias=False)(z)
+    y = (1 - dt2) * prev_state.hidden + dt2 * jnp.tanh(
+        projected_z + partial_to_update2)
+    return y, LSTMState(hidden=y, cell=z)
+
+  def initial_state(self, batch_size: Optional[int]) -> LSTMState:
+    state = LSTMState(hidden=jnp.zeros([self.hidden_size]),
+                      cell=jnp.zeros([self.hidden_size]))
+    if batch_size is not None:
+      state = add_batch(state, batch_size)
+    return state
+
+
 class IdentityCore(RNNCore):
   """A recurrent core that forwards the inputs and an empty state.
 

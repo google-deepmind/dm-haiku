@@ -467,6 +467,7 @@ Recurrent
     VanillaRNN
     LSTM
     GRU
+    LEM
     DeepRNN
     deep_rnn_with_skip_connections
     ResetCore
@@ -513,6 +514,12 @@ GRU
 ~~~
 
 .. autoclass:: GRU
+   :members:
+
+LEM
+~~~
+
+.. autoclass:: LEM
    :members:
 
 DeepRNN

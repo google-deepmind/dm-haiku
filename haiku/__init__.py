@@ -82,6 +82,7 @@ from haiku._src.recurrent import DeepRNN
 from haiku._src.recurrent import dynamic_unroll
 from haiku._src.recurrent import GRU
 from haiku._src.recurrent import IdentityCore
+from haiku._src.recurrent import LEM
 from haiku._src.recurrent import LSTM
 from haiku._src.recurrent import LSTMState
 from haiku._src.recurrent import ResetCore
@@ -145,6 +146,7 @@ __all__ = (
     "GroupNorm",
     "IdentityCore",
     "InstanceNorm",
+    "LEM",
     "LSTM",
     "LSTMState",
     "LayerNorm",

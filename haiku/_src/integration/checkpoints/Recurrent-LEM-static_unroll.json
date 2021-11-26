@@ -1,0 +1,21 @@
+{
+  "module": [
+    "LEM(hidden_size=1)"
+  ],
+  "input": "f32[8, 128]",
+  "param_size": 520,
+  "param_bytes": 2080,
+  "params": {
+    "lem/linear": {
+      "b": "f32[3]",
+      "w": "f32[129, 3]"
+    },
+    "lem/linear_1": {
+      "b": "f32[1]",
+      "w": "f32[128, 1]"
+    },
+    "lem/linear_2": {
+      "w": "f32[1, 1]"
+    }
+  }
+}

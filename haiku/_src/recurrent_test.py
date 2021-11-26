@@ -52,7 +52,7 @@ def make_sequence(shape):
 class RecurrentTest(parameterized.TestCase):
 
   UNROLLS = (recurrent.dynamic_unroll, recurrent.static_unroll)
-  CORES = (recurrent.VanillaRNN, recurrent.LSTM, recurrent.GRU)
+  CORES = (recurrent.VanillaRNN, recurrent.LSTM, recurrent.GRU, recurrent.LEM)
 
   def test_add_batch(self):
     sample_tree = dict(
@@ -162,6 +162,15 @@ class GRUTest(absltest.TestCase):
   @test_utils.transform_and_run
   def test_gru_raises(self):
     core = recurrent.GRU(4)
+    with self.assertRaisesRegex(ValueError, "rank-1 or rank-2"):
+      core(jnp.zeros([]), core.initial_state(None))
+
+
+class LEMTest(absltest.TestCase):
+
+  @test_utils.transform_and_run
+  def test_lem_raises(self):
+    core = recurrent.LEM(4)
     with self.assertRaisesRegex(ValueError, "rank-1 or rank-2"):
       core(jnp.zeros([]), core.initial_state(None))
 

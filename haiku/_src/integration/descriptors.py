@@ -239,6 +239,10 @@ RNN_CORES = (
         create=lambda: hk.GRU(1),
         shape=(BATCH_SIZE, 128)),
     ModuleDescriptor(
+        name="LEM",
+        create=lambda: hk.LEM(1),
+        shape=(BATCH_SIZE, 128)),
+    ModuleDescriptor(
         name="IdentityCore",
         create=lambda: hk.IdentityCore(),
         shape=(BATCH_SIZE, 128)),

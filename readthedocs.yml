@@ -14,3 +14,8 @@ python:
     - requirements: requirements.txt
     - requirements: requirements-jax.txt
     - requirements: docs/requirements.txt
+
+# Additional formats of documentation to be built apart from HTML
+formats:
+  - htmlzip
+  - pdf

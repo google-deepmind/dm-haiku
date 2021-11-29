@@ -192,7 +192,7 @@ class CheckpointingUpdater:
       return self._inner.init(rng, data)
     else:
       checkpoint = os.path.join(self._checkpoint_dir,
-                                self._checkpoint_paths()[-1])
+                                max(self._checkpoint_paths()))
       logging.info('Loading checkpoint from %s', checkpoint)
       with open(checkpoint, 'rb') as f:
         state = pickle.load(f)

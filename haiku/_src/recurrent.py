@@ -516,10 +516,6 @@ class GRU(RNNCore):
   where :math:`z_t` and :math:`r_t` are reset and update gates.
 
   The output is equal to the new hidden state, :math:`h_t`.
-
-  Warning: Backwards compatibility of GRU weights is currently unsupported.
-
-  TODO(tycai): Make policy decision/benchmark performance for GRU variants.
   """
 
   def __init__(

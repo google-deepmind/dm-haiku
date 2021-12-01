@@ -56,32 +56,28 @@ def one_hot(x, num_classes, dtype=jnp.float32):
 def multinomial(rng, logits, num_samples):
   """Draws samples from a multinomial distribution.
 
+  DEPRECATED: Use ``jax.random.categorical`` instead.
+
   Args:
     rng: A JAX PRNGKey.
-    logits: Unnormalized log-probabilities, of shape
-      ``[batch_size, categories]`` or ``[categories]``.
+    logits: Unnormalized log-probabilities, where last dimension is categories.
     num_samples: Number of samples to draw.
 
   Returns:
-    Chosen categories, of shape ``[batch_size, num_samples]`` or
-    ``[num_samples]``.
+    Chosen categories, of shape ``logits.shape[:-1] + (num_samples,)``.
   """
-  # NOTE(tycai): Currently, tf.multinomial uses CDF for non-XLA CPU only.
-  # We may want to switch to the Gumbel trick as used in XLA.
-  if len(logits.shape) > 2 or not logits.shape:
-    raise ValueError("Logits must be rank-1 or rank-2.")
-  probs = jax.nn.softmax(logits)
-  probs = jnp.cumsum(probs, axis=-1)
-  # Special-case num_samples == 1 due to TPU padding, as in TF2XLA.
-  # https://github.com/tensorflow/tensorflow/blob/b1608511d5a50d05825c4025b0c347e8689a241f/tensorflow/compiler/tf2xla/kernels/categorical_op.cc#L79
-  if num_samples == 1:
-    a = jax.random.uniform(rng, logits.shape[:-1] + (1,))
-    out = jnp.argmin(a > probs, axis=-1)
-    return out[..., None]
+  if num_samples != 1:
+    shape = (num_samples,) + logits.shape[:-1]
   else:
-    a = jax.random.uniform(rng, (num_samples,) + logits.shape[:-1] + (1,))
-    out = jnp.argmin(a > probs, axis=-1)
-    return jnp.transpose(out)
+    shape = None
+
+  samples = jax.random.categorical(rng, logits, shape=shape)
+
+  # Return expected shape.
+  if num_samples != 1:
+    return jnp.moveaxis(samples, 0, -1)
+  else:
+    return samples[..., None]
 
 
 # Common modules.

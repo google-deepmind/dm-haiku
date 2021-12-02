@@ -366,6 +366,7 @@ hk_py_test(
     srcs = ["mixed_precision_test.py"],
     deps = [
         ":base",
+        ":conv",
         ":mixed_precision",
         ":module",
         ":test_utils",

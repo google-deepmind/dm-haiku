@@ -14,11 +14,12 @@
 # ==============================================================================
 """Automatic Mixed Precision (AMP) utilities."""
 
+import collections
 import contextlib
 import sys
 import threading
 import types
-from typing import Dict, Type, Optional
+from typing import Dict, Type, Optional, Union
 
 from haiku._src import base
 from haiku._src import data_structures
@@ -35,6 +36,23 @@ hk.Module = module.Module
 Stack = data_structures.Stack
 del base, data_structures, module
 
+ClassInfo = collections.namedtuple('ClassInfo', 'module,qualname')
+ClassInfoOrType = Union[ClassInfo, Type[hk.Module]]
+
+
+def key_for_module(cls: Type[hk.Module]) -> ClassInfoOrType:
+  """Returns a suitable key for the given module class."""
+  if '<locals>' in cls.__qualname__:
+    # Some APIs (e.g. `hk.to_module`) are factory functions that create modules.
+    # It is not desirable for us to use the qualname in this case since that
+    # would associate all class instances created by the factory with a single
+    # policy. Instead we use the class object itself, with the assumption that
+    # these types are less likely to be created as a side effect of force
+    # reloading modules.
+    return cls
+  else:
+    return ClassInfo(cls.__module__, cls.__qualname__)
+
 
 class _ThreadState(threading.local):
   """Holds per-thread state on mixed precision policies."""
@@ -42,7 +60,7 @@ class _ThreadState(threading.local):
   def __init__(self):
     super().__init__()
     self._interceptor = None
-    self._cls_policy = {}  # type: Dict[Type[hk.Module], jmp.Policy]
+    self._cls_policy = {}  # type: Dict[ClassInfoOrType, jmp.Policy]
     self._current_policy = Stack()  # type: Stack[jmp.Policy]
 
   def push_current_policy(self, policy: jmp.Policy):
@@ -57,17 +75,20 @@ class _ThreadState(threading.local):
     return self._current_policy.peek()
 
   def clear_policy(self, cls: Type[hk.Module]):
-    if cls in self._cls_policy:
-      del self._cls_policy[cls]
+    key = key_for_module(cls)
+    if key in self._cls_policy:
+      del self._cls_policy[key]
 
   def set_policy(self, cls: Type[hk.Module], policy: jmp.Policy):
     if self._interceptor is None:
       self._interceptor = hk.intercept_methods(_mixed_precision_interceptor)
       self._interceptor.__enter__()
-    self._cls_policy[cls] = policy
+    key = key_for_module(cls)
+    self._cls_policy[key] = policy
 
   def get_policy(self, cls: Type[hk.Module]) -> Optional[jmp.Policy]:
-    return self._cls_policy.get(cls)
+    key = key_for_module(cls)
+    return self._cls_policy.get(key)
 
   def __del__(self):
     if self._interceptor is not None:

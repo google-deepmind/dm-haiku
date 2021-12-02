@@ -14,10 +14,12 @@
 # ==============================================================================
 """Tests for haiku._src.mixed_precision."""
 
+import importlib
 from typing import Optional, Type
 
 from absl.testing import absltest
 from haiku._src import base
+from haiku._src import conv
 from haiku._src import mixed_precision
 from haiku._src import module
 from haiku._src import test_utils
@@ -54,11 +56,18 @@ class InnerModule(module.Module):
     self.w = base.get_parameter('w', [], jnp.bfloat16, init=jnp.ones)
     return jnp.ones([], dtype=jnp.bfloat16)
 
+  class InnerInnerModule(module.Module):
+
+    def __call__(self):
+      self.w = base.get_parameter('w', [], jnp.bfloat16, init=jnp.ones)
+      return jnp.ones([], dtype=jnp.bfloat16)
+
 
 def transform_and_run_once(f, *args, **kwargs):
   f = transform.transform(f)
   def g(*args, **kwargs):
-    params = f.init(None, *args, **kwargs)
+    rng = jax.random.PRNGKey(28)
+    params = f.init(rng, *args, **kwargs)
     out = f.apply(params, None, *args, **kwargs)
     return params, out
   return jax.tree_map(lambda x: x.dtype, jax.eval_shape(g, *args, **kwargs))
@@ -101,10 +110,25 @@ class MixedPrecisionTest(absltest.TestCase):
     mixed_precision.set_policy(Bar, policy)
     Baz()()
 
-  @with_policy(InnerModule, jmp.get_policy('p=f16,c=f32,o=f16'))
   def test_set_global_policy(self):
+    self.assertGlobalPolicy(InnerModule)
+
+  def test_set_global_policy_inner_class(self):
+    self.assertGlobalPolicy(InnerModule.InnerInnerModule)
+
+  def test_set_global_policy_local_class(self):
+    class LocalModule(InnerModule):
+      pass
+
+    self.assertGlobalPolicy(LocalModule)
+
+  def assertGlobalPolicy(self, cls):
+    policy = jmp.get_policy('p=f16,c=f32,o=f16')
+    with_policy(cls, policy)(self.assertGlobalPolicy_inner)(cls)
+
+  def assertGlobalPolicy_inner(self, cls):
     def f():
-      mod = InnerModule()
+      mod = cls(name='inner_module')
       return mod(), mod.w
 
     params, (ret, w) = transform_and_run_once(f)
@@ -112,6 +136,25 @@ class MixedPrecisionTest(absltest.TestCase):
     self.assertEqual(ret, jnp.float16)
     self.assertEqual(w, jnp.float32)
     self.assertEqual(params['inner_module'], {'w': jnp.float16})
+
+  @test_utils.transform_and_run
+  def test_set_policy_factory(self):
+    def factory():
+      class MyModule(module.Module):
+
+        def __call__(self, x):
+          return x
+
+      return MyModule
+
+    cls1 = factory()
+    cls2 = factory()
+
+    mixed_precision.set_policy(cls1, jmp.get_policy('o=f16'))
+    mixed_precision.set_policy(cls2, jmp.get_policy('o=bf16'))
+    x = jnp.ones([])
+    self.assertEqual(cls1()(x).dtype, jnp.float16)
+    self.assertEqual(cls2()(x).dtype, jnp.bfloat16)
 
   @with_policy(InnerModule, jmp.get_policy('p=f16,c=f32,o=f16'))
   def test_clear_global_policy(self):
@@ -146,6 +189,19 @@ class MixedPrecisionTest(absltest.TestCase):
     # The parameters returned from init should use the param type of the policy.
     self.assertEqual(params['outer_module'], {'w': jnp.float32})
     self.assertEqual(params['outer_module/inner_module'], {'w': jnp.float16})
+
+  def test_policy_for_reloaded_class(self):
+    conv_local = conv
+
+    policy = jmp.get_policy('p=f16,c=f32,o=f16')
+    mixed_precision.set_policy(conv_local.ConvND, policy)
+    conv_local = importlib.reload(conv)
+
+    params, y = transform_and_run_once(
+        lambda: conv_local.ConvND(2, 1, 1)(jnp.ones([1, 1, 1, 1])))
+
+    jax.tree_map(lambda p: self.assertEqual(p, jnp.float16), params)
+    self.assertEqual(y, jnp.float16)
 
 if __name__ == '__main__':
   absltest.main()

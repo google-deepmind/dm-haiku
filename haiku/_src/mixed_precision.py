@@ -77,6 +77,44 @@ class _ThreadState(threading.local):
 _thread_local_state = _ThreadState()
 
 
+def current_policy() -> Optional[jmp.Policy]:
+  """Retrieves the currently active policy in the current context.
+
+  Returns:
+    The currently active mixed precision policy, or ``None``.
+
+  See also:
+    :func:`clear_policy`: Clears any policies associated with a class.
+    :func:`get_policy`: Gets the policy for a given class.
+    :func:`set_policy`: Sets a policy for a given class.
+  """
+  tls = _thread_local_state
+  return tls.current_policy if tls.has_current_policy else None
+
+
+def get_policy(cls: Type[hk.Module]) -> Optional[jmp.Policy]:
+  """Retrieves the currently active policy for the given class.
+
+  Note that policies applied explicitly to a top level class (e.g. ``ResNet``)
+  will be applied implicitly to all child modules (e.g. ``ConvND``) called from
+  the parent. This function only returns policies that have been applied
+  explicitly (e.g. via :func:`set_policy`).
+
+  Args:
+    cls: A Haiku module class.
+
+  Returns:
+    A JMP policy that is used for the given class, or ``None`` if one is not
+    active.
+
+  See Also:
+    :func:`current_policy`: Retrieves the currently active policy (if any).
+    :func:`clear_policy`: Clears any policies associated with a class.
+    :func:`set_policy`: Sets a policy for a given class.
+  """
+  return _thread_local_state.get_policy(cls)
+
+
 def set_policy(cls: Type[hk.Module], policy: jmp.Policy):
   """Uses the given policy for all instances of the module class.
 
@@ -128,7 +166,9 @@ def set_policy(cls: Type[hk.Module], policy: jmp.Policy):
     policy: A JMP policy to apply to the module.
 
   See Also:
+    :func:`current_policy`: Retrieves the currently active policy (if any).
     :func:`clear_policy`: Clears any policies associated with a class.
+    :func:`get_policy`: Gets the policy for a given class.
   """
   assert policy is not None, 'To unset policies use clear_policy.'
   _thread_local_state.set_policy(cls, policy)
@@ -141,6 +181,8 @@ def clear_policy(cls: Type[hk.Module]):
     cls: A Haiku module class.
 
   See Also:
+    :func:`current_policy`: Retrieves the currently active policy (if any).
+    :func:`get_policy`: Gets the policy for a given class.
     :func:`set_policy`: Sets a policy for a given class.
   """
   _thread_local_state.clear_policy(cls)
@@ -161,7 +203,7 @@ def _mixed_precision_getter(next_getter, value, context):
 def _mixed_precision_interceptor(next_f, args, kwargs,
                                  context: hk.MethodContext):
   """Method interceptor used to apply mixed precision policies to classes."""
-  policy = _thread_local_state.get_policy(type(context.module))
+  policy = get_policy(type(context.module))
   if policy is None:
     return next_f(*args, **kwargs)
 

@@ -947,12 +947,24 @@ Automatic Mixed Precision
 .. autosummary::
 
     set_policy
+    current_policy
+    get_policy
     clear_policy
 
 set_policy
 ~~~~~~~~~~
 
 .. autofunction:: set_policy
+
+current_policy
+~~~~~~~~~~~~~~
+
+.. autofunction:: current_policy
+
+get_policy
+~~~~~~~~~~
+
+.. autofunction:: get_policy
 
 clear_policy
 ~~~~~~~~~~~~

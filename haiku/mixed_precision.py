@@ -15,9 +15,13 @@
 """Utilities for mixed precision."""
 
 from haiku._src.mixed_precision import clear_policy
+from haiku._src.mixed_precision import current_policy
+from haiku._src.mixed_precision import get_policy
 from haiku._src.mixed_precision import set_policy
 
 __all__ = (
     'clear_policy',
+    'current_policy',
+    'get_policy',
     'set_policy',
 )

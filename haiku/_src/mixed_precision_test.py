@@ -20,6 +20,7 @@ from absl.testing import absltest
 from haiku._src import base
 from haiku._src import mixed_precision
 from haiku._src import module
+from haiku._src import test_utils
 from haiku._src import transform
 import jax
 import jax.numpy as jnp
@@ -64,6 +65,41 @@ def transform_and_run_once(f, *args, **kwargs):
 
 
 class MixedPrecisionTest(absltest.TestCase):
+
+  def test_get_policy(self):
+    self.assertIsNone(mixed_precision.get_policy(InnerModule))
+    policy = jmp.get_policy('p=f16,c=f32,o=f16')
+    mixed_precision.set_policy(InnerModule, policy)
+    self.assertEqual(mixed_precision.get_policy(InnerModule), policy)
+    mixed_precision.clear_policy(InnerModule)
+    self.assertIsNone(mixed_precision.get_policy(InnerModule))
+
+  @test_utils.transform_and_run
+  def test_current_policy(self):
+    policy = jmp.get_policy('p=f16,c=f32,o=f16')
+    test = self
+
+    class Foo(module.Module):
+
+      def __call__(self):
+        test.assertEqual(mixed_precision.current_policy(), policy)
+
+    class Bar(module.Module):
+
+      def __call__(self):
+        test.assertEqual(mixed_precision.current_policy(), policy)
+        Foo()()
+        test.assertEqual(mixed_precision.current_policy(), policy)
+
+    class Baz(module.Module):
+
+      def __call__(self):
+        test.assertIsNone(mixed_precision.current_policy())
+        Bar()()
+        test.assertIsNone(mixed_precision.current_policy())
+
+    mixed_precision.set_policy(Bar, policy)
+    Baz()()
 
   @with_policy(InnerModule, jmp.get_policy('p=f16,c=f32,o=f16'))
   def test_set_global_policy(self):

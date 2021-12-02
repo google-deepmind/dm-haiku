@@ -368,6 +368,7 @@ hk_py_test(
         ":base",
         ":mixed_precision",
         ":module",
+        ":test_utils",
         ":transform",
         # pip: absl/testing:absltest
         # pip: jax

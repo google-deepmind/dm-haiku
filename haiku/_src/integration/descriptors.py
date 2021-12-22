@@ -313,7 +313,7 @@ IGNORED_MODULES = {
     hk.Reshape,
     hk.AvgPool,
     hk.MaxPool,
-    hk.experimental.lift,
+    hk.lift,
 
     # Non-standard.
     hk.EMAParamsTree,

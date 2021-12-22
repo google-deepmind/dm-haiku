@@ -48,7 +48,7 @@ class DTypeTestCase(parameterized.TestCase):
       return next_creator(shape, dtype, init)
 
     def g(x):
-      with hk.experimental.custom_creator(ones_creator):
+      with hk.custom_creator(ones_creator):
         mod = module_fn()
         return mod(x)
 

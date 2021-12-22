@@ -32,10 +32,9 @@ import tabulate as tabulate_lib
 
 # If you are forking replace this block with `import haiku as hk`.
 hk = types.ModuleType("haiku")
-hk.experimental = types.ModuleType("experimental")
 hk.Module = module_lib.Module
-hk.experimental.MethodContext = module_lib.MethodContext
-hk.experimental.intercept_methods = module_lib.intercept_methods
+hk.MethodContext = module_lib.MethodContext
+hk.intercept_methods = module_lib.intercept_methods
 hk.transform_with_state = transform.transform_with_state
 hk.Transformed = transform.Transformed
 hk.TransformedWithState = transform.TransformedWithState
@@ -114,7 +113,7 @@ class MethodInvocation:
   args_spec: Tuple[Any, ...]
   kwargs_spec: Dict[str, Any]
   output_spec: Any  # Actual: PyTree[Union[Any, ArraySpec]]
-  context: hk.experimental.MethodContext
+  context: hk.MethodContext
   call_stack: Sequence[ModuleDetails]
 
 
@@ -138,7 +137,7 @@ def log_used_modules(
     next_f: Callable[..., T],
     args: Tuple[Any, ...],
     kwargs: Dict[str, Any],
-    context: hk.experimental.MethodContext,
+    context: hk.MethodContext,
 ) -> T:
   """Method interceptor that logs used modules to the given list."""
   if context.method_name in IGNORED_METHODS:
@@ -199,7 +198,7 @@ def eval_summary(
     used_modules = sidechannel.peek()
     logging_interceptor = functools.partial(log_used_modules, used_modules)
 
-    with hk.experimental.intercept_methods(logging_interceptor):
+    with hk.intercept_methods(logging_interceptor):
       f(*args, **kwargs)
 
   # We know that we will only evaluate this function once and that inside

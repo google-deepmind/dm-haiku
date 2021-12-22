@@ -176,8 +176,8 @@ class MethodContext(NamedTuple):
 
   When ``short_circuit=False`` the two interceptors will run in order:
 
-  >>> with hk.experimental.intercept_methods(my_interceptor_1), \
-  ...      hk.experimental.intercept_methods(my_interceptor_2):
+  >>> with hk.intercept_methods(my_interceptor_1), \
+  ...      hk.intercept_methods(my_interceptor_2):
   ...   _ = module(jnp.ones([1, 1]))
   running my_interceptor_1
   - module.name:  method_context_example
@@ -191,8 +191,8 @@ class MethodContext(NamedTuple):
   interceptor):
 
   >>> short_circuit = True
-  >>> with hk.experimental.intercept_methods(my_interceptor_1), \
-  ...      hk.experimental.intercept_methods(my_interceptor_2):
+  >>> with hk.intercept_methods(my_interceptor_1), \
+  ...      hk.intercept_methods(my_interceptor_2):
   ...   _ = module(jnp.ones([1, 1]))
   running my_interceptor_1
   - module.name:  method_context_example
@@ -251,7 +251,7 @@ def intercept_methods(interceptor: MethodGetter):
 
   >>> mod = hk.BatchNorm(decay_rate=0.9, create_scale=True, create_offset=True)
   >>> x = jnp.ones([], jnp.bfloat16)
-  >>> with hk.experimental.intercept_methods(my_interceptor):
+  >>> with hk.intercept_methods(my_interceptor):
   ...   out = mod(x, is_training=True)
   >>> assert out.dtype == jnp.float32
 

@@ -395,7 +395,7 @@ def custom_creator(
   ...   init = jnp.zeros
   ...   return next_creator(shape, dtype, init)
 
-  >>> with hk.experimental.custom_creator(zeros_creator):
+  >>> with hk.custom_creator(zeros_creator):
   ...   z = hk.get_parameter("z", [], jnp.float32, jnp.ones)
   >>> z
   DeviceArray(0., dtype=float32)
@@ -403,7 +403,7 @@ def custom_creator(
   If ``state=True`` then your creator will additionally run on calls to
   :func:`get_state`:
 
-  >>> with hk.experimental.custom_creator(zeros_creator, state=True):
+  >>> with hk.custom_creator(zeros_creator, state=True):
   ...   z = hk.get_state("z", [], jnp.float32, jnp.ones)
   >>> z
   DeviceArray(0., dtype=float32)
@@ -416,7 +416,7 @@ def custom_creator(
   Returns:
     Context manager under which the creator is active.
   """
-  assert_context("experimental.custom_creator")
+  assert_context("custom_creator")
   stack = contextlib.ExitStack()
   if params:
     stack.enter_context(param_creator_stack(creator))
@@ -463,7 +463,7 @@ def custom_getter(
   ...   value = value.astype(jnp.bfloat16)
   ...   return next_getter(value)
 
-  >>> with hk.experimental.custom_getter(bf16_getter):
+  >>> with hk.custom_getter(bf16_getter):
   ...   w = hk.get_parameter("w", [], jnp.float32, jnp.ones)
   >>> w.dtype
   dtype(bfloat16)
@@ -471,7 +471,7 @@ def custom_getter(
   If ``state=True`` the getter will additionally run for calls to
   :func:`get_state`:
 
-  >>> with hk.experimental.custom_getter(bf16_getter, state=True):
+  >>> with hk.custom_getter(bf16_getter, state=True):
   ...   c = hk.get_state("c", [], jnp.float32, jnp.ones)
   >>> c.dtype
   dtype(bfloat16)
@@ -484,7 +484,7 @@ def custom_getter(
   Returns:
     Context manager under which the getter is active.
   """
-  assert_context("experimental.custom_getter")
+  assert_context("custom_getter")
   stack = contextlib.ExitStack()
   if params:
     stack.enter_context(param_getter_stack(getter))

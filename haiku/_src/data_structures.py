@@ -133,7 +133,7 @@ def to_haiku_dict(structure: Mapping[K, V]) -> Mapping[K, V]:
   Returns:
     A new two level mapping with the same contents as the input.
   """
-  if os.environ.get("HAIKU_FLATMAPPING", "1").lower() not in ("", "0", "false"):
+  if os.environ.get("HAIKU_FLATMAPPING", "0").lower() not in ("", "0", "false"):
     return to_immutable_dict(structure)
   return to_dict(structure)
 

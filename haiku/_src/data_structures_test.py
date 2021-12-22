@@ -211,6 +211,7 @@ class FlatMappingTest(parameterized.TestCase):
       ("cloudpickle", lambda v: cloudpickle.loads(cloudpickle.dumps(v)),),
       ("dill", lambda v: dill.loads(dill.dumps(v)),),
   )
+  @test_utils.with_environ("HAIKU_FLATMAPPING", "1")
   def test_copy(self, clone):
     before = data_structures.to_immutable_dict(dict(a=dict(b=1, c=2)))
     after = clone(before)
@@ -276,6 +277,7 @@ class FlatMappingTest(parameterized.TestCase):
     o = FlatMap({})
     self.assertIsInstance(o, data_structures.FlatMapping)
 
+  @test_utils.with_environ("HAIKU_FLATMAPPING", "1")
   def test_flatmapping_init(self):
     o = data_structures.FlatMapping({})
     self.assertEqual(type(o), data_structures.FlatMap)

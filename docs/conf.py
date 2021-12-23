@@ -133,7 +133,6 @@ doctest_test_doctest_blocks = 'true'
 doctest_global_setup = """
 import collections
 import itertools
-import os
 import unittest
 
 import chex
@@ -141,9 +140,6 @@ import haiku as hk
 import jax
 import jax.numpy as jnp
 import jmp
-
-# Use dict instead of FlatMapping (soon to be the default).
-os.environ["HAIKU_FLATMAPPING"] = "0"
 
 # Equivalent to wrapping the whole files doctests in `hk.transform_with_state`.
 from haiku._src import base

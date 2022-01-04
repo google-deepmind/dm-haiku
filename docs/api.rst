@@ -320,6 +320,7 @@ Convolutional
     Conv3DTranspose
     DepthwiseConv2D
     DepthwiseConv2D
+    get_channel_index
 
 ConvND
 ~~~~~~
@@ -381,6 +382,12 @@ SeparableDepthwiseConv2D
 
 .. autoclass:: SeparableDepthwiseConv2D
    :members:
+
+get_channel_index
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: get_channel_index
+
 
 Normalization
 -------------

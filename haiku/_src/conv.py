@@ -32,6 +32,7 @@ hk.initializers = initializers
 hk.pad = pad
 hk.get_parameter = base.get_parameter
 hk.Module = module.Module
+hk.get_channel_index = utils.get_channel_index
 del base, module, initializers, pad
 
 
@@ -105,7 +106,7 @@ class ConvND(hk.Module):
       b_init: Optional bias initialization. By default, zeros.
       data_format: The data format of the input.  Can be either
         ``channels_first``, ``channels_last``, ``N...C`` or ``NC...``. By
-        default, ``channels_last``.
+        default, ``channels_last``. See :func:`get_channel_index`.
       mask: Optional mask of the weights.
       feature_group_count: Optional number of groups in group convolution.
         Default value of 1 corresponds to normal dense convolution. If a higher
@@ -135,7 +136,7 @@ class ConvND(hk.Module):
     self.kernel_dilation = (
         utils.replicate(rate, num_spatial_dims, "kernel_dilation"))
     self.data_format = data_format
-    self.channel_index = utils.get_channel_index(data_format)
+    self.channel_index = hk.get_channel_index(data_format)
     self.dimension_numbers = to_dimension_numbers(
         num_spatial_dims, channels_last=(self.channel_index == -1),
         transpose=False)
@@ -530,7 +531,7 @@ class ConvNDTranspose(hk.Module):
     # TODO(tomhennigan) Make use of hk.pad.create_from_tuple here?
     self.padding = padding
     self.data_format = data_format
-    self.channel_index = utils.get_channel_index(data_format)
+    self.channel_index = hk.get_channel_index(data_format)
     self.dimension_numbers = to_dimension_numbers(
         num_spatial_dims, channels_last=(self.channel_index == -1),
         transpose=True)

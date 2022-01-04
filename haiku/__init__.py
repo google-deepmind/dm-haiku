@@ -114,6 +114,7 @@ from haiku._src.transform import without_apply_rng
 from haiku._src.transform import without_state
 from haiku._src.typing import Params
 from haiku._src.typing import State
+from haiku._src.utils import get_channel_index
 
 __version__ = "0.0.6.dev"
 
@@ -179,6 +180,7 @@ __all__ = (
     "dynamic_unroll",
     "expand_apply",
     "fori_loop",
+    "get_channel_index",
     "get_parameter",
     "get_state",
     "grad",

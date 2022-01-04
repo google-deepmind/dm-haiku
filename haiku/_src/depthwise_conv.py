@@ -31,6 +31,7 @@ hk = types.ModuleType("haiku")
 hk.initializers = initializers
 hk.get_parameter = base.get_parameter
 hk.Module = module.Module
+hk.get_channel_index = utils.get_channel_index
 del base, module, initializers
 
 DIMENSION_NUMBERS = {
@@ -79,7 +80,7 @@ class DepthwiseConv2D(hk.Module):
       b_init: Optional bias initialization. By default, zeros.
       data_format: The data format of the input.  Can be either
         ``channels_first``, ``channels_last``, ``N...C`` or ``NC...``. By
-        default, ``channels_last``.
+        default, ``channels_last``. See :func:`get_channel_index`.
       name: The name of the module.
     """
     super().__init__(name=name)
@@ -90,7 +91,7 @@ class DepthwiseConv2D(hk.Module):
     self.padding = padding
     self.stride = utils.replicate(stride, 2, "strides")
     self.data_format = data_format
-    self.channel_index = utils.get_channel_index(data_format)
+    self.channel_index = hk.get_channel_index(data_format)
     self.with_bias = with_bias
     self.w_init = w_init
     self.b_init = b_init or jnp.zeros
@@ -101,7 +102,7 @@ class DepthwiseConv2D(hk.Module):
       self.dn = DIMENSION_NUMBERS_NCSPATIAL[self.num_spatial_dims]
 
   def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:
-    channel_index = utils.get_channel_index(self.data_format)
+    channel_index = hk.get_channel_index(self.data_format)
     w_shape = self.kernel_shape + (1, self.channel_multiplier *
                                    inputs.shape[channel_index])
 

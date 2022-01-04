@@ -138,31 +138,41 @@ _SEQUENTIAL = re.compile("^((BT)|(TB))[^D]*D$")
 def get_channel_index(data_format: str) -> int:
   """Returns the channel index when given a valid data format.
 
+  >>> hk.get_channel_index('channels_last')
+  -1
+  >>> hk.get_channel_index('channels_first')
+  1
+  >>> hk.get_channel_index('N...C')
+  -1
+  >>> hk.get_channel_index('NCHW')
+  1
+
   Args:
     data_format: String, the data format to get the channel index from. Valid
-      data formats are spatial (e.g.`NCHW`), sequential (e.g. `BTHWD`),
-      `channels_first` and `channels_last`).
+      data formats are spatial (e.g.``NCHW``), sequential (e.g. ``BTHWD``),
+      ``channels_first`` and ``channels_last``).
 
   Returns:
-    The channel index as an int - either 1 or -1.
+    The channel index as an int, either ``1`` or ``-1``.
 
   Raises:
     ValueError: If the data format is unrecognised.
   """
   if data_format == "channels_first":
     return 1
-  if data_format == "channels_last":
+  elif data_format == "channels_last":
     return -1
-  if _SPATIAL_CHANNELS_FIRST.match(data_format):
+  elif _SPATIAL_CHANNELS_FIRST.match(data_format):
     return 1
-  if _SPATIAL_CHANNELS_LAST.match(data_format):
+  elif _SPATIAL_CHANNELS_LAST.match(data_format):
     return -1
-  if _SEQUENTIAL.match(data_format):
+  elif _SEQUENTIAL.match(data_format):
     return -1
-  raise ValueError(
-      "Unable to extract channel information from '{}'. Valid data formats are "
-      "spatial (e.g.`NCHW`), sequential (e.g. `BTHWD`), `channels_first` and "
-      "`channels_last`).".format(data_format))
+  else:
+    raise ValueError(
+        f"Unable to extract channel information from {data_format!r}. Valid "
+        "data formats are spatial (e.g.`NCHW`), sequential (e.g. `BTHWD`), "
+        "`channels_first` and `channels_last`).")
 
 
 def assert_minimum_rank(inputs, rank: int):

@@ -31,7 +31,8 @@ hk = types.ModuleType("haiku")
 hk.get_parameter = base.get_parameter
 hk.initializers = initializers
 hk.Module = module.Module
-del base, module, initializers
+hk.get_channel_index = utils.get_channel_index
+del base, module, initializers, utils
 
 
 class LayerNorm(hk.Module):
@@ -186,10 +187,10 @@ class InstanceNorm(LayerNorm):
         if ``create_offset=True``. By default offset is initialized to ``0``.
       data_format: The data format of the input. Can be either
         ``channels_first``, ``channels_last``, ``N...C`` or ``NC...``. By
-        default it is ``channels_last``.
+        default it is ``channels_last``. See :func:`get_channel_index`.
       name: Name of the module.
     """
-    if utils.get_channel_index(data_format) == 1:
+    if hk.get_channel_index(data_format) == 1:
       axis = slice(2, None)
     else:  # channel_index = -1
       axis = slice(1, -1)

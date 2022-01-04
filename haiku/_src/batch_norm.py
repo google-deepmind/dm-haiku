@@ -32,7 +32,8 @@ hk.get_parameter = base.get_parameter
 hk.initializers = initializers
 hk.Module = module.Module
 hk.ExponentialMovingAverage = moving_averages.ExponentialMovingAverage
-del base, initializers, module, moving_averages
+hk.get_channel_index = utils.get_channel_index
+del base, initializers, module, moving_averages, utils
 
 
 class BatchNorm(hk.Module):
@@ -94,7 +95,7 @@ class BatchNorm(hk.Module):
       cross_replica_axis_index_groups: Specifies how devices are grouped.
       data_format: The data format of the input. Can be either
         ``channels_first``, ``channels_last``, ``N...C`` or ``NC...``. By
-        default it is ``channels_last``.
+        default it is ``channels_last``. See :func:`get_channel_index`.
       name: The module name.
     """
     super().__init__(name=name)
@@ -115,7 +116,7 @@ class BatchNorm(hk.Module):
     self.axis = axis
     self.cross_replica_axis = cross_replica_axis
     self.cross_replica_axis_index_groups = cross_replica_axis_index_groups
-    self.channel_index = utils.get_channel_index(data_format)
+    self.channel_index = hk.get_channel_index(data_format)
     self.mean_ema = hk.ExponentialMovingAverage(decay_rate, name="mean_ema")
     self.var_ema = hk.ExponentialMovingAverage(decay_rate, name="var_ema")
 

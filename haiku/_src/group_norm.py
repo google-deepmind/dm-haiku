@@ -30,7 +30,8 @@ hk = types.ModuleType("haiku")
 hk.get_parameter = base.get_parameter
 hk.initializers = initializers
 hk.Module = module.Module
-del base, initializers, module
+hk.get_channel_index = utils.get_channel_index
+del base, initializers, module, utils
 
 
 class GroupNorm(hk.Module):
@@ -100,7 +101,7 @@ class GroupNorm(hk.Module):
         ``0``.
       data_format: The data format of the input. Can be either
         ``channels_first``, ``channels_last``, ``N...C`` or ``NC...``. By
-        default it is ``channels_last``.
+        default it is ``channels_last``. See :func:`get_channel_index`.
       name: Name of the module.
     """
     super().__init__(name=name)
@@ -118,7 +119,7 @@ class GroupNorm(hk.Module):
     self.groups = groups
     self.eps = eps
     self.data_format = data_format
-    self.channel_index = utils.get_channel_index(data_format)
+    self.channel_index = hk.get_channel_index(data_format)
     self.create_scale = create_scale
     self.create_offset = create_offset
     self.rank = None

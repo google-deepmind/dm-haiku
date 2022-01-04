@@ -113,7 +113,7 @@ def sample(
   logits, state = hk.dynamic_unroll(core, context, core.initial_state(None))
   key, subkey = jax.random.split(rng_key)
   first_token = jax.random.categorical(subkey, logits[-1])
-  tokens = np.zeros(sample_length, dtype=np.int32)
+  tokens = jnp.zeros(sample_length, dtype=np.int32)
   tokens = tokens.at[0].set(first_token)
   initial_values = LoopValues(tokens=tokens, state=state, rng_key=key)
   values: LoopValues = lax.fori_loop(0, sample_length, body_fn, initial_values)

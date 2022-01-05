@@ -104,6 +104,7 @@ class Transformer(hk.Module):
       h_attn = CausalSelfAttention(
           num_heads=self._num_heads,
           key_size=32,
+          model_size=h.shape[-1],
           w_init_scale=init_scale,
           name=f'h{i}_attn')(h_norm, mask=mask)
       h_attn = hk.dropout(hk.next_rng_key(), dropout_rate, h_attn)

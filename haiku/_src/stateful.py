@@ -554,15 +554,96 @@ def fori_loop(lower, upper, body_fun, init_val):
   return val
 
 
-def vmap(fun, in_axes=0, out_axes=0, axis_name=None):
-  """Equivalent to :func:`jax.vmap` with module parameters/state not mapped."""
+def maybe_get_axis(axis: int, arrays: Any) -> Optional[int]:
+  """Returns `array.shape[axis]` for one of the arrays in the input."""
+  shapes = [a.shape for a in jax.tree_leaves(arrays)]
+  sizes = {s[axis] for s in shapes}
+  if len(sizes) != 1:
+    raise ValueError("Arrays must have the same mapped axis size, found "
+                     f"sizes {sizes} for input shapes {shapes}")
+  size, = sizes
+  return size
 
-  # TODO(tomhennigan): Allow configuration of params/state/rng mapping.
-  in_axes = in_axes, None
-  out_axes = out_axes, None
+# Uniq but maintaining insertion order.
+uniq = lambda x: tuple({k: None for k in x}.keys())
+
+
+def get_mapped_axis_size(args: Tuple[Any], in_axes: Any) -> int:
+  sizes = uniq(jax.tree_leaves(jax.tree_map(maybe_get_axis, in_axes, args)))
+  assert sizes, "hk.vmap should guarantee non-empty in_axes"
+  # NOTE: We use the first in_axes regardless of how many non-unique values
+  # there are to allow JAX to handle multiple conflicting sizes.
+  return sizes[0]
+
+
+def vmap(
+    fun: Callable[..., Any],
+    in_axes=0,
+    out_axes=0,
+    axis_name: Optional[str] = None,
+    *,
+    split_rng: bool = False,
+) -> Callable[..., Any]:
+  """Equivalent to :func:`jax.vmap` with module parameters/state not mapped.
+
+  The behaviour of Haiku random key APIs under :func:`vmap` is controlled by the
+  ``split_rng`` argument::
+
+  .. doctest::
+
+     >>> x = jnp.arange(2)
+     >>> f = hk.vmap(lambda _: hk.next_rng_key(), split_rng=False)
+     >>> key1, key2 = f(x)
+     >>> assert (key1 == key2).all()
+
+     >>> f = hk.vmap(lambda _: hk.next_rng_key(), split_rng=True)
+     >>> key1, key2 = f(x)
+     >>> assert not (key1 == key2).all()
+
+  Random numbers in Haiku are typically used for two things, firstly for
+  initialising model parameters, and secondly for creating random samples as
+  part of the forward pass of a neural network (e.g. for dropout). If you are
+  using :func:`vmap` with a module that uses Haiku random keys for both (e.g.
+  you don't pass keys explicitly into the network), then it is quite likely that
+  you will want to vary the value of ``split_rng`` depending on whether we are
+  initalizing (e.g. creating model parameters) or applying the model. An easy
+  way to do this is to set ``split_rng=(not hk.running_init())``.
+
+  Args:
+    fun: See :func:`jax.vmap`.
+    in_axes: See :func:`jax.vmap`.
+    out_axes: See :func:`jax.vmap`.
+    axis_name: See :func:`jax.vmap`.
+    split_rng: Controls whether random key APIs in Haiku (e.g.
+      :func:`next_rng_key`) return different (aka. the internal key is split
+      before calling your mapped function) or the same (aka. the internal key
+      is broadcast before calling your mapped fucntion) key. See the docstring
+      for examples.
+
+  Returns:
+    See :func:`jax.vmap`.
+  """
+
+  if not jax.tree_leaves(in_axes):
+    raise ValueError(
+        f"{fun.__name__} must have at least one non-None value in in_axes "
+        "to use with `hk.vmap`.")
+
+  # TODO(tomhennigan): Allow configuration of params/state mapping.
+  params_axes = state_axes = None
+  rng_axes = (0 if split_rng else None)
+  haiku_state_axes = InternalState(params_axes, state_axes, rng_axes)
+  in_axes = in_axes, haiku_state_axes
+  out_axes = out_axes, haiku_state_axes
 
   @functools.wraps(fun)
   def pure_fun(args, state_in):
+    if split_rng:
+      # NOTE: In the case of split_rng we recieve an RNG key (rather than the
+      # internal state of a PRNGSequence) so we need to construct that here.
+      rng = base.PRNGSequence(state_in.rng).internal_state
+      state_in = InternalState(state_in.params, state_in.state, rng)
+
     with temporary_internal_state(state_in):
       out = fun(*args)
       state_out = difference(state_in, internal_state())
@@ -570,11 +651,27 @@ def vmap(fun, in_axes=0, out_axes=0, axis_name=None):
 
   @functools.wraps(fun)
   def mapped_fun(*args):
+    base.assert_context("vmap")
+
     mapped_pure_fun = jax.vmap(pure_fun, in_axes=in_axes, out_axes=out_axes,
                                axis_name=axis_name)
     state = internal_state()
+
+    if split_rng:
+      # Need to take a new key and split.
+      num = get_mapped_axis_size(args, in_axes[0])
+      rng = base.next_rng_keys(num)
+      state = internal_state()  # Needed since we mutated internal RNG.
+      saved_rng = state.rng
+      state = InternalState(state.params, state.state, rng)
+
     out, state = mapped_pure_fun(args, state)
+
+    if split_rng:
+      state = InternalState(state.params, state.state, saved_rng)
+
     update_internal_state(state)
+
     return out
 
   return mapped_fun

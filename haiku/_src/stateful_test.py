@@ -471,6 +471,56 @@ class StatefulTest(parameterized.TestCase):
     self.assertEqual(cnt.ndim, 0)
     self.assertEqual(cnt, 1)
 
+  def test_vmap_must_be_called_in_transform(self):
+    f = stateful.vmap(lambda x: x)
+    with self.assertRaisesRegex(ValueError,
+                                "must be used as part of an.*hk.transform"):
+      f(0)
+
+  @test_utils.transform_and_run
+  def test_vmap_no_in_axes(self):
+    def fn_name(_):
+      pass
+    with self.assertRaisesRegex(
+        ValueError, "fn_name must have at least one non-None value in in_axes"):
+      stateful.vmap(fn_name, in_axes=None)
+
+  @test_utils.transform_and_run
+  def test_vmap_in_axes_different_size(self):
+    x = jnp.ones([1, 2])
+    with self.assertRaisesRegex(
+        ValueError, "vmap got inconsistent sizes for array axes to be mapped"):
+      stateful.vmap(lambda a, b: None, in_axes=(0, 1))(x, x)
+
+  @test_utils.transform_and_run
+  def test_vmap_no_split_rng(self):
+    key_before = base.next_rng_key()
+    f = stateful.vmap(lambda _: base.next_rng_key(), split_rng=False)
+    x = jnp.arange(4)
+    k1, k2, k3, k4 = f(x)
+    key_after = base.next_rng_key()
+    np.testing.assert_array_equal(k1, k2)
+    np.testing.assert_array_equal(k2, k3)
+    np.testing.assert_array_equal(k3, k4)
+    self.assertFalse(np.array_equal(key_before, k1))
+    self.assertFalse(np.array_equal(key_after, k1))
+    self.assertFalse(np.array_equal(key_before, key_after))
+
+  @test_utils.transform_and_run
+  def test_vmap_split_rng(self):
+    key_before = base.next_rng_key()
+    f = stateful.vmap(lambda _: base.next_rng_key(), split_rng=True)
+    x = jnp.arange(4)
+    k1, k2, k3, k4 = f(x)
+    key_after = base.next_rng_key()
+    # Test that none of the keys are equal.
+    named_keys = (("k1", k1), ("k2", k2), ("k3", k3), ("k4", k4),
+                  ("key_before", key_before), ("key_after", key_after))
+    for (a_name, a), (b_name, b) in it.combinations(named_keys, 2):
+      self.assertFalse(
+          np.array_equal(a, b),
+          msg=f"Keys should not be equal, but {a_name} == {b_name}")
+
   def test_while_loop_rejected_in_init(self):
     def f():
       stateful.while_loop(lambda x: x.all(), lambda x: not x, 1)

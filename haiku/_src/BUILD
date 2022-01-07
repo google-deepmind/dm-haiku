@@ -519,6 +519,37 @@ hk_py_library(
 )
 
 hk_py_library(
+    name = "layer_stack",
+    srcs = ["layer_stack.py"],
+    srcs_version = "PY3",
+    deps = [
+        ":base",
+        ":lift",
+        ":module",
+        ":transform",
+        # pip: jax
+    ],
+)
+
+hk_py_test(
+    name = "layer_stack_test",
+    srcs = ["layer_stack_test.py"],
+    deps = [
+        ":base",
+        ":basic",
+        ":initializers",
+        ":layer_stack",
+        ":module",
+        ":transform",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        # pip: jax
+        # pip: numpy
+        # pip: scipy
+    ],
+)
+
+hk_py_library(
     name = "moving_averages",
     srcs = ["moving_averages.py"],
     deps = [

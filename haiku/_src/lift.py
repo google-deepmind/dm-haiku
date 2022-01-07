@@ -71,9 +71,13 @@ def add_state_to_init_fn(
 class LiftingModule(hk.Module):
   """See :func:`lift` or :func:`lift_with_state`."""
 
-  def __init__(self, init_fn, name="lifted"):
+  def __init__(self, init_fn, transparent=False, name="lifted"):
     super().__init__(name=name)
     self._init_fn = init_fn
+    if transparent:
+      self._prefix_name = "/".join(self.module_name.split("/")[:-1])
+    else:
+      self._prefix_name = self.module_name
 
   def __call__(self, *args, **kwargs):
     frame = base.current_frame()
@@ -82,11 +86,11 @@ class LiftingModule(hk.Module):
     if hk.running_init():
       inner_params, inner_state = self._init_fn(*args, **kwargs)
       # Lift parameters into this transform's params_dict.
-      pack_into_dict(inner_params, outer_params, self.module_name)
-      pack_into_dict(inner_state, outer_state, self.module_name, state=True)
+      pack_into_dict(inner_params, outer_params, self._prefix_name)
+      pack_into_dict(inner_state, outer_state, self._prefix_name, state=True)
       return inner_params, inner_state
     else:
-      prefix = f"{self.module_name}/"
+      prefix = f"{self._prefix_name}/"
       inner_params = unpack_from_dict(outer_params, prefix)
       inner_state = unpack_from_dict(outer_state, prefix)
       inner_state = base.extract_state(inner_state, initial=False)
@@ -136,6 +140,18 @@ def lift(
   params_and_state_fn, updater = lift_with_state(init_fn, name)
   updater.ignore_update()
   return lambda *a, **k: params_and_state_fn(*a, **k)[0]
+
+
+def transparent_lift(
+    init_fn: Callable[..., hk.Params]
+) -> Callable[..., hk.Params]:
+  """Similar to `lift` except no additional scope is added to the parameters."""
+
+  base.assert_context("lift")
+  init_fn = add_state_to_init_fn(init_fn)
+  lifted = LiftingModule(init_fn, transparent=True)
+  # NOTE: Using lambda to avoid exposing module object.
+  return lambda *a, **k: lifted(*a, **k)[0]  # pylint: disable=unnecessary-lambda
 
 
 def with_assert_not_used(f):

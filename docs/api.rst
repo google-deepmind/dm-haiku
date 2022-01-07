@@ -1096,11 +1096,17 @@ Optimizations
 .. autosummary::
 
     optimize_rng_use
+    layer_stack
 
 optimize_rng_use
 ~~~~~~~~~~~~~~~~
 
 .. autofunction:: optimize_rng_use
+
+layer_stack
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: layer_stack
 
 Utilities
 =========

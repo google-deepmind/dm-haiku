@@ -22,6 +22,7 @@ from haiku._src.base import custom_getter
 from haiku._src.base import GetterContext
 from haiku._src.dot import abstract_to_dot
 from haiku._src.dot import to_dot
+from haiku._src.layer_stack import layer_stack
 from haiku._src.lift import lift
 from haiku._src.lift import lift_with_state
 from haiku._src.lift import LiftWithStateUpdater
@@ -48,6 +49,7 @@ __all__ = (
     "custom_creator",
     "custom_getter",
     "intercept_methods",
+    "layer_stack",
     "lift",
     "lift_with_state",
     "LiftWithStateUpdater",

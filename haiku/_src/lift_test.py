@@ -161,5 +161,38 @@ class LiftTest(parameterized.TestCase):
         ValueError, "must be used within the same call to init/apply"):
       f.init(None)
 
+  def test_transparent_lift(self):
+    class OuterModule(module.Module):
+
+      def __call__(self, x):
+        x += base.get_parameter("a", shape=[10, 10], init=jnp.zeros)
+
+        def inner_fn(x):
+          return InnerModule(name="inner")(x)
+
+        inner_transformed = transform.transform(inner_fn)
+        inner_params = lift.transparent_lift(inner_transformed.init)(
+            base.next_rng_key(), x)
+        x = inner_transformed.apply(inner_params, base.next_rng_key(), x)
+        return x
+
+    class InnerModule(module.Module):
+
+      def __call__(self, x):
+        x += base.get_parameter("b", shape=[10, 10], init=jnp.zeros)
+        return x
+
+    @transform.transform
+    def fn(x):
+      return OuterModule(name="outer")(x)
+
+    correct_weight_names = ["outer/inner", "outer"]
+    rng = jax.random.PRNGKey(0)
+
+    params = fn.init(rng, jnp.ones([10, 10]))
+
+    self.assertCountEqual(list(params.keys()), correct_weight_names)
+
+
 if __name__ == "__main__":
   absltest.main()

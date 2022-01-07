@@ -1,0 +1,14 @@
+{
+  "module": [
+    "DepthwiseConv3D(channel_multiplier=1, kernel_shape=3)"
+  ],
+  "input": "f32[8, 2, 2, 2, 2]",
+  "param_size": 56,
+  "param_bytes": 224,
+  "params": {
+    "depthwise_conv3_d": {
+      "b": "f32[2]",
+      "w": "f32[3, 3, 3, 1, 2]"
+    }
+  }
+}

@@ -52,7 +52,9 @@ from haiku._src.conv import Conv3D
 from haiku._src.conv import Conv3DTranspose
 from haiku._src.conv import ConvND
 from haiku._src.conv import ConvNDTranspose
+from haiku._src.depthwise_conv import DepthwiseConv1D
 from haiku._src.depthwise_conv import DepthwiseConv2D
+from haiku._src.depthwise_conv import DepthwiseConv3D
 from haiku._src.depthwise_conv import SeparableDepthwiseConv2D
 from haiku._src.embed import Embed
 from haiku._src.embed import EmbedLookupStyle
@@ -135,7 +137,9 @@ __all__ = (
     "ConvND",
     "ConvNDTranspose",
     "DeepRNN",
+    "DepthwiseConv1D",
     "DepthwiseConv2D",
+    "DepthwiseConv3D",
     "EMAParamsTree",
     "Embed",
     "EmbedLookupStyle",

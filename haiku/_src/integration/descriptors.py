@@ -195,9 +195,17 @@ BATCH_MODULES = (
 
     # TODO(tomhennigan) Make these modules support unbatched input.
     ModuleDescriptor(
+        name="DepthwiseConv1D",
+        create=lambda: hk.DepthwiseConv1D(1, 3),
+        shape=(BATCH_SIZE, 2, 2)),
+    ModuleDescriptor(
         name="DepthwiseConv2D",
         create=lambda: hk.DepthwiseConv2D(1, 3),
         shape=(BATCH_SIZE, 2, 2, 2)),
+    ModuleDescriptor(
+        name="DepthwiseConv3D",
+        create=lambda: hk.DepthwiseConv3D(1, 3),
+        shape=(BATCH_SIZE, 2, 2, 2, 2)),
     ModuleDescriptor(
         name="SeparableDepthwiseConv2D",
         create=lambda: hk.SeparableDepthwiseConv2D(1, 3),

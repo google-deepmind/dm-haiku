@@ -23,6 +23,8 @@ from haiku._src.base import GetterContext
 from haiku._src.dot import abstract_to_dot
 from haiku._src.dot import to_dot
 from haiku._src.lift import lift
+from haiku._src.lift import lift_with_state
+from haiku._src.lift import LiftWithStateUpdater
 from haiku._src.module import intercept_methods
 from haiku._src.module import MethodContext
 from haiku._src.module import name_like
@@ -47,6 +49,8 @@ __all__ = (
     "custom_getter",
     "intercept_methods",
     "lift",
+    "lift_with_state",
+    "LiftWithStateUpdater",
     "MethodContext",
     "MethodInvocation",
     "ModuleDetails",

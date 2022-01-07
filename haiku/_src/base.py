@@ -16,6 +16,7 @@
 
 import collections
 import contextlib
+import functools
 from typing import (Callable, Iterator, Iterable, MutableMapping, NamedTuple,
                     Optional, Set, Tuple, Union, Any, Sequence, Mapping,
                     FrozenSet)
@@ -44,6 +45,7 @@ MutableState = MutableMapping[str, MutableMapping[str, StatePair]]
 
 # TODO(tomhennigan) Should creator_stack be part of frame?
 frame_stack: ThreadLocalStack["Frame"] = ThreadLocalStack()
+context_stack: ThreadLocalStack["HaikuContext"] = ThreadLocalStack()
 param_creator_stack: ThreadLocalStack["Creator"] = ThreadLocalStack()
 state_creator_stack: ThreadLocalStack["Creator"] = ThreadLocalStack()
 param_getter_stack: ThreadLocalStack["Getter"] = ThreadLocalStack()
@@ -113,13 +115,15 @@ class Frame(NamedTuple):
 
 
 current_frame = frame_stack.peek
+current_context = context_stack.peek
 
 
 class HaikuContext:
   """Collects and injects values for computations."""
 
   __slots__ = ("__params", "__state", "__rng", "__freeze_params",
-               "__expected_stack", "__names", "__counter")
+               "__expected_stack", "__names", "__counter",
+               "__teardown_callbacks")
 
   def __init__(
       self,
@@ -137,6 +141,7 @@ class HaikuContext:
     self.__expected_stack = ThreadLocalStack()
     self.__names = set()
     self.__counter = collections.Counter()
+    self.__teardown_callbacks = []
 
   def collect_params(self) -> Params:
     return data_structures.to_haiku_dict(self.__params)
@@ -147,6 +152,9 @@ class HaikuContext:
   def collect_state(self) -> State:
     return extract_state(self.__state, initial=False)
 
+  def add_teardown_callback(self, f):
+    self.__teardown_callbacks.append(f)
+
   def __enter__(self):
     frame = Frame.create(params=self.__params,
                          state=self.__state,
@@ -156,12 +164,15 @@ class HaikuContext:
     frame.counter_stack.push(self.__counter)
     self.__expected_stack.push(frame)
     frame_stack.push(frame)
+    context_stack.push(self)
     return self
 
   def __exit__(self, exc_type, exc_val, exc_tb):
-    actual = frame_stack.pop()
-    expected = self.__expected_stack.pop()
-    assert actual is expected
+    assert frame_stack.pop() is self.__expected_stack.pop()
+    assert context_stack.pop() is self
+    if exc_type is None:
+      for callback in self.__teardown_callbacks:
+        callback()
 
 
 def new_context(
@@ -193,19 +204,20 @@ def new_context(
   Returns:
     Context manager which closes over mutable Haiku internal state.
   """
+  ddict = functools.partial(collections.defaultdict, dict)
+
   if params is None:
-    params = collections.defaultdict(dict)
+    params = ddict()
     freeze_params = False
   else:
     params = data_structures.to_haiku_dict(params)
     freeze_params = True
 
   if state is None:
-    state = collections.defaultdict(dict)
+    state = ddict()
   else:
-    state = {m: {k: StatePair(v, v) for k, v in p.items()}
-             for m, p in state.items()}
-    state = collections.defaultdict(dict, state)
+    state = ddict({m: ddict({k: StatePair(v, v) for k, v in p.items()})
+                   for m, p in state.items()})
 
   if rng is not None and not isinstance(rng, PRNGSequence):
     rng = PRNGSequence(rng)

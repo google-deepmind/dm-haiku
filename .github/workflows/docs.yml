@@ -31,6 +31,9 @@ jobs:
         pip install -r requirements-test.txt
         pip install -r docs/requirements.txt
         pip install .
+    - name: Print installed dependencies
+      run: |
+        pip freeze
     - name: Test coverage
       run: |
         cd docs

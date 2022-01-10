@@ -29,9 +29,12 @@ jobs:
         pip install -r requirements-jax.txt
         pip install -r requirements-test.txt
         pip install .
+        pip install pytest pytest-xdist
+    - name: Print installed dependencies
+      run: |
+        pip freeze
     - name: Test with pytest (integration tests)
       run: |
-        pip install pytest pytest-xdist
         # Isolate the float64 test because it needs to set a flag at start-up,
         # so no other tests can be run before it.
         pytest haiku/_src/integration/float64_test.py

@@ -29,7 +29,10 @@ jobs:
         pip install -r requirements-jax.txt
         pip install -r requirements-test.txt
         pip install .
+        pip install pytest pytest-xdist
+    - name: Print installed dependencies
+      run: |
+        pip freeze
     - name: Test with pytest
       run: |
-        pip install pytest pytest-xdist
         pytest -n auto haiku --ignore=haiku/_src/integration/

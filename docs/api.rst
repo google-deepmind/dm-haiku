@@ -370,12 +370,6 @@ Conv3DTranspose
 .. autoclass:: Conv3DTranspose
    :members:
 
-DepthwiseConvND
-~~~~~~~~~~~~~~~
-
-.. autoclass:: DepthwiseConvND
-   :members:
-
 DepthwiseConv1D
 ~~~~~~~~~~~~~~~
 

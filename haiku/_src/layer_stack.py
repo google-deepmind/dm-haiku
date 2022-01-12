@@ -192,46 +192,64 @@ def layer_stack(num_layers: int,
                 name: Optional[str] = None):
   """Utility to wrap a Haiku function and recursively apply it to an input.
 
+  This can be used to improve model compile times.
+
   A function is valid if it uses only explicit position parameters, and
   its return type matches its input type. The position parameters can be
-  arbitrarily nested structures with `jnp.ndarray` at the leaf nodes. Note
+  arbitrarily nested structures with ``jnp.ndarray`` at the leaf nodes. Note
   that kwargs are not supported, neither are functions with variable number
-  of parameters (specified by `*args`).
+  of parameters (specified by ``*args``).
 
-  If `with_per_layer_inputs=False` then the new, wrapped function can be
+  If ``with_per_layer_inputs=False`` then the new, wrapped function can be
   understood as performing the following:
-  ```
-  for i in range(num_layers):
-    x = f(x)
-  return x
-  ```
 
-  And if `with_per_layer_inputs=True`, assuming `f` takes two arguments on top
-  of `x`:
-  ```
-  for i in range(num_layers):
-    x, zs[i] = f(x, ys_0[i], ys_1[i])
-  return x, zs
-  ```
-  The code using `layer_stack` for the above function would be:
-  ```
-  def f(x, y_0, y_1):
-    ...
-    return new_x, z
-  x, zs = layer_stack.layer_stack(stack_height,
-                                  with_per_layer_inputs=True)(f)(x, ys_0, ys_1)
-  ```
+  >>> f = lambda x: x+1
+  >>> num_layers = 4
+  >>> x = 0
+  >>> for i in range(num_layers):
+  ...   x = f(x)
+  >>> x
+  4
 
-  Check the tests in `layer_stack_test.py` for further examples.
+  And if ``with_per_layer_inputs=True``, assuming ``f`` takes two arguments on
+  top of ``x``:
 
-  Crucially, any parameters created inside `f` will not be shared across
+  >>> f = lambda x, y0, y1: (x+1, y0+y1)
+  >>> num_layers = 4
+  >>> x = 0
+  >>> ys_0 = [1, 2, 3, 4]
+  >>> ys_1 = [5, 6, 7, 8]
+  >>> zs = []
+  >>> for i in range(num_layers):
+  ...   x, z = f(x, ys_0[i], ys_1[i])
+  ...   zs.append(z)
+  >>> x, zs
+  (4, [6, 8, 10, 12])
+
+  The code using ``layer_stack`` for the above function would be:
+
+  >>> f = lambda x, y0, y1: (x+1, y0+y1)
+  >>> num_layers = 4
+  >>> x = 0
+  >>> ys_0 = jnp.array([1, 2, 3, 4])
+  >>> ys_1 = jnp.array([5, 6, 7, 8])
+  >>> stack = hk.experimental.layer_stack(num_layers,
+  ...                                     with_per_layer_inputs=True)
+  >>> x, zs = stack(f)(x, ys_0, ys_1)
+  >>> x, zs
+  (DeviceArray(4, dtype=int32, weak_type=True),
+      DeviceArray([ 6,  8, 10, 12], dtype=int32))
+
+  Check the tests in ``layer_stack_test.py`` for further examples.
+
+  Crucially, any parameters created inside ``f`` will not be shared across
   iterations.
 
   Args:
     num_layers: The number of times to iterate the wrapped function.
     with_per_layer_inputs: Whether or not to pass per-layer inputs to the
       wrapped function.
-    unroll: the unroll used by `scan`.
+    unroll: the unroll used by ``scan``.
     name: name of the Haiku context.
 
   Returns:

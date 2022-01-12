@@ -156,7 +156,7 @@ BATCH_MODULES = (
         shape=(BATCH_SIZE, 4, 4, 10)),
     ModuleDescriptor(
         name="LayerNorm",
-        create=lambda: hk.LayerNorm(1, True, True),
+        create=lambda: hk.LayerNorm(1, True, True, param_axis=-1),
         shape=(BATCH_SIZE, 3, 2)),
     ModuleDescriptor(
         name="MultiHeadAttention",

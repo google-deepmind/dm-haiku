@@ -1,6 +1,6 @@
 {
   "module": [
-    "LayerNorm(axis=1, create_scale=True, create_offset=True)"
+    "LayerNorm(axis=1, create_scale=True, create_offset=True, param_axis=-1)"
   ],
   "input": "f32[8, 3, 2]",
   "param_size": 4,

@@ -148,7 +148,7 @@ function, keeping track of any parameters requested through `hk.get_parameter`
 (called by e.g. `hk.Linear`) and returning them to you.
 
 The `params` object returned is a nested data structure of all the
-parameters in your network, designed for your to inspect and manipulate. 
+parameters in your network, designed for you to inspect and manipulate. 
 Concretely, it is a mapping of module name to module parameters, where a module
 parameter is a mapping of parameter name to parameter value. For example:
 

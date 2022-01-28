@@ -406,6 +406,7 @@ def _memoize_by_id(f):
   return wrapper
 
 
+@functools.wraps(jax.lax.cond)
 def cond(*args, **kwargs):
   """Equivalent to :func:`jax.lax.cond` but with Haiku state passed in/out."""
   if not base.inside_transform():

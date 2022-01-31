@@ -428,11 +428,13 @@ def check_mapping(name: str, mapping: Optional[T]) -> T:
     # Convert None to empty dict.
     mapping = dict()
   if not isinstance(mapping, Mapping):
-    raise TypeError(f"{name} argument does not appear valid: {mapping!r}. "
+    raise TypeError(f"{name} argument does not appear valid. It should be a "
+                    f"mapping but is of type {type(mapping)}. "
                     "For reference the parameters for apply are "
                     "`apply(params, rng, ...)`` for `hk.transform` and "
                     "`apply(params, state, rng, ...)` for "
-                    "`hk.transform_with_state`.")
+                    "`hk.transform_with_state`.\n"
+                    f"The argument was: {mapping!r}.")
   return mapping
 
 

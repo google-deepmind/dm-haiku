@@ -15,7 +15,7 @@
 """Batch Norm."""
 
 import types
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
 from haiku._src import base
 from haiku._src import initializers
@@ -68,7 +68,7 @@ class BatchNorm(hk.Module):
       scale_init: Optional[hk.initializers.Initializer] = None,
       offset_init: Optional[hk.initializers.Initializer] = None,
       axis: Optional[Sequence[int]] = None,
-      cross_replica_axis: Optional[str] = None,
+      cross_replica_axis: Optional[Union[str, Sequence[str]]] = None,
       cross_replica_axis_index_groups: Optional[Sequence[Sequence[int]]] = None,
       data_format: str = "channels_last",
       name: Optional[str] = None,
@@ -88,11 +88,13 @@ class BatchNorm(hk.Module):
       axis: Which axes to reduce over. The default (``None``) signifies that all
         but the channel axis should be normalized. Otherwise this is a list of
         axis indices which will have normalization statistics calculated.
-      cross_replica_axis: If not ``None``, it should be a string representing
-        the axis name over which this module is being run within a ``jax.pmap``.
-        Supplying this argument means that batch statistics are calculated
-        across all replicas on that axis.
-      cross_replica_axis_index_groups: Specifies how devices are grouped.
+      cross_replica_axis: If not ``None``, it should be a string (or sequence of
+        strings) representing the axis name(s) over which this module is being
+        run within a jax map (e.g. ``jax.pmap`` or ``jax.vmap``). Supplying this
+        argument means that batch statistics are calculated across all replicas
+        on the named axes.
+      cross_replica_axis_index_groups: Specifies how devices are grouped. Valid
+        only within ``jax.pmap`` collectives.
       data_format: The data format of the input. Can be either
         ``channels_first``, ``channels_last``, ``N...C`` or ``NC...``. By
         default it is ``channels_last``. See :func:`get_channel_index`.

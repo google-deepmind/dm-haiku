@@ -12,7 +12,7 @@ def hk_py_library(name, **kwargs):
     """
     native.py_library(name = name, **kwargs)
 
-def hk_py_binary(name, **kwargs):
+def hk_py_binary(name, test_lib = False, **kwargs):
     """Proxy for py_binary.
 
     Internally we override this to enable type checking via PyType (more
@@ -20,9 +20,17 @@ def hk_py_binary(name, **kwargs):
 
     Args:
         name: binary name.
+        test_lib: Whether to generate a test-only library target.
         **kwargs: keyword args passed straight to py_binary.
     """
     native.py_binary(name = name, **kwargs)
+
+    if test_lib:
+        hk_py_library(
+            name = name + ".testonly_lib",
+            testonly = 1,
+            **kwargs
+        )
 
 def hk_py_test(
         name,

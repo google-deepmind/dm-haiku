@@ -39,14 +39,16 @@ hk_py_library(
     name = "base",
     srcs = ["base.py"],
     deps = [
+        ":config",
         ":data_structures",
         ":typing",
         # pip: jax
     ],
 )
 
-hk_py_test(
-    name = "base_test",
+hk_py_library(
+    name = "base_test_lib",
+    testonly = 1,
     srcs = ["base_test.py"],
     deps = [
         ":base",
@@ -55,6 +57,30 @@ hk_py_test(
         # pip: absl/testing:parameterized
         # pip: jax
         # pip: numpy
+    ],
+)
+
+hk_py_test(
+    name = "base_test",
+    srcs = ["base_test.py"],
+    deps = [":base_test_lib"],
+)
+
+hk_py_library(
+    name = "config",
+    srcs = ["config.py"],
+)
+
+hk_py_test(
+    name = "config_test",
+    srcs = ["config_test.py"],
+    gpu = False,
+    tpu = False,
+    deps = [
+        ":config",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        # pip: jax
     ],
 )
 
@@ -671,6 +697,7 @@ hk_py_library(
     name = "test_utils",
     srcs = ["test_utils.py"],
     deps = [
+        ":config",
         ":transform",
         # pip: absl/testing:parameterized
         # pip: chex
@@ -739,6 +766,7 @@ hk_py_test(
     srcs = ["stateful_test.py"],
     deps = [
         ":base",
+        ":base_test_lib",
         ":module",
         ":stateful",
         ":test_utils",

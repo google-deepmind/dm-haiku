@@ -1080,6 +1080,7 @@ Managing State
     lift
     lift_with_state
     LiftWithStateUpdater
+    check_jax_usage
 
 name_scope
 ~~~~~~~~~~
@@ -1100,6 +1101,11 @@ LiftWithStateUpdater
 ~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: LiftWithStateUpdater
+
+check_jax_usage
+~~~~~~~~~~~~~~~
+
+.. autofunction:: check_jax_usage
 
 Optimizations
 -------------

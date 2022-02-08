@@ -28,6 +28,7 @@ py_library(
         "//haiku/_src:basic",
         "//haiku/_src:batch_norm",
         "//haiku/_src:bias",
+        "//haiku/_src:config",
         "//haiku/_src:conv",
         "//haiku/_src:data_structures",
         "//haiku/_src:depthwise_conv",

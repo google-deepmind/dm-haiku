@@ -22,6 +22,7 @@ import types
 from typing import Callable, Generator, Optional, Sequence, Tuple, TypeVar
 
 from absl.testing import parameterized
+from haiku._src import config
 from haiku._src import transform
 from jax import random
 
@@ -205,3 +206,15 @@ def with_environ(key: str, value: Optional[str]):
     return wrapper
 
   return decorator
+
+
+def with_guardrails(f):
+  """Runs the given test with JAX guardrails on."""
+  @functools.wraps(f)
+  def wrapper(*a, **k):
+    old = config.check_jax_usage(True)
+    try:
+      return f(*a, **k)
+    finally:
+      config.check_jax_usage(old)
+  return wrapper

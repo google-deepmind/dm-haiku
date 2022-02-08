@@ -207,7 +207,8 @@ def value_and_grad(fun, argnums=0, has_aux=False, holomorphic=False):
   @functools.wraps(fun)
   def stateful_fun(*args, **kwargs):
     state_in = kwargs.pop("hk_state")
-    with temporary_internal_state(state_in):
+    with temporary_internal_state(state_in), \
+         base.push_jax_trace_level():
       out = fun(*args, **kwargs)
       out, aux = (out if has_aux else (out, None))
       state_out = difference(state_in, internal_state())
@@ -349,7 +350,8 @@ def thread_hk_state_in_kwargs(dec_fun):
     @functools.wraps(fun)
     def stateful_fun(*args, **kwargs):
       state_in = kwargs.pop("hk_state")
-      with temporary_internal_state(state_in, share_python_state=True):
+      with temporary_internal_state(state_in, share_python_state=True), \
+           base.push_jax_trace_level():
         out = fun(*args, **kwargs)
         return out, difference(state_in, internal_state())
 
@@ -373,10 +375,12 @@ remat = thread_hk_state_in_kwargs(jax.remat)
 
 
 def stateful_branch(branch_fun):
+  """Calls branch_fun passing internal state in and out."""
   @functools.wraps(branch_fun)
   def new_branch_fun(operand):
     state, operand = operand
-    with temporary_internal_state(state):
+    with temporary_internal_state(state), \
+         base.push_jax_trace_level():
       out = branch_fun(operand)
       reserve_up_to_full_rng_block()
       # TODO(tomhennigan) Return difference of state in/out here.
@@ -488,7 +492,8 @@ def scan(f, init, xs, length=None, reverse=False, unroll=1):
   def stateful_fun(carry, x):
     carry, state = carry
     with temporary_internal_state(state):
-      with base.assert_no_new_parameters():
+      with base.assert_no_new_parameters(), \
+           base.push_jax_trace_level():
         carry, out = f(carry, x)
       reserve_up_to_full_rng_block()
       carry = (carry, internal_state(params=False))
@@ -529,7 +534,8 @@ def fori_loop(lower, upper, body_fun, init_val):
   @functools.wraps(body_fun)
   def pure_body_fun(i, val):
     state, val = val
-    with temporary_internal_state(state):
+    with temporary_internal_state(state), \
+         base.push_jax_trace_level():
       val = body_fun(i, val)
       reserve_up_to_full_rng_block()
       state = internal_state()
@@ -582,6 +588,7 @@ def vmap(
     in_axes=0,
     out_axes=0,
     axis_name: Optional[str] = None,
+    axis_size: Optional[int] = None,
     *,
     split_rng: bool = False,
 ) -> Callable[..., Any]:
@@ -615,6 +622,7 @@ def vmap(
     in_axes: See :func:`jax.vmap`.
     out_axes: See :func:`jax.vmap`.
     axis_name: See :func:`jax.vmap`.
+    axis_size: See :func:`jax.vmap`.
     split_rng: Controls whether random key APIs in Haiku (e.g.
       :func:`next_rng_key`) return different (aka. the internal key is split
       before calling your mapped function) or the same (aka. the internal key
@@ -645,7 +653,8 @@ def vmap(
       rng = base.PRNGSequence(state_in.rng).internal_state
       state_in = InternalState(state_in.params, state_in.state, rng)
 
-    with temporary_internal_state(state_in):
+    with temporary_internal_state(state_in), \
+         base.push_jax_trace_level():
       out = fun(*args)
       state_out = difference(state_in, internal_state())
       return out, state_out
@@ -655,7 +664,7 @@ def vmap(
     base.assert_context("vmap")
 
     mapped_pure_fun = jax.vmap(pure_fun, in_axes=in_axes, out_axes=out_axes,
-                               axis_name=axis_name)
+                               axis_name=axis_name, axis_size=axis_size)
     state = internal_state()
 
     if split_rng:
@@ -710,7 +719,8 @@ def while_loop(cond_fun, body_fun, init_val):
   @functools.wraps(body_fun)
   def pure_body_fun(val):
     val, state = val
-    with temporary_internal_state(state):
+    with temporary_internal_state(state), \
+         base.push_jax_trace_level():
       val = body_fun(val)
       state = internal_state()
       return val, state
@@ -778,7 +788,8 @@ def eval_shape(fun, *args, **kwargs):
 
   @functools.wraps(fun)
   def stateless_fun(state, *args, **kwargs):
-    with temporary_internal_state(state):
+    with temporary_internal_state(state), \
+         base.push_jax_trace_level():
       out = fun(*args, **kwargs)
       # Don't return changed state
       return out

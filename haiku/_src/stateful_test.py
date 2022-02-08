@@ -20,6 +20,7 @@ import itertools as it
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import base
+from haiku._src import base_test
 from haiku._src import module
 from haiku._src import stateful
 from haiku._src import test_utils
@@ -28,6 +29,52 @@ from haiku._src import transform
 import jax
 import jax.numpy as jnp
 import numpy as np
+
+toggle = lambda i, a: lambda x: a(x) if base.params_frozen() else i(x)
+
+
+# JAX transforms and control flow that need to be aware of Haiku internal
+# state to operate unsurprisingly.
+# pylint: disable=g-long-lambda
+HK_OVERLOADED_JAX_PURE_EXPECTING_FNS = (
+    # Just-in-time compilation.
+    ("jit", stateful.jit),
+
+    # ("make_jaxpr", stateful.make_jaxpr),
+    ("eval_shape", lambda f: (lambda x: [f(x), stateful.eval_shape(f, x)])),
+    ("named_call", stateful.named_call),
+
+    # Parallelization.
+    # TODO(tomhennigan): Add missing features (e.g. pjit,xmap).
+    # ("pmap", lambda f: stateful.pmap(f, "i")),
+
+    # Vectorization.
+    ("vmap", stateful.vmap),
+
+    # Control flow.
+    # TODO(tomhennigan): Enable for associative_scan.
+    # ("associative_scan", lambda f:
+    #  (lambda x: jax.lax.associative_scan(f, x))),
+    ("cond", lambda f: (lambda x: stateful.cond(True, f, f, x))),
+    ("fori_loop", lambda f:
+     (lambda x: stateful.fori_loop(0, 1, base_test.ignore_index(f), x))),
+    # ("map", lambda f: (lambda x: stateful.map(f, x))),
+    ("scan", lambda f:
+     (lambda x: stateful.scan(base_test.identity_carry(f), None, x))),
+    ("switch", lambda f: (lambda x: stateful.switch(0, [f, f], x))),
+    ("while_loop", lambda f: toggle(
+        f, lambda x: stateful.while_loop(lambda xs: xs[0] == 0,
+                                         lambda xs: (1, f(xs[1])),
+                                         (0, x)))),
+
+    # Automatic differentiation.
+    # TODO(tomhennigan): Add missing features (e.g. custom_vjp, custom_jvp).
+
+    ("grad", lambda f: stateful.grad(lambda x: f(x).sum())),
+    ("value_and_grad", lambda f: stateful.value_and_grad(lambda x: f(x).sum())),
+    ("checkpoint", stateful.remat),
+)
+# pylint: enable=g-long-lambda
 
 
 class StatefulTest(parameterized.TestCase):
@@ -702,6 +749,20 @@ class StatefulTest(parameterized.TestCase):
   def test_eval_shape_no_leaked_tracers_under_leak_checker(self):
     with jax.checking_leaks():
       stateful.eval_shape(SquareModule(), jnp.ones(()))  # does not crash
+
+  @test_utils.combined_named_parameters(base_test.SIDE_EFFECTING_FUNCTIONS,
+                                        HK_OVERLOADED_JAX_PURE_EXPECTING_FNS)
+  @test_utils.transform_and_run
+  @test_utils.with_guardrails
+  def test_safe_use_of_jax(self, haiku_side_effect_fn, hk_jax_fn):
+    if "reserve_rng_keys_while_loop" in self._testMethodName:
+      self.skipTest("Expected not to work.")
+
+    # Make `f` identify with the side effecting function included.
+    f = hk_jax_fn(lambda x: [haiku_side_effect_fn(), x][1])
+    x = jnp.ones([1])
+    # These functions should not trigger exceptions from our guardrails.
+    f(x)
 
 
 def _callback_prim(forward, backward):

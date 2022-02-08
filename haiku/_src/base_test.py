@@ -33,6 +33,66 @@ custom_state_creator = functools.partial(
 custom_state_getter = functools.partial(
     base.custom_getter, params=False, state=True)
 
+identity_carry = lambda f: lambda carry, x: (carry, f(x))
+ignore_index = lambda f: lambda i, x: f(x)
+
+
+def with_rng_example():
+  with base.with_rng(jax.random.PRNGKey(42)):
+    pass
+
+# Methods in Haiku that mutate internal state.
+SIDE_EFFECTING_FUNCTIONS = (
+    ("get_parameter", lambda: base.get_parameter("w", [], init=jnp.zeros)),
+    ("get_state", lambda: base.get_state("w", [], init=jnp.zeros)),
+    ("set_state", lambda: base.set_state("w", 1)),
+    ("next_rng_key", base.next_rng_key),
+    ("next_rng_keys", lambda: base.next_rng_keys(2)),
+    ("reserve_rng_keys", lambda: base.reserve_rng_keys(2)),
+    ("with_rng", with_rng_example),
+)
+
+# JAX transforms and control flow that need to be aware of Haiku internal
+# state to operate unsurprisingly.
+# pylint: disable=g-long-lambda
+JAX_PURE_EXPECTING_FNS = (
+    # Just-in-time compilation.
+    ("jit", jax.jit),
+    ("make_jaxpr", jax.make_jaxpr),
+    ("eval_shape", lambda f: (lambda x: jax.eval_shape(f, x))),
+    ("named_call", jax.named_call),
+
+    # Parallelization.
+    # TODO(tomhennigan): Add missing features (e.g. pjit,xmap).
+    ("pmap", lambda f: jax.pmap(f, "i")),
+
+    # Vectorization.
+    ("vmap", jax.vmap),
+
+    # Control flow.
+    # TODO(tomhennigan): Enable for associative_scan.
+    # ("associative_scan", lambda f:
+    #  (lambda x: jax.lax.associative_scan(
+    #      lambda a, b: [f(a + b), a + b][-1], jnp.stack([x, x, x, x])))),
+    ("cond", lambda f: (lambda x: jax.lax.cond(True, f, f, x))),
+    (
+        "fori_loop",
+        lambda f:
+        (lambda x: jax.lax.fori_loop(0, 1, ignore_index(f), x))),
+    ("map", lambda f: (lambda x: jax.lax.map(f, x))),
+    ("scan", lambda f: (lambda x: jax.lax.scan(identity_carry(f), None, x))),
+    ("switch", lambda f: (lambda x: jax.lax.switch(0, [f, f], x))),
+    ("while_loop", lambda f: (lambda x: jax.lax.while_loop(
+        lambda xs: xs[0] == 0, lambda xs: [1, f(xs[1])], (0, x)))),
+
+    # Automatic differentiation.
+    # TODO(tomhennigan): Add missing features (e.g. custom_vjp, custom_jvp).
+    ("grad", lambda f: jax.grad(lambda x: f(x).sum())),
+    ("value_and_grad", lambda f: jax.value_and_grad(lambda x: f(x).sum())),
+    ("checkpoint", jax.checkpoint),  # aka. remat
+)
+# pylint: enable=g-long-lambda
+
 
 class BaseTest(parameterized.TestCase):
 
@@ -479,6 +539,17 @@ class BaseTest(parameterized.TestCase):
       with self.assertRaisesRegex(ValueError, "expected"):
         raise ValueError("expected")
     self.assertEmpty(base.frame_stack)
+
+  @test_utils.combined_named_parameters(SIDE_EFFECTING_FUNCTIONS,
+                                        JAX_PURE_EXPECTING_FNS)
+  @test_utils.transform_and_run
+  @test_utils.with_guardrails
+  def test_unsafe_use_of_jax(self, haiku_side_effect_fn, jax_fn):
+    # Make `f` identify with the side effecting function included.
+    f = jax_fn(lambda x: [haiku_side_effect_fn(), x][1])
+    x = jnp.ones([1])
+    with self.assertRaises(base.JaxUsageError):
+      f(x)
 
 if __name__ == "__main__":
   absltest.main()

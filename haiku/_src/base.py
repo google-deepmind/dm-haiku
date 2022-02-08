@@ -22,6 +22,7 @@ from typing import (Callable, Iterator, Iterable, MutableMapping, NamedTuple,
                     FrozenSet)
 import warnings
 
+from haiku._src import config
 from haiku._src import data_structures
 from haiku._src.typing import (  # pylint: disable=g-multiple-import
     Initializer,
@@ -31,6 +32,7 @@ from haiku._src.typing import (  # pylint: disable=g-multiple-import
     PRNGKey,
 )
 import jax
+from jax import core as jax_core
 import jax.numpy as jnp
 
 DEFAULT_PRNG_RESERVE_SIZE = 1
@@ -52,6 +54,20 @@ param_getter_stack: ThreadLocalStack["Getter"] = ThreadLocalStack()
 state_getter_stack: ThreadLocalStack["Getter"] = ThreadLocalStack()
 
 
+class JaxTraceLevel(NamedTuple):
+  """Comparable object capturing trace state in JAX."""
+  opaque: Any
+
+  @classmethod
+  def current(cls):
+    # TODO(tomhennigan): Remove once a version of JAX is released incl PR#9423.
+    trace_stack = jax_core.thread_local_state.trace_state.trace_stack.stack
+    top_type = trace_stack[0].trace_type
+    level = trace_stack[-1].level
+    sublevel = jax_core.cur_sublevel()
+    return JaxTraceLevel(opaque=(top_type, level, sublevel))
+
+
 class Frame(NamedTuple):
   """A frame represents all of the per-transform values in Haiku."""
 
@@ -65,6 +81,7 @@ class Frame(NamedTuple):
   module_stack: Stack[ModuleState]
   counter_stack: Stack[collections.Counter]
   used_names_stack: Stack[Set[str]]
+  jax_trace_stack: Stack[JaxTraceLevel]
 
   @property
   def params_frozen(self):
@@ -80,10 +97,12 @@ class Frame(NamedTuple):
                   freeze_params=freeze_params,
                   module_stack=Stack(),
                   counter_stack=Stack(),
-                  used_names_stack=Stack())
+                  used_names_stack=Stack(),
+                  jax_trace_stack=Stack())
     frame.rng_stack.push(rng)
     frame.counter_stack.push(collections.Counter())
     frame.used_names_stack.push(set())
+    frame.jax_trace_stack.push(JaxTraceLevel.current())
     return frame
 
   def evolve(self, params, state, rng, *, decoupled=True) -> "Frame":
@@ -94,17 +113,20 @@ class Frame(NamedTuple):
       module_stack = self.module_stack.clone()
       counter_stack = self.counter_stack.map(collections.Counter)
       used_names_stack = self.used_names_stack.map(set)
+      jax_trace_stack = self.jax_trace_stack.clone()
     else:
       module_stack = self.module_stack
       counter_stack = self.counter_stack
       used_names_stack = self.used_names_stack
+      jax_trace_stack = self.jax_trace_stack
     return Frame(params=params,
                  state=state,
                  rng_stack=rng_stack,
                  freeze_params=self.freeze_params,
                  module_stack=module_stack,
                  counter_stack=counter_stack,
-                 used_names_stack=used_names_stack)
+                 used_names_stack=used_names_stack,
+                 jax_trace_stack=jax_trace_stack)
 
   @contextlib.contextmanager
   def module(self, module_state: ModuleState):
@@ -296,6 +318,8 @@ def get_parameter(
     A jnp.ndarray with the parameter of the given shape.
   """
   assert_context("get_parameter")
+  assert_jax_usage("get_parameter")
+
   if init is None:
     raise ValueError("Initializer must be specified.")
 
@@ -632,6 +656,7 @@ def reserve_rng_keys(num: int):
     num: The number of JAX rng keys to allocate.
   """
   assert_context("reserve_rng_keys")
+  assert_jax_usage("reserve_rng_keys")
   rng_seq = rng_seq_or_fail()
   rng_seq.reserve(num)
 
@@ -647,7 +672,41 @@ def next_rng_key() -> PRNGKey:
     used with APIs such as :func:`jax.random.uniform`.
   """
   assert_context("next_rng_key")
+  assert_jax_usage("next_rng_key")
   return next_rng_key_internal()
+
+
+class JaxUsageError(ValueError):
+  pass
+
+JaxUsageError.__module__ = "haiku"
+
+
+def push_jax_trace_level():
+  return current_frame().jax_trace_stack(JaxTraceLevel.current())
+
+
+def assert_jax_usage(public_symbol_name: str):
+  if not config.get_config().check_jax_usage:
+    return
+
+  expected_level = current_frame().jax_trace_stack.peek()
+  trace_level = JaxTraceLevel.current()
+  if trace_level != expected_level:
+    raise JaxUsageError(
+        "tl;dr - You need to use a Haiku overloaded transform (e.g. `hk.vmap`) "
+        "or control flow operator (e.g. `hk.cond`) instead of the `jax.*` "
+        "equivalent for untransformed functions using Haiku APIs."
+        "\n\n",
+        "Some APIs in JAX (e.g. `jit`, `vmap`, `cond`, `switch`) take "
+        f"functions that are expected to be pure. `hk.{public_symbol_name}` "
+        "has a side effect, and using it inside a function (without also using "
+        "`hk.transform`) makes that function 'impure' (the function has a side "
+        "effect)."
+        "\n\n"
+        "Haiku includes drop-in replacements for these JAX APIs (e.g. "
+        "`hk.vmap`) that carefully turn your function into a pure function and "
+        "then call the underlying JAX function.")
 
 
 # NOTE: Split for monkey patching in random.py.
@@ -673,6 +732,7 @@ def next_rng_keys(num: int) -> jnp.ndarray:
     rng keys that can be used with APIs such as :func:`jax.random.uniform`.
   """
   assert_context("next_rng_keys")
+  assert_jax_usage("next_rng_keys")
   rng_seq = rng_seq_or_fail()
   return jnp.vstack(rng_seq.take(num))
 
@@ -681,7 +741,11 @@ def maybe_next_rng_key() -> Optional[PRNGKey]:
   """:func:`next_rng_key` if random numbers are available, else ``None``."""
   assert_context("maybe_next_rng_key")
   rng_seq = current_frame().rng_stack.peek()
-  return None if rng_seq is None else next(rng_seq)
+  if rng_seq is not None:
+    assert_jax_usage("maybe_next_rng_key")
+    return next(rng_seq)
+  else:
+    return None
 
 
 def extract_state(state: MutableState, *, initial) -> State:
@@ -732,6 +796,7 @@ def get_state(
     A jnp.ndarray with the state of the given shape.
   """
   assert_context("get_state")
+  assert_jax_usage("get_state")
   bundle_name = current_bundle_name()
   state = current_frame().state[bundle_name]
   fq_name = f"{bundle_name}/{name}"
@@ -785,6 +850,7 @@ def set_state(name: str, value):
     value: A value to set.
   """
   assert_context("set_state")
+  assert_jax_usage("set_state")
   state = current_frame().state[current_bundle_name()]
   if name in state:
     initial, _ = state[name]
@@ -813,6 +879,7 @@ def with_rng(key: PRNGKey):
     Context manager under which the given sequence is active.
   """
   assert_context("with_rng")
+  assert_jax_usage("with_rng")
   return current_frame().rng_stack(PRNGSequence(key))
 
 

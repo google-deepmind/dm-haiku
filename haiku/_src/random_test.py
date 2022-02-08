@@ -58,6 +58,15 @@ class RandomTest(absltest.TestCase):
       out_key = apply({}, key)
       self.assertEqual(out_key.shape, (4,))
 
+  def test_rbg_default_impl_invalid_key_shape(self):
+    with jax.default_prng_impl("rbg"):
+      key = jax.random.PRNGKey(42)[0:2]
+      self.assertEqual(key.shape, (2,))
+      init, _ = transform.transform(base.next_rng_key)
+      with self.assertRaisesRegex(ValueError,
+                                  "Init must be called with an RNG"):
+        init(key)
+
 
 class CustomRNGTest(absltest.TestCase):
 
@@ -68,6 +77,10 @@ class CustomRNGTest(absltest.TestCase):
   def tearDown(self):
     super().tearDown()
     jax.config.update("jax_enable_custom_prng", False)
+
+  def test_non_custom_key(self):
+    init, _ = transform.transform(base.next_rng_key)
+    init(jax.random.PRNGKey(42))  # does not crash
 
   def test_custom_key(self):
     count = 0
@@ -91,6 +104,11 @@ class CustomRNGTest(absltest.TestCase):
     # testing if Tracers with a different key shape are accepted
     jax.jit(init)(key)
     self.assertEqual(count, 2)
+
+  def test_invalid_custom_key(self):
+    init, _ = transform.transform(base.next_rng_key)
+    with self.assertRaisesRegex(ValueError, "Init must be called with an RNG"):
+      init(jnp.ones((2,), dtype=jnp.uint32))
 
 
 def split_for_n(key, n):

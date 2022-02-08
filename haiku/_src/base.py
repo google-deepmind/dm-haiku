@@ -531,20 +531,27 @@ def custom_getter(
 
 def assert_is_prng_key(key: PRNGKey):
   """Asserts that the given input looks like a `jax.random.PRNGKey`."""
-  # TODO(lenamartens): When `jax.config.enable_custom_prng` has been defaulted
-  # to True and jax.prng.PRNGKeyArray is a public type, make this a type check.
+  type_error = ValueError("The provided key is not a JAX PRNGKey but a "
+                          f"{type(key)}:\n{key}")
+  if (hasattr(jax.config, "jax_enable_custom_prng")
+      and jax.config.jax_enable_custom_prng):
+    if not isinstance(key, jax.random.KeyArray):
+      raise type_error
   if not hasattr(key, "shape"):
-    raise ValueError("The provided key is not a JAX PRNGKey but a "
-                     f"{type(key)}:\n{key}")
-  elif hasattr(key, "dtype"):
-    # In this case the key is array-like (ndarray or Tracer), and not a custom
-    # PRNG, so we can check for the key shape and dtypes of the available
-    # default PRNG implementations (threefry and RBG)
-    if (key.shape not in ((2,), (4,))) or key.dtype != jnp.uint32:
+    raise type_error
+  if hasattr(key, "dtype"):
+    if hasattr(jax.random, "default_prng_impl"):
+      expected_shapes = (jax.random.default_prng_impl().key_shape,)
+    else:
+      # Check for the shapes of the known PRNG impls (threefry and RBG)
+      expected_shapes = ((2,), (4,))
+    if key.shape not in expected_shapes or key.dtype != jnp.uint32:
+      expected_shapes_str = " or ".join(map(str, expected_shapes))
       raise ValueError(
-          "Provided key did not have expected shape and/or dtype "
-          "expected=(shape=(2,), dtype=uint32) or (shape=(4,), dtype=uint32) "
+          "Provided key did not have expected shape and/or dtype: "
+          f"expected=(shape={expected_shapes_str}, dtype=unint32), "
           f"actual=(shape={key.shape}, dtype={key.dtype})")
+
 
 PRNGSequenceState = Tuple[PRNGKey, Iterable[PRNGKey]]
 

@@ -448,6 +448,54 @@ _VALID_IDENTIFIER_R = re.compile(r"^[a-zA-Z_]([a-zA-Z0-9_])*$")
 valid_identifier = lambda name: bool(_VALID_IDENTIFIER_R.match(name))
 
 
+def unique_and_canonical_name(name: str) -> str:
+  """Returns a canonical name for the given name."""
+  frame = base.current_frame()
+
+  # If we are outside init/call then prefix the name with the method name.
+  if len(frame.module_stack) > 1:
+    # -2 since we are inside the ctor and want to look at the caller state.
+    module_state = frame.module_stack.peek(-2)
+
+    # Make sure to include the method name if appropriate.
+    method_name = module_state.method_name
+    if method_name == "__init__":
+      name = "~/" + name
+    elif method_name != "__call__":
+      name = "~" + method_name + "/" + name
+
+    # Include the parent name.
+    parent_module = module_state.module
+    parent_name = base.safe_get_module_name(parent_module)
+    name = parent_name + "/" + name
+
+  # Test if the user has explicitly numbered this module.
+  splits = re.split(r"_(\d+)$", name, 3)
+  if len(splits) > 1:
+    name, n = splits[0], int(splits[1])
+    explicit_n = True
+  else:
+    n = None
+    explicit_n = False
+
+  # Determine a unique name for this module within the current context.
+  counters = frame.counter_stack.peek(-2)
+  if n is not None:
+    counters[name] = max(counters[name], n + 1)
+  else:
+    n = counters[name]
+    counters[name] += 1
+  qualified_name = f"{name}_{n}" if explicit_n or n else name
+
+  # Final sanity check that this name has not been used before.
+  used_names = frame.used_names_stack.peek(-2)
+  if qualified_name in used_names:
+    raise ValueError(f"Module name '{qualified_name}' is not unique.")
+  used_names.add(qualified_name)
+
+  return qualified_name
+
+
 class Module(object, metaclass=ModuleMetaclass):
   """Base class for Haiku modules.
 
@@ -639,54 +687,6 @@ def name_like(method_name: str) -> Callable[[T], T]:
     setattr(method, _CUSTOM_NAME, method_name)
     return method
   return decorator
-
-
-def unique_and_canonical_name(name: str) -> str:
-  """Returns a canonical name for the given name."""
-  frame = base.current_frame()
-
-  # If we are outside init/call then prefix the name with the method name.
-  if len(frame.module_stack) > 1:
-    # -2 since we are inside the ctor and want to look at the caller state.
-    module_state = frame.module_stack.peek(-2)
-
-    # Make sure to include the method name if appropriate.
-    method_name = module_state.method_name
-    if method_name == "__init__":
-      name = "~/" + name
-    elif method_name != "__call__":
-      name = "~" + method_name + "/" + name
-
-    # Include the parent name.
-    parent_module = module_state.module
-    parent_name = base.safe_get_module_name(parent_module)
-    name = parent_name + "/" + name
-
-  # Test if the user has explicitly numbered this module.
-  splits = re.split(r"_(\d+)$", name, 3)
-  if len(splits) > 1:
-    name, n = splits[0], int(splits[1])
-    explicit_n = True
-  else:
-    n = None
-    explicit_n = False
-
-  # Determine a unique name for this module within the current context.
-  counters = frame.counter_stack.peek(-2)
-  if n is not None:
-    counters[name] = max(counters[name], n + 1)
-  else:
-    n = counters[name]
-    counters[name] += 1
-  qualified_name = f"{name}_{n}" if explicit_n or n else name
-
-  # Final sanity check that this name has not been used before.
-  used_names = frame.used_names_stack.peek(-2)
-  if qualified_name in used_names:
-    raise ValueError(f"Module name '{qualified_name}' is not unique.")
-  used_names.add(qualified_name)
-
-  return qualified_name
 
 MethodHook = Callable[[Module, str], ContextManager[None]]
 method_hook_stack: ThreadLocalStack[MethodHook] = ThreadLocalStack()

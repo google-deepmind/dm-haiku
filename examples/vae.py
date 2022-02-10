@@ -14,7 +14,7 @@
 # ==============================================================================
 """Variational Autoencoder example on binarized MNIST dataset."""
 
-from typing import Generator, Mapping, Tuple, NamedTuple, Sequence
+from typing import Iterator, Mapping, Tuple, NamedTuple, Sequence
 
 from absl import app
 from absl import flags
@@ -41,7 +41,7 @@ Batch = Mapping[str, np.ndarray]
 MNIST_IMAGE_SHAPE: Sequence[int] = (28, 28, 1)
 
 
-def load_dataset(split: str, batch_size: int) -> Generator[Batch, None, None]:
+def load_dataset(split: str, batch_size: int) -> Iterator[Batch]:
   ds = tfds.load("binarized_mnist", split=split, shuffle_files=True,
                  read_config=tfds.ReadConfig(shuffle_seed=FLAGS.random_seed))
   ds = ds.shuffle(buffer_size=10 * batch_size, seed=FLAGS.random_seed)

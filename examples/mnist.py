@@ -14,7 +14,7 @@
 # ==============================================================================
 """MNIST classifier example."""
 
-from typing import Generator, Mapping, Tuple
+from typing import Iterator, Mapping, Tuple
 
 from absl import app
 import haiku as hk
@@ -44,7 +44,7 @@ def load_dataset(
     *,
     is_training: bool,
     batch_size: int,
-) -> Generator[Batch, None, None]:
+) -> Iterator[Batch]:
   """Loads the dataset as a generator of batches."""
   ds = tfds.load("mnist:3.*.*", split=split).cache().repeat()
   if is_training:

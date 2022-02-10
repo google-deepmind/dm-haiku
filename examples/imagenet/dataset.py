@@ -17,7 +17,7 @@
 import enum
 import itertools as it
 import types
-from typing import Generator, Iterable, Mapping, Optional, Sequence, Tuple
+from typing import Iterable, Iterator, Mapping, Optional, Sequence, Tuple
 
 import jax
 import jax.numpy as jnp
@@ -70,7 +70,7 @@ def load(
     dtype: jnp.dtype = jnp.float32,
     transpose: bool = False,
     zeros: bool = False,
-) -> Generator[Batch, None, None]:
+) -> Iterator[Batch]:
   """Loads the given split of the dataset."""
   if zeros:
     h, w, c = 224, 224, 3
@@ -160,7 +160,7 @@ def _device_put_sharded(sharded_tree, devices):
       devices)
 
 
-def double_buffer(ds: Iterable[Batch]) -> Generator[Batch, None, None]:
+def double_buffer(ds: Iterable[Batch]) -> Iterator[Batch]:
   """Keeps at least two batches on the accelerator.
 
   The current GPU allocator design reuses previous allocations. For a training

@@ -15,7 +15,7 @@
 """MNIST classifier with pruning as in https://arxiv.org/abs/1710.01878 ."""
 
 import functools
-from typing import Callable, Generator, Mapping, Sequence, Tuple
+from typing import Callable, Iterator, Mapping, Sequence, Tuple
 
 from absl import app
 import haiku as hk
@@ -185,7 +185,7 @@ def load_dataset(
     *,
     is_training: bool,
     batch_size: int,
-) -> Generator[Batch, None, None]:
+) -> Iterator[Batch]:
   """Loads the dataset as a generator of batches."""
   ds = tfds.load("mnist:3.*.*", split=split).cache().repeat()
   if is_training:

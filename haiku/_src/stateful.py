@@ -381,15 +381,17 @@ def stateful_branch(branch_fun):
     state, operand = operand
     with temporary_internal_state(state), \
          base.push_jax_trace_level():
-      out = branch_fun(operand)
+      out = branch_fun(*operand)
       reserve_up_to_full_rng_block()
       # TODO(tomhennigan) Return difference of state in/out here.
       return out, internal_state()
   return new_branch_fun
 
+SENTINEL = object()
 
-def _new_cond(pred, true_fun, false_fun, operand):
-  del pred, true_fun, false_fun, operand
+
+def _new_cond(pred, true_fun, false_fun, *operands, operand=SENTINEL):
+  del pred, true_fun, false_fun, operands, operand
 
 
 def _old_cond(pred, true_operand, true_fun, false_operand, false_fun):
@@ -419,14 +421,26 @@ def cond(*args, **kwargs):
 
   try:
     bound_args = inspect.signature(_old_cond).bind(*args, **kwargs)
+    pred, true_operand, true_fun, false_operand, false_fun = bound_args.args
+    if not callable(true_fun) or not callable(false_fun):
+      # Two operand new cond case: cond(pred, tf, ff, 1, 2)
+      raise TypeError
   except TypeError:
     bound_args = inspect.signature(_new_cond).bind(*args, **kwargs)
-    pred, true_fun, false_fun, operand = bound_args.args
+    bound_args.apply_defaults()
+    pred, true_fun, false_fun, *operands = bound_args.args
+    operand = bound_args.kwargs["operand"]
+    if operand is not SENTINEL:
+      if operands:
+        raise ValueError("When the operand keyword argument is used you cannot "  # pylint: disable=raise-missing-from
+                         "also pass operands positionally. Got "
+                         f"operand={operand} and *operands={tuple(operands)}")
+      operands = (operand,)
+      del operand
   else:
-    pred, true_operand, true_fun, false_operand, false_fun = bound_args.args
     true_fun = lambda op, f=true_fun: f(op[0])
     false_fun = lambda op, f=false_fun: f(op[1])
-    operand = (true_operand, false_operand)
+    operands = ((true_operand, false_operand),)
 
   reserve_up_to_full_rng_block()
   stateful_branch_mem = _memoize_by_id(stateful_branch)
@@ -434,7 +448,7 @@ def cond(*args, **kwargs):
   out, state = jax.lax.cond(pred,
                             true_fun=stateful_branch_mem(true_fun),
                             false_fun=stateful_branch_mem(false_fun),
-                            operand=(state, operand))
+                            operand=(state, operands))
   update_internal_state(state)
   return out
 
@@ -450,7 +464,7 @@ def switch(index, branches, operand):
   stateful_branch_mem = _memoize_by_id(stateful_branch)
   state = internal_state()
   out, state = jax.lax.switch(
-      index, tuple(map(stateful_branch_mem, branches)), (state, operand))
+      index, tuple(map(stateful_branch_mem, branches)), (state, (operand,)))
   update_internal_state(state)
   return out
 

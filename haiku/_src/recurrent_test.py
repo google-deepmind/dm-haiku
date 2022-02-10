@@ -107,6 +107,19 @@ class RecurrentTest(parameterized.TestCase):
     np.testing.assert_allclose(outs, jnp.arange(9)[1:])
     np.testing.assert_allclose(state, 8)
 
+  @parameterized.parameters(*CORES)
+  @test_utils.transform_and_run
+  def test_dynamic_unroll_all_states(self, core_cls):
+    seqs = make_sequence([4, 8, 1])  # [T, B, F]
+    core = core_cls(hidden_size=4)
+    batch_size = seqs.shape[1]
+    initial_state = core.initial_state(batch_size)
+    out, all_states = recurrent.dynamic_unroll(
+        core, seqs, initial_state, return_all_states=True)
+    self.assertEqual(out.shape, (4, 8, 4))
+    tree.map_structure(
+        lambda array: self.assertEqual(array.shape[0], 4), all_states)
+
 
 class VanillaRNNTest(absltest.TestCase):
 

@@ -144,7 +144,8 @@ def dynamic_unroll(core,
                    input_sequence,
                    initial_state,
                    time_major=True,
-                   reverse=False):
+                   reverse=False,
+                   return_all_states=False):
   """Performs a dynamic unroll of an RNN.
 
   An *unroll* corresponds to calling the core on each element of the
@@ -170,29 +171,44 @@ def dynamic_unroll(core,
       reversing the time dimension in both inputs and outputs. See
       https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.scan.html for
       more details.
+    return_all_states: If True, all intermediate states are returned rather than
+      only the last one in time.
 
   Returns:
     A tuple with two elements:
       * **output_sequence** - An arbitrarily nested structure of tensors
         of shape ``[T, ...]`` if time-major, otherwise ``[B, T, ...]``.
-      * **final_state** - Core state at time step ``T``.
+      * **state_sequence** - If return_all_states is True, returns the sequence
+        of core states. Otherwise, core state at time step ``T``.
   """
   scan = hk.scan if inside_transform() else jax.lax.scan
+
   # Swap the input and output of core.
   def scan_f(prev_state, inputs):
     outputs, next_state = core(inputs, prev_state)
+    if return_all_states:
+      return next_state, (outputs, next_state)
     return next_state, outputs
+
   # TODO(hamzamerzic): Remove axis swapping once scan supports time axis arg.
   if not time_major:
     input_sequence = _swap_batch_time(input_sequence)
-  final_state, output_sequence = scan(
-      scan_f,
-      initial_state,
-      input_sequence,
-      reverse=reverse)
+
+  scan_result = scan(
+      scan_f, initial_state, input_sequence, reverse=reverse)
+  if return_all_states:
+    _, (output_sequence, state_sequence) = scan_result
+  else:
+    last_state, output_sequence = scan_result
+
   if not time_major:
     output_sequence = _swap_batch_time(output_sequence)
-  return output_sequence, final_state
+    if return_all_states:
+      state_sequence = _swap_batch_time(state_sequence)
+
+  if return_all_states:
+    return output_sequence, state_sequence
+  return output_sequence, last_state
 
 
 def add_batch(nest, batch_size: Optional[int]):

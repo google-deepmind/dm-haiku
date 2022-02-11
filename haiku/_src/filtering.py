@@ -18,6 +18,7 @@ import collections
 from typing import Any, Callable, Generator, Mapping, Tuple, TypeVar
 
 from haiku._src import data_structures
+from haiku._src import utils
 import jax.numpy as jnp
 
 T = TypeVar("T")
@@ -183,7 +184,8 @@ def map(  # pylint: disable=redefined-builtin
 
 
 def merge(
-    *structures: Mapping[str, Mapping[str, Any]]
+    *structures: Mapping[str, Mapping[str, Any]],
+    safe_spec: bool = False,
 ) -> Mapping[str, Mapping[str, Any]]:
   """Merges multiple input structures.
 
@@ -204,6 +206,8 @@ def merge(
 
   Args:
     *structures: One or more structures to merge.
+    safe_spec: If True, a ValueError will be thrown if a duplicate array is
+      found with a different shape and dtype.
 
   Returns:
     A single structure with an entry for each path in the input structures.
@@ -211,6 +215,13 @@ def merge(
   out = collections.defaultdict(dict)
   for structure in structures:
     for module_name, name, value in traverse(structure):
+      if safe_spec and (module_name in out) and (name in out[module_name]):
+        if (out[module_name][name].shape != value.shape or
+            out[module_name][name].dtype != value.dtype):
+          raise ValueError(
+              f"Duplicate array found for {module_name}.{name}: "
+              f"{utils.format_array(out[module_name][name])} vs "
+              f"{utils.format_array(value)}.")
       out[module_name][name] = value
   return data_structures.to_haiku_dict(out)
 

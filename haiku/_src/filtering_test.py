@@ -345,6 +345,24 @@ class FilteringTest(parameterized.TestCase):
                           "c": c["layer"]["c"]}}
     self.assertEqual(expected, actual)
 
+  def test_safe_merge(self):
+    unsafe_error_regex = "Duplicate array found for"
+    a = {"a": {"b": jnp.array([0.0, 0.1], dtype=jnp.float32)}}
+    b = {"a": {"b": jnp.array([0.0, 0.1], dtype=jnp.bfloat16)}}
+    c = {"a": {"b": jnp.array([0.0, 0.1, 0.2], dtype=jnp.float32)}}
+
+    with self.subTest("dtype_mismatch"):
+      with self.assertRaisesRegex(ValueError, unsafe_error_regex):
+        filtering.merge(a, b, safe_spec=True)
+
+    with self.subTest("shape_mismatch"):
+      with self.assertRaisesRegex(ValueError, unsafe_error_regex):
+        filtering.merge(a, c, safe_spec=True)
+
+    with self.subTest("multiple_mismatch"):
+      with self.assertRaisesRegex(ValueError, unsafe_error_regex):
+        filtering.merge(a, b, c, safe_spec=True)
+
   def assert_output_type(self, out_cls):
     def assert_type_recursive(s):
       self.assertEqual(type(s), out_cls)

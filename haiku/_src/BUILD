@@ -793,7 +793,7 @@ hk_py_library(
     srcs = ["filtering.py"],
     deps = [
         ":data_structures",
-        ":typing",
+        ":utils",
         # pip: jax
     ],
 )

@@ -21,6 +21,7 @@ from haiku._src.base import custom_creator
 from haiku._src.base import custom_getter
 from haiku._src.base import GetterContext
 from haiku._src.config import check_jax_usage
+from haiku._src.config import module_auto_repr
 from haiku._src.dot import abstract_to_dot
 from haiku._src.dot import to_dot
 from haiku._src.layer_stack import layer_stack
@@ -55,6 +56,7 @@ __all__ = (
     "lift",
     "lift_with_state",
     "LiftWithStateUpdater",
+    "module_auto_repr",
     "MethodContext",
     "MethodInvocation",
     "ModuleDetails",

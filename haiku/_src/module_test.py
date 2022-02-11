@@ -16,13 +16,14 @@
 
 import abc
 import contextlib
+import dataclasses
 import sys
 from typing import Callable, Optional, Sequence
 
 from absl.testing import absltest
 from absl.testing import parameterized
-import dataclasses
 from haiku._src import base
+from haiku._src import config
 from haiku._src import module
 from haiku._src import test_utils
 from haiku._src import transform
@@ -587,6 +588,27 @@ class ModuleTest(parameterized.TestCase):
       m()
 
     self.assertEqual(log, ["__init__", "foo", "bar", "baz", "__call__"])
+
+  @test_utils.transform_and_run
+  def test_auto_repr(self):
+    m = IdentityModule()
+    self.assertEqual(str(m), "IdentityModule()")
+
+  @test_utils.transform_and_run
+  @config.with_config(module_auto_repr=False)
+  def test_config_disable_auto_repr(self):
+    self.assertRegex(str(IdentityModule()),
+                     "<.*.IdentityModule object at .*>")
+
+  @test_utils.transform_and_run
+  def test_attr_disable_auto_repr(self):
+    self.assertTrue(config.get_config().module_auto_repr)
+    self.assertRegex(str(NoAutoReprModule()),
+                     "<.*.NoAutoReprModule object at .*>")
+
+
+class NoAutoReprModule(module.Module):
+  AUTO_REPR = False
 
 
 class IdentityModule(module.Module):

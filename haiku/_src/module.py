@@ -23,6 +23,7 @@ from typing import (Any, Callable, ContextManager, Dict, Mapping, NamedTuple,
                     Optional, Set, Tuple, Type, TypeVar)
 
 from haiku._src import base
+from haiku._src import config
 from haiku._src import data_structures
 from haiku._src import stateful
 from haiku._src import utils
@@ -136,7 +137,11 @@ class ModuleMetaclass(type(Protocol)):
     init = wrap_method("__init__", cls.__init__)
     init(module, *args, **kwargs)
 
-    module._auto_repr = utils.auto_repr(cls, *args, **kwargs)  # pylint: disable=protected-access
+    if (config.get_config().module_auto_repr and
+        getattr(module, "AUTO_REPR", True)):
+      module._auto_repr = utils.auto_repr(cls, *args, **kwargs)  # pylint: disable=protected-access
+    else:
+      module._auto_repr = object.__repr__(module)
 
     ran_super_ctor = hasattr(module, "module_name")
     if not ran_super_ctor:

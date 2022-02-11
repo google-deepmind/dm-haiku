@@ -164,6 +164,7 @@ hk_py_library(
     srcs = ["module.py"],
     deps = [
         ":base",
+        ":config",
         ":data_structures",
         ":stateful",
         ":utils",
@@ -177,6 +178,7 @@ hk_py_test(
     srcs = ["module_test.py"],
     deps = [
         ":base",
+        ":config",
         ":module",
         ":test_utils",
         ":transform",

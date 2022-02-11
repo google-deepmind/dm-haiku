@@ -14,6 +14,7 @@
 # ==============================================================================
 """Configuration for Haiku."""
 
+import contextlib
 import dataclasses
 import threading
 
@@ -21,15 +22,46 @@ import threading
 @dataclasses.dataclass
 class Config:
   check_jax_usage: bool
+  module_auto_repr: bool
+
+  @classmethod
+  def default(cls) -> "Config":
+    return Config(check_jax_usage=False,
+                  module_auto_repr=True)
 
 
-def default_config() -> Config:
-  return Config(check_jax_usage=False)
+def write(config, **overrides):
+  for name, value in overrides.items():
+    assert hasattr(config, name)
+    setattr(config, name, value)
+
+
+@contextlib.contextmanager
+def assign(**overrides):
+  """Context manager used to override config settings."""
+  config = get_config()
+  previous = {name: getattr(config, name) for name in overrides}
+  write(config, **overrides)
+  try:
+    yield
+  finally:
+    write(config, **previous)
+
+
+def with_config(**overrides):
+  """Decorator used to run a wrapped function with overriden config."""
+  def decorator(f):
+    def wrapper(*args, **kwargs):
+      with assign(**overrides):
+        return f(*args, **kwargs)
+    return wrapper
+  return decorator
+
 
 # We keep a reference to the Config for the importing thread (assumed to be the
 # main thread in the process) such that other threads can inherit values set for
 # it when they first request the config.
-main_thread_config = default_config()
+main_thread_config = Config.default()
 
 
 class ThreadLocalStorage(threading.local):
@@ -44,6 +76,50 @@ tls.config = main_thread_config
 
 def get_config() -> Config:
   return tls.config
+
+
+def module_auto_repr(enabled: bool) -> bool:
+  """Disables automatically generating an implementation of Module.__repr__.
+
+  By default, Haiku will automatically generate a useful string representation
+  of modules for printing. For example:
+
+  >>> print(hk.Linear(1))
+  Linear(output_size=1)
+
+  In some cases, objects passed into module constructors may be slow to print,
+  for example very nested data structures, or you may be rapidly creating and
+  throwing away modules (e.g. in a test) and don't want to pay the overhead of
+  converting to string.
+
+  This config option enables users to disable the automatic repr feature
+  globally in Haiku:
+
+  >>> previous_value = hk.experimental.module_auto_repr(False)
+  >>> print(hk.Linear(1))
+  <...Linear object at ...>
+
+  >>> previous_value = hk.experimental.module_auto_repr(True)
+  >>> print(hk.Linear(1))
+  Linear(output_size=1)
+
+  To disable the feature on a per-subclass basis assign
+  ``AUTO_REPR = False`` as a property on your class, for example:
+
+  >>> class NoAutoRepr(hk.Module):
+  ...   AUTO_REPR = False
+  >>> print(NoAutoRepr())
+  <...NoAutoRepr object at ...>
+
+  Args:
+    enabled: Boolean indicating whether a module should be enabled.
+
+  Returns:
+    The previous value of this config setting.
+  """
+  config = get_config()
+  previous_value, config.module_auto_repr = config.module_auto_repr, enabled
+  return previous_value
 
 
 def check_jax_usage(enabled: bool = True) -> bool:

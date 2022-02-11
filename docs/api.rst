@@ -1114,6 +1114,7 @@ Optimizations
 
     optimize_rng_use
     layer_stack
+    module_auto_repr
 
 optimize_rng_use
 ~~~~~~~~~~~~~~~~
@@ -1124,6 +1125,12 @@ layer_stack
 ~~~~~~~~~~~~~~~~
 
 .. autofunction:: layer_stack
+
+module_auto_repr
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: module_auto_repr
+
 
 Utilities
 =========

@@ -28,7 +28,7 @@ class ConfigTest(parameterized.TestCase):
   def setUp(self):
     super().setUp()
     self._before = config.main_thread_config
-    config.tls.config = config.main_thread_config = config.default_config()
+    config.tls.config = config.main_thread_config = config.Config.default()
 
   def tearDown(self):
     super().tearDown()
@@ -72,6 +72,39 @@ class ConfigTest(parameterized.TestCase):
       f1.result()
 
     self.assertEqual(config.get_config().check_jax_usage, default)
+
+  def test_with_config(self):
+    ran_f = [False]
+
+    @config.with_config(check_jax_usage=False)
+    def f():
+      ran_f[0] = True
+      return config.get_config().check_jax_usage
+
+    cfg = config.get_config()
+    cfg.check_jax_usage = True
+    self.assertFalse(f())
+    self.assertTrue(ran_f[0])
+    self.assertTrue(cfg.check_jax_usage)
+
+  def test_assign(self):
+    cfg = config.get_config()
+    cfg.check_jax_usage = False
+    with config.assign(check_jax_usage=True):
+      self.assertTrue(cfg.check_jax_usage)
+    self.assertFalse(cfg.check_jax_usage)
+
+  def test_assign_with_error(self):
+    cfg = config.get_config()
+    cfg.check_jax_usage = False
+    try:
+      with config.assign(check_jax_usage=True):
+        self.assertTrue(cfg.check_jax_usage)
+        # Raise an exception to test that config is reset on error.
+        raise ValueError("expected")
+    except ValueError:
+      pass
+    self.assertFalse(cfg.check_jax_usage)
 
 if __name__ == "__main__":
   # TODO(tomhennigan): Remove this unused import.

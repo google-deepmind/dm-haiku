@@ -345,23 +345,28 @@ class FilteringTest(parameterized.TestCase):
                           "c": c["layer"]["c"]}}
     self.assertEqual(expected, actual)
 
-  def test_safe_merge(self):
-    unsafe_error_regex = "Duplicate array found for"
+  def test_check_duplicates(self):
+    err = "Duplicate array found"
     a = {"a": {"b": jnp.array([0.0, 0.1], dtype=jnp.float32)}}
     b = {"a": {"b": jnp.array([0.0, 0.1], dtype=jnp.bfloat16)}}
     c = {"a": {"b": jnp.array([0.0, 0.1, 0.2], dtype=jnp.float32)}}
+    d = {"a": {"b": "foo"}}
 
     with self.subTest("dtype_mismatch"):
-      with self.assertRaisesRegex(ValueError, unsafe_error_regex):
-        filtering.merge(a, b, safe_spec=True)
+      with self.assertRaisesRegex(ValueError, fr"{err}.*f32\[2\] vs bf16\[2\]"):
+        filtering.merge(a, b, check_duplicates=True)
 
     with self.subTest("shape_mismatch"):
-      with self.assertRaisesRegex(ValueError, unsafe_error_regex):
-        filtering.merge(a, c, safe_spec=True)
+      with self.assertRaisesRegex(ValueError, fr"{err}.*f32\[2\] vs f32\[3\]"):
+        filtering.merge(a, c, check_duplicates=True)
 
     with self.subTest("multiple_mismatch"):
-      with self.assertRaisesRegex(ValueError, unsafe_error_regex):
-        filtering.merge(a, b, c, safe_spec=True)
+      with self.assertRaisesRegex(ValueError, fr"{err}.*f32\[2\] vs bf16\[2\]"):
+        filtering.merge(a, b, c, check_duplicates=True)
+
+    with self.subTest("object_mismatch"):
+      with self.assertRaisesRegex(ValueError, fr"{err}.*f32\[2\] vs 'foo'"):
+        filtering.merge(a, d, check_duplicates=True)
 
   def assert_output_type(self, out_cls):
     def assert_type_recursive(s):

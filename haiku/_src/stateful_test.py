@@ -49,7 +49,7 @@ HK_OVERLOADED_JAX_PURE_EXPECTING_FNS = (
     # ("pmap", lambda f: stateful.pmap(f, "i")),
 
     # Vectorization.
-    ("vmap", stateful.vmap),
+    ("vmap", lambda f: stateful.vmap(f, split_rng=False)),
 
     # Control flow.
     # TODO(tomhennigan): Enable for associative_scan.
@@ -531,7 +531,7 @@ class StatefulTest(parameterized.TestCase):
       return CountingModule()(x)
 
     def f(x):
-      return stateful.vmap(g)(x)
+      return stateful.vmap(g, split_rng=False)(x)
 
     f = transform.transform_with_state(f)
 
@@ -553,7 +553,7 @@ class StatefulTest(parameterized.TestCase):
     self.assertEqual(cnt, 1)
 
   def test_vmap_must_be_called_in_transform(self):
-    f = stateful.vmap(lambda x: x)
+    f = stateful.vmap(lambda x: x, split_rng=False)
     with self.assertRaisesRegex(ValueError,
                                 "must be used as part of an.*hk.transform"):
       f(0)
@@ -564,14 +564,14 @@ class StatefulTest(parameterized.TestCase):
       pass
     with self.assertRaisesRegex(
         ValueError, "fn_name must have at least one non-None value in in_axes"):
-      stateful.vmap(fn_name, in_axes=None)
+      stateful.vmap(fn_name, in_axes=None, split_rng=False)
 
   @test_utils.transform_and_run
   def test_vmap_in_axes_different_size(self):
     x = jnp.ones([1, 2])
     with self.assertRaisesRegex(
         ValueError, "vmap got inconsistent sizes for array axes to be mapped"):
-      stateful.vmap(lambda a, b: None, in_axes=(0, 1))(x, x)
+      stateful.vmap(lambda a, b: None, in_axes=(0, 1), split_rng=False)(x, x)
 
   @test_utils.transform_and_run
   def test_vmap_no_split_rng(self):
@@ -797,6 +797,43 @@ class StatefulTest(parameterized.TestCase):
     x = jnp.ones([1])
     # These functions should not trigger exceptions from our guardrails.
     f(x)
+
+  @test_utils.transform_and_run
+  def test_vmap_split_rng_with_default(self):
+    with self.assertRaisesRegex(TypeError,
+                                "hk.vmap.require_split_rng = False"):
+      # Intentionally missing split_rng arg.
+      stateful.vmap(lambda: None)
+
+    with self.subTest("require_split_rng=0"):
+      stateful.vmap.require_split_rng = False
+      try:
+        # This call should not trigger an error, even though we are missing the
+        # split_rng argument which appears required (if you look at the function
+        # signature). It only works because require_split_rng is
+        # propagated to vmap via a sneaky decorator. This only exists to support
+        # users who import code that they cannot edit (e.g. from a read only
+        # file system) that is not passing the argument.
+        f = stateful.vmap(base.next_rng_key, axis_size=2)
+      finally:
+        stateful.vmap.require_split_rng = True
+
+    # Check that split_rng=False was implied.
+    k1, k2 = f()
+    self.assertTrue((k1 == k2).all())
+
+  @parameterized.parameters(True, False)
+  @test_utils.transform_and_run
+  def test_vmap_split_rng_without_default(self, require_split_rng):
+    # Tests that when split_rng is passed explicitly the value of
+    # require_split_rng has no impact.
+    x = jnp.arange(2)
+    stateful.vmap.require_split_rng = require_split_rng
+    k1, k2 = stateful.vmap(lambda x: base.next_rng_key(), split_rng=True)(x)
+    self.assertTrue((k1 != k2).all())
+    k1, k2 = stateful.vmap(lambda x: base.next_rng_key(), split_rng=False)(x)
+    self.assertTrue((k1 == k2).all())
+    stateful.vmap.require_split_rng = True
 
 
 def _callback_prim(forward, backward):

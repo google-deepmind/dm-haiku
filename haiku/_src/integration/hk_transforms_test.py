@@ -207,7 +207,7 @@ class HaikuTransformsTest(parameterized.TestCase):
 
     f = hk.transform_with_state(lambda x: module_fn()(x))  # pylint: disable=unnecessary-lambda
     f_mapped = hk.transform_with_state(
-        lambda x: hk.vmap(lambda x: module_fn()(x))(x))  # pylint: disable=unnecessary-lambda
+        lambda x: hk.vmap(lambda x: module_fn()(x), split_rng=False)(x))  # pylint: disable=unnecessary-lambda
 
     params, state = f_mapped.init(rng, x)
 

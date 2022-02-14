@@ -597,6 +597,31 @@ def get_mapped_axis_size(args: Tuple[Any], in_axes: Any) -> int:
   return sizes[0]
 
 
+def add_split_rng_error(f):
+  """Adds a nice error message when split_rng is missing."""
+
+  @functools.wraps(f)
+  def wrapper(*args, **kwargs):
+    if "split_rng" not in kwargs and not wrapper.require_split_rng:
+      kwargs["split_rng"] = False
+
+    if "split_rng" not in kwargs:
+      try:
+        return f(*args, **kwargs)
+      except TypeError as e:
+        raise TypeError("Haiku now requires the split_rng argument to be "
+                        "passed to hk.vmap. If you have code using the old "
+                        "API which you cannot change, you can opt-out of this "
+                        "requirement by using "
+                        "`hk.vmap.require_split_rng = False`.") from e
+
+    return f(*args, **kwargs)
+
+  wrapper.require_split_rng = True
+  return wrapper
+
+
+@add_split_rng_error
 def vmap(
     fun: Callable[..., Any],
     in_axes=0,
@@ -604,7 +629,7 @@ def vmap(
     axis_name: Optional[str] = None,
     axis_size: Optional[int] = None,
     *,
-    split_rng: bool = False,
+    split_rng: bool,
 ) -> Callable[..., Any]:
   """Equivalent to :func:`jax.vmap` with module parameters/state not mapped.
 

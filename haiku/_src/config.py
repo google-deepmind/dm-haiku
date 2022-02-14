@@ -162,7 +162,7 @@ def check_jax_usage(enabled: bool = True) -> bool:
 
   Using the Haiku wrapped version works correctly:
 
-  >>> hk.vmap(f, axis_size=2)()
+  >>> hk.vmap(f, axis_size=2, split_rng=False)()
   DeviceArray([0., 0.], dtype=float32)
 
   Args:

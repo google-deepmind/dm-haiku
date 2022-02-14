@@ -369,6 +369,7 @@ hk_py_test(
     srcs = ["lift_test.py"],
     deps = [
         ":base",
+        ":config",
         ":lift",
         ":module",
         ":test_utils",
@@ -565,6 +566,7 @@ hk_py_test(
     deps = [
         ":base",
         ":basic",
+        ":config",
         ":initializers",
         ":layer_stack",
         ":module",

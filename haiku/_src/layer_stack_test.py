@@ -19,6 +19,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import base
 from haiku._src import basic
+from haiku._src import config
 from haiku._src import initializers
 from haiku._src import layer_stack
 from haiku._src import module
@@ -46,6 +47,14 @@ def _slice_layers_params(layers_params):
 
 
 class LayerStackTest(parameterized.TestCase):
+
+  def setUp(self):
+    super().setUp()
+    self._prev_check_jax_usage = config.check_jax_usage(True)
+
+  def tearDown(self):
+    super().tearDown()
+    config.check_jax_usage(self._prev_check_jax_usage)
 
   @parameterized.parameters([1, 2, 4])
   def test_layer_stack(self, unroll):

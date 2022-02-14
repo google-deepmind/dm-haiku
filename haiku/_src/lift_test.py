@@ -17,6 +17,7 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import base
+from haiku._src import config
 from haiku._src import lift
 from haiku._src import module
 from haiku._src import test_utils
@@ -37,6 +38,14 @@ class Bias(module.Module):
 
 
 class LiftTest(parameterized.TestCase):
+
+  def setUp(self):
+    super().setUp()
+    self._prev_check_jax_usage = config.check_jax_usage(True)
+
+  def tearDown(self):
+    super().tearDown()
+    config.check_jax_usage(self._prev_check_jax_usage)
 
   def test_lift_with_vmap(self):
     def inner_fn(x):

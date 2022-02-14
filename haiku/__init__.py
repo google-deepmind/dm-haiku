@@ -118,7 +118,7 @@ from haiku._src.typing import Params
 from haiku._src.typing import State
 from haiku._src.utils import get_channel_index
 
-__version__ = "0.0.6"
+__version__ = "0.0.7.dev"
 
 __all__ = (
     "AvgPool",

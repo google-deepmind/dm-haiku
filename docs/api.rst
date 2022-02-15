@@ -318,8 +318,9 @@ Convolutional
     Conv1DTranspose
     Conv2DTranspose
     Conv3DTranspose
+    DepthwiseConv1D
     DepthwiseConv2D
-    DepthwiseConv2D
+    DepthwiseConv3D
     get_channel_index
 
 ConvND

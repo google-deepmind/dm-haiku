@@ -97,7 +97,7 @@ def auto_repr(cls: Type[Any], *args, **kwargs) -> str:
 def fancy_repr(name: str, value: Any) -> str:
   try:
     repr_value = pprint.pformat(value)
-  # C++ obejcts by way of pybind11 may not pprint correctly, but do have repr.
+  # C++ objects by way of pybind11 may not pprint correctly, but do have repr.
   except TypeError:
     repr_value = repr(value)
 

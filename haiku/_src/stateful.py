@@ -342,11 +342,6 @@ def thread_hk_state_in_kwargs(dec_fun):
   def wrapped_dec_fun(fun, *dec_args, **dec_kwargs):
     """Decorates a modified version of ``fun`` that passes Haiku state."""
 
-    if not base.inside_transform():
-      raise ValueError(
-          "hk.{0}() should not be used outside of hk.transform. "
-          "Use jax.{0}() instead.".format(dec_fun.__name__))
-
     @functools.wraps(fun)
     def stateful_fun(*args, **kwargs):
       state_in = kwargs.pop("hk_state")
@@ -359,6 +354,11 @@ def thread_hk_state_in_kwargs(dec_fun):
 
     @functools.wraps(dec_stateful_fun)
     def wrapper(*args, **kwargs):
+      if not base.inside_transform():
+        raise ValueError(
+            "hk.{0}() should not be used outside of hk.transform. "
+            "Use jax.{0}() instead.".format(dec_fun.__name__))
+
       kwargs["hk_state"] = internal_state()
       out, state = dec_stateful_fun(*args, **kwargs)
       update_internal_state(state)

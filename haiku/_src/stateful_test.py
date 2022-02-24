@@ -161,8 +161,44 @@ class StatefulTest(parameterized.TestCase):
 
   def test_jit_no_transform(self):
     x = jnp.array(2)
+    f = stateful.jit(jnp.square)
     with self.assertRaises(ValueError, msg="Use jax.jit() instead"):
-      stateful.jit(jnp.square)(x)
+      f(x)
+
+  def test_jit_caching_within_transform(self):
+    sidechannel = []
+    def f(x):
+      sidechannel.append(None)
+      return SquareModule()(x)
+
+    f = stateful.jit(f)
+    f = transform.transform_with_state(f)
+
+    rng = jax.random.PRNGKey(0)
+    x = jnp.ones([])
+
+    # Expect one trace during init.
+    for _ in range(10):
+      params, state = f.init(rng, x)
+      self.assertLen(sidechannel, 1)
+
+    # Expect one trace during apply (hk_state treedef changes vs. init).
+    for _ in range(10):
+      f.apply(params, state, None, x)
+    self.assertLen(sidechannel, 2)
+
+  def test_jit_caching_across_transform(self):
+    sidechannel = []
+    f = stateful.jit(lambda: sidechannel.append(None))
+    g = transform.transform(f)
+    h = transform.transform(f)
+    params = g.init(None)
+    self.assertLen(sidechannel, 1)
+    g.apply(params, None)
+    self.assertLen(sidechannel, 2)
+    # No retrace when re-using `f` in a new transformed function.
+    h.apply(h.init(None), None)
+    self.assertLen(sidechannel, 2)
 
   @test_utils.transform_and_run
   def test_remat(self):

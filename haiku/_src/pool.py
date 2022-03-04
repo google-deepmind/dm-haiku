@@ -212,3 +212,30 @@ class AvgPool(hk.Module):
   def __call__(self, value: jnp.ndarray) -> jnp.ndarray:
     return avg_pool(value, self.window_shape, self.strides,
                     self.padding, self.channel_axis)
+
+def adaptive_avg_pool(
+    value: jnp.ndarray,
+    out_shape: Union[int, Sequence[int]],
+    channel_axis: Optional[int] = -1,
+) -> jnp.ndarray:
+  """
+    Args:
+      value: Value to pool.
+      out_shape: Shape of the output, an int or same rank as value.
+      channel_axis: Axis of the spatial channels for which pooling is skipped,
+        used to infer ``window_shape`` or ``strides`` if they are an integer.
+
+    Returns:
+      Pooled result. Same shape as out_shape
+
+    Raises:
+      ValueError: If the padding is not valid."""
+
+  out_shape = _infer_shape(value, out_shape, channel_axis)
+  assert out_shape == 2
+  input_size = value.shape[-2:]
+  strides = np.array(input_size) // np.array(out_shape)
+  assert out_shape[-1] == out_shape[-2]
+  out_shape = input_size - (out_shape[-1] - 1) * strides
+
+  return avg_pool(value, out_shape, strides, padding="VALID")

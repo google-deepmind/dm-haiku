@@ -60,7 +60,7 @@ class Constant(hk.initializers.Initializer):
     self.constant = constant
 
   def __call__(self, shape: Sequence[int], dtype: Any) -> jnp.ndarray:
-    return jnp.broadcast_to(self.constant, shape).astype(dtype)
+    return jnp.broadcast_to(jnp.asarray(self.constant), shape).astype(dtype)
 
 
 class RandomNormal(hk.initializers.Initializer):

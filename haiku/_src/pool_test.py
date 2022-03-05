@@ -147,7 +147,7 @@ class MaxPoolTest(absltest.TestCase):
     np.testing.assert_equal(result.shape, x.shape)
 
 
-class AvgPoolTest(absltest.TestCase):
+class AvgPool2DTest(absltest.TestCase):
 
   def test_avg_pool_basic(self):
     x = np.arange(6, dtype=jnp.float32).reshape([6, 1])
@@ -273,6 +273,20 @@ class AvgPoolTest(absltest.TestCase):
     np.testing.assert_equal(result.shape, x.shape)
     # Since x is constant, its avg value should be itself.
     np.testing.assert_equal(result, x)
+
+class AdaptiveAvgPool2DTest(absltest.TestCase):
+  def test_avg_pool_basic(self):
+    x = np.arange(6, dtype=jnp.float32).reshape([6, 1])
+    x = np.broadcast_to(x, (2, 10, 6, 2))
+
+    out_size = [2, 2]
+    result = pool.adaptive_avg_pool2d(
+        x, out_size=out_size)
+
+    ground_truth = np.asarray([1, 4]).reshape([2, 1])
+    ground_truth = np.broadcast_to(ground_truth, (2, 10, 2, 2))
+
+    np.testing.assert_equal(result, ground_truth)
 
 
 if __name__ == "__main__":

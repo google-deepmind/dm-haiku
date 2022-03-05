@@ -242,7 +242,7 @@ class AdaptiveAvgPool2D(hk.Module):
   """
   def __init__(
       self,
-      out_shape: Union[int, Sequence[int]],
+      out_size: Union[int, Sequence[int]],
       channel_axis: Optional[int] = -1,
       name: Optional[str] = None,
   ):
@@ -254,8 +254,8 @@ class AdaptiveAvgPool2D(hk.Module):
       name: String name for the module.
     """
     super().__init__(name=name)
-    self.out_shape = out_shape
+    self.out_shape = out_size
     self.channel_axis = channel_axis
 
   def __call__(self, value: jnp.ndarray) -> jnp.ndarray:
-    return adaptive_avg_pool2d(value, self.out_shape, self.channel_axis)
+    return adaptive_avg_pool2d(value, self.out_size, self.channel_axis)

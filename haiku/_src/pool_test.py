@@ -147,7 +147,7 @@ class MaxPoolTest(absltest.TestCase):
     np.testing.assert_equal(result.shape, x.shape)
 
 
-class AvgPool2DTest(absltest.TestCase):
+class AvgPoolTest(absltest.TestCase):
 
   def test_avg_pool_basic(self):
     x = np.arange(6, dtype=jnp.float32).reshape([6, 1])

@@ -178,6 +178,18 @@ class InitializersTest(parameterized.TestCase):
       self.assertEqual(generated.shape, shape)
       self.assertEqual(generated.dtype, dtype)
 
+  @parameterized.parameters(
+      *it.product([[1], [1, 2, 3], [1, 2, 3, 4]],
+                  [jnp.int32, jnp.float32],
+                  [True, False]))
+  def test_constant_with_list(self, k, dtype, broadcast):
+    init = initializers.Constant(k)
+    shape = (1, 1, len(k)) if broadcast else (len(k),)
+    actual = init(shape, dtype)
+    expected = jnp.broadcast_to(jnp.asarray(k).astype(dtype), shape)
+    np.testing.assert_array_equal(actual, expected)
+    self.assertEqual(actual.shape, shape)
+    self.assertEqual(actual.dtype, dtype)
 
 if __name__ == "__main__":
   config.update("jax_enable_x64", True)

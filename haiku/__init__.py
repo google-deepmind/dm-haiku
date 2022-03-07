@@ -14,6 +14,7 @@
 # ==============================================================================
 """Haiku is a neural network library for JAX."""
 
+from haiku import config
 from haiku import data_structures
 from haiku import experimental
 from haiku import initializers
@@ -175,6 +176,7 @@ __all__ = (
     "VanillaRNN",
     "avg_pool",
     "cond",
+    "config",
     "eval_shape",
     "custom_creator",
     "custom_getter",

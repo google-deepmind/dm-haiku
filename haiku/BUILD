@@ -12,6 +12,7 @@ py_library(
     name = "haiku",
     srcs = [
         "__init__.py",
+        "config.py",
         "data_structures.py",
         "experimental.py",
         "initializers.py",

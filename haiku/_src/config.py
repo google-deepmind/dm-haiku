@@ -17,6 +17,7 @@
 import contextlib
 import dataclasses
 import threading
+from typing import Optional
 
 
 @dataclasses.dataclass
@@ -34,6 +35,61 @@ def write(config, **overrides):
   for name, value in overrides.items():
     assert hasattr(config, name)
     setattr(config, name, value)
+
+filter_none_values = lambda d: {k: v for k, v in d.items() if v is not None}
+
+
+# pylint: disable=redefined-outer-name,unused-argument
+def context(
+    *,
+    check_jax_usage: Optional[bool] = None,
+    module_auto_repr: Optional[bool] = None,
+):
+  """Context manager for setting config options.
+
+  This context manager can be used to override config settings in a given
+  context, values that are not explicitly passed as keyword arguments retain
+  their current value:
+
+  >>> with hk.config.context(check_jax_usage=True):
+  ...   pass
+
+  Args:
+    check_jax_usage: Checks that jax transforms and control flow are used
+      appropriately in Haiku transformed functions.
+    module_auto_repr: Can be used to disable the "to string" functionality that
+      is part of Haiku's base contructor.
+
+  Returns:
+    Context manager that applies the given configs while active.
+  """
+  return assign(**filter_none_values(locals()))
+# pylint: enable=redefined-outer-name,unused-argument
+
+
+# pylint: disable=redefined-outer-name,unused-argument,redefined-builtin
+def set(
+    *,
+    check_jax_usage: Optional[bool] = None,
+    module_auto_repr: Optional[bool] = None,
+):
+  """Sets the given config option(s).
+
+  >>> hk.config.set(module_auto_repr=False)
+  >>> hk.Linear(1)
+  <...Linear object at ...>
+  >>> hk.config.set(module_auto_repr=True)
+  >>> hk.Linear(1)
+  Linear(output_size=1)
+
+  Args:
+    check_jax_usage: Checks that jax transforms and control flow are used
+      appropriately in Haiku transformed functions.
+    module_auto_repr: Can be used to disable the "to string" functionality that
+      is part of Haiku's base contructor.
+  """
+  write(get_config(), **filter_none_values(locals()))
+# pylint: enable=redefined-outer-name,unused-argument,redefined-builtin
 
 
 @contextlib.contextmanager

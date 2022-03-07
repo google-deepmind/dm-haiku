@@ -15,6 +15,7 @@
 """Tests for haiku._src.config."""
 
 from concurrent import futures
+import inspect
 import threading
 
 from absl.testing import absltest
@@ -104,6 +105,26 @@ class ConfigTest(parameterized.TestCase):
         raise ValueError("expected")
     except ValueError:
       pass
+    self.assertFalse(cfg.check_jax_usage)
+
+  def test_context_matches_set(self):
+    context_sig = inspect.signature(config.context)
+    set_sig = inspect.signature(config.set)
+    self.assertEqual(context_sig.parameters, set_sig.parameters)
+
+  def test_context(self):
+    cfg = config.get_config()
+    cfg.check_jax_usage = False
+    with config.context(check_jax_usage=True):
+      self.assertTrue(cfg.check_jax_usage)
+    self.assertFalse(cfg.check_jax_usage)
+
+  def test_set(self):
+    cfg = config.get_config()
+    cfg.check_jax_usage = False
+    config.set(check_jax_usage=True)
+    self.assertTrue(cfg.check_jax_usage)
+    config.set(check_jax_usage=False)
     self.assertFalse(cfg.check_jax_usage)
 
 if __name__ == "__main__":

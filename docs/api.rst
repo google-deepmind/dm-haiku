@@ -1132,6 +1132,25 @@ module_auto_repr
 
 .. autofunction:: module_auto_repr
 
+Configuration
+=============
+
+.. automodule:: haiku.config
+
+.. autosummary::
+
+    context
+    set
+
+context
+-------
+
+.. autofunction:: context
+
+set
+---
+
+.. autofunction:: set
 
 Utilities
 =========

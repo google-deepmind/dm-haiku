@@ -68,6 +68,7 @@ hk_py_test(
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         "//haiku",
+        "//haiku/_src:stateful",
         "//haiku/_src:test_utils",
         "//haiku/_src:typing",
         # pip: jax

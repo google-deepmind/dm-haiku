@@ -920,7 +920,6 @@ JAX Transforms
 
     eval_shape
     grad
-    jit
     remat
     value_and_grad
     vmap
@@ -934,11 +933,6 @@ grad
 ~~~~
 
 .. autofunction:: grad
-
-jit
-~~~
-
-.. autofunction:: jit
 
 remat
 ~~~~~

@@ -100,7 +100,6 @@ from haiku._src.stateful import cond
 from haiku._src.stateful import eval_shape
 from haiku._src.stateful import fori_loop
 from haiku._src.stateful import grad
-from haiku._src.stateful import jit
 from haiku._src.stateful import remat
 from haiku._src.stateful import scan
 from haiku._src.stateful import switch
@@ -192,7 +191,6 @@ __all__ = (
     "grad",
     "initializers",
     "intercept_methods",
-    "jit",
     "lift",
     "max_pool",
     "maybe_next_rng_key",

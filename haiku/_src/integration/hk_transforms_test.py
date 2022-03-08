@@ -19,6 +19,7 @@ import functools
 from absl.testing import absltest
 from absl.testing import parameterized
 import haiku as hk
+from haiku._src import stateful
 from haiku._src import test_utils
 from haiku._src.integration import descriptors
 import jax
@@ -45,7 +46,7 @@ class HaikuTransformsTest(parameterized.TestCase):
     def g(x, jit=False):
       mod = module_fn()
       if jit:
-        mod = hk.jit(mod)
+        mod = stateful.jit(mod)
       return mod(x)
 
     f = hk.transform_with_state(g)

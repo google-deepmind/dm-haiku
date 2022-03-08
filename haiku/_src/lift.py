@@ -42,7 +42,10 @@ def pack_into_dict(src: hk.Params,
                    state: bool = False):
   """Puts items from src into dst, with an added prefix."""
   for key, value in src.items():
-    new_key = f"{prefix}/{key}"
+    if prefix:
+      new_key = f"{prefix}/{key}"
+    else:
+      new_key = key
     assert new_key not in dst
     value = dict(value)
     if state:
@@ -52,6 +55,9 @@ def pack_into_dict(src: hk.Params,
 
 def unpack_from_dict(src: hk.Params, prefix: str) -> MutableBundle:
   """Returns pairs from src where key begins with prefix, cutting off prefix."""
+  if not prefix:
+    return {k: dict(v) for k, v in src.items()}
+
   l = len(prefix)
   return {k[l:]: dict(v) for k, v in src.items() if k.startswith(prefix)}
 
@@ -90,7 +96,10 @@ class LiftingModule(hk.Module):
       pack_into_dict(inner_state, outer_state, self._prefix_name, state=True)
       return inner_params, inner_state
     else:
-      prefix = f"{self._prefix_name}/"
+      if self._prefix_name:
+        prefix = f"{self._prefix_name}/"
+      else:
+        prefix = ""
       inner_params = unpack_from_dict(outer_params, prefix)
       inner_state = unpack_from_dict(outer_state, prefix)
       inner_state = base.extract_state(inner_state, initial=False)

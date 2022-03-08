@@ -202,6 +202,28 @@ class LiftTest(parameterized.TestCase):
 
     self.assertCountEqual(list(params.keys()), correct_weight_names)
 
+  def test_transparent_lift_top_level(self):
+    class MyModule(module.Module):
+
+      def __call__(self, x):
+        x += base.get_parameter("b", shape=[10, 10], init=jnp.zeros)
+        return x
+
+    @transform.transform
+    def fn(x):
+      def inner_fn(x):
+        x = MyModule(name="top_level")(x)
+        return MyModule(name="top_level")(x)
+      inner_transformed = transform.transform(inner_fn)
+      inner_params = lift.transparent_lift(inner_transformed.init)(None, x)
+      return inner_transformed.apply(inner_params, None, x)
+
+    correct_weight_names = ["top_level", "top_level_1"]
+
+    params = fn.init(None, jnp.ones([10, 10]))
+    print(params)
+    self.assertCountEqual(list(params.keys()), correct_weight_names)
+    fn.apply(params, None, jnp.ones([10, 10]))
 
 if __name__ == "__main__":
   absltest.main()

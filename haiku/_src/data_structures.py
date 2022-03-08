@@ -21,12 +21,12 @@
 
 import collections
 import contextlib
-import os
 import pprint
 import threading
 from typing import (Any, Callable, Dict, Generic, Mapping, NamedTuple, Optional,
                     Sequence, TypeVar, Union)
 
+from haiku._src import config
 from haiku._src import utils
 import jax
 
@@ -133,8 +133,6 @@ def to_haiku_dict(structure: Mapping[K, V]) -> Mapping[K, V]:
   Returns:
     A new two level mapping with the same contents as the input.
   """
-  if os.environ.get("HAIKU_FLATMAPPING", "0").lower() not in ("", "0", "false"):
-    return to_immutable_dict(structure)
   return to_dict(structure)
 
 
@@ -289,7 +287,10 @@ class FlatMapping(FlatMap, metaclass=FlatMappingMeta):
   """Only called from old checkpoints."""
 
   def __new__(cls, data):
-    return to_haiku_dict(data)
+    if config.get_config().restore_flatmap:
+      return to_immutable_dict(data)
+    else:
+      return to_haiku_dict(data)
 
   def __init__(self, *args, **kwargs):  # pylint: disable=super-init-not-called
     del args, kwargs

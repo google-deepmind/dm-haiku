@@ -25,7 +25,6 @@ from absl.testing import parameterized
 from haiku._src import basic
 from haiku._src import data_structures
 from haiku._src import filtering
-from haiku._src import test_utils
 from haiku._src import transform
 import jax
 import jax.numpy as jnp
@@ -314,19 +313,9 @@ class FilteringTest(parameterized.TestCase):
       for n in second_layer_params[mn]:
         self.assertEqual(2. * params[mn][n], new_params[mn][n])
 
-  @test_utils.with_environ("HAIKU_FLATMAPPING", None)
   def test_output_type_default(self):
     self.assert_output_type(dict)
 
-  @test_utils.with_environ("HAIKU_FLATMAPPING", "0")
-  def test_output_type_env_var_0(self):
-    self.assert_output_type(dict)
-
-  @test_utils.with_environ("HAIKU_FLATMAPPING", "1")
-  def test_output_type_env_var_1(self):
-    self.assert_output_type(data_structures.FlatMap)
-
-  @test_utils.with_environ("HAIKU_FLATMAPPING", "0")
   def test_merge_different_mappings(self):
     a = collections.defaultdict(dict)
     a["foo"]["bar"] = 1

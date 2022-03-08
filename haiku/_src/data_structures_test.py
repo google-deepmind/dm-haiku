@@ -24,7 +24,6 @@ from absl.testing import parameterized
 import cloudpickle
 import dill
 from haiku._src import data_structures
-from haiku._src import test_utils
 import jax
 import tree
 
@@ -211,41 +210,24 @@ class FlatMappingTest(parameterized.TestCase):
       ("cloudpickle", lambda v: cloudpickle.loads(cloudpickle.dumps(v)),),
       ("dill", lambda v: dill.loads(dill.dumps(v)),),
   )
-  @test_utils.with_environ("HAIKU_FLATMAPPING", "1")
   def test_copy(self, clone):
     before = data_structures.to_immutable_dict(dict(a=dict(b=1, c=2)))
     after = clone(before)
     self.assertIsNot(before, after)
     self.assertEqual(before, after)
     self.assertEqual(after, {"a": {"b": 1, "c": 2}})
-    jax.tree_multimap(self.assertEqual, before, after)
+    before_dict = data_structures.to_haiku_dict(before)
+    jax.tree_multimap(self.assertEqual, before_dict, after)
 
   @all_picklers
-  @test_utils.with_environ("HAIKU_FLATMAPPING", "0")
   def test_pickle_roundtrip(self, pickler):
-    self.assertRoundTripType(pickler, dict)
-
-  @all_picklers
-  @test_utils.with_environ("HAIKU_FLATMAPPING", "1")
-  def test_pickle_roundtrip_flatmap(self, pickler):
-    self.assertRoundTripType(pickler, FlatMap)
-
-  def assertRoundTripType(self, pickler, cls):
     x = FlatMap({})
     y = pickler.loads(pickler.dumps(x))
-    self.assertType(y, cls)
+    self.assertType(y, dict)
 
-  @test_utils.with_environ("HAIKU_FLATMAPPING", "0")
   def test_golden_pickle_load(self):
-    self.assertEmptyPickle(dict)
-
-  @test_utils.with_environ("HAIKU_FLATMAPPING", "1")
-  def test_golden_pickle_load_flatmap(self):
-    self.assertEmptyPickle(FlatMap)
-
-  def assertEmptyPickle(self, cls):
     loaded = self._pickle_load_golden("empty")
-    self.assertType(loaded, cls)
+    self.assertType(loaded, dict)
     self.assertEmpty(loaded)
 
   def assertType(self, obj, cls):
@@ -255,19 +237,11 @@ class FlatMappingTest(parameterized.TestCase):
     with open(f"haiku/_src/testdata/{file}.pkl", "rb") as fp:
       return pickle.load(fp)
 
-  @test_utils.with_environ("HAIKU_FLATMAPPING", "0")
   def test_golden_pickle_nested(self):
-    self.assertNestedPickle(dict)
-
-  @test_utils.with_environ("HAIKU_FLATMAPPING", "1")
-  def test_golden_pickle_nested_flatmap(self):
-    self.assertNestedPickle(FlatMap)
-
-  def assertNestedPickle(self, cls):
     loaded = self._pickle_load_golden("nested")
-    self.assertType(loaded, cls)
-    self.assertType(loaded["a"], cls)
-    self.assertType(loaded["a"]["b"], cls)
+    self.assertType(loaded, dict)
+    self.assertType(loaded["a"], dict)
+    self.assertType(loaded["a"]["b"], dict)
     self.assertEqual(loaded, {"a": {"b": {"c": 1}}})
 
   def test_flatmapping_isinstance(self):
@@ -277,11 +251,11 @@ class FlatMappingTest(parameterized.TestCase):
     o = FlatMap({})
     self.assertIsInstance(o, data_structures.FlatMapping)
 
-  @test_utils.with_environ("HAIKU_FLATMAPPING", "1")
   def test_flatmapping_init(self):
+    # NOTE: FlatMapping is a shim only for `pickle.loads`. The actual immutable
+    # map type in Haiku is FlatMap.
     o = data_structures.FlatMapping({})
-    self.assertEqual(type(o), data_structures.FlatMap)
-    self.assertIsInstance(o, data_structures.FlatMapping)
+    self.assertEqual(type(o), dict)
 
   def test_deepcopy_still_immutable(self):
     before = FlatMap(dict(a=[1, 2, 3]))

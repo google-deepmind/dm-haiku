@@ -24,11 +24,13 @@ from typing import Optional
 class Config:
   check_jax_usage: bool
   module_auto_repr: bool
+  restore_flatmap: bool
 
   @classmethod
   def default(cls) -> "Config":
     return Config(check_jax_usage=False,
-                  module_auto_repr=True)
+                  module_auto_repr=True,
+                  restore_flatmap=False)
 
 
 def write(config, **overrides):
@@ -44,6 +46,7 @@ def context(
     *,
     check_jax_usage: Optional[bool] = None,
     module_auto_repr: Optional[bool] = None,
+    restore_flatmap: Optional[bool] = None,
 ):
   """Context manager for setting config options.
 
@@ -59,6 +62,9 @@ def context(
       appropriately in Haiku transformed functions.
     module_auto_repr: Can be used to disable the "to string" functionality that
       is part of Haiku's base contructor.
+    restore_flatmap: Whether legacy checkpoints should be restored in the old
+      FlatMap datatype (as returned by ``to_immtable_dict``), default is to
+      restore these as plain dicts.
 
   Returns:
     Context manager that applies the given configs while active.
@@ -72,6 +78,7 @@ def set(
     *,
     check_jax_usage: Optional[bool] = None,
     module_auto_repr: Optional[bool] = None,
+    restore_flatmap: Optional[bool] = None,
 ):
   """Sets the given config option(s).
 
@@ -87,6 +94,9 @@ def set(
       appropriately in Haiku transformed functions.
     module_auto_repr: Can be used to disable the "to string" functionality that
       is part of Haiku's base contructor.
+    restore_flatmap: Whether legacy checkpoints should be restored in the old
+      FlatMap datatype (as returned by ``to_immtable_dict``), default is to
+      restore these as plain dicts.
   """
   write(get_config(), **filter_none_values(locals()))
 # pylint: enable=redefined-outer-name,unused-argument,redefined-builtin

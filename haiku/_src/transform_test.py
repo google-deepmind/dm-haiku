@@ -19,7 +19,6 @@ import inspect
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import base
-from haiku._src import data_structures
 from haiku._src import test_utils
 from haiku._src import transform
 import jax
@@ -474,19 +473,7 @@ class TransformTest(parameterized.TestCase):
     with self.assertRaisesRegex(TypeError, "pass them positionally"):
       f.apply(params=None, state=None, rng=None)
 
-  @test_utils.with_environ("HAIKU_FLATMAPPING", None)
   def test_output_type_default(self):
-    self.assert_output_type(dict)
-
-  @test_utils.with_environ("HAIKU_FLATMAPPING", "0")
-  def test_output_type_env_var_0(self):
-    self.assert_output_type(dict)
-
-  @test_utils.with_environ("HAIKU_FLATMAPPING", "1")
-  def test_output_type_env_var_1(self):
-    self.assert_output_type(data_structures.FlatMap)
-
-  def assert_output_type(self, cls):
     def f():
       base.get_parameter("w", [], init=jnp.zeros)
       base.get_state("w", [], init=jnp.zeros)
@@ -497,10 +484,10 @@ class TransformTest(parameterized.TestCase):
     self.assertLen(params, 1)
     self.assertLen(state_in, 1)
     self.assertLen(state_out, 1)
-    self.assertEqual(type(params), cls)
-    self.assertEqual(type(params["~"]), cls)
-    self.assertEqual(type(state_in["~"]), cls)
-    self.assertEqual(type(state_out["~"]), cls)
+    self.assertEqual(type(params), dict)
+    self.assertEqual(type(params["~"]), dict)
+    self.assertEqual(type(state_in["~"]), dict)
+    self.assertEqual(type(state_out["~"]), dict)
 
   def test_unexpected_tracer_error_hint(self):
     def leaks_and_uses_tracer():

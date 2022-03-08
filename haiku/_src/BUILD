@@ -101,7 +101,6 @@ hk_py_test(
     srcs = ["transform_test.py"],
     deps = [
         ":base",
-        ":data_structures",
         ":test_utils",
         ":transform",
         # pip: absl/testing:absltest
@@ -452,6 +451,7 @@ hk_py_library(
     name = "data_structures",
     srcs = ["data_structures.py"],
     deps = [
+        ":config",
         ":utils",
         # pip: jax
     ],
@@ -463,7 +463,6 @@ hk_py_test(
     data = glob(["testdata/**"]),
     deps = [
         ":data_structures",
-        ":test_utils",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: cloudpickle
@@ -807,7 +806,6 @@ hk_py_test(
         ":basic",
         ":data_structures",
         ":filtering",
-        ":test_utils",
         ":transform",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized

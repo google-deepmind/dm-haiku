@@ -344,12 +344,16 @@ def get_parameter(
           "All parameters must be created as part of `init`.".format(
               name, bundle_name))
 
-    param = run_creators(param_creator_stack, context, shape, dtype, init)
+    if param_creator_stack:
+      param = run_creators(param_creator_stack, context, shape, dtype, init)
+    else:
+      param = init(shape, dtype)
     params[name] = param  # pytype: disable=unsupported-operands
 
   # Custom getters allow a hook for users to customize the value returned by
   # get_parameter. For example casting values to some dtype.
-  param = run_getters(param_getter_stack, context, param)
+  if param_getter_stack:
+    param = run_getters(param_getter_stack, context, param)
 
   if param.shape != tuple(shape):
     raise ValueError(
@@ -402,16 +406,13 @@ def run_creators(
     init: Optional[Initializer] = None,
 ) -> jnp.ndarray:
   """See :func:`custom_creator` for usage."""
-  if not stack:
-    return init(shape, dtype)
-
-  stack_copy = stack.clone()
+  assert stack
+  stack = stack.clone()
 
   def next_creator(shape, dtype, init):
-    if stack_copy:
-      return stack_copy.popleft()(next_creator, shape, dtype, init, context)
-    else:
+    if not stack:
       return init(shape, dtype)
+    return stack.popleft()(next_creator, shape, dtype, init, context)
 
   return next_creator(shape, dtype, init)
 
@@ -470,16 +471,13 @@ def run_getters(
     value: jnp.ndarray,
 ) -> jnp.ndarray:
   """See :func:`custom_getter` for usage."""
-  if not stack:
-    return value
-
-  stack_copy = stack.clone()
+  assert stack
+  stack = stack.clone()
 
   def next_getter(value):
-    if stack_copy:
-      return stack_copy.popleft()(next_getter, value, context)
-    else:
+    if not stack:
       return value
+    return stack.popleft()(next_getter, value, context)
 
   return next_getter(value)
 
@@ -818,14 +816,19 @@ def get_state(
       raise ValueError(f"Must provide shape and dtype to initialize {name!r} "
                        f"in {bundle_name!r}.")
 
-    value = run_creators(state_creator_stack, context, shape, dtype, init)
+    if state_creator_stack:
+      value = run_creators(state_creator_stack, context, shape, dtype, init)
+    else:
+      value = init(shape, dtype)
+
     state[name] = StatePair(value, value)
   else:
     value = value.current
 
   # Custom getters allow a hook for users to customize the value returned by
   # get_state. For example casting values to some dtype.
-  value = run_getters(state_getter_stack, context, value)
+  if state_getter_stack:
+    value = run_getters(state_getter_stack, context, value)
 
   return value
 

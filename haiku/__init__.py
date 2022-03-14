@@ -25,6 +25,7 @@ from haiku import testing
 from haiku._src.attention import MultiHeadAttention
 from haiku._src.base import custom_creator
 from haiku._src.base import custom_getter
+from haiku._src.base import custom_setter
 from haiku._src.base import get_parameter
 from haiku._src.base import get_state
 from haiku._src.base import GetterContext
@@ -34,6 +35,7 @@ from haiku._src.base import next_rng_keys
 from haiku._src.base import PRNGSequence
 from haiku._src.base import reserve_rng_keys
 from haiku._src.base import set_state
+from haiku._src.base import SetterContext
 from haiku._src.base import with_rng
 from haiku._src.basic import BatchApply
 from haiku._src.basic import dropout
@@ -167,6 +169,7 @@ __all__ = (
     "Reshape",
     "RMSNorm",
     "SNParamsTree",
+    "SetterContext",
     "Sequential",
     "SpectralNorm",
     "State",
@@ -179,6 +182,7 @@ __all__ = (
     "eval_shape",
     "custom_creator",
     "custom_getter",
+    "custom_setter",
     "data_structures",
     "deep_rnn_with_skip_connections",
     "dropout",

@@ -106,7 +106,9 @@ Getters and Interceptors
 
     custom_creator
     custom_getter
+    custom_setter
     GetterContext
+    SetterContext
     intercept_methods
     MethodContext
 
@@ -120,10 +122,20 @@ custom_getter
 
 .. autofunction:: custom_getter
 
+custom_setter
+~~~~~~~~~~~~~
+
+.. autofunction:: custom_setter
+
 GetterContext
 ~~~~~~~~~~~~~
 
 .. autoclass:: GetterContext
+
+SetterContext
+~~~~~~~~~~~~~
+
+.. autoclass:: SetterContext
 
 intercept_methods
 ~~~~~~~~~~~~~~~~~

@@ -380,6 +380,64 @@ class BaseTest(parameterized.TestCase):
       with custom_x(my_getter):
         pass
 
+  def test_setter_requires_context(self):
+    def my_setter(next_setter, value, context):
+      del context
+      return next_setter(value)
+
+    with self.assertRaisesRegex(ValueError,
+                                "must be used as part of an `hk.transform`"):
+      with base.custom_setter(my_setter):
+        pass
+
+  def test_setter_array(self):
+    witness = []
+    x = jnp.ones([])
+    y = x + 1
+
+    def my_setter(next_setter, value, context):
+      self.assertIs(value, x)
+      self.assertEqual(context.original_shape, value.shape)
+      self.assertEqual(context.original_dtype, value.dtype)
+      self.assertEqual(context.full_name, "~/x")
+      self.assertEqual(context.name, "x")
+      self.assertIsNone(context.module)
+      witness.append(None)
+      del next_setter
+      return y
+
+    with base.new_context():
+      with base.custom_setter(my_setter):
+        base.set_state("x", x)
+        x = base.get_state("x")
+        self.assertIs(x, y)
+
+    self.assertNotEmpty(witness)
+
+  def test_setter_tree(self):
+    witness = []
+    x = {"a": jnp.ones([]), "b": jnp.zeros([123])}
+    y = jax.tree_map(lambda x: x + 1, x)
+
+    def my_setter(next_setter, value, ctx):
+      self.assertIs(value, x)
+      self.assertEqual(ctx.original_shape, {"a": (), "b": (123,)})
+      self.assertEqual(ctx.original_dtype, {"a": jnp.float32, "b": jnp.float32})
+      self.assertEqual(ctx.full_name, "~/x")
+      self.assertEqual(ctx.name, "x")
+      self.assertIsNone(ctx.module)
+      witness.append(None)
+      del next_setter
+      return y
+
+    with base.new_context():
+      with base.custom_setter(my_setter):
+        base.set_state("x", x)
+        x = base.get_state("x")
+        self.assertIs(x, y)
+
+    self.assertNotEmpty(witness)
+
   def test_get_state_no_init_raises(self):
     with base.new_context():
       with self.assertRaisesRegex(ValueError, "set an init function"):

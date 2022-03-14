@@ -19,7 +19,7 @@ import contextlib
 import functools
 from typing import (Callable, Iterator, Iterable, MutableMapping, NamedTuple,
                     Optional, Set, Tuple, Union, Any, Sequence, Mapping,
-                    FrozenSet)
+                    FrozenSet, TypeVar)
 import warnings
 
 from haiku._src import config
@@ -52,6 +52,7 @@ param_creator_stack: ThreadLocalStack["Creator"] = ThreadLocalStack()
 state_creator_stack: ThreadLocalStack["Creator"] = ThreadLocalStack()
 param_getter_stack: ThreadLocalStack["Getter"] = ThreadLocalStack()
 state_getter_stack: ThreadLocalStack["Getter"] = ThreadLocalStack()
+state_setter_stack: ThreadLocalStack["Setter"] = ThreadLocalStack()
 
 
 class JaxTraceLevel(NamedTuple):
@@ -364,7 +365,7 @@ def get_parameter(
 
 
 class GetterContext(NamedTuple):
-  """Read only state showing where parameters are being created.
+  """Context about where parameters are being created.
 
   Attributes:
     full_name: The full name of the given parameter (e.g. ``mlp/~/linear_0/w``).
@@ -525,6 +526,84 @@ def custom_getter(
   if state:
     stack.enter_context(state_getter_stack(getter))
   return stack
+
+T, U = TypeVar("T"), TypeVar("U")
+NextSetter = Callable[[str, T], U]
+Setter = Callable[[NextSetter, T, "SetterContext"], U]
+
+
+def run_setters(
+    stack: Stack[Setter],
+    context: "SetterContext",
+    value: T,
+) -> U:
+  """See :func:`custom_setter` for usage."""
+  assert stack
+  stack_copy = stack.clone()
+
+  def next_setter(value):
+    if not stack_copy:
+      return value
+    return stack_copy.popleft()(next_setter, value, context)
+
+  return next_setter(value)
+
+
+class SetterContext(NamedTuple):
+  """Context about where state is being set.
+
+  Attributes:
+    full_name: The full name of the given state (e.g. ``mlp/~/linear_0/w``).
+    module: The module that owns the current state, ``None`` if this
+      state exists outside any module.
+    original_dtype: The dtype that :func:`~haiku.set_state` was originally
+      called with.
+    original_shape: The shape that :func:`~haiku.set_state` or
+      :func:`~haiku.get_state` was originally called with.
+    module_name: The full name of enclosing modules.
+    name: The name of this state.
+  """
+  full_name: str
+  module: Optional[Module]
+  original_dtype: Any
+  original_shape: Sequence[int]
+
+  @property
+  def module_name(self):
+    module_name, _ = self.full_name.rsplit("/", 1)
+    return module_name
+
+  @property
+  def name(self):
+    _, name = self.full_name.rsplit("/", 1)
+    return name
+
+
+def custom_setter(setter: Setter) -> contextlib.AbstractContextManager:
+  """Registers a custom state setter.
+
+  When state is set using :func:`get_parameter` we always run all custom setters
+  before saving the value.
+
+  >>> def zero_during_init(next_setter, value, context):
+  ...   if hk.running_init():
+  ...     value = jnp.zeros_like(value)
+  ...   return next_setter(value)
+
+  >>> with hk.custom_setter(zero_during_init):
+  ...   hk.set_state("x", jnp.ones([2]))
+  ...   x = hk.get_state("x")
+  >>> x
+  DeviceArray([0., 0.], dtype=float32)
+
+  Args:
+    setter: A state setter.
+
+  Returns:
+    Context manager under which the setter is active.
+  """
+  assert_context("custom_setter")
+  return state_setter_stack(setter)
 
 
 def assert_is_prng_key(key: PRNGKey):
@@ -832,6 +911,9 @@ def get_state(
 
   return value
 
+maybe_shape = lambda x: getattr(x, "shape", None)
+maybe_dtype = lambda x: getattr(x, "dtype", None)
+
 
 def set_state(name: str, value):
   """Sets the current value for some state.
@@ -862,6 +944,15 @@ def set_state(name: str, value):
   assert_context("set_state")
   assert_jax_usage("set_state")
   state = current_frame().state[current_bundle_name()]
+
+  if state_setter_stack:
+    shape = jax.tree_map(maybe_shape, value)
+    dtype = jax.tree_map(maybe_dtype, value)
+    fq_name = current_bundle_name() + "/" + name
+    context = SetterContext(full_name=fq_name, module=current_module(),
+                            original_dtype=dtype, original_shape=shape)
+    value = run_setters(state_setter_stack, context, value)
+
   if name in state:
     initial, _ = state[name]
     current = value

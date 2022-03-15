@@ -294,7 +294,7 @@ def transform(f, *, apply_rng=True) -> Transformed:
 
   if not apply_rng:
     raise ValueError(
-        "The apply_rng argument has been removed and k.transform "
+        "The apply_rng argument has been removed and hk.transform "
         "now *always* applies an rng.\n"
         "Replace hk.transform(..., apply_rng=False) with "
         "hk.without_apply_rng(hk.transform(...)).\n"

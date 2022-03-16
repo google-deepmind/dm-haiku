@@ -32,6 +32,7 @@ py_library(
         "//haiku/_src:config",
         "//haiku/_src:conv",
         "//haiku/_src:data_structures",
+        "//haiku/_src:deferred",
         "//haiku/_src:depthwise_conv",
         "//haiku/_src:dot",
         "//haiku/_src:embed",

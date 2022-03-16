@@ -646,6 +646,22 @@ EmbedLookupStyle
 .. autoclass:: EmbedLookupStyle
    :members:
 
+Utilities
+---------
+
+.. currentmodule:: haiku
+
+.. autosummary::
+
+    Deferred
+
+Deferred
+~~~~~~~~
+
+.. autoclass:: Deferred
+   :members:
+
+
 Initializers
 ------------
 

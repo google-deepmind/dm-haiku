@@ -260,12 +260,27 @@ def safe_get_module_name(module: Module) -> str:
   return module.module_name
 
 
-def current_module() -> Optional[Module]:
+def current_module_state() -> Optional[ModuleState]:
   frame = current_frame()
   if frame.module_stack:
-    return frame.module_stack.peek().module
+    return frame.module_stack.peek()
   else:
     return None
+
+
+@contextlib.contextmanager
+def maybe_push_module_state(module_state: Optional[ModuleState]):
+  if module_state is not None:
+    frame = current_frame()
+    with frame.module_stack(module_state):
+      yield
+  else:
+    yield
+
+
+def current_module() -> Optional[Module]:
+  module_state = current_module_state()
+  return module_state.module if module_state is not None else None
 
 
 def current_bundle_name():

@@ -864,3 +864,25 @@ hk_py_test(
         # pip: numpy
     ],
 )
+
+hk_py_library(
+    name = "deferred",
+    srcs = ["deferred.py"],
+    deps = [
+        ":base",
+        ":module",
+    ],
+)
+
+hk_py_test(
+    name = "deferred_test",
+    srcs = ["deferred_test.py"],
+    deps = [
+        ":deferred",
+        ":module",
+        ":test_utils",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        # pip: jax
+    ],
+)

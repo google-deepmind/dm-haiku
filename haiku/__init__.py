@@ -55,6 +55,7 @@ from haiku._src.conv import Conv3D
 from haiku._src.conv import Conv3DTranspose
 from haiku._src.conv import ConvND
 from haiku._src.conv import ConvNDTranspose
+from haiku._src.deferred import Deferred
 from haiku._src.depthwise_conv import DepthwiseConv1D
 from haiku._src.depthwise_conv import DepthwiseConv2D
 from haiku._src.depthwise_conv import DepthwiseConv3D
@@ -139,6 +140,7 @@ __all__ = (
     "ConvND",
     "ConvNDTranspose",
     "DeepRNN",
+    "Deferred",
     "DepthwiseConv1D",
     "DepthwiseConv2D",
     "DepthwiseConv3D",

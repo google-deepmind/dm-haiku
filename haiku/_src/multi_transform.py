@@ -16,10 +16,11 @@
 
 # pylint: disable=unnecessary-lambda
 
-import types
-from typing import Any, Callable, NamedTuple, Tuple
-
 import dataclasses
+import functools
+import types
+from typing import Any, Callable, NamedTuple, Tuple, TypeVar
+
 from haiku._src import analytics
 from haiku._src import transform
 from haiku._src import typing
@@ -28,8 +29,11 @@ import jax
 # If you are forking replace this with `import haiku as hk`.
 hk = types.ModuleType('haiku')
 hk.transform_with_state = transform.transform_with_state
+hk.Transformed = transform.Transformed
+hk.TransformedWithState = transform.TransformedWithState
 hk.Params = typing.Params
 hk.State = typing.State
+_transform = transform
 del transform, typing
 
 PyTreeDef = Any
@@ -250,6 +254,74 @@ def without_state(f: MultiTransformedWithState) -> MultiTransformed:
   apply_fns = jax.tree_map(apply_without_state, f.apply)
 
   return MultiTransformed(init_fn, apply_fns)
+
+TransformedT = TypeVar('TransformedT',
+                       hk.Transformed,
+                       hk.TransformedWithState,
+                       MultiTransformed,
+                       MultiTransformedWithState)
+
+
+def without_apply_rng(f: TransformedT) -> TransformedT:
+  """Removes the rng argument from the apply function.
+
+  This is a convenience wrapper that makes the ``rng`` argument to
+  ``f.apply`` default to ``None``. This is useful when ``f`` doesn't actually
+  use random numbers as part of its computation, such that the ``rng`` argument
+  wouldn't be used. Note that if ``f`` `does` use random numbers, this will
+  cause an error to be thrown complaining that ``f`` needs a non-None PRNGKey.
+
+  Args:
+    f: A transformed function.
+
+  Returns:
+    The same transformed function, with a modified ``apply``.
+  """
+  def check_rng_kwarg(kwargs):
+    if 'rng' in kwargs:
+      raise TypeError(
+          'Haiku transform adds three arguments (params, state, rng) to apply. '
+          'If the functions you are transforming use the same names you must '
+          'pass them positionally (e.g. `f.apply(.., my_rng)` and not by '
+          'name (e.g. `f.apply(.., rng=my_rng)`)')
+
+  if isinstance(f, hk.TransformedWithState):
+    def apply_fn(params, state, *args, **kwargs):
+      check_rng_kwarg(kwargs)
+      return f.apply(params, state, None, *args, **kwargs)
+    f_new = hk.TransformedWithState(init=f.init, apply=apply_fn)
+    _transform.tie_in_original_fn(f, f_new.init, f_new.apply)
+
+  elif isinstance(f, hk.Transformed):
+    def apply_fn(params, *args, **kwargs):
+      check_rng_kwarg(kwargs)
+      return f.apply(params, None, *args, **kwargs)
+    f_new = hk.Transformed(init=f.init, apply=apply_fn)
+    _transform.tie_in_original_fn(f, f_new.init, f_new.apply)
+
+  elif isinstance(f, MultiTransformedWithState):
+    def make_new_apply_fn(apply_fn, params, state, *args, **kwargs):
+      check_rng_kwarg(kwargs)
+      return apply_fn(params, state, None, *args, **kwargs)
+    apply_fn = jax.tree_map(lambda fn: functools.partial(make_new_apply_fn, fn),
+                            f.apply)
+    f_new = MultiTransformedWithState(init=f.init, apply=apply_fn)
+
+  elif isinstance(f, MultiTransformed):
+    def make_new_apply_fn(apply_fn, params, *args, **kwargs):
+      check_rng_kwarg(kwargs)
+      return apply_fn(params, None, *args, **kwargs)
+    apply_fn = jax.tree_map(lambda fn: functools.partial(make_new_apply_fn, fn),
+                            f.apply)
+    f_new = MultiTransformed(init=f.init, apply=apply_fn)
+
+  else:
+    raise ValueError('Must be called with the result of `hk.transformed`, '
+                     '`hk.multi_transform`, `hk.transformed_with_state` or '
+                     '`hk.multi_transform_with_state`, '
+                     f'actually called with {type(f)}')
+
+  return f_new
 
 
 def make_tree(f: Callable[[int], Any], treedef: PyTreeDef):

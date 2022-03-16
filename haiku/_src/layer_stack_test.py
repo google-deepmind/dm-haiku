@@ -23,6 +23,7 @@ from haiku._src import config
 from haiku._src import initializers
 from haiku._src import layer_stack
 from haiku._src import module
+from haiku._src import multi_transform
 from haiku._src import transform
 import jax
 import jax.numpy as jnp
@@ -158,7 +159,7 @@ class LayerStackTest(parameterized.TestCase):
         mod = module_class()
         return layer_stack.layer_stack(1)(mod)(x)
 
-      stack = transform.without_apply_rng(transform.transform(stack_fn))
+      stack = multi_transform.without_apply_rng(transform.transform(stack_fn))
       stack.init(jax.random.PRNGKey(1729), jnp.ones([5]))
 
     build_and_init_stack(NoVarArgsModule)
@@ -244,7 +245,7 @@ class LayerStackTest(parameterized.TestCase):
       x = x + y * jax.nn.one_hot(y, len(x)) / 10
       return x, 2 * y
 
-    @transform.without_apply_rng
+    @multi_transform.without_apply_rng
     @transform.transform
     def g(x, ys):
       x, zs = f(x, ys)
@@ -293,7 +294,7 @@ class LayerStackTest(parameterized.TestCase):
           width, w_init=initializers.Constant(
               jnp.eye(width)))(x) * a + b, None
 
-    @transform.without_apply_rng
+    @multi_transform.without_apply_rng
     @transform.transform
     def hk_fn(x):
       return layer_stack.layer_stack(
@@ -323,7 +324,7 @@ class LayerStackTest(parameterized.TestCase):
       }
       return layer_output + jnp.ones_like(layer_output), layer_state
 
-    @transform.without_apply_rng
+    @multi_transform.without_apply_rng
     @transform.transform
     def hk_fn(x):
       return layer_stack.layer_stack(

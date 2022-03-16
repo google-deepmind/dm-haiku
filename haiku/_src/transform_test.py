@@ -19,6 +19,7 @@ import inspect
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import base
+from haiku._src import multi_transform
 from haiku._src import test_utils
 from haiku._src import transform
 import jax
@@ -381,11 +382,11 @@ class TransformTest(parameterized.TestCase):
       w = base.get_parameter("w", [], init=jnp.zeros)
       return w
 
-    f = transform.without_apply_rng(transform.transform_with_state(f))
-    self.assertIsInstance(f, transform.TransformedWithState)
+    f_t = multi_transform.without_apply_rng(transform.transform_with_state(f))
+    self.assertIsInstance(f_t, transform.TransformedWithState)
 
-    f = transform.without_apply_rng(transform.transform(f))
-    self.assertIsInstance(f, transform.Transformed)
+    f_t = multi_transform.without_apply_rng(transform.transform(f))
+    self.assertIsInstance(f_t, transform.Transformed)
 
   def test_new_context(self):
     with base.new_context() as ctx:
@@ -429,9 +430,9 @@ class TransformTest(parameterized.TestCase):
 
   @parameterized.parameters(
       None,
-      transform.without_apply_rng,
+      multi_transform.without_apply_rng,
       transform.without_state,
-      lambda f: transform.without_state(transform.without_apply_rng(f)))
+      lambda f: transform.without_state(multi_transform.without_apply_rng(f)))
   def test_persists_original_fn(self, without):
     orig_f = lambda: None
     f = transform.transform(orig_f)
@@ -467,7 +468,7 @@ class TransformTest(parameterized.TestCase):
     def f(rng):
       del rng
     self.assert_raises_by_name_error(
-        transform.without_apply_rng(transform_fn(f)))
+        multi_transform.without_apply_rng(transform_fn(f)))
 
   def assert_raises_by_name_error(self, f):
     with self.assertRaisesRegex(TypeError, "pass them positionally"):

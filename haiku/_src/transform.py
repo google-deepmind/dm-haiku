@@ -178,52 +178,6 @@ def with_empty_state(f: Transformed) -> TransformedWithState:
   return TransformedWithState(init=init_fn, apply=apply_fn)
 
 
-TransformedT = TypeVar("TransformedT", Transformed, TransformedWithState)
-
-
-def without_apply_rng(f: TransformedT) -> TransformedT:
-  """Removes the rng argument from the apply function.
-
-  This is a convenience wrapper that makes the ``rng`` argument to
-  ``f.apply`` default to ``None``. This is useful when ``f`` doesn't actually
-  use random numbers as part of its computation, such that the ``rng`` argument
-  wouldn't be used. Note that if ``f`` `does` use random numbers, this will
-  cause an error to be thrown complaining that ``f`` needs a non-None PRNGKey.
-
-  Args:
-    f: A transformed function.
-
-  Returns:
-    The same transformed function, with a modified ``apply``.
-  """
-  def check_rng_kwarg(kwargs):
-    if "rng" in kwargs:
-      raise TypeError(
-          "Haiku transform adds three arguments (params, state, rng) to apply. "
-          "If the functions you are transforming use the same names you must "
-          "pass them positionally (e.g. `f.apply(.., my_rng)` and not by "
-          "name (e.g. `f.apply(.., rng=my_rng)`)")
-
-  if isinstance(f, TransformedWithState):
-    def apply_fn(params, state, *args, **kwargs):
-      check_rng_kwarg(kwargs)
-      return f.apply(params, state, None, *args, **kwargs)
-    f_new = TransformedWithState(init=f.init, apply=apply_fn)
-
-  elif isinstance(f, Transformed):
-    def apply_fn(params, *args, **kwargs):
-      check_rng_kwarg(kwargs)
-      return f.apply(params, None, *args, **kwargs)
-    f_new = Transformed(init=f.init, apply=apply_fn)
-
-  else:
-    raise ValueError("Must be called with the result of `hk.transformed` or "
-                     f"`hk.transformed_with_state`, actual {type(f)}")
-
-  tie_in_original_fn(f, f_new.init, f_new.apply)
-  return f_new
-
-
 # TODO(tomhennigan) Remove apply_rng.
 def transform(f, *, apply_rng=True) -> Transformed:
   """Transforms a function using Haiku modules into a pair of pure functions.
@@ -415,7 +369,8 @@ def tie_in_original_fn(f, init_fn, apply_fn):
   apply_fn._original_fn = f  # pylint: disable=protected-access
 
 
-def get_original_fn(f: Union[TransformedT, Callable[..., Any]]):
+def get_original_fn(f: Union[Transformed, TransformedWithState,
+                             Callable[..., Any]]):
   if isinstance(f, (Transformed, TransformedWithState)):
     f = f.init
   return getattr(f, "_original_fn")

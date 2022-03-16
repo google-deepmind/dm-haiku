@@ -20,6 +20,7 @@ from haiku._src import base
 from haiku._src import config
 from haiku._src import lift
 from haiku._src import module
+from haiku._src import multi_transform
 from haiku._src import test_utils
 from haiku._src import transform
 import jax
@@ -55,7 +56,7 @@ class LiftTest(parameterized.TestCase):
     def outer_fn(x):
       assert x.ndim == 2
       x = Bias()(x)
-      inner = transform.without_apply_rng(transform.transform(inner_fn))
+      inner = multi_transform.without_apply_rng(transform.transform(inner_fn))
       inner_p = lift.lift(inner.init)(base.next_rng_key(), x[0])
       vmap_inner = jax.vmap(inner.apply, in_axes=(None, 0))
       return vmap_inner(inner_p, x)

@@ -93,6 +93,34 @@ class MultiTransformTest(parameterized.TestCase):
     _, state_out = f.apply({}, state_in, None)
     self.assertEqual(state_out, {'~': {'s': 1}})
 
+  def test_without_apply_rng_multi_transform(self):
+    def net(name):
+      def f(x):
+        p = base.get_parameter(name, [], init=jnp.zeros)
+        return p+x
+      return f
+
+    def mod():
+      one = net(name='one')
+      two = net(name='two')
+      def init(x):
+        z = one(x)
+        return two(z)
+      return init, (one, two)
+
+    f = multi_transform.without_apply_rng(
+        multi_transform.multi_transform_with_state(mod))
+    self.assertIsInstance(f, multi_transform.MultiTransformedWithState)
+    params, state = f.init(None, jnp.ones(()))
+    f.apply[0](params, state, jnp.ones(()))
+    f.apply[1](params, state, jnp.ones(()))
+
+    f = multi_transform.without_apply_rng(multi_transform.multi_transform(mod))
+    self.assertIsInstance(f, multi_transform.MultiTransformed)
+    params = f.init(None, jnp.ones(()))
+    f.apply[0](params, jnp.ones(()))
+    f.apply[1](params, jnp.ones(()))
+
 
 # Example custom pytree (a dict where `x.a` behaves like `x['a']`).
 class AttrMap(dict):

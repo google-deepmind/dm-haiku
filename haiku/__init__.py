@@ -76,6 +76,7 @@ from haiku._src.multi_transform import multi_transform
 from haiku._src.multi_transform import multi_transform_with_state
 from haiku._src.multi_transform import MultiTransformed
 from haiku._src.multi_transform import MultiTransformedWithState
+from haiku._src.multi_transform import without_apply_rng
 from haiku._src.pool import avg_pool
 from haiku._src.pool import AvgPool
 from haiku._src.pool import max_pool
@@ -115,7 +116,6 @@ from haiku._src.transform import transform_with_state
 from haiku._src.transform import Transformed
 from haiku._src.transform import TransformedWithState
 from haiku._src.transform import with_empty_state
-from haiku._src.transform import without_apply_rng
 from haiku._src.transform import without_state
 from haiku._src.typing import Params
 from haiku._src.typing import State

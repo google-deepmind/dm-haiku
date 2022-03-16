@@ -18,6 +18,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import basic
 from haiku._src import moving_averages
+from haiku._src import multi_transform
 from haiku._src import test_utils
 from haiku._src import transform
 import jax
@@ -96,7 +97,7 @@ class MovingAveragesTest(parameterized.TestCase):
       return moving_averages.ExponentialMovingAverage(0.5)(x)
 
     inp_value = 1.0
-    init_fn, apply_fn = transform.without_apply_rng(
+    init_fn, apply_fn = multi_transform.without_apply_rng(
         transform.transform_with_state(f))
     _, params_state = init_fn(None, inp_value)
 
@@ -157,7 +158,7 @@ class EMAParamsTreeTest(absltest.TestCase):
 
     def g(x):
       return moving_averages.EMAParamsTree(0.2)(x)
-    init_fn, apply_fn = transform.without_apply_rng(
+    init_fn, apply_fn = multi_transform.without_apply_rng(
         transform.transform_with_state(g))
     _, params_state = init_fn(None, params)
     params, params_state = apply_fn(None, params_state, params)
@@ -181,7 +182,7 @@ class EMAParamsTreeTest(absltest.TestCase):
 
     def g(x):
       return moving_averages.EMAParamsTree(0.2, ignore_regex=".*w")(x)
-    init_fn, apply_fn = transform.without_apply_rng(
+    init_fn, apply_fn = multi_transform.without_apply_rng(
         transform.transform_with_state(g))
     _, params_state = init_fn(None, params)
     params, params_state = apply_fn(None, params_state, params)
@@ -206,7 +207,7 @@ class EMAParamsTreeTest(absltest.TestCase):
     def g(x):
       """This should never update internal stats."""
       return moving_averages.EMAParamsTree(0.2)(x, update_stats=False)
-    init_fn, apply_fn_g = transform.without_apply_rng(
+    init_fn, apply_fn_g = multi_transform.without_apply_rng(
         transform.transform_with_state(g))
     _, params_state = init_fn(None, params)
 
@@ -223,7 +224,7 @@ class EMAParamsTreeTest(absltest.TestCase):
     def h(x):
       """This will behave like normal."""
       return moving_averages.EMAParamsTree(0.2)(x, update_stats=True)
-    init_fn, apply_fn_h = transform.without_apply_rng(
+    init_fn, apply_fn_h = multi_transform.without_apply_rng(
         transform.transform_with_state(h))
     _, params_state = init_fn(None, params)
     params, params_state = apply_fn_h(None, params_state, params)

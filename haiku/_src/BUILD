@@ -101,6 +101,7 @@ hk_py_test(
     srcs = ["transform_test.py"],
     deps = [
         ":base",
+        ":multi_transform",
         ":test_utils",
         ":transform",
         # pip: absl/testing:absltest
@@ -371,6 +372,7 @@ hk_py_test(
         ":config",
         ":lift",
         ":module",
+        ":multi_transform",
         ":test_utils",
         ":transform",
         # pip: absl/testing:absltest
@@ -569,6 +571,7 @@ hk_py_test(
         ":initializers",
         ":layer_stack",
         ":module",
+        ":multi_transform",
         ":transform",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
@@ -596,6 +599,7 @@ hk_py_test(
     deps = [
         ":basic",
         ":moving_averages",
+        ":multi_transform",
         ":test_utils",
         ":transform",
         # pip: absl/testing:absltest

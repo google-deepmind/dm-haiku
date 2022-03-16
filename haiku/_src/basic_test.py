@@ -71,6 +71,10 @@ class BasicTest(parameterized.TestCase):
   def test_dropout_connects(self):
     basic.dropout(base.next_rng_key(), 0.25, jnp.ones([3, 3]))
 
+  @test_utils.transform_and_run
+  def test_dropout_dynamic_range(self):
+    jax.jit(basic.dropout)(base.next_rng_key(), 0.25, jnp.ones([3, 3]))
+
   def test_batchapply(self):
 
     def raises(a, b):

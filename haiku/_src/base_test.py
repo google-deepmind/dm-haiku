@@ -486,14 +486,17 @@ class BaseTest(parameterized.TestCase):
     self.assertEqual(ctx.collect_initial_state(), {"~": {"count": 1}})
     self.assertEqual(ctx.collect_state(), {"~": {"count": 1}})
 
-  @parameterized.parameters((42, True), (42, False),
-                            (28, True), (28, False))
-  def test_prng_sequence(self, seed, wrap_seed):
+  @parameterized.product(
+      seed=[42, 28], wrap_seed=[True, False], jitted=[True, False])
+  def test_prng_sequence(self, seed, wrap_seed, jitted):
+    def create_random_values(key_or_seed):
+      key_seq = base.PRNGSequence(key_or_seed)
+      return (jax.random.normal(next(key_seq), []),
+              jax.random.normal(next(key_seq), []))
     # Values using our sequence.
     key_or_seed = jax.random.PRNGKey(seed) if wrap_seed else seed
-    key_seq = base.PRNGSequence(key_or_seed)
-    seq_v1 = jax.random.normal(next(key_seq), [])
-    seq_v2 = jax.random.normal(next(key_seq), [])
+    seq_v1, seq_v2 = (jax.jit(create_random_values)(key_or_seed)
+                      if jitted else create_random_values(key_or_seed))
     # Generate values using manual splitting.
     key = jax.random.PRNGKey(seed)
     key, temp_key = jax.random.split(key)

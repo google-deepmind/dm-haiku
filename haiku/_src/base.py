@@ -676,6 +676,10 @@ class PRNGSequence(Iterator[PRNGKey]):
     else:
       if isinstance(key_or_seed, int):
         key_or_seed = jax.random.PRNGKey(key_or_seed)
+      # A seed value may also be passed as an int32-typed scalar ndarray.
+      elif (hasattr(key_or_seed, "shape") and (not key_or_seed.shape) and
+            hasattr(key_or_seed, "dtype") and key_or_seed.dtype == jnp.int32):
+        key_or_seed = jax.random.PRNGKey(key_or_seed)
       else:
         assert_is_prng_key(key_or_seed)
       self._key = key_or_seed

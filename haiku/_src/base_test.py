@@ -60,7 +60,6 @@ JAX_PURE_EXPECTING_FNS = (
     ("jit", jax.jit),
     ("make_jaxpr", jax.make_jaxpr),
     ("eval_shape", lambda f: (lambda x: jax.eval_shape(f, x))),
-    ("named_call", jax.named_call),
 
     # Parallelization.
     # TODO(tomhennigan): Add missing features (e.g. pjit,xmap).

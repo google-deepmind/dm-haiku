@@ -641,7 +641,7 @@ def assert_is_prng_key(key: PRNGKey):
       expected_shapes_str = " or ".join(map(str, expected_shapes))
       raise ValueError(
           "Provided key did not have expected shape and/or dtype: "
-          f"expected=(shape={expected_shapes_str}, dtype=unint32), "
+          f"expected=(shape={expected_shapes_str}, dtype=uint32), "
           f"actual=(shape={key.shape}, dtype={key.dtype})")
 
 

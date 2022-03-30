@@ -222,7 +222,6 @@ class LiftTest(parameterized.TestCase):
     correct_weight_names = ["top_level", "top_level_1"]
 
     params = fn.init(None, jnp.ones([10, 10]))
-    print(params)
     self.assertCountEqual(list(params.keys()), correct_weight_names)
     fn.apply(params, None, jnp.ones([10, 10]))
 

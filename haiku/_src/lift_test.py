@@ -225,5 +225,28 @@ class LiftTest(parameterized.TestCase):
     self.assertCountEqual(list(params.keys()), correct_weight_names)
     fn.apply(params, None, jnp.ones([10, 10]))
 
+  def test_transparent_lift_existing_params_error(self):
+    class MyModule(module.Module):
+
+      def __call__(self, x):
+        x += base.get_parameter("b", shape=[3, 7], init=jnp.zeros)
+        return x
+
+    @transform.transform
+    def fn(x):
+
+      @transform.transform
+      def inner_fn(x):
+        return MyModule()(x)
+
+      x = MyModule()(x)
+      inner_params = lift.transparent_lift(inner_fn.init)(None, x)
+      return inner_fn.apply(inner_params, None, x)
+
+    with self.assertRaisesRegex(
+        ValueError, "Key 'my_module' already exists in the destination params"):
+      _ = fn.init(None, jnp.ones([3, 7]))
+
+
 if __name__ == "__main__":
   absltest.main()

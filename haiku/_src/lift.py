@@ -46,7 +46,11 @@ def pack_into_dict(src: hk.Params,
       new_key = f"{prefix}/{key}"
     else:
       new_key = key
-    assert new_key not in dst
+    if new_key in dst:
+      raise ValueError(
+          f"Key '{new_key}' already exists in the destination params. To "
+          "prevent accidental parameter re-use during lift, you can't re-use a "
+          "parameter already defined in the outer scope.")
     value = dict(value)
     if state:
       value = {k: base.StatePair(v, v) for k, v in value.items()}

@@ -116,28 +116,40 @@ def lift(
     init_fn: Callable[..., hk.Params],
     name: str = "lifted",
 ) -> Callable[..., hk.Params]:
-  r"""Lifts the given init fn to a function in the current Haiku namespace.
+  r"""Registers parameters from an inner init function in an outer transform.
+
+  Use :func:`lift`\ when nesting Haiku transforms to register the parameters of
+  the inner transform in any outer transform. This is mainly useful when using
+  JAX functions inside of a Haiku module (eg. using ``jax.vmap`` on a layer).
+  See
+  https://dm-haiku.readthedocs.io/en/latest/notebooks/transforms.html#Using-hk.lift
+  for more explanation of when to use :func:`lift`\ . (If you're not using JAX
+  functions inside of a module or don't need access to your parameters inside of
+  a transform, you probably don't need to use :func:`lift`\ )
+
+  Must be called inside :func:`transform`\ , and be passed the ``init``
+  member of a :class:`Transformed`\ .
 
   During init, the returned callable will run the given ``init_fn``, and include
   the resulting params in the outer transform's dictionaries.
   During ``apply``, the returned callable will instead pull the relevant
   parameters from the outer transform's dictionaries.
 
-  Must be called inside :func:`transform`\ , and be passed the ``init``
-  member of a :class:`Transformed`\ .
-
   The user must ensure that the given ``init`` does not accidentally catch
   modules from an outer :func:`transform` via functional closure.
 
   Example:
 
-    >>> def g(x):
-    ...   return hk.Linear(1)(x)
-    >>> g = hk.transform(g)
-    >>> init_rng = hk.next_rng_key() if hk.running_init() else None
-    >>> x = jnp.ones([1, 1])
-    >>> params = hk.lift(g.init, name='f_lift')(init_rng, x)
-    >>> out = g.apply(params, None, x)
+    >>> # outer can be `hk.transform`ed and will contain the params of inner.
+    >>> def outer(x):
+    ...   @hk.transform
+    ...   def inner(x):
+    ...     return hk.Linear(1)(x)
+    ...   init_rng = hk.next_rng_key() if hk.running_init() else None
+    ...   x = jnp.ones([1, 1])
+    ...   params = hk.lift(inner.init, name='f_lift')(init_rng, x)
+    ...   # inner.apply is a pure function and can be vmapped.
+    ...   return jax.vmap(inner.apply, in_axes=(0, None, 0))(params, None, x)
 
   Args:
     init_fn: The ``init`` function from an :class:`Transformed`\ .
@@ -145,7 +157,7 @@ def lift(
 
   Returns:
     A callable that during ``init`` injects parameter values into the outer
-    context and during ``apply`` reuses parameters from the outer context. In
+    context and during ``apply`` retrieves parameters from the outer context. In
     both cases returns parameter values to be used with an ``apply`` function.
   """
   base.assert_context("lift")
@@ -238,12 +250,15 @@ def lift_with_state(
     init_fn: Callable[..., Tuple[hk.Params, hk.State]],
     name: str = "lifted",
 ) -> Tuple[Callable[..., Tuple[hk.Params, hk.State]], LiftWithStateUpdater]:
-  r"""Lifts the given init fn to a function in the current Haiku namespace.
+  r"""Registers params and state from an init function in an outer transform.
+
+  See :func:`lift`\ for more context on when to use ``lift``.
 
   This function returns two objects. The first is a callable that runs your init
-  function with slightly behaviour based on init vs. apply time. The second is
-  an updater that can be used to pass updated state values that result from
-  running your apply function. See later in the docs for a worked example.
+  function with slightly different behaviour based on if it's run during init
+  vs. apply time. The second is an updater that can be used to pass updated
+  state values that result from running your apply function. See later in the
+  docs for a worked example.
 
   During init, the returned callable will run the given ``init_fn``, and include
   the resulting params/state in the outer transform's dictionaries. During

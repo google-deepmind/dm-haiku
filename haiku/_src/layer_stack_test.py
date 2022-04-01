@@ -345,4 +345,5 @@ class LayerStackTest(parameterized.TestCase):
 
 
 if __name__ == "__main__":
+  jax.config.update("jax_check_tracer_leaks", True)
   absltest.main()

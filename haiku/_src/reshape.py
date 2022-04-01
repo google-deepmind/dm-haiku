@@ -45,7 +45,7 @@ def _infer_shape(output_shape, dimensions):
   v = np.array(output_shape)
   m = abs(np.prod(v))
   # Replace wildcard.
-  v[v == -1] = n // m
+  v = [n // m if k == -1 else k for k in v]
   return tuple(v)
 
 

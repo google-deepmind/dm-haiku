@@ -19,6 +19,7 @@ from absl.testing import parameterized
 from haiku._src import reshape
 from haiku._src import test_utils
 from haiku._src import transform
+from jax.experimental import jax2tf
 import jax.numpy as jnp
 import numpy as np
 
@@ -63,6 +64,34 @@ class ReshapeTest(parameterized.TestCase):
     init_fn, _ = transform.transform(f)
     with self.assertRaises(TypeError):
       init_fn(None)
+
+  def test_reshape_convert(self):
+    # A function containing a hk.reshape on a polymorphic dimension.  We want
+    # to make sure we can convert this method using `jax.jax2tf`.
+    def f(inputs):
+      mod = reshape.Reshape(output_shape=[1, -1])
+      return mod(inputs)
+
+    init_fn, apply_fn = transform.transform(f)
+    x1 = jnp.ones([1, 2, 3])
+    params = init_fn(None, x1)
+
+    # We convert `f` using `jax2tf` with undefined shape
+    converted_f = jax2tf.convert(
+        fun=apply_fn,
+        polymorphic_shapes=[None, None, jax2tf.PolyShape("_", "T", ...)],  # pytype: disable=wrong-arg-count
+        with_gradient=True,
+    )
+
+    # Test equality for different inputs shapes.
+    original_output1 = apply_fn(params, None, x1)
+    converted_output1 = converted_f(params, None, x1)
+    self.assertTrue(np.allclose(original_output1, converted_output1))
+
+    x2 = jnp.ones([1, 4, 3])
+    converted_output2 = converted_f(params, None, x2)
+    original_output2 = apply_fn(params, None, x2)
+    self.assertTrue(np.allclose(original_output2, converted_output2))
 
   def test_flatten(self):
     def f():

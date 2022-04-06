@@ -755,6 +755,7 @@ hk_py_test(
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
+        # pip: jax/experimental/jax2tf
         # pip: numpy
     ],
 )

@@ -39,6 +39,7 @@ py_library(
         "//haiku/_src:filtering",
         "//haiku/_src:group_norm",
         "//haiku/_src:initializers",
+        "//haiku/_src:jaxpr_info",
         "//haiku/_src:layer_norm",
         "//haiku/_src:layer_stack",
         "//haiku/_src:lift",

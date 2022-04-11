@@ -520,6 +520,29 @@ hk_py_test(
     ],
 )
 
+hk_py_library(
+    name = "jaxpr_info",
+    srcs = ["jaxpr_info.py"],
+    deps = [
+        ":summarise",
+        # pip: jax
+    ],
+)
+
+hk_py_test(
+    name = "jaxpr_info_test",
+    srcs = ["jaxpr_info_test.py"],
+    deps = [
+        ":conv",
+        ":jaxpr_info",
+        ":module",
+        ":transform",
+        # pip: absl/testing:absltest
+        # pip: jax
+        # pip: numpy
+    ],
+)
+
 hk_py_test(
     name = "layer_norm_test",
     srcs = ["layer_norm_test.py"],

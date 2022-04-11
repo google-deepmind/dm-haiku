@@ -1017,7 +1017,6 @@ clear_policy
 
 .. automodule:: haiku.experimental
 
-
 TensorFlow Profiler
 -------------------
 
@@ -1153,6 +1152,62 @@ module_auto_repr
 ~~~~~~~~~~~~~~~~
 
 .. autofunction:: module_auto_repr
+
+jaxpr_info
+----------
+
+.. automodule:: haiku.experimental.jaxpr_info
+
+.. autosummary::
+
+    make_model_info
+    as_html
+    as_html_page
+    css
+    format_module
+    js
+    Expression
+    Module
+
+make_model_info
+~~~~~~~~~~~~~~~
+
+.. autofunction:: make_model_info
+
+as_html
+~~~~~~~
+
+.. autofunction:: as_html
+
+as_html_page
+~~~~~~~~~~~~
+
+.. autofunction:: as_html_page
+
+css
+~~~
+
+.. autofunction:: css
+
+format_module
+~~~~~~~~~~~~~
+
+.. autofunction:: format_module
+
+js
+~~
+
+.. autofunction:: js
+
+Expression
+~~~~~~~~~~
+
+.. autoclass:: Expression
+
+Module
+~~~~~~
+
+.. autoclass:: Module
 
 Configuration
 =============

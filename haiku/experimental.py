@@ -16,6 +16,7 @@
 
 Features may be removed or modified at any time.
 """
+import types
 
 from haiku._src.base import custom_creator
 from haiku._src.base import custom_getter
@@ -24,6 +25,7 @@ from haiku._src.config import check_jax_usage
 from haiku._src.config import module_auto_repr
 from haiku._src.dot import abstract_to_dot
 from haiku._src.dot import to_dot
+import haiku._src.jaxpr_info as private_jaxpr_info
 from haiku._src.layer_stack import layer_stack
 from haiku._src.lift import lift
 from haiku._src.lift import lift_with_state
@@ -44,6 +46,20 @@ from haiku._src.summarise import tabulate
 # TODO(tomhennigan): Remove deprecated alias.
 ParamContext = GetterContext
 
+jaxpr_info = types.ModuleType(
+    "haiku.experimental.jaxpr_info", doc=private_jaxpr_info.__doc__)
+
+# Ensure private definitions in the module are not accessible.
+_JAXPR_SYMBOLS = [
+    "make_model_info", "Expression", "Module", "format_module", "as_html_page",
+    "as_html", "css", "js"
+]
+for name in _JAXPR_SYMBOLS:
+  setattr(jaxpr_info, name, getattr(private_jaxpr_info, name))
+jaxpr_info.__all__ = _JAXPR_SYMBOLS
+del _JAXPR_SYMBOLS
+del private_jaxpr_info
+
 __all__ = (
     "abstract_to_dot",
     "ArraySpec",
@@ -52,6 +68,7 @@ __all__ = (
     "custom_creator",
     "custom_getter",
     "intercept_methods",
+    "jaxpr_info",
     "layer_stack",
     "lift",
     "lift_with_state",

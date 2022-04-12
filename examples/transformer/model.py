@@ -39,7 +39,7 @@ class CausalSelfAttention(hk.MultiHeadAttention):
       raise ValueError('Expect queries of shape [B, T, D].')
 
     seq_len = query.shape[1]
-    causal_mask = np.tril(np.ones((seq_len, seq_len)))
+    causal_mask = np.tril(np.ones((1, 1, seq_len, seq_len)))
     mask = mask * causal_mask if mask is not None else causal_mask
 
     return super().__call__(query, key, value, mask)

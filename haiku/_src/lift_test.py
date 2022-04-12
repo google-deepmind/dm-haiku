@@ -38,6 +38,41 @@ class Bias(module.Module):
     return x + b
 
 
+def with_transparent_lift(f):
+  def wrapped(*a, **k):
+    init, apply = transform.transform(f)
+    params = lift.transparent_lift(init)(None, *a, **k)
+    return apply(params, None, *a, **k)
+  return wrapped
+
+
+def top_level(x):
+  x = Bias(name="top_level")(x)
+  return Bias(name="top_level")(x)
+
+
+def nested(x):
+  class OuterModule(module.Module):
+
+    def __call__(self, x):
+      return Bias(name="inner")(x)
+  return OuterModule(name="outer")(x)
+
+
+def expected_duplicate_name(x):
+  class ExtraOuter(module.Module):
+
+    def __call__(self, x):
+      return Bias("inner")(x)
+
+  class OuterModule(module.Module):
+
+    def __call__(self, x):
+      x = ExtraOuter(name="outer")(x)
+      return Bias(name="outer")(x)
+  return OuterModule(name="outer")(x)
+
+
 class LiftTest(parameterized.TestCase):
 
   def setUp(self):
@@ -234,7 +269,6 @@ class LiftTest(parameterized.TestCase):
 
     @transform.transform
     def fn(x):
-
       @transform.transform
       def inner_fn(x):
         return MyModule()(x)
@@ -247,6 +281,20 @@ class LiftTest(parameterized.TestCase):
         ValueError, "Key 'my_module' already exists in the destination params"):
       _ = fn.init(None, jnp.ones([3, 7]))
 
+  @parameterized.named_parameters([(fn.__name__, fn)  # pylint: disable=undefined-variable
+                                   for fn in [top_level, nested,
+                                              expected_duplicate_name]])
+  def test_lift_naming_semantics(self, inner_module):
+    @transform.transform
+    def fn(x):
+      return with_transparent_lift(inner_module)(x)
+
+    x = jnp.ones([10, 10])
+    params_with_lift = fn.init(None, x)
+    params_without_lift = transform.transform(inner_module).init(None, x)
+    jax.tree_map(self.assertAlmostEqual, params_with_lift, params_without_lift)
+
+    fn.apply(params_with_lift, None, x)
 
 if __name__ == "__main__":
   absltest.main()

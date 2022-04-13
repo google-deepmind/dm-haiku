@@ -165,13 +165,12 @@ class LiftTest(parameterized.TestCase):
       lifted(None)
 
   def test_lift_with_state(self):
+    @transform.transform_with_state
     def inner():
       w = base.get_state("w", [], init=jnp.zeros)
       w += 1
       base.set_state("w", w)
       return w
-
-    inner = transform.transform_with_state(inner)
 
     def outer():
       lifted, updater = lift.lift_with_state(inner.init)
@@ -192,6 +191,35 @@ class LiftTest(parameterized.TestCase):
       self.assertEqual(w, expected)
       self.assertEmpty(params)
       self.assertEqual(state, {"lifted/~": {"w": expected}})
+
+  def test_lift_with_state_nested(self):
+    @transform.transform_with_state
+    def inner():
+      w = base.get_state("w", [], init=jnp.zeros)
+      w += 1
+      base.set_state("w", w)
+      return w
+
+    class Outer(module.Module):
+
+      def __call__(self):
+        lifted, updater = lift.lift_with_state(inner.init)
+        params, state = lifted(None)
+        out, state = inner.apply(params, state, None)
+        updater.update(state)
+        return out, state
+
+    outer = transform.transform_with_state(lambda: Outer()())  # pylint: disable=unnecessary-lambda
+    params, state = outer.init(None)
+    self.assertEmpty(params)
+    self.assertEqual(jax.tree_map(int, state), {"outer/lifted/~": {"w": 0}})
+
+    for expected in (1, 2, 3):
+      (w, inner_state), state = outer.apply(params, state, None)
+      self.assertEqual(jax.tree_map(int, inner_state), {"~": {"w": expected}})
+      self.assertEqual(w, expected)
+      self.assertEmpty(params)
+      self.assertEqual(state, {"outer/lifted/~": {"w": expected}})
 
   @parameterized.parameters(IGNORE, UPDATE)
   def test_updater_used_in_different_inner_transform(self, updater_fn):

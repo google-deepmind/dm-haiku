@@ -297,5 +297,7 @@ def lift_with_state(
   """
   base.assert_context("experimental.lift_with_state")
   params_and_state_fn = _to_callable(LiftingModule(init_fn, name=name))
+  if base.current_module():
+    name = f"{base.current_bundle_name()}/{name}"
   updater = LiftWithStateUpdater(name)
   return params_and_state_fn, updater

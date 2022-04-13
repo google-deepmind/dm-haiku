@@ -18,14 +18,13 @@ from unittest import mock
 
 from absl.testing import absltest
 from absl.testing import parameterized
+from haiku._src import config
 from haiku._src import dot
 from haiku._src import module
 from haiku._src import stateful
 from haiku._src import test_utils
 import jax
 import jax.numpy as jnp
-
-module.profiler_name_scopes(False)
 
 
 class DotTest(parameterized.TestCase):
@@ -79,15 +78,11 @@ class DotTest(parameterized.TestCase):
   @test_utils.transform_and_run
   def test_no_namescopes_inside_abstract_dot(self):
     mod = AddModule()
-    current_setting = module.modules_with_named_call
     a = b = jax.ShapeDtypeStruct(shape=tuple(), dtype=jnp.float32)
-    try:
-      module.profiler_name_scopes(enabled=True)
+    with config.context(profiler_name_scopes=True):
       with mock.patch.object(stateful, "named_call") as mock_f:
         _ = dot.abstract_to_dot(mod)(a, b)
         mock_f.assert_not_called()
-    finally:
-      module.profiler_name_scopes(enabled=current_setting)
 
   def test_call(self):
     def my_function(x):
@@ -113,24 +108,16 @@ class DotTest(parameterized.TestCase):
   @test_utils.transform_and_run
   def test_no_namescopes_inside_dot(self):
     mod = AddModule()
-    current_setting = module.modules_with_named_call
-    try:
-      module.profiler_name_scopes(enabled=True)
+    with config.context(profiler_name_scopes=True):
       with mock.patch.object(stateful, "named_call") as mock_f:
         _ = dot.to_dot(mod)(1, 1)
         mock_f.assert_not_called()
-    finally:
-      module.profiler_name_scopes(enabled=current_setting)
 
   @parameterized.parameters({True, False})
   def test_module_namescope_setting_unchanged(self, flag):
-    current_setting = module.modules_with_named_call
-    try:
-      module.profiler_name_scopes(enabled=flag)
+    with config.context(profiler_name_scopes=flag):
       _ = dot.to_dot(lambda x: x)(jnp.ones((1, 1)))
-      self.assertEqual(module.modules_with_named_call, flag)
-    finally:
-      module.profiler_name_scopes(enabled=current_setting)
+      self.assertEqual(config.get_config().profiler_name_scopes, flag)
 
 
 class AddModule(module.Module):

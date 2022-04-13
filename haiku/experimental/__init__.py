@@ -22,6 +22,7 @@ from haiku._src.base import custom_getter
 from haiku._src.base import GetterContext
 from haiku._src.config import check_jax_usage
 from haiku._src.config import module_auto_repr
+from haiku._src.config import profiler_name_scopes
 from haiku._src.dot import abstract_to_dot
 from haiku._src.dot import to_dot
 from haiku._src.layer_stack import layer_stack
@@ -32,7 +33,6 @@ from haiku._src.module import intercept_methods
 from haiku._src.module import MethodContext
 from haiku._src.module import name_like
 from haiku._src.module import name_scope
-from haiku._src.module import profiler_name_scopes
 from haiku._src.random import optimize_rng_use
 from haiku._src.stateful import named_call
 from haiku._src.summarise import ArraySpec

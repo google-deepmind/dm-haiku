@@ -40,24 +40,6 @@ ThreadLocalStack = data_structures.ThreadLocalStack
 T = TypeVar("T")
 _APPLY_NAME_SCOPE = "__haiku_name_scope"
 _CUSTOM_NAME = "__haiku_custom_name"
-modules_with_named_call = False
-
-
-def profiler_name_scopes(enabled=True):
-  """Enable/disable profiler name_scopes on all haiku module methods.
-
-  Note: currently only enables for ``__call__``. See: :func:`named_call` if you
-  want to annotate other methods explicitly.
-
-  Args:
-    enabled: Whether to enable name scopes or not.
-  Returns:
-    The previous value of the name_scopes setting.
-  """
-  global modules_with_named_call
-  previously_enabled = modules_with_named_call
-  modules_with_named_call = enabled
-  return previously_enabled
 
 
 # We subclass `type(Protocol)` in order to avoid metaclass conflicts when
@@ -426,7 +408,8 @@ def wrap_method(method_name, unbound_method):
       # with an assumption that __call__ is `f(*) -> Tree[Array]`. Longer term
       # we may want to split static and dynamic results in named call to support
       # other methods.
-      if modules_with_named_call and module_name and method_name == "__call__":
+      cfg = config.get_config()
+      if cfg.profiler_name_scopes and module_name and method_name == "__call__":
         local_name = module_name.split("/")[-1]
         f = stateful.named_call(f, name=local_name)
 

@@ -25,12 +25,14 @@ class Config:
   check_jax_usage: bool
   module_auto_repr: bool
   restore_flatmap: bool
+  profiler_name_scopes: bool
 
   @classmethod
   def default(cls) -> "Config":
     return Config(check_jax_usage=False,
                   module_auto_repr=True,
-                  restore_flatmap=False)
+                  restore_flatmap=False,
+                  profiler_name_scopes=False)
 
 
 def write(config, **overrides):
@@ -47,6 +49,7 @@ def context(
     check_jax_usage: Optional[bool] = None,
     module_auto_repr: Optional[bool] = None,
     restore_flatmap: Optional[bool] = None,
+    profiler_name_scopes: Optional[bool] = None,
 ):
   """Context manager for setting config options.
 
@@ -65,6 +68,8 @@ def context(
     restore_flatmap: Whether legacy checkpoints should be restored in the old
       FlatMap datatype (as returned by ``to_immtable_dict``), default is to
       restore these as plain dicts.
+    profiler_name_scopes: Enable/disable profiler name_scopes on all Haiku
+      module methods.
 
   Returns:
     Context manager that applies the given configs while active.
@@ -79,6 +84,7 @@ def set(
     check_jax_usage: Optional[bool] = None,
     module_auto_repr: Optional[bool] = None,
     restore_flatmap: Optional[bool] = None,
+    profiler_name_scopes: Optional[bool] = None,
 ):
   """Sets the given config option(s).
 
@@ -97,6 +103,8 @@ def set(
     restore_flatmap: Whether legacy checkpoints should be restored in the old
       FlatMap datatype (as returned by ``to_immtable_dict``), default is to
       restore these as plain dicts.
+    profiler_name_scopes: Enable/disable profiler name_scopes on all Haiku
+      module methods.
   """
   write(get_config(), **filter_none_values(locals()))
 # pylint: enable=redefined-outer-name,unused-argument,redefined-builtin
@@ -240,3 +248,19 @@ def check_jax_usage(enabled: bool = True) -> bool:
   config = get_config()
   previous_value, config.check_jax_usage = config.check_jax_usage, enabled
   return previous_value
+
+
+def profiler_name_scopes(enabled: bool = True) -> bool:
+  """Enable/disable profiler name_scopes on all haiku module methods.
+
+  Note: currently only enables for ``__call__``. See: :func:`named_call` if you
+  want to annotate other methods explicitly.
+
+  Args:
+    enabled: Whether to enable name scopes or not.
+  Returns:
+    The previous value of the name_scopes setting.
+  """
+  config = get_config()
+  before, config.profiler_name_scopes = config.profiler_name_scopes, enabled
+  return before

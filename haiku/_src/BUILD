@@ -301,6 +301,7 @@ hk_py_library(
     name = "dot",
     srcs = ["dot.py"],
     deps = [
+        ":config",
         ":data_structures",
         ":module",
         ":utils",
@@ -313,6 +314,7 @@ hk_py_test(
     name = "dot_test",
     srcs = ["dot_test.py"],
     deps = [
+        ":config",
         ":dot",
         ":module",
         ":stateful",
@@ -320,7 +322,6 @@ hk_py_test(
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
-        # pip: mock
     ],
 )
 
@@ -533,6 +534,7 @@ hk_py_test(
     name = "jaxpr_info_test",
     srcs = ["jaxpr_info_test.py"],
     deps = [
+        ":config",
         ":conv",
         ":jaxpr_info",
         ":module",

@@ -51,7 +51,7 @@ class RMSNorm(hk.Module):
       eps: float = 1e-5,
       scale_init: Optional[hk.initializers.Initializer] = None,
       name: Optional[str] = None):
-    """Constructs a RMSNorm modulke.
+    """Constructs a RMSNorm module.
 
     Args:
       axis: Integer, list of integers, or slice indicating which axes to
@@ -81,7 +81,7 @@ class RMSNorm(hk.Module):
       inputs: An array, where the data format is ``[N, ..., C]``.
 
     Returns:
-      The normalized array, of the same shape as the inputs..
+      The normalized array, of the same shape as the inputs.
     """
     axis = self.axis
     if isinstance(axis, slice):

@@ -203,6 +203,8 @@ Type Hints
     TransformedWithState
     MultiTransformed
     MultiTransformedWithState
+    ModuleProtocol
+    SupportsCall
 
 LSTMState
 ~~~~~~~~~
@@ -238,6 +240,16 @@ MultiTransformedWithState
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: MultiTransformedWithState
+
+ModuleProtocol
+~~~~~~~~~~~~~~
+
+.. autoclass:: ModuleProtocol
+
+SupportsCall
+~~~~~~~~~~~~
+
+.. autoclass:: SupportsCall
 
 Common Modules
 ==============

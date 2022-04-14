@@ -276,3 +276,17 @@ hk_py_test(
         # pip: tensorflow
     ],
 )
+
+hk_py_test(
+    name = "typing_test",
+    srcs = ["typing_test.py"],
+    gpu = False,
+    tpu = False,
+    deps = [
+        ":descriptors",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        "//haiku",
+        "//haiku/_src:test_utils",
+    ],
+)

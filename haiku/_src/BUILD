@@ -816,6 +816,20 @@ hk_py_library(
     srcs = ["typing.py"],
     deps = [
         # pip: jax
+        # pip: typing_extensions
+    ],
+)
+
+hk_py_test(
+    name = "typing_test",
+    srcs = ["typing_test.py"],
+    deps = [
+        ":module",
+        ":test_utils",
+        ":typing",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        # pip: typing_extensions
     ],
 )
 

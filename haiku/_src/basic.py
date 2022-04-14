@@ -21,6 +21,7 @@ from typing import Any, Callable, Iterable, Optional, Type
 from haiku._src import base
 from haiku._src import initializers
 from haiku._src import module
+from haiku._src import typing
 from haiku._src.typing import PRNGKey
 import jax
 from jax import lax
@@ -32,7 +33,8 @@ hk = types.ModuleType("haiku")
 hk.get_parameter = base.get_parameter
 hk.initializers = initializers
 hk.Module = module.Module
-del base, module, initializers
+hk.SupportsCall = typing.SupportsCall
+del base, module, initializers, typing
 
 
 # Utility and activation functions.
@@ -327,6 +329,7 @@ def dropout(rng: PRNGKey, rate: float, x: jnp.ndarray) -> jnp.ndarray:
   return keep * x / keep_rate
 
 
+# TODO(tomhennigan): Fix internal tests and replace with `hk.SupportsCall`.
 class CallableModule(hk.Module):
 
   def __call__(self, *args, **kwargs) -> Any:

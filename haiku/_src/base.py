@@ -32,6 +32,7 @@ from haiku._src.typing import (  # pylint: disable=g-multiple-import
     PRNGKey,
 )
 import jax
+from jax import config as jax_config
 from jax import core as jax_core
 import jax.numpy as jnp
 
@@ -632,8 +633,16 @@ def assert_is_prng_key(key: PRNGKey):
   if not hasattr(key, "shape"):
     raise type_error
   if hasattr(key, "dtype"):
+    config_hint = ""
     if hasattr(jax.random, "default_prng_impl"):
-      expected_shapes = (jax.random.default_prng_impl().key_shape,)
+      default_impl = jax.random.default_prng_impl()
+      expected_shapes = (default_impl.key_shape,)
+      if default_impl.key_shape != (2,):
+        # Default PRNG impl is set to something different from threefry.
+        config_hint = ("\nHint: jax_default_prng_impl has been set to "
+                       f"'{jax_config.jax_default_prng_impl}', the shape "
+                       "mismatch might be because a jax.random.PRNGKey was "
+                       "created before this flag was set.")
     else:
       # Check for the shapes of the known PRNG impls (threefry and RBG)
       expected_shapes = ((2,), (4,))
@@ -642,7 +651,7 @@ def assert_is_prng_key(key: PRNGKey):
       raise ValueError(
           "Provided key did not have expected shape and/or dtype: "
           f"expected=(shape={expected_shapes_str}, dtype=uint32), "
-          f"actual=(shape={key.shape}, dtype={key.dtype})")
+          f"actual=(shape={key.shape}, dtype={key.dtype}){config_hint}")
 
 
 PRNGSequenceState = Tuple[PRNGKey, Iterable[PRNGKey]]

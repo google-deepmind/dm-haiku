@@ -17,8 +17,8 @@ imagesize==1.2.0
 ipykernel==5.3.4
 ipython==7.16.1
 ipython-genutils==0.2.0
-jax==0.2.28
-jaxlib==0.1.76
+jax==0.3.5
+jaxlib==0.3.5
 jedi==0.18.0
 Jinja2==2.11.3
 jmp==0.0.2

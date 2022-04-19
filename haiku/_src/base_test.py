@@ -22,9 +22,11 @@ from absl.testing import parameterized
 from haiku._src import base
 from haiku._src import test_utils
 import jax
+from jax.config import config
 import jax.numpy as jnp
 import numpy as np
 
+config.update("jax_experimental_name_stack", False)
 # TODO(tomhennigan) Improve test coverage.
 
 custom_state_creator = functools.partial(

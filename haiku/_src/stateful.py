@@ -21,8 +21,10 @@ from typing import Any, Callable, Mapping, MutableMapping, Optional, Tuple, Type
 
 from haiku._src import base
 import jax
+from jax.config import config
 import jax.numpy as jnp
 
+config.update("jax_experimental_name_stack", False)
 InternalState = collections.namedtuple("InternalState", "params,state,rng")
 Bundle = Mapping[str, Mapping[str, Any]]
 T = TypeVar("T")

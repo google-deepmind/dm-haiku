@@ -34,7 +34,15 @@ del base, module, initializers
 
 class EmbedLookupStyle(enum.Enum):
   """How to return the embedding matrices given IDs."""
+
+  # Looks up embeddings using a gather `embeddings[ids]`. This is significantly
+  # faster on GPU, and faster on TPU for large values of `vocab_size` (> 1k at
+  # HIGHEST precision, > 2-3k at DEFAULT precision).
   ARRAY_INDEX = 1
+
+  # Looks up embeddings using `dot(embeddings, one_hot(ids))`. This is usually
+  # faster on TPU for smaller values of `vocab_size` (< 1k at HIGHEST precision,
+  # < 2-3k at DEFAULT precision).
   ONE_HOT = 2
 
 # Needed for members to show in sphinx docs.
@@ -56,6 +64,7 @@ class Embed(hk.Module):
       w_init: Optional[hk.initializers.Initializer] = None,
       lookup_style: Union[str, hk.EmbedLookupStyle] = "ARRAY_INDEX",
       name: Optional[str] = None,
+      precision: jax.lax.Precision = jax.lax.Precision.HIGHEST,
   ):
     """Constructs an Embed module.
 
@@ -71,8 +80,8 @@ class Embed(hk.Module):
         for the embedding matrix and neither ``vocab_size`` or ``embed_dim``
         need be given. If they are given, their values are checked to be
         consistent with the dimensions of ``embedding_matrix``.
-      w_init: An initializer for the embeddings matrix. As a default,
-        embeddings are initialized via a truncated normal distribution.
+      w_init: An initializer for the embeddings matrix. As a default, embeddings
+        are initialized via a truncated normal distribution.
       lookup_style: One of the enum values of :class:`EmbedLookupStyle`
         determining how to access the value of the embeddings given an ID.
         Regardless the input should be a dense array of integer values
@@ -82,6 +91,10 @@ class Embed(hk.Module):
         indexing. This value is only the default for the module, and at any
         given invocation can be overridden in :meth:`__call__`.
       name: Optional name for this module.
+      precision: Only used when lookup_style is ONE_HOT. The precision to use
+        for the dot-product between the one-hot-encoded inputs and the embedding
+        vectors. It is possible to attain a ~2x speedup on TPU using
+        `jax.lax.Precision.DEFAULT` at the cost of a slightly lower precision.
 
     Raises:
       ValueError: If none of ``embed_dim``, ``embedding_matrix`` and
@@ -114,6 +127,7 @@ class Embed(hk.Module):
     self.vocab_size = vocab_size
     self.embed_dim = embed_dim
     self.lookup_style = lookup_style
+    self.precision = precision
     self.w_init = w_init or hk.initializers.TruncatedNormal()
 
   @property
@@ -125,6 +139,7 @@ class Embed(hk.Module):
       self,
       ids: jnp.ndarray,
       lookup_style: Optional[Union[str, hk.EmbedLookupStyle]] = None,
+      precision: Optional[jax.lax.Precision] = None,
   ) -> jnp.ndarray:
     r"""Lookup embeddings.
 
@@ -134,6 +149,7 @@ class Embed(hk.Module):
     Args:
       ids: integer array.
       lookup_style: Overrides the ``lookup_style`` given in the constructor.
+      precision: Overrides the ``precision`` given in the constructor.
 
     Returns:
       Tensor of ``ids.shape + [embedding_dim]``.
@@ -163,8 +179,9 @@ class Embed(hk.Module):
       return jnp.asarray(self.embeddings)[(ids,)]
 
     elif lookup_style == hk.EmbedLookupStyle.ONE_HOT:
-      one_hot_ids = jax.nn.one_hot(ids, self.vocab_size)[..., None]
-      return (self.embeddings * one_hot_ids).sum(axis=-2)
+      one_hot_ids = jax.nn.one_hot(ids, self.vocab_size)
+      precision = self.precision if precision is None else precision
+      return jnp.dot(one_hot_ids, self.embeddings, precision=precision)
 
     else:
       raise NotImplementedError(f"{lookup_style} is not supported by hk.Embed.")

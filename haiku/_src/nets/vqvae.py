@@ -68,6 +68,7 @@ class VectorQuantizer(hk.Module):
       commitment_cost: float,
       dtype: Any = jnp.float32,
       name: Optional[str] = None,
+      cross_replica_axis: Optional[str] = None,
   ):
     """Initializes a VQ-VAE module.
 
@@ -79,11 +80,16 @@ class VectorQuantizer(hk.Module):
         (see equation 4 in the paper - this variable is Beta).
       dtype: dtype for the embeddings variable, defaults to ``float32``.
       name: name of the module.
+      cross_replica_axis: If not ``None``, it should be a string representing
+        the axis name over which this module is being run within a
+        :func:`jax.pmap`. Supplying this argument means that perplexity is
+        calculated across all replicas on that axis.
     """
     super().__init__(name=name)
     self.embedding_dim = embedding_dim
     self.num_embeddings = num_embeddings
     self.commitment_cost = commitment_cost
+    self.cross_replica_axis = cross_replica_axis
 
     self._embedding_shape = [embedding_dim, num_embeddings]
     self._embedding_dtype = dtype
@@ -145,6 +151,8 @@ class VectorQuantizer(hk.Module):
     # Straight Through Estimator
     quantized = inputs + jax.lax.stop_gradient(quantized - inputs)
     avg_probs = jnp.mean(encodings, 0)
+    if self.cross_replica_axis:
+      avg_probs = jax.lax.pmean(avg_probs, axis_name=self.cross_replica_axis)
     perplexity = jnp.exp(-jnp.sum(avg_probs * jnp.log(avg_probs + 1e-10)))
 
     return {

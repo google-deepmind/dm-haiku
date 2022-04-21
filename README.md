@@ -284,7 +284,7 @@ params = forward.init(next(key), x)
 # values from the `params` that are passed as the first argument.  Note that
 # models transformed using `hk.transform(f)` must be called with an additional
 # `rng` argument: `forward.apply(params, rng, x)`. Use
-# `hk.without_apply_rng(hk.transform(f))` is this is undesirable.
+# `hk.without_apply_rng(hk.transform(f))` if this is undesirable.
 y = forward.apply(params, None, x)
 ```
 

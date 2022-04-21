@@ -756,6 +756,7 @@ hk_py_library(
         ":base",
         ":initializers",
         ":module",
+        ":utils",
         # pip: jax
     ],
 )

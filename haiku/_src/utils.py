@@ -16,6 +16,7 @@
 
 import collections
 import decimal
+import enum
 import inspect
 import pprint
 import re
@@ -282,3 +283,38 @@ def format_bytes(num_bytes) -> str:
     num_bytes /= one_thousand
     suffix = suffixes.pop(0)
   return f"{num_bytes:.2f} {suffix}"
+
+
+def unindent_doc(doc):
+  """Removes leading indentation from a Python docstring."""
+  doc = doc.strip()
+  lines = [l for l in doc.split("\n")]
+  spaces = ""
+  for line in lines:
+    # Find the first indented line, assume this is the leading indent for any
+    # other lines with whitespace at the start.
+    if line and line[0] == " ":
+      spaces = " " * (len(line) - len(line.lstrip()))
+      break
+  if spaces:
+    lines = [(l[len(spaces):] if l.startswith(spaces) else l) for l in lines]
+  return "\n".join(lines).strip()
+
+
+class DocEnum(enum.Enum):
+  """An enum with documented members.
+
+  >>> class MyEnum(DocEnum):
+  ...   A = 0, '''
+  ...   A is a really useful constant.
+  ...   You might want to use it for reasons.
+  ...   '''
+  ...
+  ...   B = 1, 'B is pretty useful too.'
+  """
+
+  def __new__(cls, value, doc):
+    self = object.__new__(cls)
+    self._value_ = value
+    self.__doc__ = unindent_doc(doc)
+    return self

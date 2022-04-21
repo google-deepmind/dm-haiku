@@ -14,13 +14,13 @@
 # ==============================================================================
 """Modules for performing embedding lookups in Haiku."""
 
-import enum
 import types
 from typing import Optional, Union
 
 from haiku._src import base
 from haiku._src import initializers
 from haiku._src import module
+from haiku._src import utils
 import jax
 import jax.numpy as jnp
 
@@ -32,22 +32,22 @@ hk.initializers = initializers
 del base, module, initializers
 
 
-class EmbedLookupStyle(enum.Enum):
+class EmbedLookupStyle(utils.DocEnum):
   """How to return the embedding matrices given IDs."""
 
-  # Looks up embeddings using a gather `embeddings[ids]`. This is significantly
-  # faster on GPU, and faster on TPU for large values of `vocab_size` (> 1k at
-  # HIGHEST precision, > 2-3k at DEFAULT precision).
-  ARRAY_INDEX = 1
+  ARRAY_INDEX = 1, """
+  Looks up embeddings using a gather ``embeddings[ids]``.
 
-  # Looks up embeddings using `dot(embeddings, one_hot(ids))`. This is usually
-  # faster on TPU for smaller values of `vocab_size` (< 1k at HIGHEST precision,
-  # < 2-3k at DEFAULT precision).
-  ONE_HOT = 2
+  This is significantly faster on GPU, and faster on TPU for large values of
+  ``vocab_size`` (> 1k at HIGHEST precision, > 2-3k at DEFAULT precision).
+  """
 
-# Needed for members to show in sphinx docs.
-for style in EmbedLookupStyle:
-  style.__doc__ = style.name
+  ONE_HOT = 2, """
+  Looks up embeddings using ``dot(embeddings, one_hot(ids))``.
+
+  This is usually faster on TPU for smaller values of ``vocab_size`` (< 1k at
+  ``HIGHEST`` precision, < 2-3k at ``DEFAULT`` precision).
+  """
 
 
 hk.EmbedLookupStyle = EmbedLookupStyle

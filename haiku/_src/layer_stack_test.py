@@ -233,7 +233,7 @@ class LayerStackTest(parameterized.TestCase):
 
     # Should be roughly N(0, sqrt(n))
     cdf = stats.norm(scale=np.sqrt(n)).cdf
-    _, p = stats.kstest(values, cdf)
+    _, p = stats.kstest(values, cdf)  # pytype: disable=attribute-error
     self.assertLess(p, 0.1)
 
   def test_threading(self):

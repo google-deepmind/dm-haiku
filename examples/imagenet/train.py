@@ -184,7 +184,7 @@ def train_step(
   scalars = {'train_loss': loss, 'loss_scale': loss_scale.loss_scale}
   if FLAGS.mp_skip_nonfinite:
     scalars['grads_finite'] = grads_finite
-  state, scalars = jmp.cast_to_full((state, scalars))
+  new_state, scalars = jmp.cast_to_full((new_state, scalars))
   scalars = jax.lax.pmean(scalars, axis_name='i')
   train_state = TrainState(new_params, new_state, new_opt_state, loss_scale)
   return train_state, scalars

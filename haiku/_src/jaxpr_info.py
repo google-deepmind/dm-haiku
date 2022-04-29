@@ -136,9 +136,13 @@ def make_model_info(
 
   def make_module(*args, **kwargs):
     old_limit = sys.getrecursionlimit()
+    prev = jax.config.jax_experimental_name_stack
+
     try:
       # Increase recursion limit as graphs may be very deep
       sys.setrecursionlimit(int(10e3))
+      # TODO(lenamartens): support new name_stack implementation.
+      jax.config.update('jax_experimental_name_stack', False)
 
       # Compute flops for all expressions.
       module = Module(name=name)
@@ -160,6 +164,7 @@ def make_model_info(
             _add_param_counts(expr.submodule, expr.submodule.name, by_name)
     finally:
       sys.setrecursionlimit(old_limit)
+      jax.config.update('jax_experimental_name_stack', prev)
     return module
 
   return make_module

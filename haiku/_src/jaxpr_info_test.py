@@ -40,10 +40,14 @@ class JaxprInfoTest(absltest.TestCase):
   def setUp(self):
     super().setUp()
     self.prev_profiler_name_scopes = config.profiler_name_scopes(enabled=True)
+    self.prev_experimental_namestack = jax.config.jax_experimental_name_stack
+    jax.config.update('jax_experimental_name_stack', True)
 
   def tearDown(self):
     super().tearDown()
     config.profiler_name_scopes(self.prev_profiler_name_scopes)
+    jax.config.update('jax_experimental_name_stack',
+                      self.prev_experimental_namestack)
 
   def test_simple_expression(self):
 

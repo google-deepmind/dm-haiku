@@ -39,14 +39,12 @@ del module, data_structures, transform
 def pack_into_dict(src: hk.Params,
                    dst: MutableMapping[str, Any],
                    prefix: str,
-                   state: bool = False):
+                   state: bool = False,
+                   check_param_reuse: bool = True):
   """Puts items from src into dst, with an added prefix."""
   for key, value in src.items():
-    if prefix:
-      new_key = f"{prefix}/{key}"
-    else:
-      new_key = key
-    if new_key in dst:
+    new_key = f"{prefix}/{key}" if prefix else key
+    if check_param_reuse and new_key in dst:
       raise ValueError(
           f"Key '{new_key}' already exists in the destination params. To "
           "prevent accidental parameter re-use during lift, you can't re-use a "
@@ -81,13 +79,18 @@ def add_state_to_init_fn(
 class LiftingModule(hk.Module):
   """See :func:`lift` or :func:`lift_with_state`."""
 
-  def __init__(self, init_fn, transparent=False, name="lifted"):
+  def __init__(self,
+               init_fn,
+               transparent=False,
+               allow_reuse=False,
+               name="lifted"):
     super().__init__(name=name)
     self._init_fn = init_fn
     if transparent:
       self._prefix_name = "/".join(self.module_name.split("/")[:-1])
     else:
       self._prefix_name = self.module_name
+    self._allow_reuse = allow_reuse
 
   def __call__(self, *args, **kwargs):
     frame = base.current_frame()
@@ -96,8 +99,18 @@ class LiftingModule(hk.Module):
     if hk.running_init():
       inner_params, inner_state = self._init_fn(*args, **kwargs)
       # Lift parameters into this transform's params_dict.
-      pack_into_dict(inner_params, outer_params, self._prefix_name)
-      pack_into_dict(inner_state, outer_state, self._prefix_name, state=True)
+      check_param_reuse = not self._allow_reuse
+      pack_into_dict(
+          inner_params,
+          outer_params,
+          self._prefix_name,
+          check_param_reuse=check_param_reuse)
+      pack_into_dict(
+          inner_state,
+          outer_state,
+          self._prefix_name,
+          state=True,
+          check_param_reuse=check_param_reuse)
       return inner_params, inner_state
     else:
       if self._prefix_name:
@@ -114,6 +127,8 @@ class LiftingModule(hk.Module):
 
 def lift(
     init_fn: Callable[..., hk.Params],
+    *,
+    allow_reuse: bool = False,
     name: str = "lifted",
 ) -> Callable[..., hk.Params]:
   r"""Registers parameters from an inner init function in an outer transform.
@@ -135,8 +150,9 @@ def lift(
   During ``apply``, the returned callable will instead pull the relevant
   parameters from the outer transform's dictionaries.
 
-  The user must ensure that the given ``init`` does not accidentally catch
-  modules from an outer :func:`transform` via functional closure.
+  By default, users must ensure that the given ``init`` does not accidentally
+  catch modules from an outer :func:`transform` via functional
+  closure. If this behavior is desirable, set ``allow_reuse`` to ``True``.
 
   Example:
 
@@ -153,6 +169,9 @@ def lift(
 
   Args:
     init_fn: The ``init`` function from an :class:`Transformed`\ .
+    allow_reuse: Allows lifted parameters and state to be reused from the
+      outer :func:`transform`. This can be desirable when using ``lift`` within
+      control flow (e.g. ``hk.scan``).
     name: A string name to prefix parameters with.
 
   Returns:
@@ -162,19 +181,22 @@ def lift(
   """
   base.assert_context("lift")
   init_fn = add_state_to_init_fn(init_fn)
-  params_and_state_fn, updater = lift_with_state(init_fn, name)
+  params_and_state_fn, updater = lift_with_state(
+      init_fn, allow_reuse=allow_reuse, name=name)
   updater.ignore_update()
   return lambda *a, **k: params_and_state_fn(*a, **k)[0]
 
 
 def transparent_lift(
-    init_fn: Callable[..., hk.Params]
-) -> Callable[..., hk.Params]:
+    init_fn: Callable[..., hk.Params],
+    *,
+    allow_reuse: bool = False) -> Callable[..., hk.Params]:
   """Similar to `lift` except no additional scope is added to the parameters."""
 
   base.assert_context("lift")
   init_fn = add_state_to_init_fn(init_fn)
-  lifted = LiftingModule(init_fn, transparent=True)
+  lifted = LiftingModule(
+      init_fn, transparent=True, allow_reuse=allow_reuse)
   # NOTE: Using lambda to avoid exposing module object.
   return lambda *a, **k: lifted(*a, **k)[0]  # pylint: disable=unnecessary-lambda
 
@@ -248,6 +270,8 @@ def _to_callable(f: Callable[..., T]) -> Callable[..., T]:
 
 def lift_with_state(
     init_fn: Callable[..., Tuple[hk.Params, hk.State]],
+    *,
+    allow_reuse: bool = False,
     name: str = "lifted",
 ) -> Tuple[Callable[..., Tuple[hk.Params, hk.State]], LiftWithStateUpdater]:
   r"""Registers params and state from an init function in an outer transform.
@@ -268,8 +292,9 @@ def lift_with_state(
   Must be called inside :func:`transform_with_state`\ , and be passed the
   ``init`` member of a :class:`TransformedWithState`\ .
 
-  The user must ensure that the given ``init`` does not accidentally catch
-  modules from an outer :func:`transform_with_state` via functional closure.
+  By default, users must ensure that the given ``init`` does not accidentally
+  catch modules from an outer :func:`transform_with_state` via functional
+  closure. If this behavior is desirable, set ``allow_reuse`` to ``True``.
 
   Example:
 
@@ -286,6 +311,9 @@ def lift_with_state(
 
   Args:
     init_fn: The ``init`` function from an :class:`TransformedWithState`\ .
+    allow_reuse: Allows lifted parameters and state to be reused from the
+      outer :func:`transform_with_state`. This can be desirable when using
+      ``lift_with_state`` within control flow (e.g. ``hk.scan``).
     name: A string name to prefix parameters with.
 
   Returns:
@@ -296,7 +324,8 @@ def lift_with_state(
     outer context with new state after ``apply`` is called.
   """
   base.assert_context("experimental.lift_with_state")
-  params_and_state_fn = _to_callable(LiftingModule(init_fn, name=name))
+  params_and_state_fn = _to_callable(
+      LiftingModule(init_fn, allow_reuse=allow_reuse, name=name))
   if base.current_module():
     name = f"{base.current_bundle_name()}/{name}"
   updater = LiftWithStateUpdater(name)

@@ -21,6 +21,7 @@ from haiku._src import config
 from haiku._src import lift
 from haiku._src import module
 from haiku._src import multi_transform
+from haiku._src import stateful
 from haiku._src import test_utils
 from haiku._src import transform
 import jax
@@ -109,6 +110,47 @@ class LiftTest(parameterized.TestCase):
 
     out = outer.apply(outer_params, apply_key, data)
     np.testing.assert_equal(out, 2 * np.ones((3, 2)))
+
+  def test_lift_with_scan(self):
+
+    def inner_fn(x):
+      x *= base.get_parameter("w", shape=x.shape, init=jnp.zeros)
+      return x
+
+    class Outer(module.Module):
+
+      def __init__(self, allow_reuse):
+        super().__init__()
+        self._allow_reuse = allow_reuse
+
+      def __call__(self, carry, x):
+        x += base.get_parameter("w", shape=[], init=jnp.zeros)
+
+        inner = transform.transform(inner_fn)
+        keys = base.next_rng_key() if transform.running_init() else None
+        params = lift.lift(
+            inner.init, allow_reuse=self._allow_reuse)(keys, x)
+        return carry, inner.apply(params, None, x)
+
+    def model(x, *, allow_reuse):
+      return stateful.scan(Outer(allow_reuse), (), x)
+
+    rng = jax.random.PRNGKey(42)
+    data = np.zeros((4, 3, 2))
+
+    with self.subTest(name="allow_reuse"):
+      init, apply = transform.transform(
+          lambda x: model(x, allow_reuse=True))
+
+      params = init(rng, data)
+      _, out = apply(params, None, data)
+      np.testing.assert_equal(out, np.zeros_like(data))
+
+    with self.subTest(name="disallow_reuse"):
+      init, _ = transform.transform(lambda x: model(x, allow_reuse=False))
+
+      with self.assertRaisesRegex(ValueError, "Key '.*' already exists"):
+        _ = init(rng, data)
 
   @parameterized.parameters((lift.lift, lambda: None),
                             (lift.lift_with_state, lambda: (None, None)))

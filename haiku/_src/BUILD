@@ -374,6 +374,7 @@ hk_py_test(
         ":lift",
         ":module",
         ":multi_transform",
+        ":stateful",
         ":test_utils",
         ":transform",
         # pip: absl/testing:absltest

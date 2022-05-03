@@ -266,6 +266,22 @@ class ModuleTest(parameterized.TestCase):
     w = f.apply(params, None)
     self.assertEqual(w, 0)
 
+  @test_utils.transform_and_run
+  def test_multiple_inheritance(self):
+    class ObjectWithField():
+
+      def __init__(self, field):
+        self._field = field
+
+    class ModuleWithMultipleInheritance(module.Module, ObjectWithField):
+      pass
+
+    with self.assertRaisesWithLiteralMatch(
+        TypeError,
+        r"__init__() missing 1 required positional argument: 'field'"
+    ):
+      ModuleWithMultipleInheritance()  # pylint: disable=no-value-for-parameter
+
   def test_transparent(self):
     init_fn, _ = transform.transform(lambda: TransparentModule()())  # pylint: disable=unnecessary-lambda
     params = init_fn(None)

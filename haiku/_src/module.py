@@ -536,6 +536,7 @@ class Module(object, metaclass=ModuleMetaclass):
     self._submodules = set()  # type: Set[str]
     self.module_name = unique_and_canonical_name(name)
     self.name = self.module_name.split("/")[-1]
+    super().__init__()
 
   # Support @dataclass annotated modules.
   __post_init__ = __init__

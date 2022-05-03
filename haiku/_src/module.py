@@ -432,10 +432,6 @@ def wrap_method(method_name, unbound_method):
   return wrapped
 
 
-_VALID_IDENTIFIER_R = re.compile(r"^[a-zA-Z_]([a-zA-Z0-9_])*$")
-valid_identifier = lambda name: bool(_VALID_IDENTIFIER_R.match(name))
-
-
 def unique_and_canonical_name(name: str) -> str:
   """Returns a canonical name for the given name."""
   frame = base.current_frame()
@@ -529,7 +525,7 @@ class Module(object, metaclass=ModuleMetaclass):
         name = self.name
       else:
         name = utils.camel_to_snake(type(self).__name__)
-    if not valid_identifier(name):
+    if not str.isidentifier(name):
       raise ValueError(
           "'{}' is not a valid module name (must be a valid Python identifier)"
           .format(name))

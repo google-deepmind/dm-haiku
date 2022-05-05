@@ -37,6 +37,7 @@ py_library(
         "//haiku/_src:depthwise_conv",
         "//haiku/_src:dot",
         "//haiku/_src:embed",
+        "//haiku/_src:eval_shape",
         "//haiku/_src:filtering",
         "//haiku/_src:group_norm",
         "//haiku/_src:initializers",

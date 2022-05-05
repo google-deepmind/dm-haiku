@@ -931,3 +931,29 @@ hk_py_test(
         # pip: jax
     ],
 )
+
+hk_py_library(
+    name = "eval_shape",
+    srcs = ["eval_shape.py"],
+    deps = [
+        ":base",
+        ":basic",
+        ":stateful",
+        # pip: jax
+    ],
+)
+
+hk_py_test(
+    name = "eval_shape_test",
+    srcs = ["eval_shape_test.py"],
+    deps = [
+        ":basic",
+        ":eval_shape",
+        ":stateful",
+        ":test_utils",
+        ":transform",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        # pip: jax
+    ],
+)

@@ -1149,6 +1149,7 @@ Optimizations
     optimize_rng_use
     layer_stack
     module_auto_repr
+    fast_eval_shape
 
 optimize_rng_use
 ~~~~~~~~~~~~~~~~
@@ -1164,6 +1165,11 @@ module_auto_repr
 ~~~~~~~~~~~~~~~~
 
 .. autofunction:: module_auto_repr
+
+fast_eval_shape
+~~~~~~~~~~~~~~~
+
+.. autofunction:: fast_eval_shape
 
 jaxpr_info
 ----------

@@ -13,3 +13,13 @@ hk_py_binary(
         # pip: jax
     ],
 )
+
+hk_py_binary(
+    name = "eval_shape",
+    srcs = ["eval_shape.py"],
+    deps = [
+        # pip: google_benchmark
+        "//haiku",
+        # pip: jax
+    ],
+)

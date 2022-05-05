@@ -315,6 +315,12 @@ def dropout(rng: PRNGKey, rate: float, x: jnp.ndarray) -> jnp.ndarray:
     than what applications require. A work-around is to pass `rate` with a lower
     precision, e.g. using `np.float16(rate)`.
   """
+  return dropout_impl(rng, rate, x)
+
+
+# Separated out to support monkey patching.
+def dropout_impl(rng: PRNGKey, rate: float, x: jnp.ndarray) -> jnp.ndarray:
+  """See dropout."""
   try:
     if rate < 0 or rate >= 1:
       raise ValueError("rate must be in [0, 1).")

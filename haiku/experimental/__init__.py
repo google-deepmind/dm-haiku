@@ -25,6 +25,7 @@ from haiku._src.config import module_auto_repr
 from haiku._src.config import profiler_name_scopes
 from haiku._src.dot import abstract_to_dot
 from haiku._src.dot import to_dot
+from haiku._src.eval_shape import fast_eval_shape
 from haiku._src.layer_stack import layer_stack
 from haiku._src.lift import lift
 from haiku._src.lift import lift_with_state

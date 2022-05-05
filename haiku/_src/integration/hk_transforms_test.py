@@ -227,5 +227,41 @@ class HaikuTransformsTest(parameterized.TestCase):
         f_mapped.apply(params, state, rng, x),
         v_apply(params, state, rng, x))
 
+  @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
+  def test_fast_eval_shape(self, module_fn: ModuleFn, shape, dtype):
+    rng = jax.random.PRNGKey(42)
+    if jnp.issubdtype(dtype, jnp.integer):
+      x = jax.random.randint(rng, shape, 0, np.prod(shape), dtype)
+    else:
+      x = jax.random.uniform(rng, shape, dtype)
+
+    def g(x):
+      return module_fn()(x)
+
+    f = hk.transform_with_state(g)
+
+    init_jax = jax.eval_shape(f.init, rng, x)
+    init_hk = hk.experimental.fast_eval_shape(f.init, rng, x)
+    self.assertEqual(init_jax, init_hk)
+
+    apply_jax = jax.eval_shape(f.apply, *init_jax, rng, x)
+    apply_hk = hk.experimental.fast_eval_shape(f.apply, *init_hk, rng, x)
+    self.assertEqual(apply_jax, apply_hk)
+
+  @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
+  @test_utils.transform_and_run(run_apply=False)
+  def test_fast_eval_shape_inside_transform(self, module_fn: ModuleFn, shape,
+                                            dtype):
+    rng = jax.random.PRNGKey(42)
+    if jnp.issubdtype(dtype, jnp.integer):
+      x = jax.random.randint(rng, shape, 0, np.prod(shape), dtype)
+    else:
+      x = jax.random.uniform(rng, shape, dtype)
+
+    m = module_fn()
+    m_slow = hk.eval_shape(m, x)
+    m_fast = hk.experimental.fast_eval_shape(m, x)
+    self.assertEqual(m_slow, m_fast)
+
 if __name__ == '__main__':
   absltest.main()

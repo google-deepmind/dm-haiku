@@ -471,6 +471,16 @@ def custom_creator(
     Context manager under which the creator is active.
   """
   assert_context("custom_creator")
+  return custom_creator_unsafe(creator, params=params, state=state)
+
+
+def custom_creator_unsafe(
+    creator: Creator,
+    *,
+    params: bool = True,
+    state: bool = False,
+) -> contextlib.AbstractContextManager:  # pylint: disable=g-bare-generic
+  """See custom_creator."""
   stack = contextlib.ExitStack()
   if params:
     stack.enter_context(param_creator_stack(creator))

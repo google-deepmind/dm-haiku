@@ -15,6 +15,7 @@
 """Tests for haiku._src.transform."""
 
 import inspect
+from typing import Mapping
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -24,6 +25,7 @@ from haiku._src import test_utils
 from haiku._src import transform
 import jax
 import jax.numpy as jnp
+import tensorflow as tf
 
 # TODO(tomhennigan) Improve test coverage.
 
@@ -511,6 +513,20 @@ class TransformTest(parameterized.TestCase):
         ValueError,
         r"instead .*jax.jit\(hk.transform\(f\).apply\)"):
       hk_transform(f)
+
+  def test_with_tensorflow_dict_wrapper(self):
+    class Mod(tf.Module):
+
+      def __init__(self):
+        super().__init__()
+        self.x = {}
+
+    # TensorFlow's checkpointing utils replaces dict with _DictWrapper which is
+    # not a Mapping subclass (it does however "quack like a Mapping" so we can
+    # treat it like one).
+    m = Mod().x
+    self.assertNotIsInstance(m, Mapping)
+    self.assertIs(transform.check_mapping("params", m), m)
 
 
 class ObjectWithTransform:

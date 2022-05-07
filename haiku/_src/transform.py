@@ -383,6 +383,11 @@ def check_mapping(name: str, mapping: Optional[T]) -> T:
     # Convert None to empty dict.
     mapping = dict()
   if not isinstance(mapping, Mapping):
+    if type(mapping).__name__ == "_DictWrapper":
+      # TensorFlow's checkpointing infrastructure replaces `dict` instances on
+      # `tf.Module`s with a type that is not a `Mapping` instance.
+      return mapping
+
     raise TypeError(f"{name} argument does not appear valid. It should be a "
                     f"mapping but is of type {type(mapping)}. "
                     "For reference the parameters for apply are "

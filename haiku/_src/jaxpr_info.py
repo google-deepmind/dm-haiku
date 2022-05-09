@@ -31,6 +31,7 @@ Example usage:
 
 """
 import dataclasses
+import itertools
 import logging
 import os
 import sys
@@ -190,9 +191,10 @@ def _format_shape(var):
   return var.aval.str_short().replace('float', 'f')
 
 
-def _mark_seen(seen: Set[Text], var, scope: _ModuleScope):
+def _mark_seen(binder_idx: Dict[jax.core.Var, int], seen: Set[Text],
+               var: jax.core.Var, scope: _ModuleScope) -> bool:
   """Marks a variable as seen. Returns True if it was not previously seen."""
-  key = scope.named_call_id + '/' + str(var)
+  key = scope.named_call_id + '/' + _var_to_str(binder_idx, var)
   if key in seen:
     return False
   seen.add(key)
@@ -204,18 +206,37 @@ def _var_sort_key(s: Text):
   return (1000 if s == '_' else len(s), s)
 
 
+def _var_to_str(binder_idx: Dict[jax.core.Var, int], atom: jax.core.Atom
+                ) -> Text:
+  """Returns an atom name based on var binding order in its containing jaxpr."""
+  if isinstance(atom, jax.core.DropVar):
+    return '_'
+  if isinstance(atom, jax.core.Literal):
+    return str(atom)
+  assert isinstance(atom, jax.core.Var)
+  n = binder_idx[atom]
+  s = ''
+  while not s or n:
+    n, i = n // 26, n % 26
+    s = chr(97 + i % 26) + s
+  return s
+
+
 def _process_eqn(eqn: jax.core.JaxprEqn, seen: Set[Text],
                  eqns_by_output: Mapping[Text, jax.core.JaxprEqn],
                  compute_flops: Optional[ComputeFlopsFn], scope: _ModuleScope,
-                 module: Module) -> Optional[int]:
+                 module: Module,
+                 binder_idx: Dict[jax.core.Var, int]) -> Optional[int]:
   """Recursive walks the JaxprEqn to compute the flops it takes."""
-  for out_var in eqn.outvars:
-    _mark_seen(seen, out_var, scope)
 
-  outvars = sorted([str(e) for e in eqn.outvars], key=_var_sort_key)
+  for out_var in eqn.outvars:
+    _mark_seen(binder_idx, seen, out_var, scope)
+
+  outvars = sorted([_var_to_str(binder_idx, e) for e in eqn.outvars],
+                   key=_var_sort_key)
   expression = Expression(
       primitive=eqn.primitive.name,
-      invars=' '.join(str(v) for v in eqn.invars)
+      invars=' '.join(_var_to_str(binder_idx, v) for v in eqn.invars)
       if len(eqn.invars) < 10 else f'{len(eqn.invars)} inputs',
       outvars=' '.join(outvars) if len(outvars) < 10 else
       f'{outvars[0]}, {len(outvars) - 1} more outputs',
@@ -277,18 +298,18 @@ def _process_eqn(eqn: jax.core.JaxprEqn, seen: Set[Text],
     if isinstance(var, jax.core.Literal):
       continue
 
-    key = str(var)
+    key = _var_to_str(binder_idx, var)
     if key == '*':
       continue
 
-    if not _mark_seen(seen, var, scope):
+    if not _mark_seen(binder_idx, seen, var, scope):
       continue
 
     if key not in eqns_by_output:
       logging.warning('missing var %s = %s', key, type(var))
       continue
     f = _process_eqn(eqns_by_output[key], seen, eqns_by_output, compute_flops,
-                     scope, module)
+                     scope, module, binder_idx)
     if compute_flops is not None:
       flops += f
 
@@ -299,23 +320,30 @@ def _process_jaxpr(jaxpr: jax.core.Jaxpr,
                    compute_flops: Optional[ComputeFlopsFn], scope: _ModuleScope,
                    seen: Set[Text], module: Module) -> Optional[int]:
   """Computes the flops used for a JAX expression, tracking module scope."""
+  # Label variables by the order in which they're introduced.
+  lam_binders = itertools.chain(jaxpr.constvars, jaxpr.invars)
+  let_binders = itertools.chain.from_iterable(e.outvars for e in jaxpr.eqns)
+  all_binders = itertools.chain(lam_binders, let_binders)
+  binder_idx = dict(zip(all_binders, itertools.count()))
+
   # Build a map that for each output contains the equation to compute it.
   eqns_by_output = {}
   for eqn in jaxpr.eqns:
     for var in eqn.outvars:
-      eqns_by_output[str(var)] = eqn
+      eqns_by_output[_var_to_str(binder_idx, var)] = eqn
 
   # Seed the set of variables that have been seen with the inputs and constants.
   for var in jaxpr.invars + jaxpr.constvars:
-    _mark_seen(seen, var, scope)
+    _mark_seen(binder_idx, seen, var, scope)
 
   # Recursively walk the computation graph.
   flops = None if compute_flops is None else 0
   for var in jaxpr.outvars:
     if (isinstance(var, jax.core.Var) and
-        not isinstance(var, jax.core.UnitVar) and _mark_seen(seen, var, scope)):
-      f = _process_eqn(eqns_by_output[str(var)], seen, eqns_by_output,
-                       compute_flops, scope, module)
+        not isinstance(var, jax.core.UnitVar) and
+        _mark_seen(binder_idx, seen, var, scope)):
+      f = _process_eqn(eqns_by_output[_var_to_str(binder_idx, var)], seen,
+                       eqns_by_output, compute_flops, scope, module, binder_idx)
       if compute_flops is not None:
         flops += f
 

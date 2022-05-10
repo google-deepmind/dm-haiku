@@ -16,7 +16,7 @@
 
 import functools
 import types
-from typing import Any, Callable, Mapping, MutableMapping, Tuple, TypeVar
+from typing import Any, Callable, Mapping, MutableMapping, Optional, Tuple, TypeVar
 
 from haiku._src import base
 from haiku._src import data_structures
@@ -230,7 +230,7 @@ class LiftWithStateUpdater:
 
   __slots__ = ("_used", "_name", "_context_id")
 
-  def __init__(self, name: str):
+  def __init__(self, name: Optional[str]):
     self._used = False
     self._name = name
     ctx = base.current_context()
@@ -255,7 +255,8 @@ class LiftWithStateUpdater:
     """Updates Haiku's internal state to the given state."""
     frame = base.current_frame()
     for mod_name, bundle in state.items():
-      mod_name = f"{self._name}/{mod_name}"
+      if self._name is not None:
+        mod_name = f"{self._name}/{mod_name}"
       for name, value in bundle.items():
         initial_pair = base.StatePair(value, value)
         initial = frame.state[mod_name].get(name, initial_pair).initial
@@ -328,5 +329,20 @@ def lift_with_state(
       LiftingModule(init_fn, allow_reuse=allow_reuse, name=name))
   if base.current_module():
     name = f"{base.current_bundle_name()}/{name}"
+  updater = LiftWithStateUpdater(name)
+  return params_and_state_fn, updater
+
+
+def transparent_lift_with_state(
+    init_fn: Callable[..., Tuple[hk.Params, hk.State]],
+    *,
+    allow_reuse: bool = False
+) -> Tuple[Callable[..., Tuple[hk.Params, hk.State]], LiftWithStateUpdater]:
+  """Similar to `lift_with_state` except no additional scope is added."""
+
+  base.assert_context("lift_with_state")
+  params_and_state_fn = _to_callable(
+      LiftingModule(init_fn, transparent=True, allow_reuse=allow_reuse))
+  name = base.current_bundle_name() if base.current_module() else None
   updater = LiftWithStateUpdater(name)
   return params_and_state_fn, updater

@@ -54,8 +54,9 @@ def optimize_rng_use(fun):
   :func:`~haiku.next_rng_key` which will split a new key for each sample. By
   using :func:`optimize_rng_use` Haiku will pre-allocate exactly enough RNGs for
   ``f`` to be evaluated by splitting the input key once and only once. For large
-  models (unlike this example) this can lead to a significant reduction in
-  compilation time for ``init``:
+  models (unlike this example) this can lead to a reduction in compilation time
+  of both ``init`` and ``apply``, with ``init`` seeing a larger expected speedup
+  as it performs more RNG key splitting in general.
 
   >>> def f(x):
   ...   net = hk.nets.MLP([300, 100, 10])

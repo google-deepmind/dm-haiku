@@ -169,9 +169,10 @@ def map(  # pylint: disable=redefined-builtin
 
   Args:
     fn: criterion to be used to map the input data.
-      The ``fn`` argument is expected to be a boolean function taking as
-      inputs the name of the module, the name of a given entry in the module
-      data bundle (e.g. parameter name) and the corresponding data.
+      The ``fn`` argument is expected to be a function taking as inputs the
+      name of the module, the name of a given entry in the module data bundle
+      (e.g. parameter name) and the corresponding data, and returning a new
+      value.
     structure: Haiku params or state data structure to be mapped.
 
   Returns:

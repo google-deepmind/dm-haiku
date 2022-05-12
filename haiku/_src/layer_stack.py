@@ -85,13 +85,15 @@ class _LayerStack(module.Module):
   def __init__(self,
                count: int,
                unroll: int,
+               pass_reverse_to_layer_fn: bool = False,
                name: Optional[str] = None):
     """Iterate f count times, with non-shared parameters."""
     super().__init__(name=name)
     self._count = count
     self._unroll = unroll
+    self._pass_reverse_to_layer_fn = pass_reverse_to_layer_fn
 
-  def __call__(self, x, *args_ys):
+  def __call__(self, x, *args_ys, reverse=False):
     count = self._count
     try:
       init_fn, apply_fn = transform.transform(self._call_wrapped)
@@ -126,7 +128,10 @@ class _LayerStack(module.Module):
       rng = scanned.rng
       params = scanned.params
 
-      out_x, z = apply_fn(params, rng, carry.x, *scanned.args_ys)
+      kwargs = {}
+      if self._pass_reverse_to_layer_fn:
+        kwargs["reverse"] = reverse
+      out_x, z = apply_fn(params, rng, carry.x, *scanned.args_ys, **kwargs)
       return LayerStackCarry(x=out_x), z
 
     rng = _get_rng_stack(count)
@@ -137,7 +142,8 @@ class _LayerStack(module.Module):
                                 args_ys=args_ys)
 
     carry, zs = jax.lax.scan(
-        layer, carry, scanned, length=count, unroll=self._unroll)
+        layer, carry, scanned, length=count, unroll=self._unroll,
+        reverse=reverse)
     return carry.x, zs
 
   def _call_wrapped(self,
@@ -154,15 +160,18 @@ class _LayerStackNoPerLayer(_LayerStack):
                f: WrappedFn,
                count: int,
                unroll: int,
+               pass_reverse_to_layer_fn: bool = False,
                name: Optional[str] = None):
-    super().__init__(count=count, unroll=unroll, name=name)
+    super().__init__(count=count, unroll=unroll,
+                     pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
+                     name=name)
     _check_no_varargs(f)
     self._f = f
 
   @module.transparent
-  def _call_wrapped(self, args, y):
+  def _call_wrapped(self, args, y, **kwargs):
     del y
-    ret = self._f(*args)
+    ret = self._f(*args, **kwargs)
     if len(args) == 1:
       # If the function takes a single argument, the wrapped function receives
       # a tuple of length 1, and therefore it must return a tuple of length 1.
@@ -177,18 +186,22 @@ class _LayerStackWithPerLayer(_LayerStack):
                f: WrappedFn,
                count: int,
                unroll: int,
+               pass_reverse_to_layer_fn: bool = False,
                name: Optional[str] = None):
-    super().__init__(count=count, unroll=unroll, name=name)
+    super().__init__(count=count, unroll=unroll,
+                     pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
+                     name=name)
     self._f = f
 
   @module.transparent
-  def _call_wrapped(self, x, *args):
-    return self._f(x, *args)
+  def _call_wrapped(self, x, *args, **kwargs):
+    return self._f(x, *args, **kwargs)
 
 
 def layer_stack(num_layers: int,
                 with_per_layer_inputs=False,
                 unroll: int = 1,
+                pass_reverse_to_layer_fn: bool = False,
                 name: Optional[str] = None):
   """Utility to wrap a Haiku function and recursively apply it to an input.
 
@@ -250,6 +263,11 @@ def layer_stack(num_layers: int,
     with_per_layer_inputs: Whether or not to pass per-layer inputs to the
       wrapped function.
     unroll: the unroll used by ``scan``.
+    pass_reverse_to_layer_fn: Whether or not to pass the ``reverse`` keyword to
+      the function ``f``, so that it is aware if the layer stack is being run
+      forward or in reverse (and the underlying ``scan``). To run the layer
+      stack in reverse you need to pass in ``reverse=True`` to the call to
+      the layer stack.
     name: name of the Haiku context.
 
   Returns:
@@ -258,17 +276,21 @@ def layer_stack(num_layers: int,
   def iterate(f):
     if with_per_layer_inputs:
       @functools.wraps(f)
-      def wrapped(x, *args):
+      def wrapped(x, *args, **kwargs):
         for ys in args:
           assert ys.shape[0] == num_layers
         return _LayerStackWithPerLayer(
-            f, num_layers, unroll=unroll, name=name)(x, *args)
+            f, num_layers, unroll=unroll,
+            pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
+            name=name)(x, *args, **kwargs)
     else:
       _check_no_varargs(f)
       @functools.wraps(f)
-      def wrapped(*args):
+      def wrapped(*args, **kwargs):
         ret = _LayerStackNoPerLayer(
-            f, num_layers, unroll=unroll, name=name)(args, None)[0]
+            f, num_layers, unroll=unroll,
+            pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
+            name=name)(args, None, **kwargs)[0]
         if len(args) == 1:
           # If the function takes a single argument, we must also return a
           # single value, and not a tuple of length 1.

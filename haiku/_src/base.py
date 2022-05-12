@@ -284,13 +284,42 @@ def current_module() -> Optional[Module]:
   return module_state.module if module_state is not None else None
 
 
-def current_bundle_name():
+def current_name() -> str:
+  """Returns the currently active module name.
+
+  Outside of a Haiku module this will return ``~`` which matches the key in the
+  params/state dict where top level values are stored.
+
+  >>> hk.experimental.current_name()
+  '~'
+
+  Inside a module this returns the current module name:
+
+  >>> class ExampleModule(hk.Module):
+  ...   def __call__(self):
+  ...     return hk.experimental.current_name()
+  >>> ExampleModule()()
+  'example_module'
+
+  Inside a name scope this returns the current name scope:
+
+  >>> with hk.experimental.name_scope('example_name_scope'):
+  ...   print(hk.experimental.current_name())
+  example_name_scope
+
+  Returns:
+    The currently active module or name scope name. If modules or name scopes
+    are in use returns ``~``.
+  """
   module = current_module()
   if module is not None:
     return safe_get_module_name(module)
   else:
     # Any parameters defined outside an `hk.Module` are put in the same group.
     return "~"
+
+# TODO(tomhennigan): Remove this alias.
+current_bundle_name = current_name
 
 
 def assert_context(public_symbol_name):

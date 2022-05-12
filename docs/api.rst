@@ -1109,12 +1109,18 @@ Managing State
 
 .. autosummary::
 
+    current_name
     name_scope
     name_like
     lift
     lift_with_state
     LiftWithStateUpdater
     check_jax_usage
+
+current_name
+~~~~~~~~~~~~
+
+.. autofunction:: current_name
 
 name_scope
 ~~~~~~~~~~

@@ -17,6 +17,7 @@
 Features may be removed or modified at any time.
 """
 
+from haiku._src.base import current_name
 from haiku._src.base import custom_creator
 from haiku._src.base import custom_getter
 from haiku._src.base import GetterContext
@@ -52,6 +53,7 @@ __all__ = (
     "ArraySpec",
     "eval_summary",
     "check_jax_usage",
+    "current_name",
     "custom_creator",
     "custom_getter",
     "intercept_methods",

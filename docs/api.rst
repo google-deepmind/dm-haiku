@@ -1113,7 +1113,9 @@ Managing State
     name_scope
     name_like
     lift
+    transparent_lift
     lift_with_state
+    transparent_lift_with_state
     LiftWithStateUpdater
     check_jax_usage
 

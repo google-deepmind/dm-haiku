@@ -191,7 +191,25 @@ def transparent_lift(
     init_fn: Callable[..., hk.Params],
     *,
     allow_reuse: bool = False) -> Callable[..., hk.Params]:
-  """Similar to `lift` except no additional scope is added to the parameters."""
+  r"""Registers parameters in an outer transform without adding a name scope.
+
+  Functionally this is equivalent to :func:`lift`\ but without automatically
+  adding an additional variable scoping. Note that closing over a module from
+  an outer scope is disallowed.
+
+  See :func:`lift`\ for more context on when to use ``lift``.
+
+  Args:
+    init_fn: The ``init`` function from an :class:`Transformed`\ .
+    allow_reuse: Allows lifted parameters to be reused from the outer
+      :func:`transform_with_state`\ . This can be desirable when e.g. within
+      control flow (e.g. ``hk.scan``).
+
+  Returns:
+    A callable that during ``init`` injects parameter values into the outer
+    context and during ``apply`` reuses parameters from the outer context. In
+    both cases returns parameter values to be used with an ``apply`` function.
+  """
 
   base.assert_context("transparent_lift")
   init_fn = add_state_to_init_fn(init_fn)
@@ -341,7 +359,27 @@ def transparent_lift_with_state(
     *,
     allow_reuse: bool = False
 ) -> Tuple[Callable[..., Tuple[hk.Params, hk.State]], LiftWithStateUpdater]:
-  """Similar to `lift_with_state` except no additional scope is added."""
+  r"""Registers params and state in an outer transform without adding scope.
+
+  Functionally this is equivalent to :func:`lift_with_state`\ but without
+  automatically adding an additional variable scoping.
+
+  See :func:`lift_with_state`\ for more context on when to use
+  ``lift_with_state``.
+
+  Args:
+    init_fn: The ``init`` function from an :class:`TransformedWithState`\.
+    allow_reuse: Allows lifted parameters and state to be reused from the outer
+      :func:`transform_with_state`\ . This can be desirable when e.g. within
+      control flow (e.g. ``hk.scan``).
+
+  Returns:
+    A callable that during ``init`` injects parameter values into the outer
+    context and during ``apply`` reuses parameters from the outer context. In
+    both cases returns parameter values to be used with an ``apply`` function.
+    The ``init`` function additionally returns an object used to update the
+    outer context with new state after ``apply`` is called.
+  """
 
   base.assert_context("lift_with_state")
   params_and_state_fn = _to_callable(

@@ -31,6 +31,8 @@ from haiku._src.layer_stack import layer_stack
 from haiku._src.lift import lift
 from haiku._src.lift import lift_with_state
 from haiku._src.lift import LiftWithStateUpdater
+from haiku._src.lift import transparent_lift
+from haiku._src.lift import transparent_lift_with_state
 from haiku._src.module import intercept_methods
 from haiku._src.module import MethodContext
 from haiku._src.module import name_like
@@ -75,4 +77,6 @@ __all__ = (
     "profiler_name_scopes",
     "tabulate",
     "to_dot",
+    "transparent_lift",
+    "transparent_lift_with_state",
 )

@@ -311,16 +311,16 @@ def difference(before: InternalState, after: InternalState) -> InternalState:
   is_new_param = lambda a, b: a is not b
   params_before, params_after = box_and_fill_missing(before.params,
                                                      after.params)
-  params_after = jax.tree_multimap(functools.partial(if_changed, is_new_param),
-                                   params_before, params_after)
+  params_after = jax.tree_map(
+      functools.partial(if_changed, is_new_param), params_before, params_after)
 
   # state
   def is_new_state(a: base.StatePair, b: base.StatePair):
     return a.initial is not b.initial or a.current is not b.current
 
   state_before, state_after = box_and_fill_missing(before.state, after.state)
-  state_after = jax.tree_multimap(functools.partial(if_changed, is_new_state),
-                                  state_before, state_after)
+  state_after = jax.tree_map(
+      functools.partial(if_changed, is_new_state), state_before, state_after)
 
   # rng
   def is_new_rng(a: Optional[base.PRNGSequenceState],
@@ -531,9 +531,9 @@ def scan(f, init, xs, length=None, reverse=False, unroll=1):
 
   if running_init_fn:
     if reverse:
-      ys = jax.tree_multimap(lambda y0, ys: jnp.concatenate([ys, y0]), y0, ys)
+      ys = jax.tree_map(lambda y0, ys: jnp.concatenate([ys, y0]), y0, ys)
     else:
-      ys = jax.tree_multimap(lambda y0, ys: jnp.concatenate([y0, ys]), y0, ys)
+      ys = jax.tree_map(lambda y0, ys: jnp.concatenate([y0, ys]), y0, ys)
 
   return carry, ys
 

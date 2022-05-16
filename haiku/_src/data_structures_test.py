@@ -217,7 +217,7 @@ class FlatMappingTest(parameterized.TestCase):
     self.assertEqual(before, after)
     self.assertEqual(after, {"a": {"b": 1, "c": 2}})
     before_dict = data_structures.to_haiku_dict(before)
-    jax.tree_multimap(self.assertEqual, before_dict, after)
+    jax.tree_map(self.assertEqual, before_dict, after)
 
   @all_picklers
   def test_pickle_roundtrip(self, pickler):
@@ -315,7 +315,7 @@ class FlatMappingTest(parameterized.TestCase):
     self.assertEqual(type(m), FlatMap)
     self.assertEqual(m, {"foo": {"b": {"c": 2}, "d": 3}, "bar": {"c": 2}})
 
-    mm = jax.tree_multimap(lambda x, y: x + y, f, f)
+    mm = jax.tree_map(lambda x, y: x + y, f, f)
     self.assertEqual(type(mm), FlatMap)
     self.assertEqual(mm, {"foo": {"b": {"c": 2}, "d": 4}, "bar": {"c": 2}})
 

@@ -490,9 +490,9 @@ class BatchMajorUnrollTest(parameterized.TestCase):
     batch_major_outputs, batch_major_unroll_state_out = unroll(
         core, batch_major_inputs, initial_state, time_major=False)
 
-    jax.tree_multimap(np.testing.assert_array_equal,
-                      time_major_unroll_state_out, batch_major_unroll_state_out)
-    jax.tree_multimap(
+    jax.tree_map(np.testing.assert_array_equal, time_major_unroll_state_out,
+                 batch_major_unroll_state_out)
+    jax.tree_map(
         lambda x, y: np.testing.assert_array_equal(x, jnp.swapaxes(y, 0, 1)),
         time_major_outputs, batch_major_outputs)
 

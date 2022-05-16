@@ -179,7 +179,7 @@ def run_actor(
                             state.reward)
 
     # Stack and send the trajectory.
-    stacked_traj = jax.tree_multimap(lambda *ts: np.stack(ts), *traj)
+    stacked_traj = jax.tree_map(lambda *ts: np.stack(ts), *traj)
     enqueue_traj(stacked_traj)
     # Reset the trajectory, keeping the last timestep.
     traj = traj[-1:]
@@ -234,7 +234,7 @@ def run(*, trajectories_per_actor, num_actors, unroll_len):
     batch = []
     for _ in range(batch_size):
       batch.append(q.get())
-    batch = jax.tree_multimap(lambda *ts: np.stack(ts, axis=1), *batch)
+    batch = jax.tree_map(lambda *ts: np.stack(ts, axis=1), *batch)
     return jax.device_put(batch)
 
   # Start the actors.

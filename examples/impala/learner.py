@@ -179,8 +179,7 @@ class Learner:
 
       assert len(batch) == self._batch_size
       # Prepare for consumption, then put batch onto device.
-      stacked_batch = jax.tree_multimap(lambda *xs: np.stack(xs, axis=1),
-                                        *batch)
+      stacked_batch = jax.tree_map(lambda *xs: np.stack(xs, axis=1), *batch)
       self._device_q.put(jax.device_put(stacked_batch))
 
       # Clean out the built-up batch.

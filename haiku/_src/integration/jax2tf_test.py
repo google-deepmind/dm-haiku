@@ -70,15 +70,14 @@ class JaxToTfTest(parameterized.TestCase):
     if init:
       init_jax = jax_transform(f.init)
       init_tf = tf_transform(jax2tf.convert(f.init))
-      jax.tree_multimap(assert_allclose, init_jax(rng, x), get(init_tf(rng, x)))
+      jax.tree_map(assert_allclose, init_jax(rng, x), get(init_tf(rng, x)))
 
     else:
       params, state = f.init(rng, x)
       apply_jax = jax_transform(f.apply)
       apply_tf = tf_transform(jax2tf.convert(f.apply))
-      jax.tree_multimap(assert_allclose,
-                        apply_jax(params, state, rng, x),
-                        get(apply_tf(params, state, rng, x)))
+      jax.tree_map(assert_allclose, apply_jax(params, state, rng, x),
+                   get(apply_tf(params, state, rng, x)))
 
 if __name__ == "__main__":
   absltest.main()

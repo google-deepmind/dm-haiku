@@ -129,9 +129,8 @@ def static_unroll(core, input_sequence, initial_state, time_major=True):
     output_sequence.append(outputs)
 
   # Stack outputs along the time axis.
-  output_sequence = jax.tree_multimap(
-      lambda *args: jnp.stack(args, axis=time_axis),
-      *output_sequence)
+  output_sequence = jax.tree_map(lambda *args: jnp.stack(args, axis=time_axis),
+                                 *output_sequence)
   return output_sequence, state
 
 
@@ -691,14 +690,14 @@ class ResetCore(RNNCore):
     # >> batch_entry 1:
     # >>  [[0. 0.]
     # >>  [0. 0.]]
-    should_reset = jax.tree_multimap(_validate_and_conform, should_reset, state)
+    should_reset = jax.tree_map(_validate_and_conform, should_reset, state)
     if self._is_batched(state):
       batch_size = jax.tree_leaves(inputs)[0].shape[0]
     else:
       batch_size = None
-    initial_state = jax.tree_multimap(
-        lambda s, i: i.astype(s.dtype), state, self.initial_state(batch_size))
-    state = jax.tree_multimap(jnp.where, should_reset, initial_state, state)
+    initial_state = jax.tree_map(lambda s, i: i.astype(s.dtype), state,
+                                 self.initial_state(batch_size))
+    state = jax.tree_map(jnp.where, should_reset, initial_state, state)
     return self.core(inputs, state)
 
   def initial_state(self, batch_size: Optional[int]):
@@ -739,7 +738,7 @@ class _DeepRNN(RNNCore):
     concat = lambda *args: jnp.concatenate(args, axis=-1)
     for idx, layer in enumerate(self.layers):
       if self.skip_connections and idx > 0:
-        current_inputs = jax.tree_multimap(concat, inputs, current_inputs)
+        current_inputs = jax.tree_map(concat, inputs, current_inputs)
 
       if isinstance(layer, RNNCore):
         current_inputs, next_state = layer(current_inputs, state[state_idx])
@@ -750,7 +749,7 @@ class _DeepRNN(RNNCore):
         current_inputs = layer(current_inputs)
 
     if self.skip_connections:
-      out = jax.tree_multimap(concat, *outputs)
+      out = jax.tree_map(concat, *outputs)
     else:
       out = current_inputs
 

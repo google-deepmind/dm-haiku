@@ -129,7 +129,7 @@ def update_rule(param, update):
 
 for images, labels in input_dataset:
   grads = jax.grad(loss_fn_t.apply)(params, images, labels)
-  params = jax.tree_multimap(update_rule, params, grads)
+  params = jax.tree_map(update_rule, params, grads)
 ```
 
 The core of Haiku is `hk.transform`. The `transform` function allows you to
@@ -193,7 +193,7 @@ grads = jax.grad(loss_fn_t.apply)(params, images, labels)
 ### Training
 
 The training loop in this example is very simple. One detail to note is the use
-of `jax.tree_multimap` to apply the `sgd` function across all matching
+of `jax.tree_map` to apply the `sgd` function across all matching
 entries in `params` and `grads`. The result has the same structure as the
 previous `params` and can again be used with `apply`.
 

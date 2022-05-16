@@ -30,8 +30,7 @@ ModuleFn = descriptors.ModuleFn
 
 
 def tree_assert_allclose(a, b, *, atol=1e-6):
-  jax.tree_multimap(
-      functools.partial(np.testing.assert_allclose, atol=atol), a, b)
+  jax.tree_map(functools.partial(np.testing.assert_allclose, atol=atol), a, b)
 
 
 class NumpyInputsTest(parameterized.TestCase):

@@ -342,7 +342,6 @@ class FlatMappingTest(parameterized.TestCase):
     leaves, _ = jax.tree_flatten(f_map)
 
     self.assertEqual(leaves, [1, 2, 1, 2])
-    print(f_map["foo"])
     self.assertEqual(f_map["foo"][0], 1)
 
   @parameterized.named_parameters(("tuple", tuple), ("list", list),)

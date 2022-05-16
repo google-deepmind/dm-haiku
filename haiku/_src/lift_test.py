@@ -422,5 +422,49 @@ class LiftTest(parameterized.TestCase):
 
     fn.apply(params_with_lift, None, x)
 
+  def test_transparent_lift_closed_over_errors(self):
+
+    @transform.transform
+    def fn(x):
+      outer_defined = Bias(name="inner")
+      def inner_fn(x):
+        # transparent_lift closes over outer_defined
+        x = outer_defined(x)
+        return Bias(name="inner")(x)
+      return with_transparent_lift(inner_fn)(x)
+
+    with self.assertRaisesRegex(
+        ValueError, "close over a module.*transparent_lift"):
+      fn.init(None, jnp.ones((10, 10)))
+
+  def test_transparent_lift_closed_over_nested_errors(self):
+    class OuterModule(module.Module):
+
+      def __call__(self, x):
+        outer_defined = Bias(name="inner")
+        def inner_fn(x):
+          # transparent_lift closes over outer_defined nested in another module.
+          x = outer_defined(x)
+          return Bias(name="inner")(x)
+
+        return with_transparent_lift(inner_fn)(x)
+
+    @transform.transform
+    def fn(x):
+      return OuterModule(name="outer")(x)
+
+    with self.assertRaisesRegex(
+        ValueError, "close over a module.*transparent_lift"):
+      fn.init(None, jnp.ones((10, 10)))
+
+  def test_same_name_across_transforms_no_closed_error(self):
+    init1, _ = transform.transform(lambda x: Bias()(x))  # pylint: disable=unnecessary-lambda
+    init2, _ = transform.transform(lambda x: Bias()(x))  # pylint: disable=unnecessary-lambda
+
+    params1 = init1(None, 1.)
+    params2 = init2(None, 1.)  # does not fail
+    jax.tree_map(self.assertAlmostEqual, params1, params2)
+
+
 if __name__ == "__main__":
   absltest.main()

@@ -193,12 +193,15 @@ def transparent_lift(
     allow_reuse: bool = False) -> Callable[..., hk.Params]:
   """Similar to `lift` except no additional scope is added to the parameters."""
 
-  base.assert_context("lift")
+  base.assert_context("transparent_lift")
   init_fn = add_state_to_init_fn(init_fn)
   lifted = LiftingModule(
       init_fn, transparent=True, allow_reuse=allow_reuse)
-  # NOTE: Using lambda to avoid exposing module object.
-  return lambda *a, **k: lifted(*a, **k)[0]  # pylint: disable=unnecessary-lambda
+  def fn(*a, **k):
+    with base.no_closure_fn_stack("transparent_lift"):
+      return lifted(*a, **k)[0]
+
+  return fn
 
 
 def with_assert_not_used(f):

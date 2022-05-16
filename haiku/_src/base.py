@@ -17,6 +17,7 @@
 import collections
 import contextlib
 import functools
+import itertools as it
 from typing import (Callable, Iterator, Iterable, MutableMapping, NamedTuple,
                     Optional, Set, Tuple, Union, Any, Sequence, Mapping,
                     FrozenSet, TypeVar)
@@ -54,6 +55,7 @@ state_creator_stack: ThreadLocalStack["Creator"] = ThreadLocalStack()
 param_getter_stack: ThreadLocalStack["Getter"] = ThreadLocalStack()
 state_getter_stack: ThreadLocalStack["Getter"] = ThreadLocalStack()
 state_setter_stack: ThreadLocalStack["Setter"] = ThreadLocalStack()
+no_closure_fn_stack: ThreadLocalStack[str] = ThreadLocalStack()
 
 
 class JaxTraceLevel(NamedTuple):
@@ -68,6 +70,8 @@ class JaxTraceLevel(NamedTuple):
     level = trace_stack[-1].level
     sublevel = jax_core.cur_sublevel()
     return JaxTraceLevel(opaque=(top_type, level, sublevel))
+
+frame_ids = it.count()
 
 
 class Frame(NamedTuple):
@@ -84,6 +88,7 @@ class Frame(NamedTuple):
   counter_stack: Stack[collections.Counter]
   used_names_stack: Stack[Set[str]]
   jax_trace_stack: Stack[JaxTraceLevel]
+  frame_id: int
 
   @property
   def params_frozen(self):
@@ -100,7 +105,8 @@ class Frame(NamedTuple):
                   module_stack=Stack(),
                   counter_stack=Stack(),
                   used_names_stack=Stack(),
-                  jax_trace_stack=Stack())
+                  jax_trace_stack=Stack(),
+                  frame_id=next(frame_ids))
     frame.rng_stack.push(rng)
     frame.counter_stack.push(collections.Counter())
     frame.used_names_stack.push(set())
@@ -128,7 +134,8 @@ class Frame(NamedTuple):
                  module_stack=module_stack,
                  counter_stack=counter_stack,
                  used_names_stack=used_names_stack,
-                 jax_trace_stack=jax_trace_stack)
+                 jax_trace_stack=jax_trace_stack,
+                 frame_id=next(frame_ids))
 
   @contextlib.contextmanager
   def module(self, module_state: ModuleState):
@@ -254,10 +261,17 @@ def inside_transform():
 
 
 def safe_get_module_name(module: Module) -> str:
+  """Checks if parameters/state can be safely created before returning the module name."""
   # TODO(tomhennigan) Module specific code should be part of `module.py`.
   if not hasattr(module, "module_name"):
     raise ValueError("The super constructor must be called before you create "
                      "parameters or submodules.")
+
+  if (no_closure_fn_stack
+      and module._creation_frame_id != current_frame().frame_id):  # pylint: disable=protected-access
+    raise ValueError("You can't functionally close over a module which has "
+                     "been intitialized outside of the function wrapped in "
+                     f"{no_closure_fn_stack.peek()}.")
   return module.module_name
 
 

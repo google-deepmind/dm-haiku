@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+# pylint: disable=g-importing-member
 """Type hints."""
 
 from haiku._src.typing import Params

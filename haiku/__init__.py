@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+# pylint: disable=g-importing-member
 """Haiku is a neural network library for JAX."""
 
 from haiku import config

@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Stateful shims for JAX functions."""
+# pylint: disable=g-importing-member
+"""Test utilities for Haiku."""
 
 from haiku._src.test_utils import transform_and_run
 

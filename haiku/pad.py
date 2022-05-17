@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+# pylint: disable=g-importing-member
 """Paddings."""
 
 from haiku._src.pad import causal

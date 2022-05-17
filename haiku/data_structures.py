@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+# pylint: disable=g-importing-member
 """Public Haiku data structures."""
 
 from haiku._src.data_structures import to_haiku_dict

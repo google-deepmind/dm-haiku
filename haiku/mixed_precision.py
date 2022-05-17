@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+# pylint: disable=g-importing-member
 """Utilities for mixed precision."""
 
 from haiku._src.mixed_precision import clear_policy

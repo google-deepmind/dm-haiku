@@ -217,7 +217,7 @@ def eval_summary(
   def wrapper(*args, **kwargs) -> Sequence[MethodInvocation]:
     used_modules = []
     with sidechannel(used_modules):
-      jax.eval_shape(lambda: init_apply(*args, **kwargs))
+      jax.eval_shape(init_apply, *args, **kwargs)
     return used_modules
 
   return wrapper

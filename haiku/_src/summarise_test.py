@@ -233,11 +233,6 @@ class TabulateTest(parameterized.TestCase):
     self.assertEqual(rows, tabulate_to_list(jax_transform(f_transform.init)))
     self.assertEqual(rows, tabulate_to_list(jax_transform(f_transform.apply)))
 
-  @parameterized.parameters(True, None, object())
-  def test_tabulate_bool_arg(self, obj):
-    f = lambda o: self.assertIs(obj, o)
-    summarise.tabulate(f)(obj)
-
 
 class MultipleParametersModule(module_lib.Module):
 

@@ -290,3 +290,17 @@ hk_py_test(
         "//haiku/_src:test_utils",
     ],
 )
+
+hk_py_test(
+    name = "jaxpr_info_test",
+    srcs = ["jaxpr_info_test.py"],
+    shard_count = 50,
+    deps = [
+        ":descriptors",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        "//haiku",
+        "//haiku/_src:test_utils",
+        # pip: jax
+    ],
+)

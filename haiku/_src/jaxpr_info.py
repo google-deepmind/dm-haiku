@@ -579,7 +579,7 @@ def as_html(module: Module,
         s += f"""</span>
                         {exp.outvars} = <span class='primitive'>{exp.primitive}</span>
                         {exp.invars}
-                        <span class='flops'>{_decimal_prefix(exp.flops, 'flops')}</span>
+                        <span class='flops'>{_decimal_prefix((exp.flops or 0), 'flops')}</span>
                     </div>"""
       s += '</li>'
 

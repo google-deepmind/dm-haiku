@@ -465,6 +465,19 @@ class LiftTest(parameterized.TestCase):
     params2 = init2(None, 1.)  # does not fail
     jax.tree_map(self.assertAlmostEqual, params1, params2)
 
+  def test_closed_over_within_transparent_lift_no_closed_error(self):
+    # You can close over modules within the boundary of the transparent_lift.
+    @transform.transform
+    def transformed_fn(x):
+      def lifted_fn(x):
+        outer_defined = Bias(name="inner")
+        def closing_over_fn(x):
+          return outer_defined(x)
+        x = stateful.vmap(closing_over_fn, split_rng=False)(x)
+        return Bias(name="inner")(x)
+      return with_transparent_lift(lifted_fn)(x)
+
+    transformed_fn.init(None, jnp.ones((10, 10)))  # does not crash.
 
 if __name__ == "__main__":
   absltest.main()

@@ -216,7 +216,7 @@ def transparent_lift(
   lifted = LiftingModule(
       init_fn, transparent=True, allow_reuse=allow_reuse)
   def fn(*a, **k):
-    with base.no_closure_fn_stack("transparent_lift"):
+    with base.closure_boundary_stack(base.current_frame().frame_id+1):
       return lifted(*a, **k)[0]
 
   return fn

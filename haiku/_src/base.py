@@ -55,7 +55,7 @@ state_creator_stack: ThreadLocalStack["Creator"] = ThreadLocalStack()
 param_getter_stack: ThreadLocalStack["Getter"] = ThreadLocalStack()
 state_getter_stack: ThreadLocalStack["Getter"] = ThreadLocalStack()
 state_setter_stack: ThreadLocalStack["Setter"] = ThreadLocalStack()
-no_closure_fn_stack: ThreadLocalStack[str] = ThreadLocalStack()
+closure_boundary_stack: ThreadLocalStack[int] = ThreadLocalStack()
 
 
 class JaxTraceLevel(NamedTuple):
@@ -267,11 +267,14 @@ def safe_get_module_name(module: Module) -> str:
     raise ValueError("The super constructor must be called before you create "
                      "parameters or submodules.")
 
-  if (no_closure_fn_stack
-      and module._creation_frame_id != current_frame().frame_id):  # pylint: disable=protected-access
+  if (closure_boundary_stack
+      and module._creation_frame_id < closure_boundary_stack.peek()):  # pylint: disable=protected-access
     raise ValueError("You can't functionally close over a module which has "
                      "been intitialized outside of the function wrapped in "
-                     f"{no_closure_fn_stack.peek()}.")
+                     "hk.experimental.transparent_lift or "
+                     "hk.experimental.layer_stack.\n"
+                     "The module you closed over is called "
+                     f"'{module.module_name}'.")
   return module.module_name
 
 

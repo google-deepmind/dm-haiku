@@ -1112,9 +1112,8 @@ Managing State
     current_name
     name_scope
     name_like
-    lift
-    transparent_lift
     lift_with_state
+    transparent_lift
     transparent_lift_with_state
     LiftWithStateUpdater
     check_jax_usage
@@ -1138,6 +1137,16 @@ lift_with_state
 ~~~~~~~~~~~~~~~
 
 .. autofunction:: lift_with_state
+
+transparent_lift
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: transparent_lift
+
+transparent_lift_with_state
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: transparent_lift_with_state
 
 LiftWithStateUpdater
 ~~~~~~~~~~~~~~~~~~~~

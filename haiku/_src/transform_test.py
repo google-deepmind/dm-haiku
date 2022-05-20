@@ -528,6 +528,35 @@ class TransformTest(parameterized.TestCase):
     self.assertNotIsInstance(m, Mapping)
     self.assertIs(transform.check_mapping("params", m), m)
 
+  def test_do_not_store(self):
+    def my_creator(next_creator, shape, dtype, init, context):
+      del next_creator, shape, dtype, init, context
+      return base.DO_NOT_STORE
+
+    def my_getter(next_getter, value, context):
+      assert value is base.DO_NOT_STORE
+      return next_getter(
+          context.original_init(context.original_shape, context.original_dtype))
+
+    def my_setter(next_setter, value, context):
+      del next_setter, value, context
+      return base.DO_NOT_STORE
+
+    def f():
+      with base.custom_creator(my_creator, state=True), \
+           base.custom_getter(my_getter, state=True), \
+           base.custom_setter(my_setter):
+        self.assertEqual(base.get_parameter("w", [], init=jnp.ones), 1)
+        self.assertEqual(base.get_state("s1", [], init=jnp.ones), 1)
+        base.set_state("s2", jnp.ones([]))
+
+    f = transform.transform_with_state(f)
+    params, state = f.init(None)
+    self.assertEmpty(params)
+    self.assertEmpty(state)
+    _, state = f.apply({}, {}, None)
+    self.assertEmpty(state)
+
 
 class ObjectWithTransform:
 

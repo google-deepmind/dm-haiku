@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+# pylint: disable=g-importing-member
 """Experimental features developed by the Haiku core team.
 
 Features may be removed or modified at any time.
@@ -20,6 +21,7 @@ Features may be removed or modified at any time.
 from haiku._src.base import current_name
 from haiku._src.base import custom_creator
 from haiku._src.base import custom_getter
+from haiku._src.base import DO_NOT_STORE
 from haiku._src.base import GetterContext
 from haiku._src.config import check_jax_usage
 from haiku._src.config import module_auto_repr
@@ -58,6 +60,7 @@ __all__ = (
     "current_name",
     "custom_creator",
     "custom_getter",
+    "DO_NOT_STORE",
     "intercept_methods",
     "jaxpr_info",
     "layer_stack",

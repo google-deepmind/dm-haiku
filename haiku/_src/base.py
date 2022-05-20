@@ -37,6 +37,12 @@ from jax import config as jax_config
 from jax import core as jax_core
 import jax.numpy as jnp
 
+try:
+  from typing import final  # pylint: disable=g-import-not-at-top
+except ImportError:
+  # Pre Python 3.8.
+  final = lambda cls: cls
+
 DEFAULT_PRNG_RESERVE_SIZE = 1
 
 Stack = data_structures.Stack
@@ -352,6 +358,90 @@ def params_frozen():
   return current_frame().params_frozen
 
 
+@final
+class DoNotStore:
+  r"""Causes a parameter or state value to not be stored.
+
+  By default, Haiku will put the value returned from
+  :func:`~haiku.get_parameter`, :func:`~haiku.get_state` and
+  :func:`~haiku.set_state` into the dictionaries returned by ``init``. This is
+  not always desirable.
+
+  For example, a user may want to have part of their network come from a
+  pretrained checkpoint, and they may want to freeze those values (aka. have
+  them not appear in the params dict passed later to ``grad``). You can achieve
+  this by manipulating the params dict, however sometimes it is more convenient
+  to do this using custom creators/getters/setters.
+
+  Consider the following function:
+
+  >>> def f(x):
+  ...   x = hk.Linear(300, name='torso')(x)
+  ...   x = hk.Linear(10, name='tail')(x)
+  ...   return x
+
+  Imagine you have a pre-trained set of weights for the torso:
+
+  >>> pretrained = {'torso': {'w': jnp.ones([28 * 28, 300]),
+  ...                         'b': jnp.ones([300])}}
+
+  First we define a creator, that tells Haiku to not store any parameters that
+  are part of the pretrained dict:
+
+  >>> def my_creator(next_creator, shape, dtype, init, context):
+  ...   if context.module_name in pretrained:
+  ...     return hk.experimental.DO_NOT_STORE
+  ...   return next_creator(shape, dtype, init)
+
+  Then we need a getter that provides the parameter value from the pretrained
+  dict:
+
+  >>> def my_getter(next_getter, value, context):
+  ...   if context.module_name in pretrained:
+  ...     assert value is hk.experimental.DO_NOT_STORE
+  ...     value = pretrained[context.module_name][context.name]
+  ...   return next_getter(value)
+
+  Finally we'll wrap our function in context managers activating our creator and
+  getter:
+
+  >>> def f_with_pretrained_torso(x):
+  ...   with hk.custom_creator(my_creator), \
+  ...        hk.custom_getter(my_getter):
+  ...     return f(x)
+
+  You can see that when we run our function we only get parameters from modules
+  that were not in the pretrained dict:
+
+  >>> f_with_pretrained_torso = hk.transform(f_with_pretrained_torso)
+  >>> rng = jax.random.PRNGKey(42)
+  >>> x = jnp.ones([1, 28 * 28])
+  >>> params = f_with_pretrained_torso.init(rng, x)
+  >>> assert list(params) == ['tail']
+
+  This value can be used in initialisers, :func:`~haiku.custom_creator` or
+  :func:`~haiku.custom_setter`.
+  """
+
+  @property
+  def shape(self):
+    raise ValueError("DO_NOT_STORE does not have a shape.")
+
+  @property
+  def dtype(self):
+    raise ValueError("DO_NOT_STORE does not have a dtype.")
+
+DO_NOT_STORE = DoNotStore()
+
+T = TypeVar("T")
+
+
+def check_not_none(value: Optional[T], msg: str) -> T:
+  if value is None:
+    raise ValueError(msg)
+  return value
+
+
 def get_parameter(
     name: str,
     shape: Sequence[int],
@@ -383,47 +473,60 @@ def get_parameter(
   assert_context("get_parameter")
   assert_jax_usage("get_parameter")
 
-  if init is None:
-    raise ValueError("Initializer must be specified.")
+  init = check_not_none(init, "Initializer must be specified.")
 
   bundle_name = current_bundle_name()
   frame = current_frame()
 
-  if frame.params_frozen and bundle_name not in frame.params:
-    raise ValueError(
-        "Unable to retrieve parameter {!r} for module {!r}. "
-        "All parameters must be created as part of `init`.".format(
-            name, bundle_name))
-
-  params = frame.params[bundle_name]
-  param = params.get(name)
   fq_name = bundle_name + "/" + name
   context = GetterContext(full_name=fq_name, module=current_module(),
-                          original_dtype=dtype, original_shape=shape)
-  if param is None:
-    if frame.params_frozen:
-      raise ValueError(
-          "Unable to retrieve parameter {!r} for module {!r}. "
-          "All parameters must be created as part of `init`.".format(
-              name, bundle_name))
+                          original_dtype=dtype, original_shape=shape,
+                          original_init=init)
 
+  if bundle_name not in frame.params:
+    param = None
+  else:
+    param = frame.params[bundle_name].get(name)
+
+  if param is None:
     if param_creator_stack:
       param = run_creators(param_creator_stack, context, shape, dtype, init)
     else:
       param = init(shape, dtype)
-    params[name] = param  # pytype: disable=unsupported-operands
+
+    if param is DO_NOT_STORE:
+      # Initializers or custom creators that return `DO_NOT_STORE` are required
+      # to produce a value for the parameter via a custom getter.
+      remove_if_empty(frame.params, bundle_name)
+    else:
+      if frame.params_frozen:
+        # Throw if we needed to re-init the parameter during apply.
+        raise ValueError(
+            f"Unable to retrieve parameter {name!r} for module "
+            f"{bundle_name!r} All parameters must be created as part of "
+            "`init`.")
+
+      param = check_not_none(param, "Parameters cannot be `None`.")
+      frame.params[bundle_name][name] = param
 
   # Custom getters allow a hook for users to customize the value returned by
   # get_parameter. For example casting values to some dtype.
   if param_getter_stack:
     param = run_getters(param_getter_stack, context, param)
 
+  param = check_not_none(param, "Parameters cannot be `None`.")
+
   if param.shape != tuple(shape):
     raise ValueError(
-        "{!r} with retrieved shape {!r} does not match shape={!r} dtype={!r}"
-        .format(fq_name, param.shape, shape, dtype))
+        f"{fq_name!r} with retrieved shape {param.shape!r} does not match "
+        f"shape={shape!r} dtype={dtype!r}")
 
   return param
+
+
+def remove_if_empty(bundle, key):
+  if key in bundle and not bundle[key]:
+    del bundle[key]
 
 
 class GetterContext(NamedTuple):
@@ -444,6 +547,7 @@ class GetterContext(NamedTuple):
   module: Optional[Module]
   original_dtype: Any
   original_shape: Sequence[int]
+  original_init: Optional[Initializer]
 
   @property
   def module_name(self):
@@ -968,7 +1072,7 @@ def get_state(
   bundle_name = current_bundle_name()
   state = current_frame().state[bundle_name]
   fq_name = f"{bundle_name}/{name}"
-  context = GetterContext(fq_name, current_module(), dtype, shape)
+  context = GetterContext(fq_name, current_module(), dtype, shape, init)
 
   value = state.get(name, None)
   if value is None:
@@ -984,7 +1088,8 @@ def get_state(
     else:
       value = init(shape, dtype)
 
-    state[name] = StatePair(value, value)
+    if value is not DO_NOT_STORE:
+      state[name] = StatePair(value, value)
   else:
     value = value.current
 
@@ -1027,15 +1132,21 @@ def set_state(name: str, value):
   """
   assert_context("set_state")
   assert_jax_usage("set_state")
-  state = current_frame().state[current_bundle_name()]
+  frame = current_frame()
+  bundle_name = current_bundle_name()
+  state = frame.state[bundle_name]
 
   if state_setter_stack:
     shape = jax.tree_map(maybe_shape, value)
     dtype = jax.tree_map(maybe_dtype, value)
-    fq_name = current_bundle_name() + "/" + name
+    fq_name = bundle_name + "/" + name
     context = SetterContext(full_name=fq_name, module=current_module(),
                             original_dtype=dtype, original_shape=shape)
     value = run_setters(state_setter_stack, context, value)
+
+    if value is DO_NOT_STORE:
+      remove_if_empty(frame.state, bundle_name)
+      return
 
   if name in state:
     initial, _ = state[name]

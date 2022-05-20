@@ -1117,6 +1117,7 @@ Managing State
     transparent_lift_with_state
     LiftWithStateUpdater
     check_jax_usage
+    DO_NOT_STORE
 
 current_name
 ~~~~~~~~~~~~
@@ -1157,6 +1158,11 @@ check_jax_usage
 ~~~~~~~~~~~~~~~
 
 .. autofunction:: check_jax_usage
+
+DO_NOT_STORE
+~~~~~~~~~~~~
+
+.. autoclass:: DO_NOT_STORE
 
 Optimizations
 -------------

@@ -90,7 +90,16 @@ class DoctestTest(parameterized.TestCase):
             test_name = name + "_" + attr_name
             test_names.append(test_name)
             module.__test__[test_name] = attr_value
+      elif (isinstance(value, str) or inspect.isfunction(value) or
+            inspect.ismethod(value) or inspect.isclass(value)):
+        test_names.append(name)
+        module.__test__[name] = value
+      elif hasattr(value, "__doc__"):
+        test_names.append(name)
+        module.__test__[name] = value.__doc__
       else:
+        # This will probably fail, DocTestFinder.find: __test__ values must be
+        # strings, functions, methods, classes, or modules
         test_names.append(name)
         module.__test__[name] = value
 

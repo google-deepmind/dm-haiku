@@ -17,6 +17,7 @@
 import functools
 from absl.testing import absltest
 from absl.testing import parameterized
+
 from haiku._src import base
 from haiku._src import basic
 from haiku._src import config
@@ -343,7 +344,172 @@ class LayerStackTest(parameterized.TestCase):
         np.all(z["raw_output"] == np.array([0., 1., 2.])[..., None, None]),
         np.array(True))
 
+  @classmethod
+  def _compute_weights(cls, stack_height: int, alpha: jnp.ndarray):
+    forward = [(alpha, alpha)]
+    backward = [(stack_height * alpha, stack_height * alpha)]
+    for i in range(2, stack_height + 1):
+      a, b = forward[-1]
+      forward.append((a * i * alpha, (b + 1) * i * alpha))
+      j = stack_height - i + 1
+      a, b = backward[-1]
+      backward.append((a * j * alpha, (b + 1) * j * alpha))
+    return forward, backward
+
+  def test_reverse(self):
+    # The layer stack below runs iteratively the update equation:
+    # x_n = n * alpha * (x_{n-1} + 1)
+    # with x_0 = 1, for n={1, ..., N}, where N = stack_height
+    # The reverse layer stack as a result runs the update equation:
+    # y_{n-1} = (N - n + 1) * alpha * (y_n + 1)
+    # with y_N = 1, for n={N-1, ..., 0}, where N = stack_height
+    width = 2
+    batch_size = 3
+    stack_height = 4
+    alpha = jnp.power(24, - 1. / stack_height)
+    forward, backward = self._compute_weights(stack_height, alpha)
+
+    def inner_fn(x):
+      # Here we initialize the layer to an identity + 1, while later we multiply
+      # each parameter by the index `n`.
+      return basic.Linear(
+          x.shape[1],
+          w_init=initializers.Constant(jnp.eye(x.shape[1])),
+          b_init=initializers.Constant(1.0),
+      )(x)
+
+    @multi_transform.without_apply_rng
+    @transform.transform
+    def hk_fn(x, reverse=False):
+      return layer_stack.layer_stack(stack_height)(inner_fn)(x, reverse=reverse)
+
+    key_seq = base.PRNGSequence(19)
+    init_value = 1 + jax.random.uniform(next(key_seq), [batch_size, width])
+
+    def mul_by_m(x):
+      m_x = jnp.arange(stack_height) + 1
+      while m_x.ndim < x.ndim:
+        m_x = m_x[..., None]
+      return x * m_x * alpha
+
+    params = jax.tree_map(mul_by_m, hk_fn.init(next(key_seq), init_value))
+
+    a, b = forward[-1]
+    x_n = hk_fn.apply(params, init_value)
+    np.testing.assert_allclose(x_n, a * init_value + b, rtol=1e-6)
+
+    a, b = backward[-1]
+    y_0 = hk_fn.apply(params, init_value, reverse=True)
+    np.testing.assert_allclose(y_0, a * init_value + b, rtol=1e-6)
+
+  def test_reverse_with_additional_inputs(self):
+    # The layer stack below runs iteratively the update equation:
+    # x_n = n * alpha * (x_{n-1} + 1)
+    # with x_0 = 1, for n={1, ..., N}, where N = stack_height
+    # The reverse layer stack as a result runs the update equation:
+    # y_{n-1} = (N - n + 1) * alpha * (y_n + 1)
+    # with y_N = 1, for n={N-1, ..., 0}, where N = stack_height
+    width = 2
+    batch_size = 3
+    stack_height = 4
+    total_multiplier = 24
+    alpha = jnp.power(total_multiplier, - 1. / stack_height)
+    forward, backward = self._compute_weights(stack_height, alpha)
+
+    def inner_fn(x, extra):
+      # Compared to previous test we pass in the `extra` argument as an
+      # additional input, in order to directly initialize the parameters to the
+      # index `n` of the iteration.
+      out = basic.Linear(
+          x.shape[1],
+          w_init=initializers.Constant(extra * jnp.eye(x.shape[1])),
+          b_init=initializers.Constant(extra),
+      )(x)
+      return out, out
+
+    @multi_transform.without_apply_rng
+    @transform.transform
+    def hk_fn(x, extra, reverse=False):
+      return layer_stack.layer_stack(
+          stack_height, with_per_layer_inputs=True
+      )(inner_fn)(x, extra, reverse=reverse)
+
+    extra = jnp.arange(stack_height) + 1
+    extra = extra * alpha
+    key_seq = base.PRNGSequence(19)
+    init_value = 1 + jax.random.uniform(next(key_seq), [batch_size, width])
+    params = hk_fn.init(next(key_seq), init_value, extra)
+
+    x_n, x_all = hk_fn.apply(params, init_value, extra)
+    self.assertEqual(x_all.shape[0], stack_height)
+    for x_t, (a, b) in zip(x_all, forward):
+      np.testing.assert_allclose(x_t, a * init_value + b, rtol=1e-6)
+    np.testing.assert_allclose(x_n, x_all[-1], rtol=1e-6)
+
+    y_0, y_all = hk_fn.apply(params, init_value, extra, reverse=True)
+    self.assertEqual(y_all.shape[0], stack_height)
+    for y_t, (a, b) in zip(y_all, reversed(backward)):
+      np.testing.assert_allclose(y_t, a * init_value + b, rtol=1e-6)
+    np.testing.assert_allclose(y_0, y_all[0], rtol=1e-6)
+
+  def test_reverse_with_pass_reverse_to_layer_fn(self):
+    # The layer stack below runs iteratively the update equation:
+    # x_n = n * alpha * (x_{n-1} + 1)
+    # with x_0 = 1, for n={1, ..., N}, where N = stack_height
+    # The reverse layer stack as a result runs the update equation:
+    # y_{n-1} = (N - n + 1) * alpha * (y_n + 1)
+    # with y_N = 1, for n={N-1, ..., 0}, where N = stack_height
+    # This test is equivalent to the previous one, but we nest the iterations in
+    # two layer stacks.
+    width = 2
+    batch_size = 3
+    stack_height = 4
+    total_multiplier = 24
+    alpha = jnp.power(total_multiplier, - 1. / stack_height)
+    forward, backward = self._compute_weights(stack_height, alpha)
+
+    def inner_fn(x, extra):
+      out = basic.Linear(
+          x.shape[1],
+          w_init=initializers.Constant(extra * jnp.eye(x.shape[1])),
+          b_init=initializers.Constant(extra),
+      )(x)
+      return out, out
+
+    def outer_fn(x, extra, reverse=False):
+      return layer_stack.layer_stack(
+          stack_height // 2, with_per_layer_inputs=True
+      )(inner_fn)(x, extra, reverse=reverse)
+
+    @multi_transform.without_apply_rng
+    @transform.transform
+    def hk_fn(x, extra, reverse=False):
+      return layer_stack.layer_stack(
+          2, with_per_layer_inputs=True, pass_reverse_to_layer_fn=True
+      )(outer_fn)(x, extra, reverse=reverse)
+
+    extra = jnp.arange(stack_height).reshape([2, stack_height // 2]) + 1
+    extra = extra * alpha
+    key_seq = base.PRNGSequence(19)
+    init_value = 1 + jax.random.uniform(next(key_seq), [batch_size, width])
+    params = hk_fn.init(next(key_seq), init_value, extra)
+
+    x_n, x_all = hk_fn.apply(params, init_value, extra)
+    self.assertEqual(x_all.shape[:2], (2, stack_height // 2))
+    x_all = x_all.reshape((stack_height, *x_all.shape[2:]))
+    for x_t, (a, b) in zip(x_all, forward):
+      np.testing.assert_allclose(x_t, a * init_value + b, rtol=1e-6)
+    np.testing.assert_allclose(x_n, x_all[-1], rtol=1e-6)
+
+    y_0, y_all = hk_fn.apply(params, init_value, extra, reverse=True)
+    self.assertEqual(y_all.shape[:2], (2, stack_height // 2))
+    y_all = y_all.reshape((stack_height, *y_all.shape[2:]))
+    for y_t, (a, b) in zip(y_all, reversed(backward)):
+      np.testing.assert_allclose(y_t, a * init_value + b, rtol=1e-6)
+    np.testing.assert_allclose(y_0, y_all[0], rtol=1e-6)
+
 
 if __name__ == "__main__":
   jax.config.update("jax_check_tracer_leaks", True)
+  jax.config.update("jax_default_matmul_precision", "float32")
   absltest.main()

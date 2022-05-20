@@ -98,7 +98,7 @@ class LayerStackTest(parameterized.TestCase):
     unrolled_pred = unrolled_fn.apply(sliced_params, None, x)
     layer_stack_pred = layer_stack_fn.apply(params, None, x)
 
-    np.testing.assert_allclose(unrolled_pred, layer_stack_pred)
+    np.testing.assert_allclose(unrolled_pred, layer_stack_pred, atol=1e-3)
 
   def test_layer_stack_multi_args(self):
     """Compare layers_stack to the equivalent unrolled stack.
@@ -137,8 +137,8 @@ class LayerStackTest(parameterized.TestCase):
     unrolled_x, unrolled_y = unrolled_fn.apply(sliced_params, None, x, y)
     layer_stack_x, layer_stack_y = layer_stack_fn.apply(params, None, x, y)
 
-    np.testing.assert_allclose(unrolled_x, layer_stack_x)
-    np.testing.assert_allclose(unrolled_y, layer_stack_y)
+    np.testing.assert_allclose(unrolled_x, layer_stack_x, atol=1e-3)
+    np.testing.assert_allclose(unrolled_y, layer_stack_y, atol=1e-3)
 
   def test_layer_stack_no_varargs(self):
     """Test an error is raised when using a function with varargs."""

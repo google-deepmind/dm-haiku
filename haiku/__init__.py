@@ -67,6 +67,9 @@ from haiku._src.group_norm import GroupNorm
 from haiku._src.layer_norm import InstanceNorm
 from haiku._src.layer_norm import LayerNorm
 from haiku._src.lift import lift
+from haiku._src.lift import lift_with_state
+from haiku._src.lift import transparent_lift
+from haiku._src.lift import transparent_lift_with_state
 from haiku._src.module import intercept_methods
 from haiku._src.module import MethodContext
 from haiku._src.module import Module
@@ -203,6 +206,9 @@ __all__ = (
     "initializers",
     "intercept_methods",
     "lift",
+    "lift_with_state",
+    "transparent_lift",
+    "transparent_lift_with_state",
     "max_pool",
     "maybe_next_rng_key",
     "mixed_precision",

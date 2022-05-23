@@ -310,8 +310,9 @@ def current_module() -> Optional[Module]:
 def current_name() -> str:
   """Returns the currently active module name.
 
-  Outside of a Haiku module this will return ``~`` which matches the key in the
-  params/state dict where top level values are stored.
+  Outside of a Haiku module (but inside a Haiku transform) this will return
+  ``~`` which matches the key in the params/state dict where top level values
+  are stored.
 
   >>> hk.experimental.current_name()
   '~'
@@ -334,6 +335,7 @@ def current_name() -> str:
     The currently active module or name scope name. If modules or name scopes
     are in use returns ``~``.
   """
+  assert_context("experimental.current_name")
   module = current_module()
   if module is not None:
     return safe_get_module_name(module)

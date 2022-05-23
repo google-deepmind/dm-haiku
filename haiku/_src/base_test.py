@@ -642,5 +642,10 @@ class BaseTest(parameterized.TestCase):
     with self.assertRaises(ValueError):
       base.DO_NOT_STORE.dtype  # pylint: disable=pointless-statement # pytype: disable=attribute-error
 
+  def test_currennt_name_no_transform(self):
+    with self.assertRaisesRegex(ValueError,
+                                "must be used as part of an `hk.transform`"):
+      base.current_name()
+
 if __name__ == "__main__":
   absltest.main()

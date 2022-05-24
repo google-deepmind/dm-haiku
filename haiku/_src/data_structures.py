@@ -121,7 +121,7 @@ def to_mutable_dict(mapping):
   return out
 
 
-def to_haiku_dict(structure: Mapping[K, V]) -> Mapping[K, V]:
+def to_haiku_dict(structure: Mapping[K, V]) -> Dict[K, V]:
   """Returns a copy of the given two level structure.
 
   Uses the same mapping type as Haiku will return from ``init`` or ``apply``

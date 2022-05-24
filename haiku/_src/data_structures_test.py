@@ -424,5 +424,15 @@ class DataStructuresTest(parameterized.TestCase):
     self.assertEqual(type(after), dict)
     self.assertEqual(type(after["a"]), dict)
 
+  def test_to_mutable_dict_copies(self):
+    before = {"a": {"b": object(), "c": object()}}
+    after = data_structures.to_mutable_dict(before)
+    self.assertEqual(before, after)
+    self.assertIsNot(before, after)
+    self.assertIsNot(before["a"], after["a"])
+    self.assertIs(before["a"]["b"], after["a"]["b"])
+    self.assertIs(before["a"]["c"], after["a"]["c"])
+
+
 if __name__ == "__main__":
   absltest.main()

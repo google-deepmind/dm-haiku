@@ -109,33 +109,6 @@ def to_immutable_dict(mapping: Mapping[K, V]) -> Mapping[K, V]:
   return FlatMap(items)
 
 
-# TODO(tomhennigan) Better types here (Mapping[K, V]) -> MutableMapping[K, V]?
-def to_mutable_dict(mapping):
-  """Turns an immutable FlatMapping into a mutable dict."""
-  out = {}
-  for key, value in mapping.items():
-    value_type = type(value)
-    if value_type is FlatMap:
-      value = to_mutable_dict(value)
-    out[key] = value
-  return out
-
-
-def to_haiku_dict(structure: Mapping[K, V]) -> Mapping[K, V]:
-  """Returns a copy of the given two level structure.
-
-  Uses the same mapping type as Haiku will return from ``init`` or ``apply``
-  functions.
-
-  Args:
-    structure: A two level mapping to copy.
-
-  Returns:
-    A new two level mapping with the same contents as the input.
-  """
-  return to_dict(structure)
-
-
 def _copy_structure(tree):
   """Returns a copy of the given structure."""
   leaves, treedef = jax.tree_flatten(tree)
@@ -149,20 +122,21 @@ def _to_dict_recurse(value: Any):
     return _copy_structure(value)
 
 
-def to_dict(mapping: Mapping[str, Mapping[str, T]]) -> Dict[str, Dict[str, T]]:
-  """Returns a ``dict`` copy of the given two level structure.
-
-  This method is guaranteed to return a copy of the input structure (e.g. even
-  if the input is already a ``dict``).
+def to_mutable_dict(
+    structure: Mapping[str, Mapping[str, T]],
+) -> Dict[str, Dict[str, T]]:
+  """Returns a copy of the given two level structure as a mutable dict.
 
   Args:
-    mapping: A two level mapping as returned by ``init`` functions of Haiku
-        transforms.
+    structure: A two level mapping to copy.
 
   Returns:
     A new two level mapping with the same contents as the input.
   """
-  return _to_dict_recurse(mapping)
+  return _to_dict_recurse(structure)
+
+to_haiku_dict = to_mutable_dict
+to_dict = to_mutable_dict
 
 
 def _repr_item(k, v):

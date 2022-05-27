@@ -73,6 +73,7 @@ class LayerStackTest(parameterized.TestCase):
     def inner_fn(x):
       x += basic.Linear(100, name="linear1")(x)
       x += basic.Linear(100, name="linear2")(x)
+      x /= jnp.mean(x)
       return x
 
     def outer_fn_unrolled(x):
@@ -183,6 +184,7 @@ class LayerStackTest(parameterized.TestCase):
     def inner_fn(x):
       x += basic.Linear(100, name="linear1")(x)
       x += basic.Linear(100, name="linear2")(x)
+      x /= jnp.mean(x)
       return x
 
     def outer_fn_unrolled(x):

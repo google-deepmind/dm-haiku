@@ -192,9 +192,13 @@ class LayerNorm(hk.Module):
     elif offset is None:
       offset = np.array(0., dtype=inputs.dtype)
 
-    scale = jnp.broadcast_to(scale, inputs.shape)
-    offset = jnp.broadcast_to(offset, inputs.shape)
-    mean = jnp.broadcast_to(mean, inputs.shape)
+    if jax.config.jax_numpy_rank_promotion != "allow":
+      # TODO(b/234327547): Explicit bcast triggers excessive mem usage on TPU.
+      # We should remove the conditional (and always broadcast) when the
+      # referenced bug is fixed.
+      scale = jnp.broadcast_to(scale, inputs.shape)
+      offset = jnp.broadcast_to(offset, inputs.shape)
+      mean = jnp.broadcast_to(mean, inputs.shape)
 
     eps = jax.lax.convert_element_type(self.eps, variance.dtype)
     inv = scale * jax.lax.rsqrt(variance + eps)

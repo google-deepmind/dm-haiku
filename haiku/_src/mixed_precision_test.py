@@ -203,5 +203,24 @@ class MixedPrecisionTest(absltest.TestCase):
     jax.tree_map(lambda p: self.assertEqual(p, jnp.float16), params)
     self.assertEqual(y, jnp.float16)
 
+  @test_utils.transform_and_run
+  def test_policy_with_interceptor(self):
+    sidechannel = []
+    def my_interceptor(next_f, args, kwargs, context):
+      sidechannel.append(context)
+      return next_f(*args, **kwargs)
+
+    # We need this to make sure that the mixed precision interceptor is
+    # installed when we call set_policy (this only happens the first call).
+    mixed_precision.reset_thread_local_state_for_test()
+
+    policy = jmp.get_policy('p=f16,c=f32,o=f16')
+    with module.intercept_methods(my_interceptor):
+      mixed_precision.set_policy(OuterModule, policy)
+      x = OuterModule()()
+      self.assertEqual(x.dtype, jnp.float16)
+    # Outer.init, Outer.call, Inner.init, Inner.call
+    self.assertLen(sidechannel, 4)
+
 if __name__ == '__main__':
   absltest.main()

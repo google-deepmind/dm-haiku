@@ -58,6 +58,9 @@ class Stack(Generic[T]):
       s.push(fn(item))
     return s
 
+  def pushleft(self, elem: T):
+    self._storage.appendleft(elem)
+
   def push(self, elem: T):
     self._storage.append(elem)
 

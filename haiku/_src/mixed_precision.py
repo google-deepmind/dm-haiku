@@ -16,7 +16,6 @@
 
 import collections
 import contextlib
-import sys
 import threading
 import types
 from typing import Dict, Type, Optional, Union
@@ -30,11 +29,10 @@ import jmp
 hk = types.ModuleType('haiku')
 hk.custom_getter = base.custom_getter
 hk.custom_creator = base.custom_creator
-hk.intercept_methods = module.intercept_methods
 hk.MethodContext = module.MethodContext
 hk.Module = module.Module
 Stack = data_structures.Stack
-del base, data_structures, module
+del base, data_structures
 
 ClassInfo = collections.namedtuple('ClassInfo', 'module,qualname')
 ClassInfoOrType = Union[ClassInfo, Type[hk.Module]]
@@ -59,7 +57,7 @@ class _ThreadState(threading.local):
 
   def __init__(self):
     super().__init__()
-    self._interceptor = None
+    self._installed_interceptor = False
     self._cls_policy = {}  # type: Dict[ClassInfoOrType, jmp.Policy]
     self._current_policy = Stack()  # type: Stack[jmp.Policy]
 
@@ -80,9 +78,9 @@ class _ThreadState(threading.local):
       del self._cls_policy[key]
 
   def set_policy(self, cls: Type[hk.Module], policy: jmp.Policy):
-    if self._interceptor is None:
-      self._interceptor = hk.intercept_methods(_mixed_precision_interceptor)
-      self._interceptor.__enter__()
+    if not self._installed_interceptor:
+      module.intercept_methods_global(_mixed_precision_interceptor)
+      self._installed_interceptor = True
     key = key_for_module(cls)
     self._cls_policy[key] = policy
 
@@ -90,12 +88,12 @@ class _ThreadState(threading.local):
     key = key_for_module(cls)
     return self._cls_policy.get(key)
 
-  def __del__(self):
-    if self._interceptor is not None:
-      self._interceptor.__exit__(*sys.exc_info())
-      del self._interceptor
-
 _thread_local_state = _ThreadState()
+
+
+def reset_thread_local_state_for_test():
+  global _thread_local_state
+  _thread_local_state = _ThreadState()
 
 
 def current_policy() -> Optional[jmp.Policy]:

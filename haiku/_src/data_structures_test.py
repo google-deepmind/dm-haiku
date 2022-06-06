@@ -59,6 +59,18 @@ class StackTest(absltest.TestCase):
       self.assertEqual(s.pop(), 2 - i)
     self.assertEmpty(s)
 
+  def test_pushleft_peek_pop(self):
+    s = self.cls()
+    for i in range(3):
+      s.pushleft(i)
+    self.assertEqual(s.peek(), 0)
+    self.assertEqual(s.peek(-2), 1)
+    self.assertEqual(s.peek(-3), 2)
+    for i in range(3):
+      self.assertEqual(s.peek(), i)
+      self.assertEqual(s.pop(), i)
+    self.assertEmpty(s)
+
   def test_popleft(self):
     s = self.cls()
     s.push(1)

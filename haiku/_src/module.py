@@ -255,6 +255,10 @@ def intercept_methods(interceptor: MethodGetter):
   return interceptor_stack(interceptor)
 
 
+def intercept_methods_global(interceptor: MethodGetter):
+  interceptor_stack.pushleft(interceptor)
+
+
 def run_interceptors(  # pylint: disable=invalid-name
     bound_method: Callable[..., Any],
     method_name: str,

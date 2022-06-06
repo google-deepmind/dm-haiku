@@ -799,6 +799,9 @@ def named_call(
 
   @functools.wraps(fun)
   def wrapper(*args, **kwargs):
+    if jax.config.jax_experimental_name_stack:
+      return jax.named_call(fun, name=name)(*args, **kwargs)
+
     side_channel = {"non_jaxtypes": [], "treedef": None}
     wrapped_fun = hide_non_jaxtype_outputs(fun, side_channel)
     if base.inside_transform():

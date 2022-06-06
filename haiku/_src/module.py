@@ -27,6 +27,7 @@ from haiku._src import config
 from haiku._src import data_structures
 from haiku._src import stateful
 from haiku._src import utils
+import jax
 import jax.numpy as jnp
 
 # pylint: disable=g-import-not-at-top
@@ -400,18 +401,18 @@ def wrap_method(method_name, unbound_method):
       module_name = getattr(self, "module_name", None)
       f = functools.partial(unbound_method, self)
       f = functools.partial(run_interceptors, f, method_name, self)
-      # TODO(tomhennigan): With omnistaging primitives (like named call) will
-      # stage out return values eagerly. For functions that produce non-Array
-      # values (e.g. `def is_batched(self, x) -> bool`) a tracer will be
-      # returned that might result in a concretization error. For now we only
-      # enable named call on __call__ (covering 99% of the interesting usages)
-      # with an assumption that __call__ is `f(*) -> Tree[Array]`. Longer term
-      # we may want to split static and dynamic results in named call to support
-      # other methods.
-      cfg = config.get_config()
-      if cfg.profiler_name_scopes and module_name and method_name == "__call__":
-        local_name = module_name.split("/")[-1]
-        f = stateful.named_call(f, name=local_name)
+      if jax.config.jax_experimental_name_stack and module_name:
+        local_module_name = module_name.split("/")[-1]
+        f = jax.named_call(f, name=local_module_name)
+        if method_name != "__call__":
+          f = jax.named_call(f, name=method_name)
+      elif module_name:
+        # TODO(lenamartens): remove this branch once jax_experimental_name_stack
+        # flag is removed.
+        cfg = config.get_config()
+        if cfg.profiler_name_scopes and method_name == "__call__":
+          local_module_name = module_name.split("/")[-1]
+          f = stateful.named_call(f, name=local_module_name)
 
       out = f(*args, **kwargs)
 

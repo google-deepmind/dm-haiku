@@ -31,7 +31,7 @@ hk.initializers.Initializer = Initializer
 del base
 
 
-def _compute_fans(shape):
+def _compute_fans(shape, fan_in_axes=None):
   """Computes the number of input and output units for a weight shape."""
   if len(shape) < 1:
     fan_in = fan_out = 1
@@ -40,11 +40,17 @@ def _compute_fans(shape):
   elif len(shape) == 2:
     fan_in, fan_out = shape
   else:
-    # Assuming convolution kernels (2D, 3D, or more.)
-    # kernel_shape: (..., input_depth, depth)
-    receptive_field_size = np.prod(shape[:-2])
-    fan_in = shape[-2] * receptive_field_size
-    fan_out = shape[-1] * receptive_field_size
+    if fan_in_axes is not None:
+      # Compute fan-in using user-specified fan-in axes.
+      fan_in = np.prod([shape[i] for i in fan_in_axes])
+      fan_out = np.prod([s for i, s in enumerate(shape)
+                         if i not in fan_in_axes])
+    else:
+      # If no axes specified, assume convolution kernels (2D, 3D, or more.)
+      # kernel_shape: (..., input_depth, depth)
+      receptive_field_size = np.prod(shape[:-2])
+      fan_in = shape[-2] * receptive_field_size
+      fan_out = shape[-1] * receptive_field_size
   return fan_in, fan_out
 
 
@@ -163,7 +169,8 @@ class VarianceScaling(hk.initializers.Initializer):
   ==============  ==============================================================
   """
 
-  def __init__(self, scale=1.0, mode='fan_in', distribution='truncated_normal'):
+  def __init__(self, scale=1.0, mode='fan_in', distribution='truncated_normal',
+               fan_in_axes=None):
     """Constructs the :class:`VarianceScaling` initializer.
 
     Args:
@@ -171,6 +178,11 @@ class VarianceScaling(hk.initializers.Initializer):
       mode: One of ``fan_in``, ``fan_out``, ``fan_avg``
       distribution: Random distribution to use. One of ``truncated_normal``,
         ``normal`` or ``uniform``.
+      fan_in_axes: Optional sequence of int specifying which axes of the shape
+        are part of the fan-in. If none provided, then the weight is assumed
+        to be like a convolution kernel, where all leading dimensions are part
+        of the fan-in, and only the trailing dimension is part of the fan-out.
+        Useful if instantiating multi-headed attention weights.
     """
     if scale < 0.0:
       raise ValueError('`scale` must be a positive float.')
@@ -182,10 +194,11 @@ class VarianceScaling(hk.initializers.Initializer):
     self.scale = scale
     self.mode = mode
     self.distribution = distribution
+    self.fan_in_axes = fan_in_axes
 
   def __call__(self, shape: Sequence[int], dtype: Any) -> jnp.ndarray:
     scale = self.scale
-    fan_in, fan_out = _compute_fans(shape)
+    fan_in, fan_out = _compute_fans(shape, self.fan_in_axes)
     if self.mode == 'fan_in':
       scale /= max(1.0, fan_in)
     elif self.mode == 'fan_out':

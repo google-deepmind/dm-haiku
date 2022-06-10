@@ -16,6 +16,7 @@
 
 import collections
 import types
+import typing
 from typing import Any, Callable, Sequence, Union, Tuple
 
 from haiku._src import utils
@@ -105,7 +106,7 @@ def create_from_tuple(
     raise TypeError(
         f"Padding {padding} must be a Tuple[int, int] or sequence of length 1"
         f" or sequence of length {n}.")
-  padding = tuple(padding)  # type: Sequence[Tuple[int, int]]  # pytype: disable=annotation-type-mismatch
+  padding = typing.cast(Sequence[Tuple[int, int]], tuple(padding))
   return padding
 
 

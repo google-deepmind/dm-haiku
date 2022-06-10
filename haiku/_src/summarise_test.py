@@ -16,7 +16,7 @@
 # pylint: disable=unnecessary-lambda
 
 import typing
-from typing import Sequence, Union
+from typing import Sequence
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -39,7 +39,7 @@ def tabulate_to_list(
   old_tabulate = summarise.tabulate_lib.tabulate
   summarise.tabulate_lib.tabulate = lambda rows, **_: rows
   try:
-    out = summarise.tabulate(f, columns=columns, filters=filters)(*args)  # type: Union[str, Sequence[Sequence[str]]]
+    out = summarise.tabulate(f, columns=columns, filters=filters)(*args)
   finally:
     summarise.tabulate_lib.tabulate = old_tabulate
   if out == "No modules matching filters.":

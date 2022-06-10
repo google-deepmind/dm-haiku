@@ -58,8 +58,8 @@ class _ThreadState(threading.local):
   def __init__(self):
     super().__init__()
     self._installed_interceptor = False
-    self._cls_policy = {}  # type: Dict[ClassInfoOrType, jmp.Policy]
-    self._current_policy = Stack()  # type: Stack[jmp.Policy]
+    self._cls_policy: Dict[ClassInfoOrType, jmp.Policy] = {}
+    self._current_policy = Stack[jmp.Policy]()
 
   def push_current_policy(self, policy: jmp.Policy):
     return self._current_policy(policy)

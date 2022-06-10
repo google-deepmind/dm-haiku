@@ -538,7 +538,7 @@ class Module(object, metaclass=ModuleMetaclass):
       raise ValueError(
           "'{}' is not a valid module name (must be a valid Python identifier)"
           .format(name))
-    self._submodules = set()  # type: Set[str]
+    self._submodules: Set[str] = set()
     self.module_name = unique_and_canonical_name(name)
     self.name = self.module_name.split("/")[-1]
     self._creation_frame_id = base.current_frame().frame_id

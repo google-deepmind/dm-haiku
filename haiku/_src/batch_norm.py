@@ -178,8 +178,8 @@ class BatchNorm(hk.Module):
             axis_index_groups=self.cross_replica_axis_index_groups)
       var = mean_of_squares - jnp.square(mean)
     else:
-      mean = self.mean_ema.average
-      var = self.var_ema.average
+      mean = self.mean_ema.average.astype(inputs.dtype)
+      var = self.var_ema.average.astype(inputs.dtype)
 
     if is_training:
       self.mean_ema(mean)

@@ -236,6 +236,7 @@ hk_py_test(
     name = "batch_norm_test",
     srcs = ["batch_norm_test.py"],
     deps = [
+        ":base",
         ":batch_norm",
         ":test_utils",
         ":transform",

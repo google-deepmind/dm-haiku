@@ -16,6 +16,7 @@
 
 import os
 from absl.testing import absltest
+from haiku._src import base
 from haiku._src import batch_norm
 from haiku._src import test_utils
 from haiku._src import transform
@@ -185,6 +186,43 @@ class BatchNormTest(absltest.TestCase):
     params, state = jax.device_get(f.init(key, x, True))
     y, _ = f.apply(params, state, None, x, False)
     self.assertEqual(y.dtype, jnp.bfloat16)
+
+  def test_no_type_promotion(self):
+
+    def get_batch_norm():
+      return batch_norm.BatchNorm(
+          create_scale=True, create_offset=True, decay_rate=0.99)
+
+    # Initialize the model and "train" it with float32, and check that
+    # everything is float32.
+    @transform.transform_with_state
+    def forward_training(x):
+      return get_batch_norm()(x, is_training=True)
+    input_float32 = np.random.normal(size=[100, 5]).astype(np.float32)
+    rng = jax.random.PRNGKey(0)
+    params, state = forward_training.init(rng, input_float32)
+    output, state = forward_training.apply(params, state, rng, input_float32)
+    self.assertEqual(output.dtype, jnp.float32)
+
+    # Now for eval we want to run with "bfloat16". We use custom getter that
+    # will ensure that everytime we ask for a variable with type bfloat16 (as
+    # types requested should usually be defined by the type of the inputs),
+    # we cast what used to be a float32 into a bfloat16)
+    def _bfloat16_getter(next_getter, value, context):
+      if context.original_dtype == jnp.bfloat16:
+        assert value.dtype == jnp.float32
+        value = value.astype(jnp.bfloat16)
+      return next_getter(value)
+
+    @transform.transform_with_state
+    def forward_eval_bfloat16(x):
+      with base.custom_getter(_bfloat16_getter, state=True):
+        return get_batch_norm()(x, is_training=False)
+
+    # Run it with bfloat16, inputs, and check that output is still bfloat16.
+    input_bfloat16 = input_float32.astype(jnp.bfloat16)
+    output, _ = forward_eval_bfloat16.apply(params, state, rng, input_bfloat16)
+    self.assertEqual(output.dtype, jnp.bfloat16)
 
 if __name__ == "__main__":
   _xla_flags = os.environ.get("XLA_FLAGS", "")

@@ -463,7 +463,7 @@ def unique_and_canonical_name(name: str) -> str:
     name = parent_name + "/" + name
 
   # Test if the user has explicitly numbered this module.
-  splits = re.split(r"_(\d+)$", name, 3)
+  splits = re.split(r"_(0|[1-9]\d*)$", name, 3)
   if len(splits) > 1:
     name, n = splits[0], int(splits[1])
     explicit_n = True

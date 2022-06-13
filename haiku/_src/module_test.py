@@ -104,6 +104,32 @@ class ModuleTest(parameterized.TestCase):
       EmptyModule(name="custom_name_4")
 
   @test_utils.transform_and_run
+  def test_module_naming_explicit_numbering_zero_padded(self):
+    self.assertEqual(
+        EmptyModule(name="custom_name_000").module_name, "custom_name_000")
+    self.assertEqual(
+        EmptyModule(name="custom_name_001").module_name, "custom_name_001")
+    self.assertEqual(
+        EmptyModule(name="custom_name_002").module_name, "custom_name_002")
+    self.assertEqual(
+        EmptyModule(name="custom_name_007").module_name, "custom_name_007")
+
+  @test_utils.transform_and_run
+  def test_module_naming_explicit_numbering_zero_padded_reuse(self):
+    self.assertEqual(
+        EmptyModule(name="custom_name_007").module_name, "custom_name_007")
+    self.assertEqual(
+        EmptyModule(name="custom_name_007").module_name, "custom_name_007_1")
+
+  @test_utils.transform_and_run
+  def test_module_naming_explicit_numbering_zero_padded_vs_no_pad(self):
+    m1 = ScalarModule(name="scalar_module_1")
+    self.assertEqual(m1.module_name, "scalar_module_1")
+    m2 = ScalarModule(name="scalar_module_001")
+    self.assertEqual(m2.module_name, "scalar_module_001")
+    self.assertIsNot(m1(), m2())  # No parameter sharing.
+
+  @test_utils.transform_and_run
   def test_flatten_invalid_name(self):
     with self.assertRaisesRegex(ValueError, "is not a valid module name"):
       EmptyModule(name="1bad-name")

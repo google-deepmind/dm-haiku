@@ -35,7 +35,7 @@ import itertools
 import logging
 import os
 import sys
-from typing import Any, Callable, Dict, List, Mapping, NamedTuple, Set, Text, Optional
+from typing import Any, Callable, Dict, List, Mapping, NamedTuple, Set, Optional
 
 from haiku._src import summarise
 import jax
@@ -175,13 +175,13 @@ class _ModuleScope(NamedTuple):
   """Helper object to track the nesting of named_calls and module scopes."""
   # The nested module name. This is used for printing flops information in a
   # human readable way.
-  module_path: Text
+  module_path: str
 
   # The concatenation of all outer named_call jaxprs. This is used to uniquely
   # identify which computations we've already seen.
-  named_call_id: Text
+  named_call_id: str
 
-  def join(self, eqn: jax.core.JaxprEqn, name: Text) -> '_ModuleScope':
+  def join(self, eqn: jax.core.JaxprEqn, name: str) -> '_ModuleScope':
     return _ModuleScope(
         module_path=self.module_path + '/' + name,
         named_call_id=self.named_call_id + '/' + str(id(eqn)))
@@ -191,7 +191,7 @@ def _format_shape(var):
   return var.aval.str_short().replace('float', 'f')
 
 
-def _mark_seen(binder_idx: Dict[jax.core.Var, int], seen: Set[Text],
+def _mark_seen(binder_idx: Dict[jax.core.Var, int], seen: Set[str],
                var: jax.core.Var, scope: _ModuleScope) -> bool:
   """Marks a variable as seen. Returns True if it was not previously seen."""
   key = scope.named_call_id + '/' + _var_to_str(binder_idx, var)
@@ -201,13 +201,13 @@ def _mark_seen(binder_idx: Dict[jax.core.Var, int], seen: Set[Text],
   return True
 
 
-def _var_sort_key(s: Text):
+def _var_sort_key(s: str):
   """Sorts variables in order of use by JAX, short names first and `_` last."""
   return (1000 if s == '_' else len(s), s)
 
 
-def _var_to_str(binder_idx: Dict[jax.core.Var, int], atom: jax.core.Atom
-                ) -> Text:
+def _var_to_str(binder_idx: Dict[jax.core.Var, int],
+                atom: jax.core.Atom) -> str:
   """Returns an atom name based on var binding order in its containing jaxpr."""
   if isinstance(atom, jax.core.DropVar):
     return '_'
@@ -222,8 +222,8 @@ def _var_to_str(binder_idx: Dict[jax.core.Var, int], atom: jax.core.Atom
   return s
 
 
-def _process_eqn(eqn: jax.core.JaxprEqn, seen: Set[Text],
-                 eqns_by_output: Mapping[Text, jax.core.JaxprEqn],
+def _process_eqn(eqn: jax.core.JaxprEqn, seen: Set[str],
+                 eqns_by_output: Mapping[str, jax.core.JaxprEqn],
                  compute_flops: Optional[ComputeFlopsFn], scope: _ModuleScope,
                  module: Module,
                  binder_idx: Dict[jax.core.Var, int]) -> Optional[int]:
@@ -318,7 +318,7 @@ def _process_eqn(eqn: jax.core.JaxprEqn, seen: Set[Text],
 
 def _process_jaxpr(jaxpr: jax.core.Jaxpr,
                    compute_flops: Optional[ComputeFlopsFn], scope: _ModuleScope,
-                   seen: Set[Text], module: Module) -> Optional[int]:
+                   seen: Set[str], module: Module) -> Optional[int]:
   """Computes the flops used for a JAX expression, tracking module scope."""
   # Label variables by the order in which they're introduced.
   lam_binders = itertools.chain(jaxpr.constvars, jaxpr.invars)
@@ -352,8 +352,8 @@ def _process_jaxpr(jaxpr: jax.core.Jaxpr,
   return flops
 
 
-def _add_param_counts(model_info: Module, prefix: Text,
-                      invocations: Mapping[Text, summarise.MethodInvocation]):
+def _add_param_counts(model_info: Module, prefix: str,
+                      invocations: Mapping[str, summarise.MethodInvocation]):
   """Adds parameter count to the module info, if present."""
   if prefix in invocations:
     invocation = invocations[prefix]

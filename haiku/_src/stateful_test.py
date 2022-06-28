@@ -332,6 +332,22 @@ class StatefulTest(parameterized.TestCase):
       self.assertEqual(state, {"square_module": {"y": y}})
       self.assertEqual(out, y)
 
+  @test_utils.transform_and_run(run_apply=False)
+  def test_cond_branch_structure_error(self):
+    true_fn = lambda x: base.get_parameter("w", x.shape, x.dtype, init=jnp.ones)
+    false_fn = lambda x: x
+    with self.assertRaisesRegex(TypeError, "Hint: A common mistake"):
+      stateful.cond(False, true_fn, false_fn, 0)
+
+  @test_utils.transform_and_run(run_apply=False)
+  def test_switch_branch_structure_error(self):
+    branches = [
+        lambda x: base.get_parameter("w", x.shape, x.dtype, init=jnp.ones),
+        lambda x: x,
+    ]
+    with self.assertRaisesRegex(TypeError, "Hint: A common mistake"):
+      stateful.switch(0, branches, 0)
+
   @parameterized.parameters(1, 2, 4, 8)
   @test_utils.transform_and_run
   def test_switch_traces_cases_with_same_id_once(self, n):

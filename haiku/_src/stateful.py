@@ -412,9 +412,79 @@ def _memoize_by_id(f):
   return wrapper
 
 
+RUNNING_INIT_HINT = """
+Hint: A common mistake is to use hk.cond(..) or `hk.switch(..)` at init time and
+      create module parameters in one of the branches. At init time you should
+      unconditionally create the parameters of all modules you might want to use
+      at apply.
+
+For hk.cond():
+
+    if hk.running_init():
+      # At init time unconditionally create parameters in my_module.
+      my_other_module(x)
+      out = my_module(x)
+    else:
+      out = hk.cond(pred, my_module, my_other_module)
+
+For hk.switch():
+
+    branches = [my_module, lambda x: x]
+    if hk.running_init():
+      # At init time unconditionally create parameters in all branches.
+      for branch in branches:
+        out = my_module(x)
+    else:
+      out = hk.switch(idx, branches, x)
+""".strip()
+
+
+def with_output_structure_hint(f):
+  """Adds a helpful hint to branch structure errors."""
+  @functools.wraps(f)
+  def wrapper(*args, **kwargs):
+    try:
+      return f(*args, **kwargs)
+    except TypeError as e:
+      if not base.params_frozen() and "must have same type structure" in str(e):
+        raise TypeError(RUNNING_INIT_HINT) from e
+      else:
+        raise e
+  return wrapper
+
+
+# pylint: disable=g-doc-args
 @functools.wraps(jax.lax.cond)
+@with_output_structure_hint
 def cond(*args, **kwargs):
-  """Equivalent to :func:`jax.lax.cond` but with Haiku state passed in/out."""
+  """Equivalent to :func:`jax.lax.cond` but with Haiku state passed in/out.
+
+  >>> true_fn = hk.nets.ResNet50(10)
+  >>> false_fn = hk.Sequential([hk.Flatten(), hk.nets.MLP([300, 100, 10])])
+  >>> x = jnp.ones([1, 224, 224, 3])
+  >>> if hk.running_init():
+  ...   # At `init` run both branches to create parameters everywhere.
+  ...   true_fn(x)
+  ...   out = false_fn(x)
+  ... else:
+  ...   # At `apply` conditionally call one of the modules.
+  ...   i = jax.random.randint(hk.next_rng_key(), [], 0, 100)
+  ...   out = hk.cond(i > 50, true_fn, false_fn, x)
+
+  Args:
+    pred: Boolean scalar type.
+    true_fun: Function (A -> B), to be applied if ``pred`` is ``True``.
+    false_fun: Function (A -> B), to be applied if ``pred`` is ``False``.
+    operands: Operands (A) input to either branch depending on ``pred``. The
+      type can be a scalar, array, or any pytree (nested Python tuple/list/dict)
+      thereof.
+
+  Returns:
+    Value (B) of either ``true_fun(*operands)`` or ``false_fun(*operands)``,
+    depending on the value of ``pred``. The type can be a scalar, array, or any
+    pytree (nested Python tuple/list/dict) thereof.
+  """
+# pylint: enable=g-doc-args
   if not base.inside_transform():
     raise ValueError("hk.cond() should not be used outside of hk.transform(). "
                      "Use jax.cond() instead.")
@@ -453,8 +523,34 @@ def cond(*args, **kwargs):
   return out
 
 
+@with_output_structure_hint
 def switch(index, branches, operand):
-  """Equivalent to :func:`jax.lax.switch` but with Haiku state passed in/out."""
+  """Equivalent to :func:`jax.lax.switch` but with Haiku state passed in/out.
+
+  Note that creating parameters inside a switch branch is not supported, as such
+  at init time we recommend you unconditionally evaluate all branches of your
+  switch and only use the switch at apply. For example:
+
+  >>> experts = [hk.nets.MLP([300, 100, 10]) for _ in range(5)]
+  >>> x = jnp.ones([1, 28 * 28])
+  >>> if hk.running_init():
+  ...   # During init unconditionally create params/state for all experts.
+  ...   for expert in experts:
+  ...     out = expert(x)
+  ... else:
+  ...   # During apply conditionally apply (and update) only one expert.
+  ...   index = jax.random.randint(hk.next_rng_key(), [], 0, len(experts) - 1)
+  ...   out = hk.switch(index, experts, x)
+
+  Args:
+    index: Integer scalar type, indicating which branch function to apply.
+    branches: Sequence of functions (A -> B) to be applied based on index.
+    operand: Operands (A) input to whichever branch is applied.
+
+  Returns:
+    Value (B) of branch(*operands) for the branch that was selected based on
+    index.
+  """
   if not base.inside_transform():
     raise ValueError(
         "hk.switch() should not be used outside of hk.transform(). "

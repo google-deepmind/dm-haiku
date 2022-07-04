@@ -52,9 +52,11 @@ hk_py_library(
     srcs = ["base_test.py"],
     deps = [
         ":base",
+        ":stateful",
         ":test_utils",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
+        "//haiku",
         # pip: jax
         # pip: numpy
     ],

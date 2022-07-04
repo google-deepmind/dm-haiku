@@ -179,6 +179,7 @@ def with_empty_state(f: Transformed) -> TransformedWithState:
 
 
 # TODO(tomhennigan) Remove apply_rng.
+@base.replaceable
 def transform(f, *, apply_rng=True) -> Transformed:
   """Transforms a function using Haiku modules into a pair of pure functions.
 
@@ -272,6 +273,7 @@ def check_not_jax_transformed(f):
                      "functions Haiku gives you back from hk.transform).")
 
 
+@base.replaceable
 def transform_with_state(f) -> TransformedWithState:
   """Transforms a function using Haiku modules into a pair of pure functions.
 

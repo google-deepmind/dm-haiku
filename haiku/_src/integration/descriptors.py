@@ -312,7 +312,86 @@ RECURRENT_MODULES = (
     unroll_descriptors(RNN_CORES, hk.dynamic_unroll) +
     unroll_descriptors(RNN_CORES, hk.static_unroll))
 
+STATEFUL_MODULES = (
+    ModuleDescriptor(
+        name="nets.VectorQuantizerEMA",
+        create=lambda: Training(hk.nets.VectorQuantizerEMA(64, 512, 0.25, 0.9)),
+        shape=(BATCH_SIZE, 64)),
+    ModuleDescriptor(
+        name="SpectralNorm",
+        create=lambda: hk.SpectralNorm(),
+        shape=(BATCH_SIZE, 3, 2)),
+    ModuleDescriptor(
+        name="BatchNorm",
+        create=lambda: Training(hk.BatchNorm(True, True, 0.9)),
+        shape=(BATCH_SIZE, 2, 2, 3)),
+)
+
 ALL_MODULES = OPTIONAL_BATCH_MODULES + BATCH_MODULES + RECURRENT_MODULES
+
+# Modules that do not use get_parameter
+NO_PARAM_MODULES = (
+    ModuleDescriptor(
+        name="Flatten",
+        create=lambda: hk.Flatten(),
+        shape=(BATCH_SIZE, 3, 3, 3)),
+    ModuleDescriptor(
+        name="SpectralNorm",
+        create=lambda: hk.SpectralNorm(),
+        shape=(BATCH_SIZE, 3, 2)),
+    ModuleDescriptor(
+        name="Sequential",
+        create=lambda: hk.Sequential([]),
+        shape=(BATCH_SIZE, 2, 2)),
+)
+
+# Modules that do not use "hk.next_rng_key"
+NO_NEXT_RNG_KEY_MODULES = (
+    ModuleDescriptor(
+        name="Sequential",
+        create=lambda: hk.Sequential([]),
+        shape=(BATCH_SIZE, 2, 2)),
+    ModuleDescriptor(
+        name="RMSNorm",
+        create=lambda: hk.RMSNorm(1),
+        shape=(BATCH_SIZE, 3, 2)),
+    ModuleDescriptor(
+        name="InstanceNorm",
+        create=lambda: hk.InstanceNorm(True, True),
+        shape=(BATCH_SIZE, 3, 2)),
+    ModuleDescriptor(
+        name="GroupNorm",
+        create=lambda: hk.GroupNorm(5),
+        shape=(BATCH_SIZE, 4, 4, 10)),
+    ModuleDescriptor(
+        name="LayerNorm",
+        create=lambda: hk.LayerNorm(1, True, True, param_axis=-1),
+        shape=(BATCH_SIZE, 3, 2)),
+    ModuleDescriptor(
+        name="BatchNorm",
+        create=lambda: Training(hk.BatchNorm(True, True, 0.9)),
+        shape=(BATCH_SIZE, 2, 2, 3)),
+    ModuleDescriptor(
+        name="Bias",
+        create=lambda: hk.Bias(),
+        shape=(BATCH_SIZE, 3, 3, 3)),
+    ModuleDescriptor(
+        name="Flatten",
+        create=lambda: hk.Flatten(),
+        shape=(BATCH_SIZE, 3, 3, 3)),
+) + RECURRENT_MODULES
+
+NO_NEXT_RNG_KEY_NAMES = [d.name for d in NO_NEXT_RNG_KEY_MODULES]
+NEXT_RNG_KEY_MODULES = [
+    d for d in ALL_MODULES if d.name not in NO_NEXT_RNG_KEY_NAMES
+]
+
+NOT_ONLY_PARAMS_MODULES = set(NO_PARAM_MODULES) | set(STATEFUL_MODULES) | set(
+    RECURRENT_MODULES)
+NOT_ONLY_PARAMS_NAMES = [d.name for d in NOT_ONLY_PARAMS_MODULES]
+ONLY_PARAMS_MODULES = [
+    d for d in ALL_MODULES if d.name not in NOT_ONLY_PARAMS_NAMES
+]
 
 IGNORED_MODULES = {
     # Stateless or abstract.

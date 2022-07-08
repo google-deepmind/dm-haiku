@@ -16,7 +16,7 @@
 
 import abc
 import typing
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Callable, Mapping, MutableMapping, Sequence
 
 import jax.numpy as jnp
 from typing_extensions import Protocol, runtime_checkable  # pylint: disable=multiple-statements,g-multiple-import
@@ -30,8 +30,8 @@ except AttributeError:
 # pytype: enable=module-attr
 
 Initializer = Callable[[Sequence[int], Any], jnp.ndarray]
-Params = Mapping[str, Mapping[str, jnp.ndarray]]
-State = Mapping[str, Mapping[str, jnp.ndarray]]
+Params = MutableMapping[str, MutableMapping[str, jnp.ndarray]]
+State = MutableMapping[str, MutableMapping[str, jnp.ndarray]]
 
 # Missing JAX types.
 PRNGKey = jnp.ndarray  # pylint: disable=invalid-name

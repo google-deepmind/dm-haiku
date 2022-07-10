@@ -61,10 +61,11 @@ class Agent:
   @functools.partial(jax.jit, static_argnums=0)
   def initial_params(self, rng_key):
     """Initializes the agent params given the RNG key."""
-    dummy_inputs = jax.tree_map(lambda t: np.zeros(t.shape, t.dtype),
-                                self._obs_spec)
+    dummy_inputs = jax.tree_util.tree_map(
+        lambda t: np.zeros(t.shape, t.dtype), self._obs_spec)
     dummy_inputs = util.preprocess_step(dm_env.restart(dummy_inputs))
-    dummy_inputs = jax.tree_map(lambda t: t[None, None, ...], dummy_inputs)
+    dummy_inputs = jax.tree_util.tree_map(
+        lambda t: t[None, None, ...], dummy_inputs)
     return self._init_fn(rng_key, dummy_inputs, self.initial_state(1))
 
   @functools.partial(jax.jit, static_argnums=(0, 1))
@@ -83,13 +84,15 @@ class Agent:
   ) -> Tuple[AgentOutput, Nest]:
     """For a given single-step, unbatched timestep, output the chosen action."""
     # Pad timestep, state to be [T, B, ...] and [B, ...] respectively.
-    timestep = jax.tree_map(lambda t: t[None, None, ...], timestep)
-    state = jax.tree_map(lambda t: t[None, ...], state)
+    timestep = jax.tree_util.tree_map(lambda t: t[None, None, ...], timestep)
+    state = jax.tree_util.tree_map(lambda t: t[None, ...], state)
 
     net_out, next_state = self._apply_fn(params, timestep, state)
     # Remove the padding from above.
-    net_out = jax.tree_map(lambda t: jnp.squeeze(t, axis=(0, 1)), net_out)
-    next_state = jax.tree_map(lambda t: jnp.squeeze(t, axis=0), next_state)
+    net_out = jax.tree_util.tree_map(
+        lambda t: jnp.squeeze(t, axis=(0, 1)), net_out)
+    next_state = jax.tree_util.tree_map(
+        lambda t: jnp.squeeze(t, axis=0), next_state)
     # Sample an action and return.
     action = hk.multinomial(rng_key, net_out.policy_logits, num_samples=1)
     action = jnp.squeeze(action, axis=-1)

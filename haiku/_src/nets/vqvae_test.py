@@ -55,7 +55,7 @@ class VqvaeTest(parameterized.TestCase):
     # Output shape is correct
     self.assertEqual(vq_output['quantize'].shape, inputs.shape)
 
-    vq_output_np = jax.tree_map(lambda t: t, vq_output)
+    vq_output_np = jax.tree_util.tree_map(lambda t: t, vq_output)
     embeddings_np = vqvae_module.embeddings
 
     self.assertEqual(embeddings_np.shape,

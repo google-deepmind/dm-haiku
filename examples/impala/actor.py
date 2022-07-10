@@ -84,7 +84,7 @@ class Actor:
 
     # Pack the trajectory and reset parent state.
     trajectory = jax.device_get(self._traj)
-    trajectory = jax.tree_map(lambda *xs: np.stack(xs), *trajectory)
+    trajectory = jax.tree_util.tree_map(lambda *xs: np.stack(xs), *trajectory)
     self._timestep = timestep
     self._agent_state = agent_state
     # Keep the bootstrap timestep for next trajectory.

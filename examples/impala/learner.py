@@ -94,17 +94,18 @@ class Learner:
       trajectories: util.Transition,
   ) -> Tuple[jnp.ndarray, Dict[str, jnp.ndarray]]:
     """Compute vtrace-based actor-critic loss."""
-    initial_state = jax.tree_map(lambda t: t[0], trajectories.agent_state)
+    initial_state = jax.tree_util.tree_map(
+        lambda t: t[0], trajectories.agent_state)
     learner_outputs = self._agent.unroll(theta, trajectories.timestep,
                                          initial_state)
     v_t = learner_outputs.values[1:]
     # Remove bootstrap timestep from non-timesteps.
-    _, actor_out, _ = jax.tree_map(lambda t: t[:-1], trajectories)
-    learner_outputs = jax.tree_map(lambda t: t[:-1], learner_outputs)
+    _, actor_out, _ = jax.tree_util.tree_map(lambda t: t[:-1], trajectories)
+    learner_outputs = jax.tree_util.tree_map(lambda t: t[:-1], learner_outputs)
     v_tm1 = learner_outputs.values
 
     # Get the discount, reward, step_type from the *next* timestep.
-    timestep = jax.tree_map(lambda t: t[1:], trajectories.timestep)
+    timestep = jax.tree_util.tree_map(lambda t: t[1:], trajectories.timestep)
     discounts = timestep.discount * self._discount_factor
     rewards = timestep.reward
     if self._max_abs_reward > 0:
@@ -179,7 +180,8 @@ class Learner:
 
       assert len(batch) == self._batch_size
       # Prepare for consumption, then put batch onto device.
-      stacked_batch = jax.tree_map(lambda *xs: np.stack(xs, axis=1), *batch)
+      stacked_batch = jax.tree_util.tree_map(
+          lambda *xs: np.stack(xs, axis=1), *batch)
       self._device_q.put(jax.device_put(stacked_batch))
 
       # Clean out the built-up batch.

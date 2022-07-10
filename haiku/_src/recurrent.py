@@ -118,25 +118,25 @@ def static_unroll(core, input_sequence, initial_state, time_major=True):
   """
   output_sequence = []
   time_axis = 0 if time_major else 1
-  num_steps = jax.tree_leaves(input_sequence)[0].shape[time_axis]
+  num_steps = jax.tree_util.tree_leaves(input_sequence)[0].shape[time_axis]
   state = initial_state
   for t in range(num_steps):
     if time_major:
-      inputs = jax.tree_map(lambda x, _t=t: x[_t], input_sequence)
+      inputs = jax.tree_util.tree_map(lambda x, _t=t: x[_t], input_sequence)
     else:
-      inputs = jax.tree_map(lambda x, _t=t: x[:, _t], input_sequence)
+      inputs = jax.tree_util.tree_map(lambda x, _t=t: x[:, _t], input_sequence)
     outputs, state = core(inputs, state)
     output_sequence.append(outputs)
 
   # Stack outputs along the time axis.
-  output_sequence = jax.tree_map(lambda *args: jnp.stack(args, axis=time_axis),
-                                 *output_sequence)
+  output_sequence = jax.tree_util.tree_map(
+      lambda *args: jnp.stack(args, axis=time_axis), *output_sequence)
   return output_sequence, state
 
 
 def _swap_batch_time(inputs):
   """Swaps batch and time axes, assumed to be the first two axes."""
-  return jax.tree_map(lambda x: jnp.swapaxes(x, 0, 1), inputs)
+  return jax.tree_util.tree_map(lambda x: jnp.swapaxes(x, 0, 1), inputs)
 
 
 def dynamic_unroll(core,
@@ -213,7 +213,7 @@ def dynamic_unroll(core,
 def add_batch(nest, batch_size: Optional[int]):
   """Adds a batch dimension at axis 0 to the leaves of a nested structure."""
   broadcast = lambda x: jnp.broadcast_to(x, (batch_size,) + x.shape)
-  return jax.tree_map(broadcast, nest)
+  return jax.tree_util.tree_map(broadcast, nest)
 
 
 class VanillaRNN(RNNCore):
@@ -639,10 +639,10 @@ class ResetCore(RNNCore):
       Tuple of the wrapped core's ``output, next_state``.
     """
     inputs, should_reset = inputs
-    if jax.treedef_is_leaf(jax.tree_structure(should_reset)):
+    if jax.treedef_is_leaf(jax.tree_util.tree_structure(should_reset)):
       # Equivalent to not tree.is_nested, but with support for Jax extensible
       # pytrees.
-      should_reset = jax.tree_map(lambda _: should_reset, state)
+      should_reset = jax.tree_util.tree_map(lambda _: should_reset, state)
 
     # We now need to manually pad 'on the right' to ensure broadcasting operates
     # correctly.
@@ -690,24 +690,26 @@ class ResetCore(RNNCore):
     # >> batch_entry 1:
     # >>  [[0. 0.]
     # >>  [0. 0.]]
-    should_reset = jax.tree_map(_validate_and_conform, should_reset, state)
+    should_reset = jax.tree_util.tree_map(
+        _validate_and_conform, should_reset, state)
     if self._is_batched(state):
-      batch_size = jax.tree_leaves(inputs)[0].shape[0]
+      batch_size = jax.tree_util.tree_leaves(inputs)[0].shape[0]
     else:
       batch_size = None
-    initial_state = jax.tree_map(lambda s, i: i.astype(s.dtype), state,
-                                 self.initial_state(batch_size))
-    state = jax.tree_map(jnp.where, should_reset, initial_state, state)
+    initial_state = jax.tree_util.tree_map(
+        lambda s, i: i.astype(s.dtype), state, self.initial_state(batch_size))
+    state = jax.tree_util.tree_map(
+        jnp.where, should_reset, initial_state, state)
     return self.core(inputs, state)
 
   def initial_state(self, batch_size: Optional[int]):
     return self.core.initial_state(batch_size)
 
   def _is_batched(self, state):
-    state = jax.tree_leaves(state)
+    state = jax.tree_util.tree_leaves(state)
     if not state:  # Empty state is treated as unbatched.
       return False
-    batched = jax.tree_leaves(self.initial_state(batch_size=1))
+    batched = jax.tree_util.tree_leaves(self.initial_state(batch_size=1))
     return all(b.shape[1:] == s.shape[1:] for b, s in zip(batched, state))
 
 
@@ -738,7 +740,7 @@ class _DeepRNN(RNNCore):
     concat = lambda *args: jnp.concatenate(args, axis=-1)
     for idx, layer in enumerate(self.layers):
       if self.skip_connections and idx > 0:
-        current_inputs = jax.tree_map(concat, inputs, current_inputs)
+        current_inputs = jax.tree_util.tree_map(concat, inputs, current_inputs)
 
       if isinstance(layer, RNNCore):
         current_inputs, next_state = layer(current_inputs, state[state_idx])
@@ -749,7 +751,7 @@ class _DeepRNN(RNNCore):
         current_inputs = layer(current_inputs)
 
     if self.skip_connections:
-      out = jax.tree_map(concat, *outputs)
+      out = jax.tree_util.tree_map(concat, *outputs)
     else:
       out = current_inputs
 

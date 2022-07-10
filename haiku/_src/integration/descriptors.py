@@ -56,7 +56,7 @@ class Recurrent(Wrapped):
     self.unroller = unroller
 
   def __call__(self, x: jnp.ndarray):
-    initial_state = jax.tree_map(
+    initial_state = jax.tree_util.tree_map(
         lambda v: v.astype(x.dtype),
         self.wrapped.initial_state(batch_size=x.shape[0]))
     x = jnp.expand_dims(x, axis=0)

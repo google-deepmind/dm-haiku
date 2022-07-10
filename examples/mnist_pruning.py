@@ -162,9 +162,10 @@ def update_mask(params: hk.Params, sparsity_fraction: float,
 @jax.jit
 def get_sparsity(params: hk.Params):
   """Calculate the total sparsity and tensor-wise sparsity of params."""
-  total_params = sum(jnp.size(x) for x in jax.tree_leaves(params))
-  total_nnz = sum(jnp.sum(x != 0.) for x in jax.tree_leaves(params))
-  leaf_sparsity = jax.tree_map(lambda x: jnp.sum(x == 0) / jnp.size(x), params)
+  total_params = sum(jnp.size(x) for x in jax.tree_util.tree_leaves(params))
+  total_nnz = sum(jnp.sum(x != 0.) for x in jax.tree_util.tree_leaves(params))
+  leaf_sparsity = jax.tree_util.tree_map(
+      lambda x: jnp.sum(x == 0) / jnp.size(x), params)
   return total_params, total_nnz, leaf_sparsity
 
 
@@ -217,7 +218,8 @@ def main(_):
     logits = net.apply(params, batch)
     labels = jax.nn.one_hot(batch["label"], 10)
 
-    l2_loss = 0.5 * sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(params))
+    l2_loss = 0.5 * sum(
+        jnp.sum(jnp.square(p)) for p in jax.tree_util.tree_leaves(params))
     softmax_xent = -jnp.sum(labels * jax.nn.log_softmax(logits))
     softmax_xent /= labels.shape[0]
 

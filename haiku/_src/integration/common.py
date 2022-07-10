@@ -62,7 +62,7 @@ class DTypeTestCase(parameterized.TestCase):
 
     def init_fn(rng, x):
       params, state = g.init(rng, x)
-      state = jax.tree_map(cast_if_floating, state)
+      state = jax.tree_util.tree_map(cast_if_floating, state)
       return params, state
 
     x = np.ones(shape, test_dtype)

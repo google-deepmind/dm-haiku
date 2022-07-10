@@ -277,7 +277,7 @@ def layer_stack(num_layers: int,
     if with_per_layer_inputs:
       @functools.wraps(f)
       def wrapped(x, *args, **kwargs):
-        for ys in jax.tree_leaves(args):
+        for ys in jax.tree_util.tree_leaves(args):
           assert ys.shape[0] == num_layers
         return _LayerStackWithPerLayer(
             f, num_layers, unroll=unroll,

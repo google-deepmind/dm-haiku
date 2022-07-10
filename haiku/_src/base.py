@@ -224,7 +224,7 @@ def new_context(
   ...   mod = hk.nets.MLP([300, 100, 10])
   ...   y1 = mod(jnp.ones([1, 1]))
 
-  >>> assert len(jax.tree_leaves(ctx.collect_params())) == 6
+  >>> assert len(jax.tree_util.tree_leaves(ctx.collect_params())) == 6
 
   >>> with ctx:
   ...   y2 = mod(jnp.ones([1, 1]))
@@ -1166,8 +1166,8 @@ def set_state(name: str, value):
   state = frame.state[bundle_name]
 
   if state_setter_stack:
-    shape = jax.tree_map(maybe_shape, value)
-    dtype = jax.tree_map(maybe_dtype, value)
+    shape = jax.tree_util.tree_map(maybe_shape, value)
+    dtype = jax.tree_util.tree_map(maybe_dtype, value)
     fq_name = bundle_name + "/" + name
     context = SetterContext(full_name=fq_name, module=current_module(),
                             original_dtype=dtype, original_shape=shape)

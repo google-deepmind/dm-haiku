@@ -230,7 +230,7 @@ def intercept_methods(interceptor: MethodGetter):
   ...       x = x.astype(jnp.float32)
   ...     return x
   ...
-  ...   args, kwargs = jax.tree_map(cast_if_array, (args, kwargs))
+  ...   args, kwargs = jax.tree_util.tree_map(cast_if_array, (args, kwargs))
   ...   out = next_f(*args, **kwargs)
   ...   return out
 
@@ -346,7 +346,7 @@ def name_scope(name: str) -> ContextManager[None]:
 
   >>> f = hk.transform(lambda x: MyModule()(x))
   >>> params = f.init(jax.random.PRNGKey(42), jnp.ones([1, 1]))
-  >>> jax.tree_map(jnp.shape, params)
+  >>> jax.tree_util.tree_map(jnp.shape, params)
   {'my_module/my_name_scope': {'w': ()},
    'my_module/my_name_scope/submodule': {'b': (1,), 'w': (1, 1)}}
 

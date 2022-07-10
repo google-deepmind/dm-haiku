@@ -300,7 +300,7 @@ class FilteringTest(parameterized.TestCase):
         return 2. * v
 
     new_params = filtering.map(map_fn, params)
-    self.assertLen(jax.tree_leaves(new_params), 4)
+    self.assertLen(jax.tree_util.tree_leaves(new_params), 4)
 
     first_layer_params, second_layer_params = filtering.partition(
         lambda module_name, *_: module_name == "first_layer",

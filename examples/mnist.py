@@ -64,7 +64,8 @@ def main(_):
     logits = net.apply(params, batch)
     labels = jax.nn.one_hot(batch["label"], 10)
 
-    l2_loss = 0.5 * sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(params))
+    l2_loss = 0.5 * sum(
+        jnp.sum(jnp.square(p)) for p in jax.tree_util.tree_leaves(params))
     softmax_xent = -jnp.sum(labels * jax.nn.log_softmax(logits))
     softmax_xent /= labels.shape[0]
 

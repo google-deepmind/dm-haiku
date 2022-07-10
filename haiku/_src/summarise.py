@@ -84,8 +84,8 @@ class ModuleDetails:
 
   @classmethod
   def of(cls, module: hk.Module, method_name: str) -> "ModuleDetails":
-    params = jax.tree_map(ArraySpec.from_array, module.params_dict())
-    state = jax.tree_map(ArraySpec.from_array, module.state_dict())
+    params = jax.tree_util.tree_map(ArraySpec.from_array, module.params_dict())
+    state = jax.tree_util.tree_map(ArraySpec.from_array, module.state_dict())
     return ModuleDetails(module=module, method_name=method_name, params=params,
                          state=state)
 
@@ -125,7 +125,7 @@ def get_call_stack() -> Sequence[ModuleDetails]:
 
 
 def to_spec(tree):
-  return jax.tree_map(
+  return jax.tree_util.tree_map(
       lambda x: ArraySpec.from_array(x) if isinstance(x, jnp.ndarray) else x,
       tree)
 

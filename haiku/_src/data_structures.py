@@ -34,7 +34,7 @@ K = TypeVar("K")
 V = TypeVar("V")
 T = TypeVar("T")
 U = TypeVar("U")
-PyTreeDef = type(jax.tree_structure(None))
+PyTreeDef = type(jax.tree_util.tree_structure(None))
 
 
 class Stack(Generic[T]):
@@ -141,8 +141,8 @@ def to_haiku_dict(structure: Mapping[K, V]) -> Mapping[K, V]:
 
 def _copy_structure(tree):
   """Returns a copy of the given structure."""
-  leaves, treedef = jax.tree_flatten(tree)
-  return jax.tree_unflatten(treedef, leaves)
+  leaves, treedef = jax.tree_util.tree_flatten(tree)
+  return jax.tree_util.tree_unflatten(treedef, leaves)
 
 
 def _to_dict_recurse(value: Any):
@@ -182,8 +182,8 @@ class FlatComponents(NamedTuple):
 class FlatMap(Mapping[K, V]):
   """Immutable mapping with O(1) flatten and O(n) unflatten operation.
 
-  Warning: this type is only efficient when used with ``jax.tree_*``. When used
-  with ``tree.*`` it has similar performance to ``dict``.
+  Warning: this type is only efficient when used with ``jax.tree_util.tree_*``.
+  When used with ``tree.*`` it has similar performance to ``dict``.
 
   Note that to prevent common errors immutable shims are returned for any
   nested mappings.
@@ -197,14 +197,14 @@ class FlatMap(Mapping[K, V]):
       mapping = None
 
       # When unflattening we cannot assume that the leaves are not pytrees (for
-      # example: `jax.tree_map(list, my_map)` would pass a list of lists in
-      # as leaves).
+      # example: `jax.tree_util.tree_map(list, my_map)` would pass a list of
+      # lists in as leaves).
       if not jax.tree_util.all_leaves(leaves):
-        mapping = jax.tree_unflatten(structure, leaves)
-        leaves, structure = jax.tree_flatten(mapping)
+        mapping = jax.tree_util.tree_unflatten(structure, leaves)
+        leaves, structure = jax.tree_util.tree_flatten(mapping)
     else:
       mapping = dict(*args, **kwargs)
-      leaves, structure = jax.tree_flatten(mapping)
+      leaves, structure = jax.tree_util.tree_flatten(mapping)
 
     self._structure = structure
     self._leaves = tuple(leaves)
@@ -212,7 +212,8 @@ class FlatMap(Mapping[K, V]):
 
   def _to_mapping(self) -> Mapping[K, V]:
     if self._mapping is None:
-      self._mapping = jax.tree_unflatten(self._structure, self._leaves)
+      self._mapping = jax.tree_util.tree_unflatten(
+          self._structure, self._leaves)
     return self._mapping
 
   def keys(self):

@@ -105,6 +105,7 @@ from haiku._src.stateful import cond
 from haiku._src.stateful import eval_shape
 from haiku._src.stateful import fori_loop
 from haiku._src.stateful import grad
+from haiku._src.stateful import named_call
 from haiku._src.stateful import remat
 from haiku._src.stateful import scan
 from haiku._src.stateful import switch

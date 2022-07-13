@@ -805,6 +805,7 @@ hk_py_test(
     deps = [
         ":base",
         ":base_test_lib",
+        ":initializers",
         ":module",
         ":stateful",
         ":test_utils",

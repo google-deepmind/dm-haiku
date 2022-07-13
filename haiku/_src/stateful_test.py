@@ -21,6 +21,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import base
 from haiku._src import base_test
+from haiku._src import initializers
 from haiku._src import module
 from haiku._src import stateful
 from haiku._src import test_utils
@@ -618,6 +619,18 @@ class StatefulTest(parameterized.TestCase):
       self.assertFalse(
           np.array_equal(a, b),
           msg=f"Keys should not be equal, but {a_name} == {b_name}")
+
+  @test_utils.transform_and_run(run_apply=False)
+  def test_vmap_split_rng_better_out_axes_error(self):
+    def creates_params(_):
+      base.get_parameter("mapped",
+                         (), jnp.float32,
+                         init=initializers.TruncatedNormal())
+    f = stateful.vmap(creates_params, split_rng=True)
+    x = jnp.arange(4)
+    with self.assertRaisesRegex(ValueError,
+                                "split_rng to True during initialization"):
+      f(x)
 
   def test_while_loop_rejected_in_init(self):
     def f():

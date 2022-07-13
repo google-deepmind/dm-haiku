@@ -814,7 +814,19 @@ def vmap(
       saved_rng = state.rng
       state = InternalState(state.params, state.state, rng)
 
-    out, state = mapped_pure_fun(args, state)
+    try:
+      out, state = mapped_pure_fun(args, state)
+    except ValueError as err:
+      if "out_axes" in str(err):
+        # TODO(lenamartens): add error for state too.
+        raise ValueError("hk.vmap does not support setting split_rng to True "
+                         "during initialization because it assumes parameters "
+                         "are always shared along the mapped dimension. "
+                         "Consider switching the value of `split_rng` to False "
+                         "during initialization through `hk.running_init()`."
+                         ) from err
+      else:
+        raise err
 
     if split_rng:
       state = InternalState(state.params, state.state, saved_rng)

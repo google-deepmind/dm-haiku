@@ -137,7 +137,7 @@ def apply_mask(params: hk.Params, masks: Sequence[hk.Params],
   pruned_params = []
   for value, mask in zip(params_to_prune, masks):
     pruned_params.append(
-        jax.tree_util.tree_multimap(lambda x, y: x * y, value, mask))
+        jax.tree_util.tree_map(lambda x, y: x * y, value, mask))
   params = hk.data_structures.merge(*pruned_params, params_no_prune)
   return params
 

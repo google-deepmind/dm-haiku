@@ -521,7 +521,7 @@ class BaseTest(parameterized.TestCase):
     s.reserve(10)
     hk_keys = tuple(next(s) for _ in range(10))
     jax_keys = tuple(jax.random.split(k, num=11)[1:])
-    jax.tree_util.tree_multimap(
+    jax.tree_util.tree_map(
         np.testing.assert_array_equal, hk_keys, jax_keys)
 
   def test_prng_reserve_twice(self):
@@ -533,7 +533,7 @@ class BaseTest(parameterized.TestCase):
     k, subkey1, subkey2 = tuple(jax.random.split(k, num=3))
     _, subkey3, subkey4 = tuple(jax.random.split(k, num=3))
     jax_keys = (subkey1, subkey2, subkey3, subkey4)
-    jax.tree_util.tree_multimap(
+    jax.tree_util.tree_map(
         np.testing.assert_array_equal, hk_keys, jax_keys)
 
   def test_prng_sequence_split(self):
@@ -541,7 +541,7 @@ class BaseTest(parameterized.TestCase):
     s = base.PRNGSequence(k)
     hk_keys = s.take(10)
     jax_keys = tuple(jax.random.split(k, num=11)[1:])
-    jax.tree_util.tree_multimap(
+    jax.tree_util.tree_map(
         np.testing.assert_array_equal, hk_keys, jax_keys)
 
   @parameterized.parameters(42, 28)

@@ -25,6 +25,7 @@ import warnings
 
 from haiku._src import config
 from haiku._src import data_structures
+from haiku._src import hk_module
 from haiku._src.typing import (  # pylint: disable=g-multiple-import
     Initializer,
     Params,
@@ -266,24 +267,6 @@ def inside_transform():
   return bool(frame_stack)
 
 
-def safe_get_module_name(module: Module) -> str:
-  """Checks if parameters/state can be safely created before returning the module name."""
-  # TODO(tomhennigan) Module specific code should be part of `module.py`.
-  if not hasattr(module, "module_name"):
-    raise ValueError("The super constructor must be called before you create "
-                     "parameters or submodules.")
-
-  if (closure_boundary_stack
-      and module._creation_frame_id < closure_boundary_stack.peek()):  # pylint: disable=protected-access
-    raise ValueError("You can't functionally close over a module which has "
-                     "been intitialized outside of the function wrapped in "
-                     "hk.experimental.transparent_lift or "
-                     "hk.experimental.layer_stack.\n"
-                     "The module you closed over is called "
-                     f"'{module.module_name}'.")
-  return module.module_name
-
-
 def current_module_state() -> Optional[ModuleState]:
   frame = current_frame()
   if frame.module_stack:
@@ -338,7 +321,7 @@ def current_name() -> str:
   assert_context("experimental.current_name")
   module = current_module()
   if module is not None:
-    return safe_get_module_name(module)
+    return hk_module.safe_get_module_name(module)
   else:
     # Any parameters defined outside an `hk.Module` are put in the same group.
     return "~"

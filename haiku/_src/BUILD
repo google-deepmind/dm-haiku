@@ -41,6 +41,7 @@ hk_py_library(
     deps = [
         ":config",
         ":data_structures",
+        ":module",
         ":typing",
         # pip: jax
     ],

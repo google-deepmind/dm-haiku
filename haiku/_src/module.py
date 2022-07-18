@@ -459,7 +459,7 @@ def unique_and_canonical_name(name: str) -> str:
 
     # Include the parent name.
     parent_module = module_state.module
-    parent_name = base.safe_get_module_name(parent_module)
+    parent_name = safe_get_module_name(parent_module)
     name = parent_name + "/" + name
 
   # Test if the user has explicitly numbered this module.
@@ -561,6 +561,23 @@ class Module(object, metaclass=ModuleMetaclass):
           "`module.state_dict()` must be used as part of an `hk.transform`.")
 
     return params_or_state_dict(self.module_name, self._submodules, "state")
+
+
+def safe_get_module_name(module: Module) -> str:
+  """Checks if parameters/state can be safely created before returning the module name."""
+  if not hasattr(module, "module_name"):
+    raise ValueError("The super constructor must be called before you create "
+                     "parameters or submodules.")
+
+  if (base.closure_boundary_stack
+      and module._creation_frame_id < base.closure_boundary_stack.peek()):  # pylint: disable=protected-access
+    raise ValueError("You can't functionally close over a module which has "
+                     "been intitialized outside of the function wrapped in "
+                     "hk.experimental.transparent_lift or "
+                     "hk.experimental.layer_stack.\n"
+                     "The module you closed over is called "
+                     f"'{module.module_name}'.")
+  return module.module_name
 
 
 def params_or_state_dict(

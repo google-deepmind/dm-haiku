@@ -15,6 +15,7 @@
 """Tests for jaxpr_info."""
 from typing import Optional
 
+from absl import logging
 from absl.testing import absltest
 from haiku._src import config
 from haiku._src import conv
@@ -56,14 +57,14 @@ class JaxprInfoTest(absltest.TestCase):
 
     a = jnp.zeros((12, 7))
     mod = jaxpr_info.make_model_info(add)(a, a)
-    self.assertEqual(
-        jaxpr_info.format_module(mod).strip(), """
+    self.assertContentsEqual(
+        jaxpr_info.format_module(mod), """
 add
   sign
     sign in f32[12,7], out f32[12,7]
   cos in f32[12,7], out f32[12,7]
   add in f32[12,7], f32[12,7], out f32[12,7]
-""".strip())
+""")
 
   def test_compute_flops(self):
 
@@ -77,14 +78,14 @@ add
 
     a = jnp.zeros((12, 7))
     mod = jaxpr_info.make_model_info(add, compute_flops=_compute_flops)(a, a)
-    self.assertEqual(
-        jaxpr_info.format_module(mod).strip(), """
+    self.assertContentsEqual(
+        jaxpr_info.format_module(mod), """
 add 252 flops
   sign 84 flops
     sign 84 flops in f32[12,7], out f32[12,7]
   cos 84 flops in f32[12,7], out f32[12,7]
   add 84 flops in f32[12,7], f32[12,7], out f32[12,7]
-""".strip())
+""")
 
   def test_haiku_module(self):
 
@@ -98,15 +99,52 @@ add 252 flops
     params, state = forward_t.init(rng, x)
 
     mod = jaxpr_info.make_model_info(forward_t.apply)(params, state, rng, x)
-    self.assertEqual(
-        jaxpr_info.format_module(mod).strip(), """
+    self.assertContentsEqual(
+        jaxpr_info.format_module(mod), """
 apply_fn
   my_model 4.624 kparams
     conv2_d 4.624 kparams
       conv_general_dilated in f32[16,8,8,32], f32[3,3,32,16], out f32[16,8,8,16]
       broadcast_in_dim in f32[16], out f32[16,8,8,16]
       add in f32[16,8,8,16], f32[16,8,8,16], out f32[16,8,8,16]
+""")
+
+  def test_haiku_module_loss(self):
+
+    def forward(x):
+      return MyModel()(x)
+
+    forward_t = transform.transform_with_state(forward)
+
+    rng = jax.random.PRNGKey(42)
+    x = jnp.zeros((16, 8, 8, 32))
+    params, state = forward_t.init(rng, x)
+
+    @jax.grad
+    def loss(params, state, rng, x):
+      return jnp.sum(forward_t.apply(params, state, rng, x)[0])
+
+    mod = jaxpr_info.make_model_info(loss)(params, state, rng, x)
+    self.assertContentsEqual(
+        jaxpr_info.format_module(mod).strip(), """
+loss
+  my_model 4.624 kparams
+    conv2_d 4.624 kparams
+      conv_general_dilated in f32[16,8,8,32], f32[3,3,32,16], out f32[16,8,8,16]
+      broadcast_in_dim in f32[16], out f32[16,8,8,16]
+      add in f32[16,8,8,16], f32[16,8,8,16], out f32[16,8,8,16]
+  broadcast_in_dim in f32[], out f32[16,8,8,16]
+  transpose(my_model)
+    transpose(conv2_d)
+      reduce_sum in f32[16,8,8,16], out f32[16]
+      conv_general_dilated in f32[16,8,8,32], f32[16,8,8,16], out f32[3,3,32,16]
 """.strip())
+
+  def assertContentsEqual(self, a: str, b: str):
+    a, b = a.strip(), b.strip()
+    logging.info("a:\n%s", a)
+    logging.info("b:\n%s", b)
+    self.assertEqual(a, b)
 
 if __name__ == "__main__":
   absltest.main()

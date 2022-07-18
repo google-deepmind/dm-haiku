@@ -544,6 +544,7 @@ hk_py_test(
         ":jaxpr_info",
         ":module",
         ":transform",
+        # pip: absl/logging
         # pip: absl/testing:absltest
         # pip: jax
         # pip: numpy

@@ -995,7 +995,7 @@ def assert_jax_usage(public_symbol_name: str):
         "tl;dr - You need to use a Haiku overloaded transform (e.g. `hk.vmap`) "
         "or control flow operator (e.g. `hk.cond`) instead of the `jax.*` "
         "equivalent for untransformed functions using Haiku APIs."
-        "\n\n",
+        "\n\n"
         "Some APIs in JAX (e.g. `jit`, `vmap`, `cond`, `switch`) take "
         f"functions that are expected to be pure. `hk.{public_symbol_name}` "
         "has a side effect, and using it inside a function (without also using "

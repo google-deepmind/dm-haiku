@@ -37,8 +37,10 @@ else:
   from typing import Protocol
 # pylint: enable=g-import-not-at-top
 
-ThreadLocalStack = data_structures.ThreadLocalStack
 T = TypeVar("T")
+
+ThreadLocalStack = data_structures.ThreadLocalStack[T]
+
 _APPLY_NAME_SCOPE = "__haiku_name_scope"
 _CUSTOM_NAME = "__haiku_custom_name"
 

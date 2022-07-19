@@ -45,8 +45,10 @@ except ImportError:
 
 DEFAULT_PRNG_RESERVE_SIZE = 1
 
-Stack = data_structures.Stack
-ThreadLocalStack = data_structures.ThreadLocalStack
+T = TypeVar("T")
+
+Stack = data_structures.Stack[T]
+ThreadLocalStack = data_structures.ThreadLocalStack[T]
 
 ModuleState = collections.namedtuple("ModuleState", ("module", "method_name"))
 StatePair = collections.namedtuple("StatePair", ("initial", "current"))
@@ -434,8 +436,6 @@ class DoNotStore:
     raise ValueError("DO_NOT_STORE does not have a dtype.")
 
 DO_NOT_STORE = DoNotStore()
-
-T = TypeVar("T")
 
 
 def check_not_none(value: Optional[T], msg: str) -> T:

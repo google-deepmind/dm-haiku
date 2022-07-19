@@ -18,12 +18,14 @@ import collections
 import contextlib
 import threading
 import types
-from typing import Dict, Type, Optional, Union
+from typing import Dict, Type, TypeVar, Optional, Union
 
 from haiku._src import base
 from haiku._src import data_structures
 from haiku._src import module
 import jmp
+
+T = TypeVar('T')
 
 # If you are forking replace this with `import haiku as hk`.
 hk = types.ModuleType('haiku')
@@ -31,7 +33,7 @@ hk.custom_getter = base.custom_getter
 hk.custom_creator = base.custom_creator
 hk.MethodContext = module.MethodContext
 hk.Module = module.Module
-Stack = data_structures.Stack
+Stack = data_structures.Stack[T]
 del base, data_structures
 
 ClassInfo = collections.namedtuple('ClassInfo', 'module,qualname')

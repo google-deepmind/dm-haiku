@@ -120,22 +120,31 @@ apply_fn
     x = jnp.zeros((16, 8, 8, 32))
     params, state = forward_t.init(rng, x)
 
-    @jax.grad
     def loss(params, state, rng, x):
-      return jnp.sum(forward_t.apply(params, state, rng, x)[0])
+      loss = jnp.sum(forward_t.apply(params, state, rng, x)[0])
+      return loss, loss
 
-    mod = jaxpr_info.make_model_info(loss)(params, state, rng, x)
+    grad = jax.grad(loss, has_aux=True)
+    mod = jaxpr_info.make_model_info(grad)(params, state, rng, x)
+    formatted_mod = jaxpr_info.format_module(mod)
+
+    # Support old JAX versions on GitHub presubmits.
+    formatted_mod = formatted_mod.replace("transpose(jvp(conv2_d))",
+                                          "conv2_d").replace(
+                                              "jvp(conv2_d)", "conv2_d")
+
     self.assertContentsEqual(
-        jaxpr_info.format_module(mod).strip(), """
+        formatted_mod, """
 loss
-  my_model 4.624 kparams
-    conv2_d 4.624 kparams
+  jvp(my_model)
+    conv2_d
       conv_general_dilated in f32[16,8,8,32], f32[3,3,32,16], out f32[16,8,8,16]
       broadcast_in_dim in f32[16], out f32[16,8,8,16]
       add in f32[16,8,8,16], f32[16,8,8,16], out f32[16,8,8,16]
+  reduce_sum in f32[16,8,8,16], out f32[]
   broadcast_in_dim in f32[], out f32[16,8,8,16]
-  transpose(my_model)
-    transpose(conv2_d)
+  transpose(jvp(my_model))
+    conv2_d
       reduce_sum in f32[16,8,8,16], out f32[16]
       conv_general_dilated in f32[16,8,8,32], f32[16,8,8,16], out f32[3,3,32,16]
 """.strip())

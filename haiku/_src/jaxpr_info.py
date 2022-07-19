@@ -35,7 +35,7 @@ import itertools
 import logging
 import os
 import sys
-from typing import Any, Callable, Dict, List, Mapping, NamedTuple, Set, Optional
+from typing import Any, Callable, Dict, List, Mapping, NamedTuple, Set, Sequence, Optional
 
 from haiku._src import summarise
 import jax
@@ -95,6 +95,9 @@ class Expression:
   # For internal use only, the first variable in outvars.
   first_outvar: str = ''
 
+  # For internal use, the name scope stack of this expression.
+  name_stack: Sequence[str] = dataclasses.field(default_factory=list)
+
 
 ComputeFlopsFn = Callable[[jax.core.JaxprEqn, Expression], int]
 
@@ -137,22 +140,22 @@ def make_model_info(
 
   def make_module(*args, **kwargs):
     old_limit = sys.getrecursionlimit()
-    prev = jax.config.jax_experimental_name_stack
 
     try:
       # Increase recursion limit as graphs may be very deep
       sys.setrecursionlimit(int(10e3))
-      # TODO(lenamartens): support new name_stack implementation.
-      jax.config.update('jax_experimental_name_stack', False)
 
       # Compute flops for all expressions.
       module = Module(name=name)
       _process_jaxpr(
           make_jaxpr(*args, **kwargs).jaxpr,
           compute_flops,
-          scope=_ModuleScope(module_path=name, named_call_id='0'),
+          scope=_ModuleScope(named_call_id='0'),
           seen=set(),
           module=module)
+
+      if jax.config.jax_experimental_name_stack:
+        _name_scopes_to_modules(module)
 
       if include_module_info:
         # Add haiku param and state counts for all haiku modules.
@@ -165,25 +168,60 @@ def make_model_info(
             _add_param_counts(expr.submodule, expr.submodule.name, by_name)
     finally:
       sys.setrecursionlimit(old_limit)
-      jax.config.update('jax_experimental_name_stack', prev)
     return module
 
   return make_module
 
 
+def _name_scopes_to_modules(module: Module):
+  """Converts name scopes to nested Modules, as if a call jaxpr were present."""
+  expressions = list(module.expressions)
+  del module.expressions[:]
+
+  if module.flops:
+    # Flops are recomputed below.
+    module.flops = 0
+
+  # The nested set of Modules corresponding to the current name scope stack.
+  module_stack = [module]
+
+  for e in expressions:
+    if e.submodule is not None:
+      _name_scopes_to_modules(e.submodule)
+
+    # Close open scopes.
+    while len(module_stack) > len(e.name_stack) + 1:
+      module_stack.pop()
+
+    for i, n in enumerate(e.name_stack):
+      i = i + 1  # Offset to account for the outermost module.
+      if i < len(module_stack) and n != module_stack[i].name:
+        # Entering a different name scope.
+        while len(module_stack) > i:
+          module_stack.pop()
+
+      if i == len(module_stack):
+        # Represent the scope as a dummy module.
+        scope = Expression(primitive='name_scope', invars='', outvars='')
+        scope.submodule = Module(name=n)
+        module_stack[-1].expressions.append(scope)
+        module_stack.append(scope.submodule)
+
+    # Expressions belong to the corresponding innermost module.
+    module_stack[-1].expressions.append(e)
+    if e.flops:
+      for m in module_stack:
+        m.flops = (m.flops or 0) + e.flops
+
+
 class _ModuleScope(NamedTuple):
   """Helper object to track the nesting of named_calls and module scopes."""
-  # The nested module name. This is used for printing flops information in a
-  # human readable way.
-  module_path: str
-
   # The concatenation of all outer named_call jaxprs. This is used to uniquely
   # identify which computations we've already seen.
   named_call_id: str
 
-  def join(self, eqn: jax.core.JaxprEqn, name: str) -> '_ModuleScope':
+  def join(self, eqn: jax.core.JaxprEqn) -> '_ModuleScope':
     return _ModuleScope(
-        module_path=self.module_path + '/' + name,
         named_call_id=self.named_call_id + '/' + str(id(eqn)))
 
 
@@ -228,19 +266,20 @@ def _process_eqn(eqn: jax.core.JaxprEqn, seen: Set[str],
                  module: Module,
                  binder_idx: Dict[jax.core.Var, int]) -> Optional[int]:
   """Recursive walks the JaxprEqn to compute the flops it takes."""
-
   for out_var in eqn.outvars:
     _mark_seen(binder_idx, seen, out_var, scope)
 
   outvars = sorted([_var_to_str(binder_idx, e) for e in eqn.outvars],
                    key=_var_sort_key)
+  name_stack = str(eqn.source_info.name_stack)
   expression = Expression(
       primitive=eqn.primitive.name,
       invars=' '.join(_var_to_str(binder_idx, v) for v in eqn.invars)
       if len(eqn.invars) < 10 else f'{len(eqn.invars)} inputs',
       outvars=' '.join(outvars) if len(outvars) < 10 else
       f'{outvars[0]}, {len(outvars) - 1} more outputs',
-      first_outvar=outvars[0])
+      first_outvar=outvars[0],
+      name_stack=name_stack.split('/') if name_stack else [])
 
   if eqn.primitive.name in [
       'named_call', 'custom_jvp_call_jaxpr', 'custom_vjp_call_jaxpr',
@@ -271,7 +310,7 @@ def _process_eqn(eqn: jax.core.JaxprEqn, seen: Set[str],
       jaxpr = eqn.params['fun_jaxpr'].jaxpr
 
     expression.submodule = Module(name=name)
-    flops = _process_jaxpr(jaxpr, compute_flops, scope.join(eqn, name), seen,
+    flops = _process_jaxpr(jaxpr, compute_flops, scope.join(eqn), seen,
                            expression.submodule)
     if compute_flops is not None:
       flops *= flops_multiplier

@@ -370,7 +370,7 @@ def lift_with_state(
   params_and_state_fn = _to_callable(
       LiftingModule(init_fn, allow_reuse=allow_reuse, name=name))
   if base.current_module():
-    name = f"{base.current_bundle_name()}/{name}"
+    name = f"{base.current_name()}/{name}"
   updater = LiftWithStateUpdater(name)
   return params_and_state_fn, updater
 
@@ -411,6 +411,6 @@ def transparent_lift_with_state(
   base.assert_context("lift_with_state")
   params_and_state_fn = _to_callable(
       LiftingModule(init_fn, transparent=True, allow_reuse=allow_reuse))
-  name = base.current_bundle_name() if base.current_module() else None
+  name = base.current_name() if base.current_module() else None
   updater = LiftWithStateUpdater(name)
   return params_and_state_fn, updater

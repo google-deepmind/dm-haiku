@@ -345,9 +345,6 @@ def current_name() -> str:
     # Any parameters defined outside an `hk.Module` are put in the same group.
     return "~"
 
-# TODO(tomhennigan): Remove this alias.
-current_bundle_name = current_name
-
 
 def assert_context(public_symbol_name):
   if not frame_stack:
@@ -500,7 +497,7 @@ def get_parameter(
 
   init = check_not_none(init, "Initializer must be specified.")
 
-  bundle_name = current_bundle_name()
+  bundle_name = current_name()
   frame = current_frame()
 
   fq_name = bundle_name + "/" + name
@@ -1097,7 +1094,7 @@ def get_state(
   """
   assert_context("get_state")
   assert_jax_usage("get_state")
-  bundle_name = current_bundle_name()
+  bundle_name = current_name()
   state = current_frame().state[bundle_name]
   fq_name = f"{bundle_name}/{name}"
   context = GetterContext(fq_name, current_module(), dtype, shape, init)
@@ -1162,7 +1159,7 @@ def set_state(name: str, value):
   assert_context("set_state")
   assert_jax_usage("set_state")
   frame = current_frame()
-  bundle_name = current_bundle_name()
+  bundle_name = current_name()
   state = frame.state[bundle_name]
 
   if state_setter_stack:

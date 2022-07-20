@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Haiku recurrent core."""
+"""Recurrent neural networks (RNNs)."""
 
 import abc
 import types
-from typing import Any, NamedTuple, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Generic, NamedTuple, Optional, Sequence, Tuple, TypeVar, Union
 
 from haiku._src import base
 from haiku._src import basic
@@ -39,8 +39,10 @@ hk.scan = stateful.scan
 inside_transform = base.inside_transform
 del base, basic, conv, initializers, module
 
+_StateT = TypeVar("_StateT")
 
-class RNNCore(hk.Module):
+
+class RNNCore(hk.Module, Generic[_StateT]):
   """Base class for RNN cores.
 
   This class defines the basic functionality that every core should
@@ -53,7 +55,7 @@ class RNNCore(hk.Module):
   """
 
   @abc.abstractmethod
-  def __call__(self, inputs, prev_state) -> Tuple[Any, Any]:
+  def __call__(self, inputs: Any, prev_state: _StateT) -> Tuple[Any, _StateT]:
     """Run one step of the RNN.
 
     Args:
@@ -67,7 +69,7 @@ class RNNCore(hk.Module):
     """
 
   @abc.abstractmethod
-  def initial_state(self, batch_size: Optional[int]):
+  def initial_state(self, batch_size: Optional[int]) -> _StateT:
     """Constructs an initial state for this core.
 
     Args:
@@ -80,7 +82,13 @@ class RNNCore(hk.Module):
     """
 
 
-def static_unroll(core, input_sequence, initial_state, time_major=True):
+def static_unroll(
+    core: Callable[[Any, _StateT], Tuple[Any, _StateT]],
+    input_sequence: Any,
+    initial_state: _StateT,
+    *,
+    time_major: bool = True,
+) -> Tuple[Any, _StateT]:
   """Performs a static unroll of an RNN.
 
   An *unroll* corresponds to calling the core on each element of the
@@ -139,12 +147,15 @@ def _swap_batch_time(inputs):
   return jax.tree_util.tree_map(lambda x: jnp.swapaxes(x, 0, 1), inputs)
 
 
-def dynamic_unroll(core,
-                   input_sequence,
-                   initial_state,
-                   time_major=True,
-                   reverse=False,
-                   return_all_states=False):
+def dynamic_unroll(
+    core: Callable[[Any, _StateT], Tuple[Any, _StateT]],
+    input_sequence: Any,
+    initial_state: _StateT,
+    *,
+    time_major: bool = True,
+    reverse: bool = False,
+    return_all_states: bool = False,
+) -> Tuple[Any, _StateT]:
   """Performs a dynamic unroll of an RNN.
 
   An *unroll* corresponds to calling the core on each element of the
@@ -273,7 +284,7 @@ class LSTMState(NamedTuple):
   cell: jnp.ndarray
 
 
-class LSTM(RNNCore):
+class LSTM(RNNCore[LSTMState]):
   r"""Long short-term memory (LSTM) RNN core.
 
   The implementation is based on :cite:`zaremba2014recurrent`. Given
@@ -338,7 +349,7 @@ class LSTM(RNNCore):
     return state
 
 
-class ConvNDLSTM(RNNCore):
+class ConvNDLSTM(RNNCore[LSTMState]):
   r"""``num_spatial_dims``-D convolutional LSTM.
 
   The implementation is based on :cite:`xingjian2015convolutional`.

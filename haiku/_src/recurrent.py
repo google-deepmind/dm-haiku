@@ -40,7 +40,7 @@ inside_transform = base.inside_transform
 del base, basic, conv, initializers, module
 
 
-class RNNCore(hk.Module):
+class RNNCore(abc.ABC, hk.Module):
   """Base class for RNN cores.
 
   This class defines the basic functionality that every core should

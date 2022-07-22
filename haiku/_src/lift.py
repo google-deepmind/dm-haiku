@@ -125,6 +125,7 @@ class LiftingModule(hk.Module):
       return inner_params, inner_state
 
 
+@base.replaceable
 def lift(
     init_fn: Callable[..., hk.Params],
     *,
@@ -304,6 +305,7 @@ def _to_callable(f: Callable[..., T]) -> Callable[..., T]:
   return lambda *a, **k: f(*a, **k)  # pylint: disable=unnecessary-lambda
 
 
+@base.replaceable
 def lift_with_state(
     init_fn: Callable[..., Tuple[hk.Params, hk.State]],
     *,

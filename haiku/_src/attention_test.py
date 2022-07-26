@@ -18,6 +18,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 
 from haiku._src import attention
+from haiku._src import initializers
 from haiku._src import test_utils
 from haiku._src import transform
 
@@ -103,6 +104,23 @@ class MultiHeadAttentionTest(parameterized.TestCase):
     rngs = jax.random.split(vmap_rng, 13)  # give each instance its own rng
     y = vapply(params, rngs, query, key, value)
     self.assertEqual(y.shape, (13, 7, 15))
+
+  @test_utils.transform_and_run
+  def test_w_init(self):
+
+    with self.assertRaisesRegex(ValueError, "provide a weight initializer"):
+      attention.MultiHeadAttention(2, 3)
+    with self.assertRaisesRegex(ValueError, "provide only `w_init`"):
+      attention.MultiHeadAttention(
+          2, 3, w_init_scale=5, w_init=initializers.Constant(0))
+
+    w_init = initializers.Constant(3)
+    mha1 = attention.MultiHeadAttention(2, 3, w_init=w_init)
+    self.assertIs(mha1.w_init, w_init)
+
+    mha2 = attention.MultiHeadAttention(2, 3, w_init_scale=5)
+    self.assertIsInstance(mha2.w_init, initializers.VarianceScaling)
+
 
 if __name__ == "__main__":
   absltest.main()

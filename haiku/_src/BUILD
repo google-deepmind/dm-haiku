@@ -26,12 +26,12 @@ hk_py_test(
     srcs = ["attention_test.py"],
     deps = [
         ":attention",
+        ":initializers",
         ":test_utils",
         ":transform",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
-        # pip: numpy
     ],
 )
 

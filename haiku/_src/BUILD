@@ -743,6 +743,17 @@ hk_py_library(
     ],
 )
 
+hk_py_test(
+    name = "test_utils_test",
+    srcs = ["test_utils_test.py"],
+    deps = [
+        ":test_utils",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        # pip: jax
+    ],
+)
+
 hk_py_library(
     name = "spectral_norm",
     srcs = ["spectral_norm.py"],

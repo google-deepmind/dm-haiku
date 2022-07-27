@@ -19,21 +19,26 @@ import inspect
 import itertools
 import os
 import types
-from typing import Callable, Generator, Optional, Sequence, Tuple, TypeVar
+from typing import Any, Callable, Generator, Optional, Sequence, Tuple, TypeVar
 
 from absl.testing import parameterized
 from haiku._src import config
 from haiku._src import transform
-from jax import random
+import jax
 
 T = TypeVar("T")
 Fn = Callable[..., T]
+Key = Any  # NOTE: jax.random.PRNGKey is not actually a type.
 
 
-def transform_and_run(f: Optional[Fn] = None,
-                      seed: Optional[int] = 42,
-                      run_apply: bool = True,
-                      jax_transform: Optional[Callable[[Fn], Fn]] = None) -> T:
+def transform_and_run(
+    f: Optional[Fn] = None,
+    seed: Optional[int] = 42,
+    run_apply: bool = True,
+    jax_transform: Optional[Callable[[Fn], Fn]] = None,
+    *,
+    map_rng: Optional[Callable[[Key], Key]] = None,
+) -> T:
   r"""Transforms the given function and runs init then (optionally) apply.
 
   Equivalent to:
@@ -77,12 +82,36 @@ def transform_and_run(f: Optional[Fn] = None,
 
   See :func:`transform` for more details.
 
+  To use this with `pmap` (without ``chex``) you need to additionally pass in a
+  function to map the init/apply rng keys. For example, if you want every
+  instance of your pmap to have the same key:
+
+  >>> def same_key_on_all_devices(key):
+  ...   return jnp.broadcast_to(key, (jax.local_device_count(), *key.shape))
+
+  >>> @hk.testing.transform_and_run(jax_transform=jax.pmap,
+  ...                               map_rng=same_key_on_all_devices)
+  ... def test_something():
+  ...   ...
+
+  Or you can use a different key:
+
+  >>> def different_key_on_all_devices(key):
+  ...   return jax.random.split(key, jax.local_device_count())
+
+  >>> @hk.testing.transform_and_run(jax_transform=jax.pmap,
+  ...                               map_rng=different_key_on_all_devices)
+  ... def test_something_else():
+  ...   ...
+
   Args:
     f: A function method to transform.
     seed: A seed to pass to init and apply.
     run_apply: Whether to run apply as well as init. Defaults to true.
     jax_transform: An optional jax transform to apply on the init and apply
       functions.
+    map_rng: If set to a non-None value broadcast the init/apply rngs
+      broadcast_rng-ways.
 
   Returns:
     A function that :func:`~haiku.transform`\ s ``f`` and runs ``init`` and
@@ -93,13 +122,17 @@ def transform_and_run(f: Optional[Fn] = None,
         transform_and_run,
         seed=seed,
         run_apply=run_apply,
-        jax_transform=jax_transform)
+        jax_transform=jax_transform,
+        map_rng=map_rng)
 
   @functools.wraps(f)
   def wrapper(*a, **k):
     """Runs init and apply of f."""
     if seed is not None:
-      init_rng, apply_rng = random.PRNGKey(seed), random.PRNGKey(seed+1)
+      init_rng, apply_rng = (jax.random.PRNGKey(seed),
+                             jax.random.PRNGKey(seed + 1))
+      if map_rng is not None:
+        init_rng, apply_rng = map(map_rng, (init_rng, apply_rng))
     else:
       init_rng, apply_rng = None, None
     init, apply = transform.transform_with_state(lambda: f(*a, **k))

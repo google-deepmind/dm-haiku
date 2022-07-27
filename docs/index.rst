@@ -18,10 +18,11 @@ abstractions for machine learning research.
 
     forward = hk.transform(forward)
 
-    rng = jax.random.PRNGKey(42)
+    rng = hk.PRNGSequence(jax.random.PRNGKey(42))
     x = jnp.ones([8, 28 * 28])
-    params = forward.init(rng, x)
-    logits = forward.apply(params, rng, x)
+    params = forward.init(next(rng), x)
+    logits = forward.apply(params, next(rng), x)
+    logits = forward.apply(params, next(rng), x)
 
 Installation
 ------------

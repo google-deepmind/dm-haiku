@@ -132,7 +132,7 @@ class HaikuTransformsTest(parameterized.TestCase):
 
     assert_allclose = functools.partial(np.testing.assert_allclose, atol=1e-5)
 
-    grad_jax_remat = jax.grad(jax.remat(f.apply), has_aux=True)
+    grad_jax_remat = jax.grad(jax.ad_checkpoint.remat(f.apply), has_aux=True)
     grad_hk_remat = jax.grad(functools.partial(f.apply, remat=True),
                              has_aux=True)
 

@@ -371,7 +371,22 @@ def thread_hk_state_in_kwargs(dec_fun):
 
 
 jit = thread_hk_state_in_kwargs(jax.jit)
-remat = thread_hk_state_in_kwargs(jax.remat)
+
+# pylint: disable=unnecessary-lambda
+# pylint: disable=g-long-lambda
+# Calls factory function to create a function then applies it to arguments.
+_factory = lambda f: functools.wraps(f)(lambda *a, **k: f()(*a, **k))
+# Wraps a function inside a lambda to hide its identity.
+_lambda_wrap = lambda f: functools.wraps(f)(lambda *a, **k: f(*a, **k))
+# jax.ad_checkpoint.remat foiling the function identity cache.
+_remat_no_cache = functools.wraps(jax.ad_checkpoint.remat)(
+    lambda f, *args, **kwargs: functools.wraps(f)(
+        _factory(lambda: jax.ad_checkpoint.remat(
+            _lambda_wrap(f), *args, **kwargs))))
+# Haiku version of jax.ad_checkpoint.remat.
+remat = thread_hk_state_in_kwargs(_remat_no_cache)
+# pylint: enable=unnecessary-lambda
+# pylint: enable=g-long-lambda
 
 
 def stateful_branch(branch_fun):

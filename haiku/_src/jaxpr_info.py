@@ -283,7 +283,7 @@ def _process_eqn(eqn: jax.core.JaxprEqn, seen: Set[str],
 
   if eqn.primitive.name in [
       'named_call', 'custom_jvp_call_jaxpr', 'custom_vjp_call_jaxpr',
-      'remat_call', 'scan', 'while', 'xla_call', 'xla_pmap', 'pjit'
+      'remat_call', 'scan', 'while', 'xla_call', 'xla_pmap', 'pjit', 'remat2'
   ]:
     flops_multiplier = 1
     if eqn.primitive.name in ['named_call', 'xla_call']:
@@ -293,6 +293,9 @@ def _process_eqn(eqn: jax.core.JaxprEqn, seen: Set[str],
     elif eqn.primitive.name in ['remat_call', 'xla_pmap']:
       name = eqn.primitive.name + ' ' + eqn.params['name']
       jaxpr = eqn.params['call_jaxpr']
+    elif eqn.primitive.name == 'remat2':
+      name = 'remat'
+      jaxpr = eqn.params['jaxpr']
     elif eqn.primitive.name == 'while':
       name = 'while'
       jaxpr = eqn.params['body_jaxpr'].jaxpr

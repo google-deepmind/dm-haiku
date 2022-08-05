@@ -140,6 +140,7 @@ class Embed(hk.Module):
       ids: jnp.ndarray,
       lookup_style: Optional[Union[str, hk.EmbedLookupStyle]] = None,
       precision: Optional[jax.lax.Precision] = None,
+      out_of_bounds_mode: Optional[str] = None
   ) -> jnp.ndarray:
     r"""Lookup embeddings.
 
@@ -150,6 +151,8 @@ class Embed(hk.Module):
       ids: integer array.
       lookup_style: Overrides the ``lookup_style`` given in the constructor.
       precision: Overrides the ``precision`` given in the constructor.
+      out_of_bounds_mode: Overrides the out-of-bounds indexing behavior for
+        gathers.
 
     Returns:
       Tensor of ``ids.shape + [embedding_dim]``.
@@ -176,7 +179,8 @@ class Embed(hk.Module):
       # indexing with DeviceArray, while indexing with numpy.ndarray works fine.
       # See https://github.com/google/jax/issues/620 for more details.
       # Cast to a jnp array in case `ids` is a tracer (eg un a dynamic_unroll).
-      return jnp.asarray(self.embeddings)[(ids,)]
+      return (jnp.asarray(self.embeddings)
+              .at[(ids,)].get(mode=out_of_bounds_mode))
 
     elif lookup_style == hk.EmbedLookupStyle.ONE_HOT:
       one_hot_ids = jax.nn.one_hot(ids, self.vocab_size)

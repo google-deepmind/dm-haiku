@@ -1075,7 +1075,7 @@ def get_state(
   >>> hk.get_state("counter")
   DeviceArray(0., dtype=float32)
 
-  MOTE: state within the same :func:`transform` and/or :class:`Module` with the
+  NOTE: state within the same :func:`transform` and/or :class:`Module` with the
   same name have the same value:
 
   >>> c1 = hk.get_state("counter")

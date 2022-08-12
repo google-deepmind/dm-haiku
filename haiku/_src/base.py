@@ -725,7 +725,8 @@ def custom_getter(
     stack.enter_context(state_getter_stack(getter))
   return stack
 
-T, U = TypeVar("T"), TypeVar("U")
+T = TypeVar("T")
+U = TypeVar("U")
 NextSetter = Callable[[str, T], U]
 Setter = Callable[[NextSetter, T, "SetterContext"], U]
 

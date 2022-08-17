@@ -749,18 +749,16 @@ def vmap(
   """Equivalent to :func:`jax.vmap` with module parameters/state not mapped.
 
   The behaviour of Haiku random key APIs under :func:`vmap` is controlled by the
-  ``split_rng`` argument::
+  ``split_rng`` argument:
 
-  .. doctest::
+  >>> x = jnp.arange(2)
+  >>> f = hk.vmap(lambda _: hk.next_rng_key(), split_rng=False)
+  >>> key1, key2 = f(x)
+  >>> assert (key1 == key2).all()
 
-     >>> x = jnp.arange(2)
-     >>> f = hk.vmap(lambda _: hk.next_rng_key(), split_rng=False)
-     >>> key1, key2 = f(x)
-     >>> assert (key1 == key2).all()
-
-     >>> f = hk.vmap(lambda _: hk.next_rng_key(), split_rng=True)
-     >>> key1, key2 = f(x)
-     >>> assert not (key1 == key2).all()
+  >>> f = hk.vmap(lambda _: hk.next_rng_key(), split_rng=True)
+  >>> key1, key2 = f(x)
+  >>> assert not (key1 == key2).all()
 
   Random numbers in Haiku are typically used for two things, firstly for
   initialising model parameters, and secondly for creating random samples as

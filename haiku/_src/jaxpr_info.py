@@ -283,7 +283,8 @@ def _process_eqn(eqn: jax.core.JaxprEqn, seen: Set[str],
 
   if eqn.primitive.name in [
       'named_call', 'custom_jvp_call_jaxpr', 'custom_vjp_call_jaxpr',
-      'remat_call', 'scan', 'while', 'xla_call', 'xla_pmap', 'pjit', 'remat2'
+      'custom_jvp_call', 'custom_vjp_call', 'remat_call', 'scan', 'while',
+      'xla_call', 'xla_pmap', 'pjit', 'remat2'
   ]:
     flops_multiplier = 1
     if eqn.primitive.name in ['named_call', 'xla_call']:
@@ -307,10 +308,17 @@ def _process_eqn(eqn: jax.core.JaxprEqn, seen: Set[str],
     elif eqn.primitive.name == 'pjit':
       name = 'pjit'
       jaxpr = eqn.params['jaxpr'].jaxpr
-    else:
+    elif eqn.primitive.name in ['custom_jvp_call', 'custom_vjp_call']:
+      name = eqn.primitive.name.replace('_call', '')
+      jaxpr = eqn.params['call_jaxpr']
+    elif eqn.primitive.name in [
+        'custom_jvp_call_jaxpr', 'custom_vjp_call_jaxpr'
+    ]:
       # Custom gradient.
       name = eqn.primitive.name.replace('_call_jaxpr', '')
       jaxpr = eqn.params['fun_jaxpr'].jaxpr
+    else:
+      raise ValueError(f'unmatched eqn {eqn.primitive.name}')
 
     expression.submodule = Module(name=name)
     flops = _process_jaxpr(jaxpr, compute_flops, scope.join(eqn), seen,
@@ -362,6 +370,9 @@ def _process_jaxpr(jaxpr: jax.core.Jaxpr,
                    compute_flops: Optional[ComputeFlopsFn], scope: _ModuleScope,
                    seen: Set[str], module: Module) -> Optional[int]:
   """Computes the flops used for a JAX expression, tracking module scope."""
+  if isinstance(jaxpr, jax.core.ClosedJaxpr):
+    return _process_jaxpr(jaxpr.jaxpr, compute_flops, scope, seen, module)
+
   # Label variables by the order in which they're introduced.
   lam_binders = itertools.chain(jaxpr.constvars, jaxpr.invars)
   let_binders = itertools.chain.from_iterable(e.outvars for e in jaxpr.eqns)

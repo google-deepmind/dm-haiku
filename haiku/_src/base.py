@@ -809,31 +809,25 @@ def assert_is_prng_key(key: PRNGKey):
   """Asserts that the given input looks like a `jax.random.PRNGKey`."""
   type_error = ValueError("The provided key is not a JAX PRNGKey but a "
                           f"{type(key)}:\n{key}")
-  if (hasattr(jax.config, "jax_enable_custom_prng")
-      and jax.config.jax_enable_custom_prng):
+  if jax.config.jax_enable_custom_prng:
     if not isinstance(key, jax.random.KeyArray):
       raise type_error
-  if not hasattr(key, "shape"):
-    raise type_error
-  if hasattr(key, "dtype"):
+  else:
+    if not hasattr(key, "shape") or not hasattr(key, "dtype"):
+      raise type_error
     config_hint = ""
-    if hasattr(jax.random, "default_prng_impl"):
-      default_impl = jax.random.default_prng_impl()
-      expected_shapes = (default_impl.key_shape,)
-      if default_impl.key_shape != (2,):
-        # Default PRNG impl is set to something different from threefry.
-        config_hint = ("\nHint: jax_default_prng_impl has been set to "
-                       f"'{jax_config.jax_default_prng_impl}', the shape "
-                       "mismatch might be because a jax.random.PRNGKey was "
-                       "created before this flag was set.")
-    else:
-      # Check for the shapes of the known PRNG impls (threefry and RBG)
-      expected_shapes = ((2,), (4,))
-    if key.shape not in expected_shapes or key.dtype != jnp.uint32:
-      expected_shapes_str = " or ".join(map(str, expected_shapes))
+    default_impl = jax.random.default_prng_impl()
+    expected_shape = default_impl.key_shape
+    if default_impl.key_shape != (2,):
+      # Default PRNG impl is set to something different from threefry.
+      config_hint = ("\nHint: jax_default_prng_impl has been set to "
+                     f"'{jax_config.jax_default_prng_impl}', the shape "
+                     "mismatch might be because a jax.random.PRNGKey was "
+                     "created before this flag was set.")
+    if key.shape != expected_shape or key.dtype != jnp.uint32:
       raise ValueError(
           "Provided key did not have expected shape and/or dtype: "
-          f"expected=(shape={expected_shapes_str}, dtype=uint32), "
+          f"expected=(shape={expected_shape}, dtype=uint32), "
           f"actual=(shape={key.shape}, dtype={key.dtype}){config_hint}")
 
 

@@ -893,6 +893,7 @@ hk_py_test(
         ":random",
         ":transform",
         # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
         # pip: jax
         # pip: numpy
     ],

@@ -17,6 +17,7 @@
 import functools
 
 from absl.testing import absltest
+from absl.testing import parameterized
 from haiku._src import base
 from haiku._src import random
 from haiku._src import transform
@@ -67,7 +68,7 @@ class RandomTest(absltest.TestCase):
         init(key)
 
 
-class CustomRNGTest(absltest.TestCase):
+class CustomRNGTest(parameterized.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -81,7 +82,11 @@ class CustomRNGTest(absltest.TestCase):
     init, _ = transform.transform(base.next_rng_key)
     init(jax.random.PRNGKey(42))  # does not crash
 
-  def test_custom_key(self):
+  @parameterized.parameters(False, True)
+  def test_custom_key(self, do_jit):
+    if do_jit:
+      self.skipTest("init returns nothing, so compilation may DCE it")
+
     count = 0
     def count_splits(_, num):
       nonlocal count
@@ -97,12 +102,11 @@ class CustomRNGTest(absltest.TestCase):
         fold_in=lambda key, _: key)
 
     init, _ = transform.transform(base.next_rng_key)
+    if do_jit:
+      init = jax.jit(init)
     key = prng.seed_with_impl(differently_shaped_prng_impl, 42)
     init(key)
     self.assertEqual(count, 1)
-    # testing if Tracers with a different key shape are accepted
-    jax.jit(init)(key)
-    self.assertEqual(count, 2)
 
   def test_invalid_custom_key(self):
     init, _ = transform.transform(base.next_rng_key)

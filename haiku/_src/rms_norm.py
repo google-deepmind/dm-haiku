@@ -50,7 +50,8 @@ class RMSNorm(hk.Module):
       axis: Union[int, Sequence[int], slice],
       eps: float = 1e-5,
       scale_init: Optional[hk.initializers.Initializer] = None,
-      name: Optional[str] = None):
+      name: Optional[str] = None,
+      create_scale: bool = True):
     """Constructs a RMSNorm module.
 
     Args:
@@ -59,8 +60,12 @@ class RMSNorm(hk.Module):
       eps: Small epsilon to avoid division by zero variance. Defaults to 1e-5.
       scale_init: Optional initializer for gain (aka scale). By default, one.
       name: The module name.
+      create_scale: Bool, defines whether to create a trainable scale
+        per channel applied after the normalization.
     """
     super().__init__(name=name)
+    if not create_scale and scale_init is not None:
+      raise ValueError("Cannot set `scale_init` if `create_scale=False`.")
     if isinstance(axis, slice):
       self.axis = axis
     elif isinstance(axis, int):
@@ -72,6 +77,7 @@ class RMSNorm(hk.Module):
       raise ValueError("`axis` should be an int, slice or iterable of ints.")
 
     self.eps = eps
+    self.create_scale = create_scale
     self.scale_init = scale_init or jnp.ones
 
   def __call__(self, inputs: jnp.ndarray):
@@ -87,9 +93,12 @@ class RMSNorm(hk.Module):
     if isinstance(axis, slice):
       axis = tuple(range(inputs.ndim)[axis])
 
-    scale = hk.get_parameter("scale", inputs.shape[-1:], inputs.dtype,
-                             init=self.scale_init)
-    scale = jnp.broadcast_to(scale, inputs.shape)
+    if self.create_scale:
+      scale = hk.get_parameter("scale", inputs.shape[-1:], inputs.dtype,
+                               init=self.scale_init)
+      scale = jnp.broadcast_to(scale, inputs.shape)
+    else:
+      scale = 1.
 
     mean_squared = jnp.mean(jnp.square(inputs), axis=axis, keepdims=True)
     mean_squared = jnp.broadcast_to(mean_squared, inputs.shape)

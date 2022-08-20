@@ -96,5 +96,13 @@ class RMSNormTest(parameterized.TestCase):
 
     np.testing.assert_array_equal(slice_outputs, axis_outputs)
 
+  @test_utils.transform_and_run
+  def test_simple_case_without_scale(self):
+    layer = rms_norm.RMSNorm(
+        axis=[1, 2], eps=0.0, create_scale=False)
+    inputs = np.full(shape=[2, 3, 3, 5], fill_value=2.0)
+    _ = layer(inputs)
+    assert "scale" not in layer.params_dict()
+
 if __name__ == "__main__":
   absltest.main()

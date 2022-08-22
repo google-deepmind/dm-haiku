@@ -639,7 +639,8 @@ class ResetCore(RNNCore):
       Tuple of the wrapped core's ``output, next_state``.
     """
     inputs, should_reset = inputs
-    if jax.treedef_is_leaf(jax.tree_util.tree_structure(should_reset)):
+    if jax.tree_util.treedef_is_leaf(
+        jax.tree_util.tree_structure(should_reset)):
       # Equivalent to not tree.is_nested, but with support for Jax extensible
       # pytrees.
       should_reset = jax.tree_util.tree_map(lambda _: should_reset, state)

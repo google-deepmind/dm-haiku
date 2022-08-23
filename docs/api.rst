@@ -1,3 +1,7 @@
+###################
+Haiku API reference
+###################
+
 Haiku Fundamentals
 ==================
 

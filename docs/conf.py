@@ -87,12 +87,12 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.inheritance_diagram',
-    'sphinx.ext.intersphinx',
     'sphinx.ext.linkcode',
     'sphinx.ext.napoleon',
     'sphinxcontrib.bibtex',
     'sphinxcontrib.katex',
     'sphinx_autodoc_typehints',
+    'sphinx_book_theme',
     'coverage_check',
     'nbsphinx',
     'IPython.sphinxext.ipython_console_highlighting',
@@ -119,7 +119,12 @@ autodoc_default_options = {
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'sphinx_book_theme'
+
+html_theme_options = {
+    'repository_url': 'https://github.com/deepmind/dm-haiku',
+    'use_repository_button': True,
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -202,12 +207,6 @@ def linkcode_resolve(domain, info):
       os.path.relpath(filename, start=os.path.dirname(
           hk.__file__)), lineno, lineno + len(source) - 1)
 
-
-# -- Intersphinx configuration -----------------------------------------------
-
-intersphinx_mapping = {
-    'jax': ('https://jax.readthedocs.io/en/latest/', None),
-}
 
 # -- nbsphinx configuration --------------------------------------------------
 

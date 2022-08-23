@@ -39,15 +39,15 @@ Alternatively, you can install via PyPI::
     $ pip install -U dm-haiku
 
 .. toctree::
-   :caption: Guides
+   :caption: Basics
    :maxdepth: 1
 
    notebooks/basics
    notebooks/transforms
 
 .. toctree::
-   :caption: API Documentation
-   :maxdepth: 1
+   :caption: API reference
+   :maxdepth: 2
 
    api
 
@@ -59,6 +59,7 @@ Alternatively, you can install via PyPI::
    notebooks/build_your_own_haiku
    notebooks/visualization
    notebooks/non_trainable
+   notebooks/parameter_sharing
 
 Known issues
 ------------

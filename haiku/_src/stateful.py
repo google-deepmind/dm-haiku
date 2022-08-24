@@ -836,7 +836,8 @@ def vmap(
                          "during initialization because it assumes parameters "
                          "are always shared along the mapped dimension. "
                          "Consider switching the value of `split_rng` to False "
-                         "during initialization through `hk.running_init()`."
+                         "during initialization through "
+                         "`split_rng=(not hk.running_init())`."
                          ) from err
       else:
         raise err

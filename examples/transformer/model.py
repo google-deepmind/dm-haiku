@@ -104,7 +104,12 @@ class LanguageModel(hk.Module):
   pad_token: int
   name: Optional[str] = None
 
-  def __call__(self, tokens: jnp.ndarray) -> jnp.ndarray:
+  def __call__(
+      self,
+      tokens: jnp.ndarray,
+      *,
+      is_training: bool = True,
+  ) -> jnp.ndarray:
     """Forward pass, producing a sequence of logits."""
     input_mask = jnp.greater(tokens, self.pad_token)
     unused_batch_size, seq_len = tokens.shape
@@ -119,7 +124,11 @@ class LanguageModel(hk.Module):
     input_embeddings = token_embeddings + positional_embeddings  # [B, T, D]
 
     # Run the transformer over the inputs.
-    embeddings = self.transformer(input_embeddings, input_mask)  # [B, T, D]
+    embeddings = self.transformer(
+        input_embeddings,
+        input_mask,
+        is_training=is_training,
+    )  # [B, T, D]
 
     # Decode the embeddings (here, we use untied weights).
     return hk.Linear(self.vocab_size)(embeddings)  # [B, T, V]

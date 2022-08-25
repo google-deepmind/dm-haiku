@@ -87,7 +87,7 @@ def load(
       yield from it.repeat(batch, num_batches)
 
   if is_training:
-    start, end = _shard(split, jax.host_id(), jax.host_count())
+    start, end = _shard(split, jax.process_index(), jax.process_count())
   else:
     start, end = _shard(split, 0, 1)
   tfds_split = tfds.core.ReadInstruction(_to_tfds_split(split),
@@ -106,7 +106,7 @@ def load(
   ds = ds.with_options(options)
 
   if is_training:
-    if jax.host_count() > 1:
+    if jax.process_count() > 1:
       # Only cache if we are reading a subset of the dataset.
       ds = ds.cache()
     ds = ds.repeat()

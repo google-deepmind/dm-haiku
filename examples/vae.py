@@ -12,9 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Variational Autoencoder example on binarized MNIST dataset."""
+"""Variational Autoencoder example on binarized MNIST dataset.
 
-from typing import Iterator, Mapping, Tuple, NamedTuple, Sequence
+See "Auto-encoding variational Bayes" (Kingma & Welling, 2014) [0].
+
+[0]https://arxiv.org/abs/1312.6114
+"""
+
+import dataclasses
+from typing import Iterator, Tuple, NamedTuple, Sequence
 
 from absl import app
 from absl import flags
@@ -27,68 +33,65 @@ import optax
 import tensorflow_datasets as tfds
 
 
-flags.DEFINE_integer("batch_size", 128, "Size of the batch to train on.")
-flags.DEFINE_float("learning_rate", 0.001, "Learning rate for the optimizer.")
-flags.DEFINE_integer("training_steps", 5000, "Number of training steps to run.")
-flags.DEFINE_integer("eval_frequency", 100, "How often to evaluate the model.")
-flags.DEFINE_integer("random_seed", 42, "Random seed.")
-FLAGS = flags.FLAGS
+@dataclasses.dataclass
+class Config:
+  batch_size: int = 128
+  learning_rate: float = 1e-3
+  training_steps: int = 5000
+  eval_every: int = 100
+  seed: int = 0
 
 
-PRNGKey = jnp.ndarray
-Batch = Mapping[str, np.ndarray]
-
-MNIST_IMAGE_SHAPE: Sequence[int] = (28, 28, 1)
+class Batch(NamedTuple):
+  image: jnp.ndarray  # [B, H, W, C]
 
 
-def load_dataset(split: str, batch_size: int) -> Iterator[Batch]:
-  ds = tfds.load("binarized_mnist", split=split, shuffle_files=True,
-                 read_config=tfds.ReadConfig(shuffle_seed=FLAGS.random_seed))
-  ds = ds.shuffle(buffer_size=10 * batch_size, seed=FLAGS.random_seed)
-  ds = ds.batch(batch_size)
-  ds = ds.prefetch(buffer_size=5)
-  ds = ds.repeat()
-  return iter(tfds.as_numpy(ds))
+def load_dataset(split: str, batch_size: int, seed: int) -> Iterator[Batch]:
+  ds = (
+      tfds.load("binarized_mnist", split=split)
+      .shuffle(buffer_size=10 * batch_size, seed=seed)
+      .batch(batch_size)
+      .prefetch(buffer_size=5)
+      .repeat()
+      .as_numpy_iterator()
+  )
+  return map(lambda x: Batch(x["image"]), ds)
 
 
+@dataclasses.dataclass
 class Encoder(hk.Module):
   """Encoder model."""
 
-  def __init__(self, hidden_size: int = 512, latent_size: int = 10):
-    super().__init__()
-    self._hidden_size = hidden_size
-    self._latent_size = latent_size
+  latent_size: int
+  hidden_size: int = 512
 
   def __call__(self, x: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    """Encodes an image as an isotropic Guassian latent code."""
     x = hk.Flatten()(x)
-    x = hk.Linear(self._hidden_size)(x)
+    x = hk.Linear(self.hidden_size)(x)
     x = jax.nn.relu(x)
 
-    mean = hk.Linear(self._latent_size)(x)
-    log_stddev = hk.Linear(self._latent_size)(x)
+    mean = hk.Linear(self.latent_size)(x)
+    log_stddev = hk.Linear(self.latent_size)(x)
     stddev = jnp.exp(log_stddev)
 
     return mean, stddev
 
 
+@dataclasses.dataclass
 class Decoder(hk.Module):
   """Decoder model."""
 
-  def __init__(
-      self,
-      hidden_size: int = 512,
-      output_shape: Sequence[int] = MNIST_IMAGE_SHAPE,
-  ):
-    super().__init__()
-    self._hidden_size = hidden_size
-    self._output_shape = output_shape
+  output_shape: Sequence[int]
+  hidden_size: int = 512
 
   def __call__(self, z: jnp.ndarray) -> jnp.ndarray:
-    z = hk.Linear(self._hidden_size)(z)
+    """Decodes a latent code into Bernoulli log-odds over an output image."""
+    z = hk.Linear(self.hidden_size)(z)
     z = jax.nn.relu(z)
 
-    logits = hk.Linear(np.prod(self._output_shape))(z)
-    logits = jnp.reshape(logits, (-1, *self._output_shape))
+    logits = hk.Linear(np.prod(self.output_shape))(z)
+    logits = jnp.reshape(logits, (-1, *self.output_shape))
 
     return logits
 
@@ -96,115 +99,102 @@ class Decoder(hk.Module):
 class VAEOutput(NamedTuple):
   image: jnp.ndarray
   mean: jnp.ndarray
-  stddev: jnp.ndarray
+  variance: jnp.ndarray
   logits: jnp.ndarray
 
 
+@dataclasses.dataclass
 class VariationalAutoEncoder(hk.Module):
-  """Main VAE model class, uses Encoder & Decoder under the hood."""
+  """Main VAE model class."""
 
-  def __init__(
-      self,
-      hidden_size: int = 512,
-      latent_size: int = 10,
-      output_shape: Sequence[int] = MNIST_IMAGE_SHAPE,
-  ):
-    super().__init__()
-    self._hidden_size = hidden_size
-    self._latent_size = latent_size
-    self._output_shape = output_shape
+  encoder: Encoder
+  decoder: Decoder
 
   def __call__(self, x: jnp.ndarray) -> VAEOutput:
+    """Forward pass of the variational autoencoder."""
     x = x.astype(jnp.float32)
-    mean, stddev = Encoder(self._hidden_size, self._latent_size)(x)
+    mean, stddev = self.encoder(x)
     z = mean + stddev * jax.random.normal(hk.next_rng_key(), mean.shape)
-    logits = Decoder(self._hidden_size, self._output_shape)(z)
+    logits = self.decoder(z)
 
     p = jax.nn.sigmoid(logits)
     image = jax.random.bernoulli(hk.next_rng_key(), p)
 
-    return VAEOutput(image, mean, stddev, logits)
+    return VAEOutput(image, mean, jnp.square(stddev), logits)
 
 
-def binary_cross_entropy(x: jnp.ndarray, logits: jnp.ndarray) -> jnp.ndarray:
-  """Calculate binary (logistic) cross-entropy from distribution logits.
-
-  Args:
-    x: input variable tensor, must be of same shape as logits
-    logits: log odds of a Bernoulli distribution, i.e. log(p/(1-p))
-
-  Returns:
-    A scalar representing binary CE for the given Bernoulli distribution.
-  """
-  if x.shape != logits.shape:
-    raise ValueError("inputs x and logits must be of the same shape")
-
-  x = jnp.reshape(x, (x.shape[0], -1))
-  logits = jnp.reshape(logits, (logits.shape[0], -1))
-
-  return -jnp.sum(x * logits - jnp.logaddexp(0.0, logits), axis=-1)
-
-
-def kl_gaussian(mean: jnp.ndarray, var: jnp.ndarray) -> jnp.ndarray:
-  r"""Calculate KL divergence between given and standard gaussian distributions.
-
-  KL(p, q) = H(p, q) - H(p) = -\int p(x)log(q(x))dx - -\int p(x)log(p(x))dx
-           = 0.5 * [log(|s2|/|s1|) - 1 + tr(s1/s2) + (m1-m2)^2/s2]
-           = 0.5 * [-log(|s1|) - 1 + tr(s1) + m1^2] (if m2 = 0, s2 = 1)
-
-  Args:
-    mean: mean vector of the first distribution
-    var: diagonal vector of covariance matrix of the first distribution
-
-  Returns:
-    A scalar representing KL divergence of the two Gaussian distributions.
-  """
-  return 0.5 * jnp.sum(-jnp.log(var) - 1.0 + var + jnp.square(mean), axis=-1)
+class TrainingState(NamedTuple):
+  params: hk.Params
+  opt_state: optax.OptState
+  rng_key: jnp.ndarray
 
 
 def main(_):
-  FLAGS.alsologtostderr = True
 
-  model = hk.transform(lambda x: VariationalAutoEncoder()(x))  # pylint: disable=unnecessary-lambda
-  optimizer = optax.adam(FLAGS.learning_rate)
+  flags.FLAGS.alsologtostderr = True
+  config = Config()
+
+  @hk.transform
+  def model(x):
+    vae = VariationalAutoEncoder(
+        encoder=Encoder(latent_size=10),
+        decoder=Decoder(output_shape=x.shape[1:]),
+    )
+    return vae(x)
 
   @jax.jit
-  def loss_fn(params: hk.Params, rng_key: PRNGKey, batch: Batch) -> jnp.ndarray:
+  def loss_fn(params, rng_key, batch: Batch) -> jnp.ndarray:
     """ELBO loss: E_p[log(x)] - KL(d||q), where p ~ Be(0.5) and q ~ N(0,1)."""
-    outputs: VAEOutput = model.apply(params, rng_key, batch["image"])
 
-    log_likelihood = -binary_cross_entropy(batch["image"], outputs.logits)
-    kl = kl_gaussian(outputs.mean, jnp.square(outputs.stddev))
-    elbo = log_likelihood - kl
+    # Run the model on the inputs.
+    _, mean, var, logits = model.apply(params, rng_key, batch.image)
 
-    return -jnp.mean(elbo)
+    # Bernoulli log-likelihood (assumes `image` is binarised).
+    log_likelihood = jnp.einsum(
+        "b...->b", batch.image * logits - jnp.logaddexp(0., logits))
+
+    # KL divergence between Gaussians N(mean, std) and N(0, 1).
+    kl = 0.5 * jnp.sum(-jnp.log(var) - 1. + var + jnp.square(mean), axis=-1)
+
+    # Loss is the negative evidence lower-bound.
+    return -jnp.mean(log_likelihood - kl)
+
+  optimizer = optax.adam(config.learning_rate)
 
   @jax.jit
-  def update(
-      params: hk.Params,
-      rng_key: PRNGKey,
-      opt_state: optax.OptState,
-      batch: Batch,
-  ) -> Tuple[hk.Params, optax.OptState]:
-    """Single SGD update step."""
-    grads = jax.grad(loss_fn)(params, rng_key, batch)
-    updates, new_opt_state = optimizer.update(grads, opt_state)
-    new_params = optax.apply_updates(params, updates)
-    return new_params, new_opt_state
+  def update(state: TrainingState, batch: Batch) -> TrainingState:
+    """Performs a single SGD step."""
+    rng_key, next_rng_key = jax.random.split(state.rng_key)
+    gradients = jax.grad(loss_fn)(state.params, rng_key, batch)
+    updates, new_opt_state = optimizer.update(gradients, state.opt_state)
+    new_params = optax.apply_updates(state.params, updates)
+    return TrainingState(new_params, new_opt_state, next_rng_key)
 
-  rng_seq = hk.PRNGSequence(FLAGS.random_seed)
-  params = model.init(next(rng_seq), np.zeros((1, *MNIST_IMAGE_SHAPE)))
-  opt_state = optimizer.init(params)
+  # Load datasets.
+  train_dataset = load_dataset("train", config.batch_size, config.seed)
+  eval_datasets = {
+      "train": load_dataset("train", config.batch_size, config.seed),
+      "valid": load_dataset("validation", config.batch_size, config.seed),
+  }
 
-  train_ds = load_dataset(tfds.Split.TRAIN, FLAGS.batch_size)
-  valid_ds = load_dataset(tfds.Split.TEST, FLAGS.batch_size)
+  # Initialise the training state.
+  initial_rng_key = jax.random.PRNGKey(config.seed)
+  initial_params = model.init(initial_rng_key, next(train_dataset).image)
+  initial_opt_state = optimizer.init(initial_params)
+  state = TrainingState(initial_params, initial_opt_state, initial_rng_key)
 
-  for step in range(FLAGS.training_steps):
-    params, opt_state = update(params, next(rng_seq), opt_state, next(train_ds))
+  # Run training and evaluation.
+  for step in range(config.training_steps):
+    state = update(state, next(train_dataset))
 
-    if step % FLAGS.eval_frequency == 0:
-      val_loss = loss_fn(params, next(rng_seq), next(valid_ds))
-      logging.info("STEP: %5d; Validation ELBO: %.3f", step, -val_loss)
+    if step % config.eval_every == 0:
+      for split, ds in eval_datasets.items():
+        loss = loss_fn(state.params, state.rng_key, next(ds))
+        logging.info({
+            "step": step,
+            "split": split,
+            "elbo": -jax.device_get(loss).item(),
+        })
 
 
 if __name__ == "__main__":

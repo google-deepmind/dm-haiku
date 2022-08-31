@@ -144,7 +144,8 @@ def dynamic_unroll(core,
                    initial_state,
                    time_major=True,
                    reverse=False,
-                   return_all_states=False):
+                   return_all_states=False,
+                   unroll=1):
   """Performs a dynamic unroll of an RNN.
 
   An *unroll* corresponds to calling the core on each element of the
@@ -172,6 +173,8 @@ def dynamic_unroll(core,
       more details.
     return_all_states: If True, all intermediate states are returned rather than
       only the last one in time.
+    unroll: How many scan iterations to unroll within a single iteration
+      of a loop.
 
   Returns:
     A tuple with two elements:
@@ -194,7 +197,7 @@ def dynamic_unroll(core,
     input_sequence = _swap_batch_time(input_sequence)
 
   scan_result = scan(
-      scan_f, initial_state, input_sequence, reverse=reverse)
+      scan_f, initial_state, input_sequence, reverse=reverse, unroll=unroll)
   if return_all_states:
     _, (output_sequence, state_sequence) = scan_result
   else:

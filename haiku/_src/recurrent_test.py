@@ -53,6 +53,11 @@ class RecurrentTest(parameterized.TestCase):
 
   UNROLLS = (recurrent.dynamic_unroll, recurrent.static_unroll)
   CORES = (recurrent.VanillaRNN, recurrent.LSTM, recurrent.GRU)
+  UNROLL_KWARGS = ({}, {"unroll": 1}, {"unroll": 2}, {"unroll": 4})
+
+  def _skip_if_static_unroll(self, unroll, unroll_kwargs):
+    if unroll == recurrent.static_unroll and "unroll" in unroll_kwargs:
+      self.skipTest("static_unroll does not have an unroll parameter")
 
   def test_add_batch(self):
     sample_tree = dict(
@@ -71,51 +76,59 @@ class RecurrentTest(parameterized.TestCase):
   # These two tests assume that the core takes argument hidden_size, and the
   # output is a single tensor with the same size as hidden_size.
   # They should be generalized when new cores are added.
-  @parameterized.parameters(*it.product(UNROLLS, CORES))
+  @parameterized.parameters(*it.product(UNROLLS, CORES, UNROLL_KWARGS))
   @test_utils.transform_and_run
-  def test_core_unroll_unbatched(self, unroll, core_cls):
+  def test_core_unroll_unbatched(self, unroll, core_cls, unroll_kwargs):
+    self._skip_if_static_unroll(unroll, unroll_kwargs)
     seqs = make_sequence([8, 1])  # [T, F]
     core = core_cls(hidden_size=4)
-    out, _ = unroll(core, seqs, core.initial_state(batch_size=None))
+    out, _ = unroll(core, seqs, core.initial_state(batch_size=None),
+                    **unroll_kwargs)
     self.assertEqual(out.shape, (8, 4))
 
-  @parameterized.parameters(*it.product(UNROLLS, CORES))
+  @parameterized.parameters(*it.product(UNROLLS, CORES, UNROLL_KWARGS))
   @test_utils.transform_and_run
-  def test_core_unroll_batched(self, unroll, core_cls):
+  def test_core_unroll_batched(self, unroll, core_cls, unroll_kwargs):
+    self._skip_if_static_unroll(unroll, unroll_kwargs)
     seqs = make_sequence([4, 8, 1])  # [T, B, F]
     core = core_cls(hidden_size=4)
     batch_size = seqs.shape[1]
-    out, _ = unroll(core, seqs, core.initial_state(batch_size))
+    out, _ = unroll(core, seqs, core.initial_state(batch_size),
+                    **unroll_kwargs)
     self.assertEqual(out.shape, (4, 8, 4))
 
-  @parameterized.parameters(*UNROLLS)
+  @parameterized.parameters(*it.product(UNROLLS, UNROLL_KWARGS))
   @test_utils.transform_and_run
-  def test_core_unroll_nested(self, unroll):
+  def test_core_unroll_nested(self, unroll, unroll_kwargs):
+    self._skip_if_static_unroll(unroll, unroll_kwargs)
     seqs = make_sequence([4, 8, 1])
     batch_size = seqs.shape[1]
     core = DuplicateCore(recurrent.VanillaRNN(hidden_size=4))
-    outs, _ = unroll(core, seqs, core.initial_state(batch_size))
+    outs, _ = unroll(core, seqs, core.initial_state(batch_size),
+                     **unroll_kwargs)
     self.assertLen(outs, 2)
     for out in outs:
       self.assertEqual(out.shape, (4, 8, 4))
 
-  @parameterized.parameters(*UNROLLS)
-  def test_unroll_outside_transform(self, unroll):
+  @parameterized.parameters(*it.product(UNROLLS, UNROLL_KWARGS))
+  def test_unroll_outside_transform(self, unroll, unroll_kwargs):
+    self._skip_if_static_unroll(unroll, unroll_kwargs)
     core = lambda x, s: (x + 1, s + 1)
     seqs = jnp.arange(8)
-    outs, state = unroll(core, seqs, 0)
+    outs, state = unroll(
+        core, seqs, 0, **unroll_kwargs)
     np.testing.assert_allclose(outs, jnp.arange(9)[1:])
     np.testing.assert_allclose(state, 8)
 
-  @parameterized.parameters(*CORES)
+  @parameterized.parameters(*it.product(CORES, UNROLL_KWARGS))
   @test_utils.transform_and_run
-  def test_dynamic_unroll_all_states(self, core_cls):
+  def test_dynamic_unroll_all_states(self, core_cls, unroll_kwargs):
     seqs = make_sequence([4, 8, 1])  # [T, B, F]
     core = core_cls(hidden_size=4)
     batch_size = seqs.shape[1]
     initial_state = core.initial_state(batch_size)
     out, all_states = recurrent.dynamic_unroll(
-        core, seqs, initial_state, return_all_states=True)
+        core, seqs, initial_state, return_all_states=True, **unroll_kwargs)
     self.assertEqual(out.shape, (4, 8, 4))
     tree.map_structure(
         lambda array: self.assertEqual(array.shape[0], 4), all_states)
@@ -236,8 +249,14 @@ def static_unroll_with_states(core, inputs, state):
 
 class ResetCoreTest(parameterized.TestCase):
 
-  @parameterized.parameters(recurrent.dynamic_unroll, recurrent.static_unroll)
-  def test_resetting(self, unroll):
+  UNROLLS = (recurrent.dynamic_unroll, recurrent.static_unroll)
+  UNROLL_KWARGS = ({}, {"unroll": 2})
+
+  @parameterized.parameters(*it.product(UNROLLS, UNROLL_KWARGS))
+  def test_resetting(self, unroll, unroll_kwargs):
+    if unroll == recurrent.static_unroll and unroll_kwargs.get("unroll", 1) > 1:
+      self.skipTest("static_unroll does not have an unroll parameter")
+
     def net(seqs, should_reset):
       # seqs is [T, B, F].
       core = recurrent.LSTM(hidden_size=4)
@@ -253,10 +272,12 @@ class ResetCoreTest(parameterized.TestCase):
 
       # Unroll without access to intermediate states.
       dynamic_core_outs, dynamic_core_state = unroll(
-          core, seqs, core.initial_state(batch_size))
+          core, seqs, core.initial_state(batch_size),
+          **unroll_kwargs)
       dynamic_reset_outs, dynamic_reset_state = unroll(
           reset_core, (seqs, should_reset),
-          reset_core.initial_state(batch_size))
+          reset_core.initial_state(batch_size),
+          **unroll_kwargs)
 
       return dict(
           core_outs=core_outs,
@@ -340,9 +361,9 @@ class ResetCoreTest(parameterized.TestCase):
     ])
     np.testing.assert_allclose(result, expected_result, rtol=1e-6, atol=1e-6)
 
-  @parameterized.parameters(None, 3)
+  @parameterized.parameters(*it.product((None, 3), UNROLL_KWARGS))
   @test_utils.transform_and_run
-  def test_reversed_dynamic_unroll(self, batch_size):
+  def test_reversed_dynamic_unroll(self, batch_size, unroll_kwargs):
     reset_time = 2
     seq_len = 7
     state_size = 4
@@ -357,9 +378,11 @@ class ResetCoreTest(parameterized.TestCase):
 
     should_reset = inputs == reset_time
     fwd_result, _ = recurrent.dynamic_unroll(
-        core, (inputs[::-1], should_reset[::-1]), initial_state, reverse=False)
+        core, (inputs[::-1], should_reset[::-1]), initial_state, reverse=False,
+        **unroll_kwargs)
     rev_result, _ = recurrent.dynamic_unroll(
-        core, (inputs, should_reset), initial_state, reverse=True)
+        core, (inputs, should_reset), initial_state, reverse=True,
+        **unroll_kwargs)
     np.testing.assert_allclose(fwd_result[::-1], rev_result)
 
   @test_utils.transform_and_run

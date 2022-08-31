@@ -1114,6 +1114,7 @@ Managing State
 .. autosummary::
 
     current_name
+    force_name
     name_scope
     name_like
     lift_with_state
@@ -1127,6 +1128,11 @@ current_name
 ~~~~~~~~~~~~
 
 .. autofunction:: current_name
+
+force_name
+~~~~~~~~~~
+
+.. autofunction:: force_name
 
 name_scope
 ~~~~~~~~~~

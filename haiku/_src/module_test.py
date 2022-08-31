@@ -18,7 +18,7 @@ import abc
 import contextlib
 import dataclasses
 import sys
-from typing import Callable, Optional, Sequence
+from typing import Callable, Optional, Sequence, TypeVar, Type
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -36,6 +36,8 @@ if sys.version_info < (3, 8):
 else:
   from typing import Protocol, runtime_checkable
 # pylint: enable=g-import-not-at-top,g-multiple-import
+
+T = TypeVar("T")
 
 
 # TODO(tomhennigan) Improve test coverage.
@@ -632,6 +634,95 @@ class ModuleTest(parameterized.TestCase):
     self.assertRegex(str(NoAutoReprModule()),
                      "<.*.NoAutoReprModule object at .*>")
 
+  @parameterized.parameters("foo", "foo/bar")
+  @test_utils.transform_and_run
+  def test_force_name_naming(self, name):
+    m0 = create_module_from_qualified_name(name)
+    m1 = module.Module(name=module.force_name(name))
+    m2 = module.Module(name=module.force_name(name))
+    self.assertEqual(m0.name, m1.name)
+    self.assertEqual(m0.module_name, m1.module_name)
+    self.assertEqual(m1.name, m2.name)
+    self.assertEqual(m1.module_name, m2.module_name)
+
+  @test_utils.transform_and_run
+  def test_force_name_reserves_name(self):
+    m0 = module.Module(name=module.force_name("foo"))
+    m1 = module.Module(name="foo")
+    self.assertEqual(m0.module_name, "foo")
+    self.assertEqual(m1.module_name, "foo_1")
+
+  @parameterized.parameters("foo", "foo/bar")
+  @test_utils.transform_and_run
+  def test_force_name_inside_module(self, name):
+    class CreatesInnerModule(module.Module):
+
+      def __call__(self):
+        return module.Module(name=module.force_name(name))
+
+    m0 = create_module_from_qualified_name(name)
+    m1 = CreatesInnerModule()()
+    m2 = module.Module(name=module.force_name(name))
+    self.assertEqual(m0.module_name, m1.module_name)
+    self.assertEqual(m1.module_name, m2.module_name)
+
+  @test_utils.transform_and_run
+  def test_force_name_inside_name_scope(self):
+    m0 = module.Module(name="foo")
+    with module.name_scope("bar"):
+      m1 = module.Module(name=module.force_name("foo"))
+    m2 = module.Module(name=module.force_name("foo"))
+    self.assertEqual(m0.module_name, m1.module_name)
+    self.assertEqual(m1.module_name, m2.module_name)
+
+  @parameterized.parameters("foo", "foo/bar")
+  @test_utils.transform_and_run
+  def test_force_name_parameter_reuse(self, name):
+    m0 = create_module_from_qualified_name(name=name, cls=ScalarModule)
+    m1 = ScalarModule(name=module.force_name(name))
+    self.assertIs(m0(), m1())
+
+  @test_utils.transform_and_run
+  def test_force_name_parameter_reuse_name_scope(self):
+    m0 = create_module_from_qualified_name(name="foo/bar/baz", cls=ScalarModule)
+    w0 = m0()
+    with module.name_scope(module.force_name("foo/bar/baz")):
+      w1 = base.get_parameter("w", [], init=jnp.zeros)
+    self.assertIs(w0, w1)
+
+  @test_utils.transform_and_run
+  def test_force_name_intercept_methods(self):
+    def change_prefix(old, new):
+      def my_interceptor(next_f, args, kwargs, context: module.MethodContext):
+        if type(context.module).__name__ == "NameScopeModule":
+          # Avoid infinite recursion for modules introduced by name_scope.
+          return next_f(*args, **kwargs)
+
+        name = context.module.module_name
+
+        # We expect all usages in the test to have this prefix. If you are
+        # forking this code you can probably remove this line.
+        self.assertStartsWith(name, old)
+
+        if name.startswith(old):
+          name = name.replace(old, new, 1)
+
+        with module.name_scope(module.force_name(name)):
+          return next_f(*args, **kwargs)
+
+      return module.intercept_methods(my_interceptor)
+
+    with module.name_scope("outer"):
+      m1 = ParentModule()
+    with module.name_scope("inner"):
+      m2 = ParentModule()
+
+    m1()
+    with change_prefix("inner", "outer"):
+      m2()
+    self.assertIs(m1.child1.w, m2.child1.w)
+    self.assertIs(m1.child2.w, m2.child2.w)
+
 
 class NoAutoReprModule(module.Module):
   AUTO_REPR = False
@@ -680,7 +771,8 @@ class EmptyModule(module.Module):
 class ScalarModule(module.Module):
 
   def __call__(self):
-    return base.get_parameter("w", [], init=jnp.zeros)
+    self.w = base.get_parameter("w", [], init=jnp.zeros)
+    return self.w
 
 
 class ScalarStateModule(module.Module):
@@ -695,6 +787,10 @@ class ParentModule(module.Module):
     super().__init__()
     self.child1 = ScalarModule(name="child_module")
     self.child2 = ScalarModule(name="child_module")
+
+  def __call__(self):
+    self.child1()
+    self.child2()
 
 
 class MultipleForwardMethods(module.Module):
@@ -864,6 +960,19 @@ class ModuleWithDoubleCall(module.Module):
   def __call__(self):
     self.foo()
     self.call_module = module.Module(name="child")
+
+
+def create_module_from_qualified_name(
+    name: str,
+    *,
+    cls: Type[T] = module.Module,
+) -> T:
+  if "/" in name:
+    prefix, suffix = name.rsplit("/", 1)
+    with module.name_scope(prefix):
+      return cls(name=suffix)
+  else:
+    return cls(name=name)
 
 if __name__ == "__main__":
   absltest.main()

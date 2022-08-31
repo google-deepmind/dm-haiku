@@ -302,10 +302,11 @@ class NameScope:
     if not name or name[0] == "/":
       raise ValueError("Name scopes must not start with /")
 
+    parts = [name] if name.startswith(OVERRIDE_PREFIX) else name.split("/")
     module = None
     with contextlib.ExitStack() as stack:
-      for subname in name.split("/"):
-        module = Module(name=subname)
+      for subname in parts:
+        module = NameScopeModule(name=subname)
         stack.enter_context(simulate_module_call(module))
 
     self.__entered = False
@@ -443,6 +444,14 @@ _VALID_IDENTIFIER_R = re.compile(r"^[a-zA-Z_]([a-zA-Z0-9_])*$")
 valid_identifier = lambda name: bool(_VALID_IDENTIFIER_R.match(name))
 
 
+def name_and_number(name: str) -> Tuple[str, Optional[int]]:
+  splits = re.split(r"_(0|[1-9]\d*)$", name, 3)
+  if len(splits) > 1:
+    return splits[0], int(splits[1])
+  else:
+    return name, None
+
+
 def unique_and_canonical_name(name: str) -> str:
   """Returns a canonical name for the given name."""
   frame = base.current_frame()
@@ -465,30 +474,94 @@ def unique_and_canonical_name(name: str) -> str:
     name = parent_name + "/" + name
 
   # Test if the user has explicitly numbered this module.
-  splits = re.split(r"_(0|[1-9]\d*)$", name, 3)
-  if len(splits) > 1:
-    name, n = splits[0], int(splits[1])
-    explicit_n = True
-  else:
-    n = None
-    explicit_n = False
+  name, n = name_and_number(name)
+  explicit_n = n is not None
 
   # Determine a unique name for this module within the current context.
-  counters = frame.counter_stack.peek(-2)
-  if n is not None:
-    counters[name] = max(counters[name], n + 1)
-  else:
-    n = counters[name]
-    counters[name] += 1
-  qualified_name = f"{name}_{n}" if explicit_n or n else name
+  if n is None:
+    n = next_module_number(name)
+  name = f"{name}_{n}" if explicit_n or n else name
 
   # Final sanity check that this name has not been used before.
-  used_names = frame.used_names_stack.peek(-2)
-  if qualified_name in used_names:
-    raise ValueError(f"Module name '{qualified_name}' is not unique.")
-  used_names.add(qualified_name)
+  reserve_module_name(name, check_unique=True)
 
-  return qualified_name
+  return name
+
+
+def reserve_module_name(name: str, *, check_unique: bool):
+  """Reserves the given module name."""
+  frame = base.current_frame()
+  used_names = frame.used_names_stack.peek(-2)
+  if check_unique and name in used_names:
+    raise ValueError(f"Module name '{name}' is not unique.")
+  used_names.add(name)
+
+  name, number = name_and_number(name)
+  if number is None:
+    number = 0
+  counters = frame.counter_stack.peek(-2)
+  counters[name] = max(counters[name], number + 1)
+
+
+def next_module_number(name: str) -> int:
+  frame = base.current_frame()
+  counters = frame.counter_stack.peek(-2)
+  return counters[name]
+
+
+# NOTE: Since `:` is not a valid symbol in a module name (it has been rejected
+# by check_name since the first version of Haiku) we know that no existing users
+# have this name so it is a safe token.
+OVERRIDE_PREFIX = "FORCE:"
+
+
+def force_name(name: str) -> str:
+  """Forces Haiku to use this name, ignoring all context information.
+
+  Haiku names modules according to where they are created (e.g. the stack of
+  modules that created them, or the current :func:`~haiku.name_scope`). This
+  function allows you to create modules that ignore all of this and have
+  precisely the name you provide.
+
+  This might be useful in the case that you have two modules and you want to
+  force them to share parameters:
+
+  >>> mod0 = hk.Linear(1)
+  >>> some_hyperparameter = True
+  >>> if some_hyperparameter:
+  ...   # Force mod1 and mod0 to have shared weights.
+  ...   mod1 = hk.Linear(1, name=hk.experimental.force_name(mod0.module_name))
+  ... else:
+  ...   # mod0 and mod1 are independent.
+  ...   mod1 = hk.Linear(1)
+
+  (A simpler version of this snippet would do `mod1 = mod0` instead of using
+  force_name, however in real examples it can be simpler to use force_name,
+  especially in cases where you may not have access to the module instance
+  without lots of plumbing, but getting the module name is easy [e.g. it is a
+  hyperparameter]).
+
+  Args:
+    name: String name for the module. For example ``"foo"`` or ``"foo/bar"``.
+
+
+  Returns:
+    A value suitable to pass into the ``name`` argument of any Haiku module
+    constructor.
+  """
+  return f"{OVERRIDE_PREFIX}{name}"
+
+
+def check_name(component: str, name: str, allow_leading_tilde: bool = False):
+  if allow_leading_tilde and component.startswith("~"):
+    component = component[1:]
+    if not component:
+      # "~" is a valid component name (e.g. "foo/~/bar" is a valid name).
+      return
+
+  if not valid_identifier(component):
+    raise ValueError(f"'{name}' is not a valid module name (must be a "
+                     "valid Python identifier)")
 
 
 class Module(object, metaclass=ModuleMetaclass):
@@ -536,12 +609,18 @@ class Module(object, metaclass=ModuleMetaclass):
         name = self.name
       else:
         name = utils.camel_to_snake(type(self).__name__)
-    if not valid_identifier(name):
-      raise ValueError(
-          "'{}' is not a valid module name (must be a valid Python identifier)"
-          .format(name))
+
+    if name.startswith(OVERRIDE_PREFIX):
+      name = name[len(OVERRIDE_PREFIX):]
+      for component in name.split("/"):
+        check_name(component, name, allow_leading_tilde=True)
+      reserve_module_name(name, check_unique=False)
+    else:
+      check_name(name, name)
+      name = unique_and_canonical_name(name)
+
     self._submodules: Set[str] = set()
-    self.module_name = unique_and_canonical_name(name)
+    self.module_name = name
     self.name = self.module_name.split("/")[-1]
     self._creation_frame_id = base.current_frame().frame_id
 
@@ -700,3 +779,7 @@ def _module_method_call(module: Module, method_name: str):
     for method_hook in method_hook_stack:
       stack.enter_context(method_hook(module, method_name))
     yield
+
+
+class NameScopeModule(Module):
+  pass

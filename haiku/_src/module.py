@@ -289,16 +289,16 @@ def run_interceptors(  # pylint: disable=invalid-name
   return next_fun(*args, **kwargs)
 
 
-def simulate_module_call(module):
+def simulate_module_method(module, method_name):
   frame = base.current_frame()
-  state = base.ModuleState(module=module, method_name="__call__")
+  state = base.ModuleState(module=module, method_name=method_name)
   return frame.module(state)
 
 
 class NameScope:
   """Context manager that when active adds a new name in the hierarcy."""
 
-  def __init__(self, name: str):
+  def __init__(self, name: str, method_name: str):
     if not name or name[0] == "/":
       raise ValueError("Name scopes must not start with /")
 
@@ -307,10 +307,11 @@ class NameScope:
     with contextlib.ExitStack() as stack:
       for subname in parts:
         module = NameScopeModule(name=subname)
-        stack.enter_context(simulate_module_call(module))
+        stack.enter_context(simulate_module_method(module, method_name))
 
     self.__entered = False
     self.__module = module
+    self.__method = method_name
     self.__stack = contextlib.ExitStack()
 
   def __enter__(self):
@@ -319,7 +320,8 @@ class NameScope:
     if self.__entered:
       raise ValueError("name_scope is not reentrant")
     self.__entered = True
-    self.__stack.enter_context(simulate_module_call(self.__module))
+    self.__stack.enter_context(simulate_module_method(self.__module,
+                                                      self.__method))
 
   def __exit__(self, exc_type, exc_value, traceback):
     try:
@@ -329,7 +331,11 @@ class NameScope:
       self.__stack = None
 
 
-def name_scope(name: str) -> ContextManager[None]:
+def name_scope(
+    name: str,
+    *,
+    method_name: str = "__call__",
+) -> ContextManager[None]:
   """Context manager which adds a prefix to all new modules, params or state.
 
   >>> with hk.experimental.name_scope("my_name_scope"):
@@ -364,13 +370,17 @@ def name_scope(name: str) -> ContextManager[None]:
 
   Args:
     name: The name scope to use (e.g. ``"foo"`` or ``"foo/bar"``).
+    method_name: (Advanced uses only). Since name scopes are equivalent to
+      calling methods on modules the method name attribute allows you to specify
+      which method name you want to simulate. Most users should leave this as
+      the default value (`"__call__"`).
 
   Returns:
     A single use context manager that when active prefixes new modules,
     parameters or state with the given name.
   """
   base.assert_context("experimental.name_scope")
-  return NameScope(name)
+  return NameScope(name, method_name)
 
 
 def wrap_method(method_name, unbound_method):

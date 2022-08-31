@@ -548,6 +548,15 @@ class ModuleTest(parameterized.TestCase):
       module.name_scope("foo")
 
   @test_utils.transform_and_run
+  def test_name_scope_method_name(self):
+    with module.name_scope("a", method_name="bar"):
+      self.assertEqual(module.Module().module_name, "a/~bar/module")
+    with module.name_scope("b", method_name="__init__"):
+      self.assertEqual(module.Module().module_name, "b/~/module")
+    with module.name_scope("c", method_name="__call__"):
+      self.assertEqual(module.Module().module_name, "c/module")
+
+  @test_utils.transform_and_run
   def test_is_protocol(self):
     self.assertFalse(getattr(module.Module, "_is_protocol"))
     self.assertFalse(getattr(ConcreteProtocolModule, "_is_protocol"))
@@ -707,7 +716,8 @@ class ModuleTest(parameterized.TestCase):
         if name.startswith(old):
           name = name.replace(old, new, 1)
 
-        with module.name_scope(module.force_name(name)):
+        with module.name_scope(module.force_name(name),
+                               method_name=context.method_name):
           return next_f(*args, **kwargs)
 
       return module.intercept_methods(my_interceptor)

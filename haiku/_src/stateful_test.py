@@ -319,6 +319,9 @@ class StatefulTest(parameterized.TestCase):
     with self.assertRaises(ValueError, msg="Use jax.cond() instead"):
       stateful.cond(x == 2, x, jnp.square, x, lambda x: jnp.square(x + 1))
 
+  def test_cond_doc(self):
+    self.assertIn("hk.running_init", stateful.cond.__doc__)
+
   def test_switch(self):
     def f(i, x):
       mod = SquareModule()

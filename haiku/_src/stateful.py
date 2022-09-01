@@ -468,8 +468,17 @@ def with_output_structure_hint(f):
   return wrapper
 
 
+def wraps_preserve_docstring(f):
+  def wrapper(g):
+    g_doc = g.__doc__
+    g = functools.wraps(f)(g)
+    g.__doc__ = g_doc
+    return g
+  return wrapper
+
+
 # pylint: disable=g-doc-args
-@functools.wraps(jax.lax.cond)
+@wraps_preserve_docstring(jax.lax.cond)
 @with_output_structure_hint
 def cond(*args, **kwargs):
   """Equivalent to :func:`jax.lax.cond` but with Haiku state passed in/out.

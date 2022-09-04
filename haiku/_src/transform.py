@@ -72,7 +72,8 @@ def to_prng_sequence(rng, err_msg) -> Optional[hk.PRNGSequence]:
     try:
       rng = hk.PRNGSequence(rng)
     except Exception as e:
-      raise ValueError(err_msg) from e
+      raise ValueError(
+          f"{err_msg}. The object was of type {type(rng)}: {rng}") from e
   return rng
 
 RNG_ERROR_TPL = (

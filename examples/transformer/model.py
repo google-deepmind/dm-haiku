@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Didactic exasmple of an autoregressive Transformer-based language model.
+"""Didactic example of an autoregressive Transformer-based language model.
 
 Glossary of shapes:
 - B: Batch size.

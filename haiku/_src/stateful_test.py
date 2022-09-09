@@ -241,7 +241,7 @@ class StatefulTest(parameterized.TestCase):
     for _ in range(3):
       grad_fn = jax.grad(lambda x: forward.apply(params, state, None, x)[0])
       if jax_remat:
-        grad_fn = jax.ad_checkpoint.remat(grad_fn)
+        grad_fn = jax.remat(grad_fn)
       self.assertEqual(int(grad_fn(x)), int(4 * (x ** 3)))
       self.assertEqual(log, ["layer", "layer_1"])
       reset()

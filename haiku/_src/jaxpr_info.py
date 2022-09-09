@@ -393,7 +393,6 @@ def _process_jaxpr(jaxpr: jax.core.Jaxpr,
   flops = None if compute_flops is None else 0
   for var in jaxpr.outvars:
     if (isinstance(var, jax.core.Var) and
-        not isinstance(var, jax.core.UnitVar) and
         _mark_seen(binder_idx, seen, var, scope)):
       f = _process_eqn(eqns_by_output[_var_to_str(binder_idx, var)], seen,
                        eqns_by_output, compute_flops, scope, module, binder_idx)

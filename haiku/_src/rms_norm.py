@@ -17,7 +17,7 @@
 Reference: https://arxiv.org/abs/1910.07467
 """
 
-import collections
+from collections import abc
 import types
 from typing import Optional, Sequence, Union
 
@@ -70,7 +70,7 @@ class RMSNorm(hk.Module):
       self.axis = axis
     elif isinstance(axis, int):
       self.axis = (axis,)
-    elif (isinstance(axis, collections.Iterable) and
+    elif (isinstance(axis, abc.Iterable) and
           all(isinstance(ax, int) for ax in axis)):
       self.axis = tuple(axis)
     else:

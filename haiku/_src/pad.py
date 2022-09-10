@@ -14,7 +14,7 @@
 # ==============================================================================
 """Padding module for Haiku."""
 
-import collections
+from collections import abc
 import types
 import typing
 from typing import Any, Callable, Sequence, Union, Tuple
@@ -112,6 +112,6 @@ def create_from_tuple(
 
 def is_padfn(padding: Union[hk.pad.PadFn, Sequence[hk.pad.PadFn], Any]) -> bool:
   """Tests whether the given argument is a single or sequence of PadFns."""
-  if isinstance(padding, collections.Sequence):
+  if isinstance(padding, abc.Sequence):
     padding = padding[0]
   return callable(padding)

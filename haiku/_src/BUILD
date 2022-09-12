@@ -52,7 +52,7 @@ hk_py_library(
     srcs = ["base_test.py"],
     deps = [
         ":base",
-        ":stateful",
+        ":config",
         ":test_utils",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
@@ -817,6 +817,7 @@ hk_py_test(
     deps = [
         ":base",
         ":base_test_lib",
+        ":config",
         ":initializers",
         ":module",
         ":stateful",

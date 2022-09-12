@@ -21,6 +21,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 import haiku as hk
 from haiku._src import base
+from haiku._src import config
 from haiku._src import test_utils
 import jax
 import jax.numpy as jnp
@@ -780,6 +781,17 @@ class BaseTest(parameterized.TestCase):
     c, d = hk.next_rng_keys(2)
     for l, r in it.permutations((a, b, c, d), 2):
       self.assertIsNot(l, r)
+
+  @test_utils.transform_and_run(seed=123, run_apply=False)
+  def test_rng_reserve_size(self):
+    size = 5
+
+    with config.context(rng_reserve_size=size):
+      split_key = jax.random.PRNGKey(123)
+      for _ in range(2):
+        split_key, *expected_keys = jax.random.split(split_key, size+1)
+        hk_keys = hk.next_rng_keys(size)
+        np.testing.assert_array_equal(hk_keys, expected_keys)
 
 if __name__ == "__main__":
   absltest.main()

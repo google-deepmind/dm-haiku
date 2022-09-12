@@ -127,6 +127,22 @@ class ConfigTest(parameterized.TestCase):
     config.set(check_jax_usage=False)
     self.assertFalse(cfg.check_jax_usage)
 
+  def test_rng_reserve_size(self):
+    cfg = config.get_config()
+    prev = config.rng_reserve_size(3)
+    self.assertEqual(cfg.rng_reserve_size, 3)
+    self.assertEqual(prev, 1)
+    prev = config.rng_reserve_size(10)
+    self.assertEqual(cfg.rng_reserve_size, 10)
+    self.assertEqual(prev, 3)
+
+  def test_rng_reserve_size_error(self):
+    with self.assertRaisesRegex(ValueError, "RNG reserve size"):
+      config.rng_reserve_size(0)
+
+    with self.assertRaisesRegex(ValueError, "RNG reserve size"):
+      config.rng_reserve_size(-1)
+
 if __name__ == "__main__":
   # TODO(tomhennigan): Remove this unused import.
   del jax  # This is only needed for an internal build test to pass.

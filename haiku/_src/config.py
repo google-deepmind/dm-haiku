@@ -25,6 +25,7 @@ class Config:
   check_jax_usage: bool
   module_auto_repr: bool
   restore_flatmap: bool
+  rng_reserve_size: int
   profiler_name_scopes: bool
 
   @classmethod
@@ -32,6 +33,7 @@ class Config:
     return Config(check_jax_usage=False,
                   module_auto_repr=True,
                   restore_flatmap=False,
+                  rng_reserve_size=1,
                   profiler_name_scopes=False)
 
 
@@ -49,6 +51,7 @@ def context(
     check_jax_usage: Optional[bool] = None,
     module_auto_repr: Optional[bool] = None,
     restore_flatmap: Optional[bool] = None,
+    rng_reserve_size: Optional[int] = None,
     profiler_name_scopes: Optional[bool] = None,
 ):
   """Context manager for setting config options.
@@ -68,6 +71,11 @@ def context(
     restore_flatmap: Whether legacy checkpoints should be restored in the old
       FlatMap datatype (as returned by ``to_immtable_dict``), default is to
       restore these as plain dicts.
+    rng_reserve_size: amount of keys to reserve when splitting off a key
+      through ``next_rng_key()``, defaults to 1. Reserving larger blocks of keys
+      can improve compilation and run-time of your model. Changing the
+      reservation size will change RNG keys returned by ``next_rng_key``, and
+      will change the generated random numbers.
     profiler_name_scopes: Enable/disable profiler name_scopes on all Haiku
       module methods.
 
@@ -84,6 +92,7 @@ def set(
     check_jax_usage: Optional[bool] = None,
     module_auto_repr: Optional[bool] = None,
     restore_flatmap: Optional[bool] = None,
+    rng_reserve_size: Optional[int] = None,
     profiler_name_scopes: Optional[bool] = None,
 ):
   """Sets the given config option(s).
@@ -103,6 +112,11 @@ def set(
     restore_flatmap: Whether legacy checkpoints should be restored in the old
       FlatMap datatype (as returned by ``to_immtable_dict``), default is to
       restore these as plain dicts.
+    rng_reserve_size: amount of keys to reserve when splitting off a key
+      through ``next_rng_key()``, defaults to 1. Reserving larger blocks of keys
+      can improve compilation and run-time of your model. Changing the
+      reservation size will change RNG keys returned by ``next_rng_key``, and
+      will change the generated random numbers.
     profiler_name_scopes: Enable/disable profiler name_scopes on all Haiku
       module methods.
   """
@@ -263,4 +277,23 @@ def profiler_name_scopes(enabled: bool = True) -> bool:
   """
   config = get_config()
   before, config.profiler_name_scopes = config.profiler_name_scopes, enabled
+  return before
+
+
+def rng_reserve_size(size: int) -> int:
+  """Change amount of RNG keys reserved when calling ``next_rng_key``.
+
+  Args:
+    size: amount of keys to reserve when splitting off a key
+      through ``next_rng_key()``, defaults to 1. Reserving larger blocks of keys
+      can improve compilation and run-time of your model. Changing the
+      reservation size will change RNG keys returned by ``next_rng_key``, and
+      will change the generated random numbers.
+  Returns:
+    The previous value of the rng_reserve_size setting.
+  """
+  if size <= 0:
+    raise ValueError(f"RNG reserve size needs to be more than 0, got {size}.")
+  config = get_config()
+  before, config.rng_reserve_size = config.rng_reserve_size, size
   return before

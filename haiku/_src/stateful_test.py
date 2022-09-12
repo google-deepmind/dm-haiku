@@ -21,6 +21,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import base
 from haiku._src import base_test
+from haiku._src import config
 from haiku._src import initializers
 from haiku._src import module
 from haiku._src import stateful
@@ -76,6 +77,14 @@ HK_OVERLOADED_JAX_PURE_EXPECTING_FNS = (
     ("checkpoint", stateful.remat),
 )
 # pylint: enable=g-long-lambda
+
+
+def with_rng_reserve_size(f):
+  """Run test with rng_reserve_size of 7."""
+  def wrapper(*a, **kw):
+    with config.context(rng_reserve_size=7):
+      return f(*a, **kw)
+  return wrapper
 
 
 class StatefulTest(parameterized.TestCase):
@@ -460,35 +469,29 @@ class StatefulTest(parameterized.TestCase):
 
   @parameterized.parameters(0, 1, 2, 8)
   @test_utils.transform_and_run
+  @with_rng_reserve_size
   def test_stateful_scan_with_rng_use(self, iteration_count):
-    # TODO(lenamartens): remove when default changes to > 1.
-    tmp_default = base.DEFAULT_PRNG_RESERVE_SIZE
-    base.DEFAULT_PRNG_RESERVE_SIZE = 64
     def body_fun(c, x):
       for _ in range(10):
         _ = base.next_rng_key()
       return c, x
     base.reserve_rng_keys(5)
     _ = stateful.scan(body_fun, (), (), length=iteration_count)
-    base.DEFAULT_PRNG_RESERVE_SIZE = tmp_default
 
   @parameterized.parameters(0, 1, 2, 8)
   @test_utils.transform_and_run
+  @with_rng_reserve_size
   def test_stateful_fori_with_rng_use(self, iteration_count):
-    tmp_default = base.DEFAULT_PRNG_RESERVE_SIZE
-    base.DEFAULT_PRNG_RESERVE_SIZE = 64
     def body_fun(_, x):
       for _ in range(10):
         _ = base.next_rng_key()
       return x
     base.reserve_rng_keys(5)
     _ = stateful.fori_loop(0, iteration_count, body_fun, 1)
-    base.DEFAULT_PRNG_RESERVE_SIZE = tmp_default
 
   @test_utils.transform_and_run
+  @with_rng_reserve_size
   def test_stateful_cond_with_rng_use(self):
-    tmp_default = base.DEFAULT_PRNG_RESERVE_SIZE
-    base.DEFAULT_PRNG_RESERVE_SIZE = 64
     # Test if using different amount of keys in different branches
     # results in error
     def true_branch(x):
@@ -503,12 +506,10 @@ class StatefulTest(parameterized.TestCase):
     base.reserve_rng_keys(5)
     _ = stateful.cond(True, true_branch, false_branch, 0)
     _ = stateful.cond(False, true_branch, false_branch, 0)
-    base.DEFAULT_PRNG_RESERVE_SIZE = tmp_default
 
   @test_utils.transform_and_run
+  @with_rng_reserve_size
   def test_stateful_switch_with_rng_use(self):
-    tmp_default = base.DEFAULT_PRNG_RESERVE_SIZE
-    base.DEFAULT_PRNG_RESERVE_SIZE = 64
     # Test if using different amount of keys in different branches
     # results in error
     def branch_f(i):
@@ -520,7 +521,6 @@ class StatefulTest(parameterized.TestCase):
     branches = [lambda _, i=i: branch_f(i) for i in range(5)]
     self.assertEqual(stateful.switch(3, branches, None), 3)
     self.assertEqual(stateful.switch(0, branches, None), 0)
-    base.DEFAULT_PRNG_RESERVE_SIZE = tmp_default
 
   @parameterized.parameters(*it.product((0, 1, 2, 4, 8), (1, 2, 3)))
   @test_utils.transform_and_run

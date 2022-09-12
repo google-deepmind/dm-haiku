@@ -43,8 +43,6 @@ except ImportError:
   # Pre Python 3.8.
   final = lambda cls: cls
 
-DEFAULT_PRNG_RESERVE_SIZE = 1
-
 T = TypeVar("T")
 
 Stack = data_structures.Stack[T]
@@ -887,11 +885,12 @@ class PRNGSequence(Iterator[PRNGKey]):
       self._subkeys.extend(new_keys[1:])
 
   def reserve_up_to_full(self):
-    num = DEFAULT_PRNG_RESERVE_SIZE - len(self._subkeys)
+    reserve_size = config.get_config().rng_reserve_size
+    num = reserve_size - len(self._subkeys)
     if num > 0:
       self.reserve(num)
     else:
-      sliced_subkeys = list(self._subkeys)[:DEFAULT_PRNG_RESERVE_SIZE]
+      sliced_subkeys = list(self._subkeys)[:reserve_size]
       self._subkeys = collections.deque(sliced_subkeys)
 
   @property
@@ -908,7 +907,7 @@ class PRNGSequence(Iterator[PRNGKey]):
 
   def __next__(self) -> PRNGKey:
     if not self._subkeys:
-      self.reserve(DEFAULT_PRNG_RESERVE_SIZE)
+      self.reserve(config.get_config().rng_reserve_size)
     return self._subkeys.popleft()
 
   next = __next__

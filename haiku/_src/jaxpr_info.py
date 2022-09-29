@@ -30,6 +30,7 @@ Example usage:
     print(jaxpr_info.format_module(mod))
 
 """
+import contextlib
 import dataclasses
 import itertools
 import logging
@@ -39,6 +40,7 @@ from typing import Any, Callable, Dict, List, Mapping, NamedTuple, Set, Sequence
 
 from haiku._src import summarise
 import jax
+from jax.experimental import maps
 
 
 @dataclasses.dataclass
@@ -102,6 +104,25 @@ class Expression:
 ComputeFlopsFn = Callable[[jax.core.JaxprEqn, Expression], int]
 
 
+# TODO(yashkatariya): Remove once jax.Array is ready
+@contextlib.contextmanager
+def _maybe_set_global_semantics():
+  """Sets global semantics within the context manager.
+
+  Required for evaluating make_jaxpr on GlobalDeviceArray values.
+
+  Yields:
+    No value, but a JAX environment which sets GLOBAL positional semantics.
+  """
+  prev_positional_val = maps._positional_semantics.val  # pylint: disable=protected-access
+  try:
+    if jax.config.jax_parallel_functions_output_gda:
+      maps._positional_semantics.val = maps._PositionalSemantics.GLOBAL  # pylint: disable=protected-access
+    yield
+  finally:
+    maps._positional_semantics.val = prev_positional_val  # pylint: disable=protected-access
+
+
 def make_model_info(
     f: Callable[..., Any],
     name: Optional[str] = None,
@@ -145,10 +166,13 @@ def make_model_info(
       # Increase recursion limit as graphs may be very deep
       sys.setrecursionlimit(int(10e3))
 
+      with _maybe_set_global_semantics():
+        jaxpr = make_jaxpr(*args, **kwargs).jaxpr
+
       # Compute flops for all expressions.
       module = Module(name=name)
       _process_jaxpr(
-          make_jaxpr(*args, **kwargs).jaxpr,
+          jaxpr,
           compute_flops,
           scope=_ModuleScope(named_call_id='0'),
           seen=set(),
@@ -159,7 +183,8 @@ def make_model_info(
 
       if include_module_info:
         # Add haiku param and state counts for all haiku modules.
-        module_infos = make_module_info(*args, **kwargs)
+        with _maybe_set_global_semantics():
+          module_infos = make_module_info(*args, **kwargs)
         by_name = {i.module_details.module.module_name: i for i in module_infos}
         by_name = {k.replace('/~/', '/'): v for k, v in by_name.items()}
 

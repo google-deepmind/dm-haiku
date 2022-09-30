@@ -779,7 +779,7 @@ class SetterContext(NamedTuple):
 def custom_setter(setter: Setter) -> contextlib.AbstractContextManager:
   """Registers a custom state setter.
 
-  When state is set using :func:`get_parameter` we always run all custom setters
+  When state is set using :func:`set_state` we always run all custom setters
   before saving the value.
 
   >>> def zero_during_init(next_setter, value, context):

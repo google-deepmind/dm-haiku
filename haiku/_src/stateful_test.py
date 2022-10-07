@@ -592,6 +592,12 @@ class StatefulTest(parameterized.TestCase):
       stateful.vmap(lambda a, b: None, in_axes=(0, 1), split_rng=False)(x, x)
 
   @test_utils.transform_and_run
+  def test_vmap_in_axes_supports_list(self):
+    a = jnp.ones([4])
+    b = stateful.vmap(lambda a: a * 2, in_axes=[0], split_rng=False)(a)
+    np.testing.assert_array_equal(b, a * 2)
+
+  @test_utils.transform_and_run
   def test_vmap_no_split_rng(self):
     key_before = base.next_rng_key()
     f = stateful.vmap(lambda _: base.next_rng_key(), split_rng=False)

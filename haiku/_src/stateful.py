@@ -15,6 +15,7 @@
 """Wrappers for JAX transformations that respect Haiku internal state."""
 
 import collections
+import collections.abc
 import functools
 import inspect
 from typing import Any, Callable, Mapping, MutableMapping, Optional, Tuple, TypeVar
@@ -734,6 +735,8 @@ def add_split_rng_error(f):
   wrapper.require_split_rng = True
   return wrapper
 
+list_to_tuple = lambda x: tuple(x) if isinstance(x, list) else x
+
 
 @add_split_rng_error
 def vmap(
@@ -793,7 +796,7 @@ def vmap(
   params_axes = state_axes = None
   rng_axes = (0 if split_rng else None)
   haiku_state_axes = InternalState(params_axes, state_axes, rng_axes)
-  in_axes = in_axes, haiku_state_axes
+  in_axes = list_to_tuple(in_axes), haiku_state_axes
   out_axes = out_axes, haiku_state_axes
 
   @functools.wraps(fun)

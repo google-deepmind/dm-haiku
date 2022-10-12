@@ -140,9 +140,9 @@ def avg_pool(
   else:
     # Count the number of valid entries at each input point, then use that for
     # computing average. Assumes that any two arrays of same shape will be
-    # padded the same.
-    window_counts = lax.reduce_window(jnp.ones_like(value), *reduce_window_args)
-    assert pooled.shape == window_counts.shape
+    # padded the same. Avoid broadcasting on axis where pooling is skipped. 
+    _shape = tuple(vd if wd!=1 else 1 for (vd, wd) in zip(value.shape, window_shape))
+    window_counts = lax.reduce_window(jnp.ones(_shape), *reduce_window_args)
     return pooled / window_counts
 
 

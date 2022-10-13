@@ -71,7 +71,9 @@ class MultiHeadAttention(hk.Module):
       num_heads: Number of independent attention heads (H).
       key_size: The size of keys (K) and queries used for attention.
       w_init_scale: DEPRECATED. Please use w_init instead.
-      w_init: Initialiser for weights in the linear map.
+      w_init: Initialiser for weights in the linear map. Once `w_init_scale` is
+        fully deprecated `w_init` will become mandatory. Until then it has a
+        default value of `None` for backwards compatability.
       value_size: Optional size of the value projection (V). If None, defaults
         to the key size (K).
       model_size: Optional size of the output embedding (D'). If None, defaults
@@ -92,7 +94,9 @@ class MultiHeadAttention(hk.Module):
     if w_init and w_init_scale:
       raise ValueError("Please provide only `w_init`, not `w_init_scale`.")
     if w_init is None and w_init_scale is None:
-      raise ValueError("Please provide a weight initializer: `w_init`.")
+      raise ValueError("Please provide a weight initializer: `w_init`. "
+                       "`w_init` will become mandatory once `w_init_scale` is "
+                       "fully deprecated.")
     if w_init is None:
       w_init = hk.initializers.VarianceScaling(w_init_scale)
     self.w_init = w_init

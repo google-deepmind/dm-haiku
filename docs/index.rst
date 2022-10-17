@@ -22,7 +22,6 @@ abstractions for machine learning research.
     x = jnp.ones([8, 28 * 28])
     params = forward.init(next(rng), x)
     logits = forward.apply(params, next(rng), x)
-    logits = forward.apply(params, next(rng), x)
 
 Installation
 ------------

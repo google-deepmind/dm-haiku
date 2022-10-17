@@ -21,7 +21,8 @@ abstractions for machine learning research.
     rng = hk.PRNGSequence(jax.random.PRNGKey(42))
     x = jnp.ones([8, 28 * 28])
     params = forward.init(next(rng), x)
-    logits = forward.apply(params, next(rng), x)
+    for _ in range(5):
+      logits = forward.apply(params, next(rng), x)
 
 Installation
 ------------

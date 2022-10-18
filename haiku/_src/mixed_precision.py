@@ -156,11 +156,11 @@ def set_policy(cls: Type[hk.Module], policy: jmp.Policy):
   >>> hk.mixed_precision.set_policy(hk.nets.ResNet50, policy)
   >>> net = hk.nets.ResNet50(4)
   >>> x = jnp.ones([4, 224, 224, 3])
-  >>> net(x, is_training=True)
-  DeviceArray([[nan, nan, nan, nan],
-               [nan, nan, nan, nan],
-               [nan, nan, nan, nan],
-               [nan, nan, nan, nan]], dtype=float32)
+  >>> print(net(x, is_training=True))
+  [[nan nan nan nan]
+   [nan nan nan nan]
+   [nan nan nan nan]
+   [nan nan nan nan]]
 
   Oh no, nan! This is because modules like batch norm are not numerically stable
   in ``float16``. To address this, we apply a second policy to our batch norm
@@ -169,11 +169,11 @@ def set_policy(cls: Type[hk.Module], policy: jmp.Policy):
 
   >>> policy = jmp.get_policy('params=float32,compute=float32,output=float16')
   >>> hk.mixed_precision.set_policy(hk.BatchNorm, policy)
-  >>> net(x, is_training=True)
-  DeviceArray([[0., 0., 0., 0.],
-               [0., 0., 0., 0.],
-               [0., 0., 0., 0.],
-               [0., 0., 0., 0.]], dtype=float32)
+  >>> print(net(x, is_training=True))
+  [[0. 0. 0. 0.]
+   [0. 0. 0. 0.]
+   [0. 0. 0. 0.]
+   [0. 0. 0. 0.]]
 
   For a fully worked mixed precision example see the imagenet example in Haiku's
   examples directory. This example shows mixed precision on GPU offering a 2x

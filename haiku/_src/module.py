@@ -598,8 +598,8 @@ class Module(object, metaclass=ModuleMetaclass):
   >>> x = 1.
   >>> rng = None
   >>> params = forward.init(rng, x)
-  >>> forward.apply(params, None, x)
-  DeviceArray(2., dtype=float32)
+  >>> print(forward.apply(params, None, x))
+  2.0
   """
 
   def __init__(self, name: Optional[str] = None):

@@ -114,8 +114,8 @@ def grad(fun, argnums=0, has_aux=False, holomorphic=False):
   >>> f = hk.transform_with_state(f)
   >>> x = jnp.array(2.)
   >>> params, state = jax.jit(f.init)(None, x)
-  >>> state["my_module"]["last"]
-  DeviceArray(4., dtype=float32, weak_type=True)
+  >>> print(state["my_module"]["last"])
+  4.0
 
   Args:
     fun: Function to be differentiated. Its arguments at positions specified by

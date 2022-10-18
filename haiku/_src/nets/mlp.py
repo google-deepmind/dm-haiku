@@ -137,8 +137,6 @@ class MLP(hk.Module):
     >>> mlp = hk.nets.MLP([1, 2, 3])
     >>> y = mlp(jnp.ones([1, 2]))
     >>> rev = mlp.reverse()
-    >>> rev(y)
-    DeviceArray(...)
 
     Args:
       activate_final: Whether the final layer of the MLP should be activated.

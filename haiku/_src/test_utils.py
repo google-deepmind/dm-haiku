@@ -77,8 +77,8 @@ def transform_and_run(
   Google Colaboratory:
 
   >>> f = lambda x: hk.Bias()(x)
-  >>> hk.testing.transform_and_run(f)(jnp.ones([1, 1]))
-  DeviceArray([[1.]], dtype=float32)
+  >>> print(hk.testing.transform_and_run(f)(jnp.ones([1, 1])))
+  [[1.]]
 
   See :func:`transform` for more details.
 

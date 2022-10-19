@@ -249,9 +249,8 @@ def layer_stack(num_layers: int,
   >>> stack = hk.experimental.layer_stack(num_layers,
   ...                                     with_per_layer_inputs=True)
   >>> x, zs = stack(f)(x, ys_0, ys_1)
-  >>> x, zs
-  (DeviceArray(4, dtype=int32, weak_type=True),
-      DeviceArray([ 6,  8, 10, 12], dtype=int32))
+  >>> print(x, zs)
+  4 [ 6  8 10 12]
 
   Check the tests in ``layer_stack_test.py`` for further examples.
 

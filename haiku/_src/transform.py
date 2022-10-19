@@ -100,8 +100,8 @@ def without_state(f: TransformedWithState) -> Transformed:
   >>> rng = jax.random.PRNGKey(42)
   >>> x = jnp.zeros([1, 1])
   >>> params = f.init(rng, x)
-  >>> f.apply(params, rng, x)
-  DeviceArray([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]], dtype=float32)
+  >>> print(f.apply(params, rng, x))
+  [[0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]]
 
   Args:
     f: A transformed function.
@@ -151,8 +151,8 @@ def with_empty_state(f: Transformed) -> TransformedWithState:
   >>> state
   {}
   >>> out, state = f.apply(params, state, rng, x)
-  >>> out
-  DeviceArray([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]], dtype=float32)
+  >>> print(out)
+  [[0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]]
   >>> state
   {}
 
@@ -217,15 +217,15 @@ def transform(f, *, apply_rng=True) -> Transformed:
 
   >>> params = f.init(None, 1)
   >>> params
-  {'my_module': {'w': DeviceArray(0., dtype=float32)},
-   'my_module_1': {'w': DeviceArray(0., dtype=float32)}}
+  {'my_module': {'w': ...Array(0., dtype=float32)},
+   'my_module_1': {'w': ...Array(0., dtype=float32)}}
 
   You can then apply the function with the given parameters by calling
   ``apply`` (note that since we don't use Haiku's random number APIs to apply
   our network we pass ``None`` as an RNG key):
 
-  >>> f.apply(params, None, 1)
-  DeviceArray(2., dtype=float32)
+  >>> print(f.apply(params, None, 1))
+  2.0
 
   It is expected that your program will at some point produce updated parameters
   and you will want to re-apply ``apply``. You can do this by calling ``apply``
@@ -233,8 +233,8 @@ def transform(f, *, apply_rng=True) -> Transformed:
 
   >>> new_params = {"my_module": {"w": jnp.array(2.)},
   ...               "my_module_1": {"w": jnp.array(3.)}}
-  >>> f.apply(new_params, None, 2)
-  DeviceArray(9., dtype=float32, weak_type=True)
+  >>> print(f.apply(new_params, None, 2))
+  9.0
 
   If your transformed function needs to maintain internal state (e.g. moving
   averages in batch norm) then see :func:`transform_with_state`.
@@ -304,8 +304,8 @@ def transform_with_state(f) -> TransformedWithState:
   >>> params, state = f.init(None)
   >>> for _ in range(10):
   ...   counter, state = f.apply(params, state, None)
-  >>> counter
-  DeviceArray(9, dtype=int32)
+  >>> print(counter)
+  9
 
   Args:
     f: A function closing over :class:`Module` instances.

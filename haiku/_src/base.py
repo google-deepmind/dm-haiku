@@ -470,8 +470,8 @@ def get_parameter(
 ) -> jnp.ndarray:
   """Creates or reuses a parameter for the given transformed function.
 
-  >>> hk.get_parameter("w", [], init=jnp.ones)
-  DeviceArray(1., dtype=float32)
+  >>> print(hk.get_parameter("w", [], init=jnp.ones))
+  1.0
 
   Parameters within the same :func:`transform` and/or :class:`Module` with the
   same name have the same value:
@@ -621,16 +621,16 @@ def custom_creator(
 
   >>> with hk.custom_creator(zeros_creator):
   ...   z = hk.get_parameter("z", [], jnp.float32, jnp.ones)
-  >>> z
-  DeviceArray(0., dtype=float32)
+  >>> print(z)
+  0.0
 
   If ``state=True`` then your creator will additionally run on calls to
   :func:`get_state`:
 
   >>> with hk.custom_creator(zeros_creator, state=True):
   ...   z = hk.get_state("z", [], jnp.float32, jnp.ones)
-  >>> z
-  DeviceArray(0., dtype=float32)
+  >>> print(z)
+  0.0
 
   Args:
     creator: A parameter creator.
@@ -790,8 +790,8 @@ def custom_setter(setter: Setter) -> contextlib.AbstractContextManager:
   >>> with hk.custom_setter(zero_during_init):
   ...   hk.set_state("x", jnp.ones([2]))
   ...   x = hk.get_state("x")
-  >>> x
-  DeviceArray([0., 0.], dtype=float32)
+  >>> print(x)
+  [0. 0.]
 
   Args:
     setter: A state setter.
@@ -1060,14 +1060,14 @@ def get_state(
   "state" then you are required to use :func:`transform_with_state` and pass
   state into and out of the apply function.
 
-  >>> hk.get_state("counter", [], init=jnp.zeros)
-  DeviceArray(0., dtype=float32)
+  >>> print(hk.get_state("counter", [], init=jnp.zeros))
+  0.0
 
   If the value for the given state is already defined (e.g. using
   :func:`set_state`) then you can call with just the name:
 
-  >>> hk.get_state("counter")
-  DeviceArray(0., dtype=float32)
+  >>> print(hk.get_state("counter"))
+  0.0
 
   MOTE: state within the same :func:`transform` and/or :class:`Module` with the
   same name have the same value:
@@ -1136,8 +1136,8 @@ def set_state(name: str, value):
   state into and out of the apply function.
 
   >>> hk.set_state("counter", jnp.zeros([]))
-  >>> hk.get_state("counter")
-  DeviceArray(0., dtype=float32)
+  >>> print(hk.get_state("counter"))
+  0.0
 
   NOTE: state within the same :func:`transform` and/or :class:`Module` with the
   same name have the same value:

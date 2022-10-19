@@ -135,10 +135,12 @@ class MLP(hk.Module):
     of the parent.
 
     >>> mlp = hk.nets.MLP([1, 2, 3])
-    >>> y = mlp(jnp.ones([1, 2]))
+    >>> mlp_in = jnp.ones([1, 2])
+    >>> y = mlp(mlp_in)
     >>> rev = mlp.reverse()
-    >>> rev(y)
-    DeviceArray(...)
+    >>> rev_mlp_out = rev(y)
+    >>> mlp_in.shape == rev_mlp_out.shape
+    True
 
     Args:
       activate_final: Whether the final layer of the MLP should be activated.

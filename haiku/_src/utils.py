@@ -14,7 +14,7 @@
 # ==============================================================================
 """Misc utility functions."""
 
-import collections
+import collections.abc
 import decimal
 import inspect
 import pprint

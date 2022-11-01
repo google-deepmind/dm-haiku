@@ -889,9 +889,11 @@ def while_loop(cond_fun, body_fun, init_val):
     with temporary_internal_state(state), \
          base.push_jax_trace_level():
       val = body_fun(val)
+      reserve_up_to_full_rng_block()
       state = internal_state()
       return val, state
 
+  reserve_up_to_full_rng_block()
   init_val = (init_val, internal_state())
   val, state = jax.lax.while_loop(pure_cond_fun, pure_body_fun, init_val)
   update_internal_state(state)

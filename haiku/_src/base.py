@@ -885,12 +885,12 @@ class PRNGSequence(Iterator[PRNGKey]):
       self._subkeys.extend(new_keys[1:])
 
   def reserve_up_to_full(self):
-    reserve_size = config.get_config().rng_reserve_size
-    num = reserve_size - len(self._subkeys)
-    if num > 0:
-      self.reserve(num)
-    else:
-      sliced_subkeys = list(self._subkeys)[:reserve_size]
+    num = config.get_config().rng_reserve_size
+    diffnum = num - len(self._subkeys)
+    if diffnum > 0:
+      self.reserve(diffnum)
+    elif diffnum < 0:
+      sliced_subkeys = list(self._subkeys)[:num]
       self._subkeys = collections.deque(sliced_subkeys)
 
   @property
@@ -1260,7 +1260,9 @@ def assert_state_unchanged():
 
   params_diff = params_after - params_before
   state_diff = state_after - state_before
-  rng_diff = rng_after - rng_before
+  # Amount of rng keys can increase (reserve_rng_keys) or decrease
+  # (next_rng_key), so need symmetric set difference (^).
+  rng_diff = rng_after ^ rng_before
   if params_diff or state_diff or rng_diff:
     raise StateChangedError("Within this code block you are not able to modify "
                             "Haiku managed state (e.g. via `next_rng_key` or "

@@ -522,6 +522,19 @@ class StatefulTest(parameterized.TestCase):
     self.assertEqual(stateful.switch(3, branches, None), 3)
     self.assertEqual(stateful.switch(0, branches, None), 0)
 
+  @test_utils.transform_and_run
+  def test_stateful_while_loop_with_rng_use(self):
+    def body_fun(i):
+      _ = base.next_rng_key()
+      _ = base.next_rng_key()
+      return i+1
+
+    base.reserve_rng_keys(5)
+    if transform.running_init():
+      body_fun(0)
+    else:
+      stateful.while_loop(lambda i: i < 7, body_fun, 0)  # does not crash.
+
   @parameterized.parameters(*it.product((0, 1, 2, 4, 8), (1, 2, 3)))
   @test_utils.transform_and_run
   def test_fori(self, lower, n):

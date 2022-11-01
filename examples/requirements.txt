@@ -1,6 +1,6 @@
-git+git://github.com/deepmind/bsuite.git
-git+git://github.com/deepmind/optax.git
-git+git://github.com/deepmind/rlax.git
+git+https://github.com/deepmind/bsuite.git
+git+https://github.com/deepmind/optax.git
+git+https://github.com/deepmind/rlax.git
 dm-env>=1.2
 dm-tree>=0.1.1
 packaging>=20.9

@@ -832,7 +832,7 @@ def vmap(
     try:
       out, state = mapped_pure_fun(args, state)
     except ValueError as err:
-      if "out_axes" in str(err):
+      if split_rng and not base.params_frozen() and "out_axes" in str(err):
         # TODO(lenamartens): add error for state too.
         raise ValueError("hk.vmap does not support setting split_rng to True "
                          "during initialization because it assumes parameters "

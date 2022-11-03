@@ -651,6 +651,27 @@ class StatefulTest(parameterized.TestCase):
                                 "split_rng to True during initialization"):
       f(x)
 
+  @test_utils.transform_and_run(run_apply=False)
+  def test_vmap_split_rng_out_axes_error_no_split_rng(self):
+    f = stateful.vmap(lambda x: x, split_rng=False, out_axes=None)
+    x = jnp.arange(4)
+    with self.assertRaisesRegex(ValueError,
+                                "vmap has mapped output but out_axes is None"):
+      # test our split_rng error does not clobber jax error message.
+      f(x)
+
+  def test_vmap_split_rng_out_axes_error_no_init(self):
+    @transform.transform
+    def g(x):
+      f = stateful.vmap(lambda x: x, split_rng=True, out_axes=None)
+      f(x)
+
+    x = jnp.arange(4)
+    with self.assertRaisesRegex(ValueError,
+                                "vmap has mapped output but out_axes is None"):
+      # test our split_rng error does not clobber jax error message.
+      g.apply({}, jax.random.PRNGKey(42), x)
+
   def test_while_loop_rejected_in_init(self):
     def f():
       stateful.while_loop(lambda x: x.all(), lambda x: not x, 1)

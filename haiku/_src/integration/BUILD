@@ -186,6 +186,9 @@ hk_py_test(
     name = "numpy_inputs_test",
     srcs = ["numpy_inputs_test.py"],
     shard_count = 50,
+    tags = [
+        "notap",
+    ],
     deps = [
         ":descriptors",
         # pip: absl/testing:absltest

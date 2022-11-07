@@ -418,18 +418,11 @@ def wrap_method(method_name, unbound_method):
       module_name = getattr(self, "module_name", None)
       f = functools.partial(unbound_method, self)
       f = functools.partial(run_interceptors, f, method_name, self)
-      if jax.config.jax_experimental_name_stack and module_name:
+      if module_name:
         local_module_name = module_name.split("/")[-1]
         f = jax.named_call(f, name=local_module_name)
         if method_name != "__call__":
           f = jax.named_call(f, name=method_name)
-      elif module_name:
-        # TODO(lenamartens): remove this branch once jax_experimental_name_stack
-        # flag is removed.
-        cfg = config.get_config()
-        if cfg.profiler_name_scopes and method_name == "__call__":
-          local_module_name = module_name.split("/")[-1]
-          f = stateful.named_call(f, name=local_module_name)
 
       out = f(*args, **kwargs)
 

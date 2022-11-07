@@ -180,8 +180,7 @@ def make_model_info(
           seen=set(),
           module=module)
 
-      if jax.config.jax_experimental_name_stack:
-        _name_scopes_to_modules(module)
+      _name_scopes_to_modules(module)
 
       if include_module_info:
         # Add haiku param and state counts for all haiku modules.

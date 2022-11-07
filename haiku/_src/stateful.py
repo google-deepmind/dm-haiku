@@ -929,25 +929,7 @@ def named_call(
 
   @functools.wraps(fun)
   def wrapper(*args, **kwargs):
-    if jax.config.jax_experimental_name_stack:
-      return jax.named_call(fun, name=name)(*args, **kwargs)
-
-    side_channel = {"non_jaxtypes": [], "treedef": None}
-    wrapped_fun = hide_non_jaxtype_outputs(fun, side_channel)
-    if base.inside_transform():
-      wrapped_fun = thread_hk_state_in_kwargs(jax.named_call)(wrapped_fun,
-                                                              name=name)
-    else:
-      wrapped_fun = jax.named_call(wrapped_fun, name=name)
-
-    jax_types = wrapped_fun(*args, **kwargs)
-
-    non_jaxtypes = side_channel["non_jaxtypes"]
-    out_leaves = [y if x is None else x
-                  for x, y in zip(jax_types, non_jaxtypes)]
-    out = jax.tree_util.tree_unflatten(side_channel["treedef"], out_leaves)
-
-    return out
+    return jax.named_call(fun, name=name)(*args, **kwargs)
   return wrapper
 
 

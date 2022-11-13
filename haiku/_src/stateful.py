@@ -745,6 +745,8 @@ def vmap(
     out_axes=0,
     axis_name: Optional[str] = None,
     axis_size: Optional[int] = None,
+    params_axes: Optional[int] = None,
+    state_axes: Optional[int] = None,
     *,
     split_rng: bool,
 ) -> Callable[..., Any]:
@@ -792,12 +794,11 @@ def vmap(
         f"{fun.__name__} must have at least one non-None value in in_axes "
         "to use with `hk.vmap`.")
 
-  # TODO(tomhennigan): Allow configuration of params/state mapping.
-  params_axes = state_axes = None
   rng_axes = (0 if split_rng else None)
   haiku_state_axes = InternalState(params_axes, state_axes, rng_axes)
   in_axes = list_to_tuple(in_axes), haiku_state_axes
   out_axes = out_axes, haiku_state_axes
+  print(out_axes)
 
   @functools.wraps(fun)
   def pure_fun(args, state_in):

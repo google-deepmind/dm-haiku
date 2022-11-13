@@ -672,6 +672,59 @@ class StatefulTest(parameterized.TestCase):
       # test our split_rng error does not clobber jax error message.
       g.apply({}, jax.random.PRNGKey(42), x)
 
+  def test_vmap_lift_wtih_state(self):
+    import haiku as hk
+    x = jnp.arange(3).astype(jnp.float32)
+
+    class MyModule(hk.Module):
+      def __init__(self, steps, name=None):
+        super().__init__(name=name)
+        self.steps = steps
+
+      def __call__(self, x):
+        assert x.ndim == 0
+        steps = hk.get_parameter(
+          "steps", (1,), init=lambda *_: self.steps * jnp.ones(1)
+        )
+        state = hk.get_state("state", (1,), init=lambda *_: jnp.zeros(1) + x)
+        state = state + steps
+        hk.set_state("state", state)
+        return state + x
+
+
+    def run_vmap(split_rng):
+      def outer_fun(x):
+        def fun(x):
+          return MyModule(steps=2)(x)
+
+        return hk.vmap(fun, split_rng=split_rng, params_axes=0, state_axes=0)(x)
+
+      init, apply = hk.transform_with_state(outer_fun)
+      params, state = init(jax.random.PRNGKey(0), x)
+      if split_rng:
+        rng = jax.random.PRNGKey(0)
+        out, state = apply(params, state, rng, x)
+        out, state = apply(params, state, rng, x)
+      else:
+        out, state = apply(params, state, None, x)
+        out, state = apply(params, state, None, x)
+      return out
+
+    def run_static():
+      steps = 2
+      state = jnp.zeros_like(x) + x
+
+      # apply 1
+      state = state + steps
+      out = state + x
+      # apply 2
+      state = state + steps
+      out = state + x
+      return out.reshape(-1, 1)
+
+    assert jnp.allclose(run_vmap(True), run_static())
+    assert jnp.allclose(run_vmap(False), run_static())
+
   def test_while_loop_rejected_in_init(self):
     def f():
       stateful.while_loop(lambda x: x.all(), lambda x: not x, 1)

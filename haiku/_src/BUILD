@@ -910,6 +910,7 @@ hk_py_library(
     deps = [
         ":base",
         ":initializers",
+        ":layer_norm",
         ":module",
         # pip: jax
     ],

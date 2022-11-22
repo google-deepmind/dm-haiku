@@ -433,8 +433,7 @@ class TransformTest(parameterized.TestCase):
   @parameterized.parameters(
       None,
       multi_transform.without_apply_rng,
-      transform.without_state,
-      lambda f: transform.without_state(multi_transform.without_apply_rng(f)))
+      transform.with_empty_state)
   def test_persists_original_fn(self, without):
     orig_f = lambda: None
     f = transform.transform(orig_f)
@@ -444,6 +443,9 @@ class TransformTest(parameterized.TestCase):
 
   @parameterized.parameters(
       None,
+      transform.without_state,
+      multi_transform.without_apply_rng,
+      lambda f: transform.without_state(multi_transform.without_apply_rng(f)),
       lambda f: transform.with_empty_state(transform.without_state(f)))
   def test_persists_original_fn_transform_with_state(self, without):
     orig_f = lambda: None

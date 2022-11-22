@@ -109,6 +109,7 @@ hk_py_test(
         ":multi_transform",
         ":test_utils",
         ":transform",
+        ":typing",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
@@ -133,6 +134,8 @@ hk_py_test(
     deps = [
         ":base",
         ":multi_transform",
+        ":transform",
+        ":typing",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax

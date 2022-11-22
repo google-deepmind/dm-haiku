@@ -14,8 +14,9 @@
 # ==============================================================================
 """Base Haiku module."""
 
+import inspect
 import types
-from typing import Any, Callable, Mapping, NamedTuple, Optional, Tuple, TypeVar, Union
+from typing import Any, Callable, List, Mapping, NamedTuple, Optional, Tuple, TypeVar, Union
 
 from haiku._src import analytics
 from haiku._src import base
@@ -35,6 +36,53 @@ T = TypeVar("T")
 
 # TODO(b/161684853): Use protocols for transform if/when PEP-612 is implemented.
 # https://www.python.org/dev/peps/pep-0612/
+
+
+def sig_replace_leading_parameters(
+    s: inspect.Signature, n: int,
+    new_params: List[inspect.Parameter]) -> inspect.Signature:
+  """Replace the first n positional parameters of a signature."""
+  p = list(s.parameters.values())
+  i = 0
+  for i in range(n):
+    if i >= len(p) or p[i].kind not in {
+        inspect.Parameter.POSITIONAL_ONLY,
+        inspect.Parameter.POSITIONAL_OR_KEYWORD
+    }:
+      break  # not enough arguments (or args in VARARGS that can't be counted)
+  else:
+    i = n
+  return inspect.Signature(
+      parameters=new_params + p[i:], return_annotation=s.return_annotation,
+      __validate_parameters__=False)
+
+
+def sig_remove_state(s: inspect.Signature) -> inspect.Signature:
+  """Remove hk.State from the return type of a signature."""
+  ret = s.return_annotation
+  # Extract the tuple element types from `typing._GenericAlias` or
+  # `types.GenericAlias`.
+  ret_generic = getattr(ret, "__origin__", None)
+  ret_type_args = getattr(ret, "__args__", ())
+  if ret_generic is tuple and len(ret_type_args) == 2:
+    ret = ret_type_args[0]
+  else:
+    ret = Any
+  return inspect.Signature(
+      parameters=list(s.parameters.values()), return_annotation=ret,
+      __validate_parameters__=False)
+
+
+def sig_add_state(s: inspect.Signature) -> inspect.Signature:
+  """Add hk.State to the return type of a signature."""
+  if s.return_annotation is inspect.Parameter.empty:
+    ret = Any
+  else:
+    ret = s.return_annotation
+  return inspect.Signature(
+      parameters=list(s.parameters.values()),
+      return_annotation=Tuple[ret, hk.State],
+      __validate_parameters__=False)
 
 
 class Transformed(NamedTuple):
@@ -76,10 +124,9 @@ def to_prng_sequence(rng, err_msg) -> Optional[hk.PRNGSequence]:
           f"{err_msg}. The object was of type {type(rng)}: {rng}") from e
   return rng
 
-RNG_ERROR_TPL = (
-    "{f} must be called with an RNG as the {position} argument, "
-    "the required signature is: `{signature}`"
-)
+
+RNG_ERROR_TPL = ("{f} must be called with an RNG as the {position} argument, "
+                 "the required signature is: `{signature}`")
 INIT_RNG_ERROR = RNG_ERROR_TPL.format(
     f="Init", position="first", signature="init(rng, *a, **k)")
 APPLY_RNG_ERROR = RNG_ERROR_TPL.format(
@@ -117,6 +164,8 @@ def without_state(f: TransformedWithState) -> Transformed:
                        "then use `hk.transform_with_state`.")
     return params
 
+  init_fn.__signature__ = sig_remove_state(inspect.signature(f.init))
+
   def apply_fn(params, *args, **kwargs):
     if "state" in kwargs:
       raise TypeError(
@@ -130,6 +179,15 @@ def without_state(f: TransformedWithState) -> Transformed:
       raise ValueError("If your transformed function uses `hk.{get,set}_state` "
                        "then use `hk.transform_with_state`.")
     return out
+
+  apply_fn.__signature__ = sig_remove_state(
+      sig_replace_leading_parameters(
+          inspect.signature(f.apply), 2, [
+              inspect.Parameter(
+                  "params",
+                  inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                  annotation=Optional[hk.Params])
+          ]))
 
   tie_in_original_fn(f, init_fn, apply_fn)
 
@@ -168,11 +226,25 @@ def with_empty_state(f: Transformed) -> TransformedWithState:
     state = data_structures.to_haiku_dict({})
     return params, state
 
+  init_fn.__signature__ = sig_add_state(inspect.signature(f.init))
+
   def apply_fn(params, state, *args, **kwargs):
     del state
     out = f.apply(params, *args, **kwargs)
     state = data_structures.to_haiku_dict({})
     return out, state
+
+  apply_fn.__signature__ = sig_add_state(sig_replace_leading_parameters(
+      inspect.signature(f.apply), 1, [
+          inspect.Parameter(
+              "param",
+              inspect.Parameter.POSITIONAL_OR_KEYWORD,
+              annotation=hk.Params),
+          inspect.Parameter(
+              "state",
+              inspect.Parameter.POSITIONAL_OR_KEYWORD,
+              annotation=hk.Params)
+      ]))
 
   tie_in_original_fn(f, init_fn, apply_fn)
 
@@ -326,6 +398,8 @@ def transform_with_state(f) -> TransformedWithState:
       "See https://dm-haiku.readthedocs.io/en/latest/notebooks/transforms.html "
       "on why you can't use JAX transforms inside a Haiku module.")
 
+  f_sig = inspect.signature(f)
+
   def init_fn(
       rng: Optional[Union[PRNGKey, int]],
       *args,
@@ -339,6 +413,15 @@ def transform_with_state(f) -> TransformedWithState:
       except jax.errors.UnexpectedTracerError as e:
         raise jax.errors.UnexpectedTracerError(unexpected_tracer_hint) from e
     return ctx.collect_params(), ctx.collect_initial_state()
+
+  init_fn.__signature__ = inspect.Signature(
+      parameters=[
+          inspect.Parameter("rng", inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                            annotation=Optional[Union[PRNGKey, int]]),
+      ] + list(f_sig.parameters.values()),
+      return_annotation=Tuple[hk.Params, hk.State],
+      __validate_parameters__=False
+  )
 
   def apply_fn(
       params: Optional[hk.Params],
@@ -359,6 +442,19 @@ def transform_with_state(f) -> TransformedWithState:
         raise jax.errors.UnexpectedTracerError(unexpected_tracer_hint) from e
     return out, ctx.collect_state()
 
+  apply_fn.__signature__ = sig_add_state(inspect.Signature(
+      parameters=[
+          inspect.Parameter("params", inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                            annotation=Optional[hk.Params]),
+          inspect.Parameter("state", inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                            annotation=Optional[hk.State]),
+          inspect.Parameter("rng", inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                            annotation=Optional[Union[PRNGKey, int]]),
+      ] + list(f_sig.parameters.values()),
+      return_annotation=f_sig.return_annotation,
+      __validate_parameters__=False
+  ))
+
   tie_in_original_fn(f, init_fn, apply_fn)
 
   return TransformedWithState(init_fn, apply_fn)
@@ -372,8 +468,8 @@ def tie_in_original_fn(f, init_fn, apply_fn):
   apply_fn._original_fn = f  # pylint: disable=protected-access
 
 
-def get_original_fn(f: Union[Transformed, TransformedWithState,
-                             Callable[..., Any]]):
+def get_original_fn(f: Union[Transformed, TransformedWithState, Callable[...,
+                                                                         Any]]):
   if isinstance(f, (Transformed, TransformedWithState)):
     f = f.init
   return getattr(f, "_original_fn")

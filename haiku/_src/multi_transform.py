@@ -18,8 +18,9 @@
 
 import dataclasses
 import functools
+import inspect
 import types
-from typing import Any, Callable, NamedTuple, Tuple, TypeVar
+from typing import Any, Callable, NamedTuple, Optional, Tuple, TypeVar
 
 from haiku._src import analytics
 from haiku._src import transform
@@ -289,6 +290,17 @@ def without_apply_rng(f: TransformedT) -> TransformedT:
     def apply_fn(params, state, *args, **kwargs):
       check_rng_kwarg(kwargs)
       return f.apply(params, state, None, *args, **kwargs)
+    apply_fn.__signature__ = _transform.sig_replace_leading_parameters(
+        inspect.signature(f.apply), 3, [
+            inspect.Parameter(
+                'params',
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                annotation=Optional[hk.Params]),
+            inspect.Parameter(
+                'state',
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                annotation=Optional[hk.State]),
+        ])
     f_new = hk.TransformedWithState(init=f.init, apply=apply_fn)
     _transform.tie_in_original_fn(f, f_new.init, f_new.apply)
 
@@ -296,6 +308,13 @@ def without_apply_rng(f: TransformedT) -> TransformedT:
     def apply_fn(params, *args, **kwargs):
       check_rng_kwarg(kwargs)
       return f.apply(params, None, *args, **kwargs)
+    apply_fn.__signature__ = _transform.sig_replace_leading_parameters(
+        inspect.signature(f.apply), 2, [
+            inspect.Parameter(
+                'params',
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                annotation=Optional[hk.Params]),
+        ])
     f_new = hk.Transformed(init=f.init, apply=apply_fn)
     _transform.tie_in_original_fn(f, f_new.init, f_new.apply)
 

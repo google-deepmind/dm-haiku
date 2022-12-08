@@ -4,7 +4,7 @@ attrs==21.2.0
 Babel==2.9.1
 backcall==0.2.0
 bleach==4.1.0
-certifi==2021.10.8
+certifi==2022.12.7
 charset-normalizer==2.0.7
 cycler==0.11.0
 decorator==5.1.0

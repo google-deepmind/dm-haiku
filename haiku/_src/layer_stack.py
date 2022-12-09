@@ -15,7 +15,6 @@
 """Function to stack repeats of a layer function without shared parameters."""
 
 import collections
-import contextlib
 import functools
 import inspect
 from typing import Any, Callable, Optional, Tuple, Union
@@ -51,32 +50,11 @@ def _check_no_varargs(f):
         "arguments")
 
 
-@contextlib.contextmanager
-def nullcontext():
-  yield
-
-
-def maybe_with_rng(key):
-  if key is not None:
-    return base.with_rng(key)
-  else:
-    return nullcontext()
-
-
-def maybe_fold_in(key, data):
-  if key is not None:
-    return jax.random.fold_in(key, data)
-  else:
-    return None
-
-
 def _get_rng_stack(count: int) -> jnp.ndarray:
   rng = base.maybe_next_rng_key()
-  if rng is not None:
-    rng = jax.random.split(rng, count)
-  else:
-    rng = jnp.zeros([count, 2], dtype=jnp.uint32)
-  return rng
+  if rng is None:
+    return None
+  return jax.random.split(rng, count)
 
 
 class _LayerStack(module.Module):
@@ -98,7 +76,7 @@ class _LayerStack(module.Module):
     try:
       init_fn, apply_fn = transform.transform(self._call_wrapped)
     except ValueError as e:
-      raise LayerStackStateError("LayerStack can only be used in Haiku "
+      raise LayerStackStateError("LayerStack can only be used on Haiku "
                                  "functions which do not make use of Haiku "
                                  "state.") from e
 

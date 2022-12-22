@@ -244,7 +244,7 @@ def without_state(f: MultiTransformedWithState) -> MultiTransformed:
 
   def apply_without_state(orig_apply_fn) -> Any:
     def apply_fn(params: hk.Params, rng, *args, **kwargs):
-      out, state = orig_apply_fn(params, {}, rng, *args, **kwargs)
+      out, state = orig_apply_fn(params, None, rng, *args, **kwargs)
       if state:
         raise ValueError(
             'If your transformed function uses `hk.{get,set}_state` then use '

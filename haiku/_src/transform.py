@@ -178,7 +178,7 @@ def without_state(f: TransformedWithState) -> Transformed:
           "pass them positionally (e.g. `f.apply(.., my_state)` and not by "
           "name (e.g. `f.apply(.., state=my_state)`)")
 
-    out, state = f.apply(params, {}, *args, **kwargs)
+    out, state = f.apply(params, None, *args, **kwargs)
     if state:
       raise ValueError("If your transformed function uses `hk.{get,set}_state` "
                        "then use `hk.transform_with_state`.")
@@ -435,10 +435,12 @@ def transform_with_state(f) -> TransformedWithState:
       **kwargs,
   ) -> Tuple[Any, hk.State]:
     """Applies your function injecting parameters and state."""
+    uses_state = state is not None
     params = check_mapping("params", params)
     state = check_mapping("state", state)
     rng = to_prng_sequence(
-        rng, err_msg=(APPLY_RNG_STATE_ERROR if state else APPLY_RNG_ERROR))
+        rng,
+        err_msg=(APPLY_RNG_STATE_ERROR if uses_state else APPLY_RNG_ERROR))
     with base.new_context(params=params, state=state, rng=rng) as ctx:
       try:
         out = f(*args, **kwargs)
@@ -481,7 +483,6 @@ def get_original_fn(f: Union[Transformed, TransformedWithState, Callable[...,
 
 def check_mapping(name: str, mapping: Optional[T]) -> T:
   """Cleans inputs to apply_fn, providing better errors."""
-  # TODO(tomhennigan) Remove support for empty non-Mappings.
   if mapping is None:
     # Convert None to empty dict.
     mapping = dict()

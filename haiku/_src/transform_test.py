@@ -101,6 +101,15 @@ class TransformTest(parameterized.TestCase):
         ValueError, "Apply must be called with an RNG as the third argument"):
       f.apply({}, {"x": {}}, "nonsense")
 
+  def test_invalid_rng_empty_state(self):
+    f = transform.transform_with_state(lambda: None)
+    with self.assertRaisesRegex(
+        ValueError, "Init must be called with an RNG as the first argument"):
+      f.init("nonsense")
+    with self.assertRaisesRegex(
+        ValueError, "Apply must be called with an RNG as the third argument"):
+      f.apply({}, {}, "nonsense")
+
   @parameterized.parameters(transform.transform,
                             transform.transform_with_state)
   def test_invalid_rng_none_ignored(self, transform_fn):

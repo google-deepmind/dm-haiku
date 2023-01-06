@@ -342,6 +342,24 @@ class StatefulTest(parameterized.TestCase):
       self.assertEqual(state, {"square_module": {"y": y}})
       self.assertEqual(out, y)
 
+  def test_switch_multiple_operands(self):
+    def f(i, x, y, z):
+      mod = SquareModule()
+      branches = [lambda x, y, z: mod(x),
+                  lambda y, x, z: mod(x),
+                  lambda y, z, x: mod(x),
+                  ]
+      return stateful.switch(i, branches, x, y, z)
+
+    f = transform.transform_with_state(f)
+    xyz = (1, 3, 5)
+    for i in range(3):
+      params, state = f.init(None, i, *xyz)
+      out, state = f.apply(params, state, None, i, *xyz)
+      expected_out = xyz[i]**2
+      self.assertEqual(state, {"square_module": {"y": expected_out}})
+      self.assertEqual(out, expected_out)
+
   @test_utils.transform_and_run(run_apply=False)
   def test_cond_branch_structure_error(self):
     true_fn = lambda x: base.get_parameter("w", x.shape, x.dtype, init=jnp.ones)

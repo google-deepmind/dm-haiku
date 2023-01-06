@@ -539,7 +539,7 @@ def cond(*args, **kwargs):
 
 
 @with_output_structure_hint
-def switch(index, branches, operand):
+def switch(index, branches, *operands):
   """Equivalent to :func:`jax.lax.switch` but with Haiku state passed in/out.
 
   Note that creating parameters inside a switch branch is not supported, as such
@@ -560,7 +560,7 @@ def switch(index, branches, operand):
   Args:
     index: Integer scalar type, indicating which branch function to apply.
     branches: Sequence of functions (A -> B) to be applied based on index.
-    operand: Operands (A) input to whichever branch is applied.
+    operands: Operands (A) input to whichever branch is applied.
 
   Returns:
     Value (B) of branch(*operands) for the branch that was selected based on
@@ -575,7 +575,7 @@ def switch(index, branches, operand):
   stateful_branch_mem = _memoize_by_id(stateful_branch)
   state = internal_state()
   out, state = jax.lax.switch(
-      index, tuple(map(stateful_branch_mem, branches)), (state, (operand,)))
+      index, tuple(map(stateful_branch_mem, branches)), (state, operands))
   update_internal_state(state)
   return out
 

@@ -134,6 +134,21 @@ class BaseTest(parameterized.TestCase):
         base.get_parameter("w", (1,), init=jnp.zeros)
         base.get_parameter("w", (2,), init=jnp.zeros)
 
+  def test_get_parameter_no_init(self):
+    with base.new_context():
+      with self.assertRaisesRegex(ValueError, "Initializer must be specified."):
+        base.get_parameter("w", [])
+
+  def test_get_parameter_no_init_during_init_second_call(self):
+    with base.new_context():
+      w = base.get_parameter("w", [], init=jnp.zeros)
+      self.assertIs(base.get_parameter("w", []), w)
+
+  def test_get_parameter_no_init_during_apply(self):
+    w = jnp.zeros([])
+    with base.new_context(params={"~": {"w": w}}):
+      self.assertIs(base.get_parameter("w", []), w)
+
   @parameterized.parameters(base.next_rng_key, lambda: base.next_rng_keys(1))
   def test_rng_no_transform(self, f):
     with self.assertRaisesRegex(ValueError,

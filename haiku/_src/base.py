@@ -461,6 +461,11 @@ def replaceable(f: T) -> T:
   return wrapped
 
 
+def throw_if_run(shape, dtype):
+  del shape, dtype
+  raise ValueError("Initializer must be specified.")
+
+
 @replaceable
 def get_parameter(
     name: str,
@@ -493,7 +498,8 @@ def get_parameter(
   assert_context("get_parameter")
   assert_jax_usage("get_parameter")
 
-  init = check_not_none(init, "Initializer must be specified.")
+  if init is None:
+    init = throw_if_run
 
   bundle_name = current_name()
   frame = current_frame()

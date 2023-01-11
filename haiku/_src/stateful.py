@@ -114,8 +114,8 @@ def grad(fun, argnums=0, has_aux=False, holomorphic=False):
   >>> f = hk.transform_with_state(f)
   >>> x = jnp.array(2.)
   >>> params, state = jax.jit(f.init)(None, x)
-  >>> state["my_module"]["last"]
-  DeviceArray(4., dtype=float32, weak_type=True)
+  >>> print(state["my_module"]["last"])
+  4.0
 
   Args:
     fun: Function to be differentiated. Its arguments at positions specified by
@@ -539,7 +539,7 @@ def cond(*args, **kwargs):
 
 
 @with_output_structure_hint
-def switch(index, branches, operand):
+def switch(index, branches, *operands):
   """Equivalent to :func:`jax.lax.switch` but with Haiku state passed in/out.
 
   Note that creating parameters inside a switch branch is not supported, as such
@@ -560,7 +560,7 @@ def switch(index, branches, operand):
   Args:
     index: Integer scalar type, indicating which branch function to apply.
     branches: Sequence of functions (A -> B) to be applied based on index.
-    operand: Operands (A) input to whichever branch is applied.
+    operands: Operands (A) input to whichever branch is applied.
 
   Returns:
     Value (B) of branch(*operands) for the branch that was selected based on
@@ -575,7 +575,7 @@ def switch(index, branches, operand):
   stateful_branch_mem = _memoize_by_id(stateful_branch)
   state = internal_state()
   out, state = jax.lax.switch(
-      index, tuple(map(stateful_branch_mem, branches)), (state, (operand,)))
+      index, tuple(map(stateful_branch_mem, branches)), (state, operands))
   update_internal_state(state)
   return out
 
@@ -832,7 +832,7 @@ def vmap(
     try:
       out, state = mapped_pure_fun(args, state)
     except ValueError as err:
-      if "out_axes" in str(err):
+      if split_rng and not base.params_frozen() and "out_axes" in str(err):
         # TODO(lenamartens): add error for state too.
         raise ValueError("hk.vmap does not support setting split_rng to True "
                          "during initialization because it assumes parameters "
@@ -889,9 +889,11 @@ def while_loop(cond_fun, body_fun, init_val):
     with temporary_internal_state(state), \
          base.push_jax_trace_level():
       val = body_fun(val)
+      reserve_up_to_full_rng_block()
       state = internal_state()
       return val, state
 
+  reserve_up_to_full_rng_block()
   init_val = (init_val, internal_state())
   val, state = jax.lax.while_loop(pure_cond_fun, pure_body_fun, init_val)
   update_internal_state(state)
@@ -927,25 +929,7 @@ def named_call(
 
   @functools.wraps(fun)
   def wrapper(*args, **kwargs):
-    if jax.config.jax_experimental_name_stack:
-      return jax.named_call(fun, name=name)(*args, **kwargs)
-
-    side_channel = {"non_jaxtypes": [], "treedef": None}
-    wrapped_fun = hide_non_jaxtype_outputs(fun, side_channel)
-    if base.inside_transform():
-      wrapped_fun = thread_hk_state_in_kwargs(jax.named_call)(wrapped_fun,
-                                                              name=name)
-    else:
-      wrapped_fun = jax.named_call(wrapped_fun, name=name)
-
-    jax_types = wrapped_fun(*args, **kwargs)
-
-    non_jaxtypes = side_channel["non_jaxtypes"]
-    out_leaves = [y if x is None else x
-                  for x, y in zip(jax_types, non_jaxtypes)]
-    out = jax.tree_util.tree_unflatten(side_channel["treedef"], out_leaves)
-
-    return out
+    return jax.named_call(fun, name=name)(*args, **kwargs)
   return wrapper
 
 

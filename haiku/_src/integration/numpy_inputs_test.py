@@ -15,7 +15,8 @@
 """Tests whether modules produce similar output given np.ndarray inputs."""
 
 import functools
-from typing import Tuple
+import os
+from typing import Tuple, Type
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -32,6 +33,11 @@ ModuleFn = descriptors.ModuleFn
 def tree_assert_allclose(a, b, *, atol=1e-6):
   jax.tree_util.tree_map(
       functools.partial(np.testing.assert_allclose, atol=atol), a, b)
+
+
+def get_module_cls(module_fn: ModuleFn) -> Type[hk.Module]:
+  get_cls = lambda: type(descriptors.unwrap(module_fn()))
+  return hk.testing.transform_and_run(get_cls)()
 
 
 class NumpyInputsTest(parameterized.TestCase):
@@ -52,6 +58,13 @@ class NumpyInputsTest(parameterized.TestCase):
   ):
     if not (np_params or np_inputs):
       self.skipTest('Pure JAX variants tested elsewhere')
+
+    # TODO(b/257921991): Fix the timeouts here.
+    if (close_over_params and 'UNITTEST_ON_FORGE' in os.environ):
+      module_cls = get_module_cls(module_fn)
+      if module_cls in (hk.nets.ResNet, hk.Conv2DTranspose, hk.LayerNorm,
+                        hk.Conv2DLSTM, hk.IdentityCore):
+        self.skipTest('Close over tests for these modules take >5 minutes')
 
     f = hk.transform_with_state(lambda x: module_fn()(x))  # pylint: disable=unnecessary-lambda
 

@@ -342,6 +342,24 @@ class StatefulTest(parameterized.TestCase):
       self.assertEqual(state, {"square_module": {"y": y}})
       self.assertEqual(out, y)
 
+  def test_switch_multiple_operands(self):
+    def f(i, x, y, z):
+      mod = SquareModule()
+      branches = [lambda x, y, z: mod(x),
+                  lambda y, x, z: mod(x),
+                  lambda y, z, x: mod(x),
+                  ]
+      return stateful.switch(i, branches, x, y, z)
+
+    f = transform.transform_with_state(f)
+    xyz = (1, 3, 5)
+    for i in range(3):
+      params, state = f.init(None, i, *xyz)
+      out, state = f.apply(params, state, None, i, *xyz)
+      expected_out = xyz[i]**2
+      self.assertEqual(state, {"square_module": {"y": expected_out}})
+      self.assertEqual(out, expected_out)
+
   @test_utils.transform_and_run(run_apply=False)
   def test_cond_branch_structure_error(self):
     true_fn = lambda x: base.get_parameter("w", x.shape, x.dtype, init=jnp.ones)
@@ -522,6 +540,19 @@ class StatefulTest(parameterized.TestCase):
     self.assertEqual(stateful.switch(3, branches, None), 3)
     self.assertEqual(stateful.switch(0, branches, None), 0)
 
+  @test_utils.transform_and_run
+  def test_stateful_while_loop_with_rng_use(self):
+    def body_fun(i):
+      _ = base.next_rng_key()
+      _ = base.next_rng_key()
+      return i+1
+
+    base.reserve_rng_keys(5)
+    if transform.running_init():
+      body_fun(0)
+    else:
+      stateful.while_loop(lambda i: i < 7, body_fun, 0)  # does not crash.
+
   @parameterized.parameters(*it.product((0, 1, 2, 4, 8), (1, 2, 3)))
   @test_utils.transform_and_run
   def test_fori(self, lower, n):
@@ -637,6 +668,27 @@ class StatefulTest(parameterized.TestCase):
     with self.assertRaisesRegex(ValueError,
                                 "split_rng to True during initialization"):
       f(x)
+
+  @test_utils.transform_and_run(run_apply=False)
+  def test_vmap_split_rng_out_axes_error_no_split_rng(self):
+    f = stateful.vmap(lambda x: x, split_rng=False, out_axes=None)
+    x = jnp.arange(4)
+    with self.assertRaisesRegex(ValueError,
+                                "vmap has mapped output but out_axes is None"):
+      # test our split_rng error does not clobber jax error message.
+      f(x)
+
+  def test_vmap_split_rng_out_axes_error_no_init(self):
+    @transform.transform
+    def g(x):
+      f = stateful.vmap(lambda x: x, split_rng=True, out_axes=None)
+      f(x)
+
+    x = jnp.arange(4)
+    with self.assertRaisesRegex(ValueError,
+                                "vmap has mapped output but out_axes is None"):
+      # test our split_rng error does not clobber jax error message.
+      g.apply({}, jax.random.PRNGKey(42), x)
 
   def test_while_loop_rejected_in_init(self):
     def f():

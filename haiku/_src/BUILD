@@ -1,6 +1,9 @@
 load("//haiku/_src:build_defs.bzl", "hk_py_library", "hk_py_test")
 
-package(default_visibility = ["//haiku:__subpackages__"])
+package(default_visibility = [
+    "//learning/deepmind/jax/haiku/metadata:__subpackages__",
+    "//haiku:__subpackages__",
+])
 
 licenses(["notice"])
 
@@ -106,6 +109,7 @@ hk_py_test(
         ":multi_transform",
         ":test_utils",
         ":transform",
+        ":typing",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
@@ -130,6 +134,8 @@ hk_py_test(
     deps = [
         ":base",
         ":multi_transform",
+        ":transform",
+        ":typing",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
@@ -907,6 +913,7 @@ hk_py_library(
     deps = [
         ":base",
         ":initializers",
+        ":layer_norm",
         ":module",
         # pip: jax
     ],

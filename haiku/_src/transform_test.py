@@ -15,7 +15,7 @@
 """Tests for haiku._src.transform."""
 
 import inspect
-from typing import Mapping
+from typing import Any, Mapping, Optional, Tuple, Union
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -23,9 +23,14 @@ from haiku._src import base
 from haiku._src import multi_transform
 from haiku._src import test_utils
 from haiku._src import transform
+from haiku._src import typing
 import jax
 import jax.numpy as jnp
 import tensorflow as tf
+
+PRNGKey = typing.PRNGKey
+State = typing.State
+Params = typing.Params
 
 # TODO(tomhennigan) Improve test coverage.
 
@@ -95,6 +100,15 @@ class TransformTest(parameterized.TestCase):
     with self.assertRaisesRegex(
         ValueError, "Apply must be called with an RNG as the third argument"):
       f.apply({}, {"x": {}}, "nonsense")
+
+  def test_invalid_rng_empty_state(self):
+    f = transform.transform_with_state(lambda: None)
+    with self.assertRaisesRegex(
+        ValueError, "Init must be called with an RNG as the first argument"):
+      f.init("nonsense")
+    with self.assertRaisesRegex(
+        ValueError, "Apply must be called with an RNG as the third argument"):
+      f.apply({}, {}, "nonsense")
 
   @parameterized.parameters(transform.transform,
                             transform.transform_with_state)
@@ -433,8 +447,7 @@ class TransformTest(parameterized.TestCase):
   @parameterized.parameters(
       None,
       multi_transform.without_apply_rng,
-      transform.without_state,
-      lambda f: transform.without_state(multi_transform.without_apply_rng(f)))
+      transform.with_empty_state)
   def test_persists_original_fn(self, without):
     orig_f = lambda: None
     f = transform.transform(orig_f)
@@ -444,6 +457,9 @@ class TransformTest(parameterized.TestCase):
 
   @parameterized.parameters(
       None,
+      transform.without_state,
+      multi_transform.without_apply_rng,
+      lambda f: transform.without_state(multi_transform.without_apply_rng(f)),
       lambda f: transform.with_empty_state(transform.without_state(f)))
   def test_persists_original_fn_transform_with_state(self, without):
     orig_f = lambda: None
@@ -608,6 +624,62 @@ class TransformTest(parameterized.TestCase):
     out, state = apply_fn(params, state, None)
     self.assertEqual(out, jnp.array(9.))
     self.assertEqual(state, {"~": {"count": 10}})
+
+  def test_signature_transform_with_state(self):
+    @transform.transform_with_state
+    def f(pos, key=37) -> int:
+      del pos, key
+      return 2
+    def expected_f_init(rng: Optional[Union[PRNGKey, int]],
+                        pos, key=37) -> Tuple[Params, State]:
+      del rng, pos, key
+      raise NotImplementedError
+    def expected_f_apply(
+        params: Optional[Params], state: Optional[State],
+        rng: Optional[Union[PRNGKey, int]],
+        pos, key=37) -> Tuple[int, State]:
+      del params, state, rng, pos, key
+      raise NotImplementedError
+    self.assertEqual(
+        inspect.signature(f.init), inspect.signature(expected_f_init))
+    self.assertEqual(
+        inspect.signature(f.apply), inspect.signature(expected_f_apply))
+
+  def test_signature_transform(self):
+    @transform.transform
+    def f(pos, *, key: int = 37) -> int:
+      del pos, key
+      return 2
+    def expected_f_init(rng: Optional[Union[PRNGKey, int]],
+                        pos, *, key: int = 37) -> Params:
+      del rng, pos, key
+      raise NotImplementedError
+    def expected_f_apply(
+        params: Optional[Params], rng: Optional[Union[PRNGKey, int]],
+        pos, *, key: int = 37) -> int:
+      del params, rng, pos, key
+      raise NotImplementedError
+    self.assertEqual(
+        inspect.signature(f.init), inspect.signature(expected_f_init))
+    self.assertEqual(
+        inspect.signature(f.apply), inspect.signature(expected_f_apply))
+
+  def test_signature_unsupported(self):
+    # unsupported annotations should not error
+    @transform.transform
+    def f() -> ...:
+      raise NotImplementedError
+    def expected_f_init(rng: Optional[Union[PRNGKey, int]]) -> Params:
+      del rng
+      raise NotImplementedError
+    def expected_f_apply(
+        params: Optional[Params], rng: Optional[Union[PRNGKey, int]]) -> Any:
+      del params, rng
+      raise NotImplementedError
+    self.assertEqual(
+        inspect.signature(f.init), inspect.signature(expected_f_init))
+    self.assertEqual(
+        inspect.signature(f.apply), inspect.signature(expected_f_apply))
 
 
 class ObjectWithTransform:

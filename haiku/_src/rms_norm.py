@@ -23,6 +23,7 @@ from typing import Optional, Sequence, Union
 
 from haiku._src import base
 from haiku._src import initializers
+from haiku._src import layer_norm
 from haiku._src import module
 import jax
 import jax.numpy as jnp
@@ -33,6 +34,8 @@ hk.get_parameter = base.get_parameter
 hk.initializers = initializers
 hk.Module = module.Module
 del base, module, initializers
+
+AxisOrAxes = Union[int, Sequence[int], slice]
 
 
 class RMSNorm(hk.Module):
@@ -47,11 +50,14 @@ class RMSNorm(hk.Module):
 
   def __init__(
       self,
-      axis: Union[int, Sequence[int], slice],
+      axis: AxisOrAxes,
       eps: float = 1e-5,
       scale_init: Optional[hk.initializers.Initializer] = None,
       name: Optional[str] = None,
-      create_scale: bool = True):
+      create_scale: bool = True,
+      *,
+      param_axis: Optional[AxisOrAxes] = None,
+      ):
     """Constructs a RMSNorm module.
 
     Args:
@@ -62,6 +68,10 @@ class RMSNorm(hk.Module):
       name: The module name.
       create_scale: Bool, defines whether to create a trainable scale
         per channel applied after the normalization.
+      param_axis: Axis used to determine the parameter shape of the learnable
+        scale/offset. Sonnet sets this to the channel/feature axis (e.g. to
+        ``-1`` for ``NHWC``). Other libraries set this to the same as the
+        reduction axis (e.g. ``axis=param_axis``). `None` defaults to (-1,).
     """
     super().__init__(name=name)
     if not create_scale and scale_init is not None:
@@ -79,6 +89,10 @@ class RMSNorm(hk.Module):
     self.eps = eps
     self.create_scale = create_scale
     self.scale_init = scale_init or jnp.ones
+    if param_axis is None:
+      self.param_axis = (-1,)
+    else:
+      self.param_axis = layer_norm.to_axes_or_slice(param_axis)
 
   def __call__(self, inputs: jnp.ndarray):
     """Connects the layer norm.
@@ -93,9 +107,18 @@ class RMSNorm(hk.Module):
     if isinstance(axis, slice):
       axis = tuple(range(inputs.ndim)[axis])
 
+    param_axis = layer_norm.to_abs_axes(self.param_axis, inputs.ndim)
+    if param_axis == (inputs.ndim - 1,):
+      # For param_axis=-1 we store non-broadcast param shape for compatibility
+      # with older checkpoints.
+      param_shape = inputs.shape[-1:]
+    else:
+      param_shape = tuple(
+          (inputs.shape[i] if i in param_axis else 1)
+          for i in range(inputs.ndim))
     if self.create_scale:
-      scale = hk.get_parameter("scale", inputs.shape[-1:], inputs.dtype,
-                               init=self.scale_init)
+      scale = hk.get_parameter(
+          "scale", param_shape, inputs.dtype, init=self.scale_init)
       scale = jnp.broadcast_to(scale, inputs.shape)
     else:
       scale = 1.

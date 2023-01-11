@@ -461,6 +461,11 @@ def replaceable(f: T) -> T:
   return wrapped
 
 
+def throw_if_run(shape, dtype):
+  del shape, dtype
+  raise ValueError("Initializer must be specified.")
+
+
 @replaceable
 def get_parameter(
     name: str,
@@ -470,8 +475,8 @@ def get_parameter(
 ) -> jnp.ndarray:
   """Creates or reuses a parameter for the given transformed function.
 
-  >>> hk.get_parameter("w", [], init=jnp.ones)
-  DeviceArray(1., dtype=float32)
+  >>> print(hk.get_parameter("w", [], init=jnp.ones))
+  1.0
 
   Parameters within the same :func:`transform` and/or :class:`Module` with the
   same name have the same value:
@@ -493,7 +498,8 @@ def get_parameter(
   assert_context("get_parameter")
   assert_jax_usage("get_parameter")
 
-  init = check_not_none(init, "Initializer must be specified.")
+  if init is None:
+    init = throw_if_run
 
   bundle_name = current_name()
   frame = current_frame()
@@ -621,16 +627,16 @@ def custom_creator(
 
   >>> with hk.custom_creator(zeros_creator):
   ...   z = hk.get_parameter("z", [], jnp.float32, jnp.ones)
-  >>> z
-  DeviceArray(0., dtype=float32)
+  >>> print(z)
+  0.0
 
   If ``state=True`` then your creator will additionally run on calls to
   :func:`get_state`:
 
   >>> with hk.custom_creator(zeros_creator, state=True):
   ...   z = hk.get_state("z", [], jnp.float32, jnp.ones)
-  >>> z
-  DeviceArray(0., dtype=float32)
+  >>> print(z)
+  0.0
 
   Args:
     creator: A parameter creator.
@@ -790,8 +796,8 @@ def custom_setter(setter: Setter) -> contextlib.AbstractContextManager:
   >>> with hk.custom_setter(zero_during_init):
   ...   hk.set_state("x", jnp.ones([2]))
   ...   x = hk.get_state("x")
-  >>> x
-  DeviceArray([0., 0.], dtype=float32)
+  >>> print(x)
+  [0. 0.]
 
   Args:
     setter: A state setter.
@@ -885,12 +891,12 @@ class PRNGSequence(Iterator[PRNGKey]):
       self._subkeys.extend(new_keys[1:])
 
   def reserve_up_to_full(self):
-    reserve_size = config.get_config().rng_reserve_size
-    num = reserve_size - len(self._subkeys)
-    if num > 0:
-      self.reserve(num)
-    else:
-      sliced_subkeys = list(self._subkeys)[:reserve_size]
+    num = config.get_config().rng_reserve_size
+    diffnum = num - len(self._subkeys)
+    if diffnum > 0:
+      self.reserve(diffnum)
+    elif diffnum < 0:
+      sliced_subkeys = list(self._subkeys)[:num]
       self._subkeys = collections.deque(sliced_subkeys)
 
   @property
@@ -1060,14 +1066,14 @@ def get_state(
   "state" then you are required to use :func:`transform_with_state` and pass
   state into and out of the apply function.
 
-  >>> hk.get_state("counter", [], init=jnp.zeros)
-  DeviceArray(0., dtype=float32)
+  >>> print(hk.get_state("counter", [], init=jnp.zeros))
+  0.0
 
   If the value for the given state is already defined (e.g. using
   :func:`set_state`) then you can call with just the name:
 
-  >>> hk.get_state("counter")
-  DeviceArray(0., dtype=float32)
+  >>> print(hk.get_state("counter"))
+  0.0
 
   MOTE: state within the same :func:`transform` and/or :class:`Module` with the
   same name have the same value:
@@ -1136,8 +1142,8 @@ def set_state(name: str, value):
   state into and out of the apply function.
 
   >>> hk.set_state("counter", jnp.zeros([]))
-  >>> hk.get_state("counter")
-  DeviceArray(0., dtype=float32)
+  >>> print(hk.get_state("counter"))
+  0.0
 
   NOTE: state within the same :func:`transform` and/or :class:`Module` with the
   same name have the same value:
@@ -1260,7 +1266,9 @@ def assert_state_unchanged():
 
   params_diff = params_after - params_before
   state_diff = state_after - state_before
-  rng_diff = rng_after - rng_before
+  # Amount of rng keys can increase (reserve_rng_keys) or decrease
+  # (next_rng_key), so need symmetric set difference (^).
+  rng_diff = rng_after ^ rng_before
   if params_diff or state_diff or rng_diff:
     raise StateChangedError("Within this code block you are not able to modify "
                             "Haiku managed state (e.g. via `next_rng_key` or "

@@ -134,6 +134,12 @@ def lift(
 ) -> Callable[..., hk.Params]:
   r"""Registers parameters from an inner init function in an outer transform.
 
+  HINT: :func:`lift` is for when you want to make non-trivial use of JAX
+  transforms (e.g. ``jax.vmap``) **inside** of a :func:`transform` or
+  :func:`transform_with_state`. We generally recommend trying to use JAX
+  transforms on the pure functions returned by :func:`transform`, in which case
+  you do not need :func:`lift`.
+
   Use :func:`lift`\ when nesting Haiku transforms to register the parameters of
   the inner transform in any outer transform. This is mainly useful when using
   JAX functions inside of a Haiku module (eg. using ``jax.vmap`` on a layer).
@@ -157,16 +163,64 @@ def lift(
 
   Example:
 
-    >>> # outer can be `hk.transform`ed and will contain the params of inner.
-    >>> def outer(x):
-    ...   @hk.transform
-    ...   def inner(x):
-    ...     return hk.Linear(1)(x)
-    ...   init_rng = hk.next_rng_key() if hk.running_init() else None
-    ...   x = jnp.ones([1, 1])
-    ...   params = hk.lift(inner.init, name='f_lift')(init_rng, x)
-    ...   # inner.apply is a pure function and can be vmapped.
-    ...   return jax.vmap(inner.apply, in_axes=(0, None, 0))(params, None, x)
+  A common usage of :func:`lift` is to use JAX transformations like ``vmap`` in
+  non-trivial ways, inside a :func:`transform`. For example, we can use
+  :func:`lift` and ``jax.vmap`` to create an ensemble.
+
+  First we'll create a helper function that uses :func:`lift` to apply ``vmap``
+  to our model. As you can see from the comments, we are using ``vmap`` to
+  change how parameters should be created (in this case we create a unique set
+  of parameters for each member of the ensemble) and we change how apply works
+  (we "map" the parameters meaning JAX will compute the forward pass separately,
+  in parallel, for each member of the ensemble):
+
+  >>> def create_ensemble(model, size: int):
+  ...   init_rng = hk.next_rng_keys(size) if hk.running_init() else None
+  ...   model = hk.transform(model)
+  ...   # in_axes: rng is mapped, data is not.
+  ...   init_model = jax.vmap(model.init, in_axes=(0, None))
+  ...   # Use hk.lift to "lift" parameters created by `init_model` into the
+  ...   # outer transform.
+  ...   init_model = hk.lift(init_model, name="ensemble")
+  ...   def ensemble(x):
+  ...     params = init_model(init_rng, x)
+  ...     # in_axes: params are mapped, rng/data are not.
+  ...     return jax.vmap(model.apply, in_axes=(0, None, None))(params, None, x)
+  ...   return ensemble
+
+  We can now use this function to ensemble any Haiku module(s), inside of a
+  transform. First we define a function for each member of the ensemble:
+
+  >>> def member_fn(x):
+  ...   return hk.nets.MLP([300, 100, 10])(x)
+
+  Secondly we can combine our two functions, inside a :func:`transform` to
+  create an ensemble:
+
+  >>> def f(x):
+  ...   ensemble = create_ensemble(member_fn, size=4)
+  ...   x = ensemble(x)
+  ...   # You could create other modules here which were not ensembled.
+  ...   return x
+  >>> f = hk.transform(f)
+
+  When we initialize the network, our ensemble member's parameters have a
+  leading dimension the size of the ensemble:
+
+  >>> rng = jax.random.PRNGKey(777)
+  >>> x = jnp.ones([32, 128])
+  >>> params = f.init(rng, x)
+  >>> jax.tree_util.tree_map(lambda x: x.shape, params)
+  {'ensemble/mlp/~/linear_0': {'b': (4, 300), 'w': (4, 128, 300)},
+   'ensemble/mlp/~/linear_1': {'b': (4, 100), 'w': (4, 300, 100)},
+   'ensemble/mlp/~/linear_2': {'b': (4, 10), 'w': (4, 100, 10)}}
+
+  When we apply the network, we get an output for each member of the ensemble
+  for the entire batch:
+
+  >>> y = f.apply(params, None, x)
+  >>> y.shape
+  (4, 32, 10)
 
   Args:
     init_fn: The ``init`` function from an :class:`Transformed`\ .

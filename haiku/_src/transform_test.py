@@ -78,9 +78,21 @@ class TransformTest(parameterized.TestCase):
         ValueError, "parameters must be created as part of `init`"):
       apply_fn(params, None)
 
+  def test_missing_parameter_without_apply_rng(self):
+    # Test we're getting a "missing parameter" error, not a "missing RNG" error.
+    initializer_with_rng = lambda s, d: base.next_rng_key()
+    _, apply_fn = multi_transform.without_apply_rng(
+        transform.transform(
+            lambda: base.get_parameter("w", [], init=initializer_with_rng)))
+
+    with self.assertRaisesRegex(ValueError,
+                                "parameters must be created as part of `init`"):
+      apply_fn({})
+
   @test_utils.transform_and_run(seed=None)
   def test_no_rng(self):
-    with self.assertRaisesRegex(ValueError, "must pass a non-None PRNGKey"):
+    with self.assertRaisesRegex(base.MissingRNGError,
+                                "must pass a non-None PRNGKey"):
       base.next_rng_key()
 
   def test_invalid_rng(self):

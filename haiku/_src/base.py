@@ -515,10 +515,18 @@ def get_parameter(
     param = frame.params[bundle_name].get(name)
 
   if param is None:
-    if param_creator_stack:
-      param = run_creators(param_creator_stack, context, shape, dtype, init)
-    else:
-      param = init(shape, dtype)
+    param_missing_error = ValueError(
+        f"Unable to retrieve parameter {name!r} for module "
+        f"{bundle_name!r} All parameters must be created as part of `init`.")
+
+    try:
+      if param_creator_stack:
+        param = run_creators(param_creator_stack, context, shape, dtype, init)
+      else:
+        param = init(shape, dtype)
+    except MissingRNGError as e:
+      if frame.params_frozen:
+        raise param_missing_error from e
 
     if param is DO_NOT_STORE:
       # Initializers or custom creators that return `DO_NOT_STORE` are required
@@ -527,10 +535,7 @@ def get_parameter(
     else:
       if frame.params_frozen:
         # Throw if we needed to re-init the parameter during apply.
-        raise ValueError(
-            f"Unable to retrieve parameter {name!r} for module "
-            f"{bundle_name!r} All parameters must be created as part of "
-            "`init`.")
+        raise param_missing_error
 
       param = check_not_none(param, "Parameters cannot be `None`.")
       frame.params[bundle_name][name] = param
@@ -923,11 +928,15 @@ class PRNGSequence(Iterator[PRNGKey]):
     return tuple(next(self) for _ in range(num))
 
 
+class MissingRNGError(ValueError):
+  pass
+
+
 def rng_seq_or_fail() -> PRNGSequence:
   rng_seq = current_frame().rng_stack.peek()
   if rng_seq is None:
-    raise ValueError("You must pass a non-None PRNGKey to init and/or apply "
-                     "if you make use of random numbers.")
+    raise MissingRNGError("You must pass a non-None PRNGKey to init and/or "
+                          "apply if you make use of random numbers.")
   return rng_seq
 
 

@@ -25,6 +25,7 @@ from haiku._src import data_structures
 from haiku._src import module
 from haiku._src import utils
 import jax
+from jax.experimental import pjit
 
 # Import tree if available, but only throw error at runtime.
 # Permits us to drop dm-tree from deps.
@@ -199,6 +200,11 @@ class DotTrace(jax.core.Trace):
 
   def process_primitive(self, primitive, tracers, params):
     val_out = primitive.bind(*[t.val for t in tracers], **params)
+    if primitive is pjit.pjit_p:
+      f = jax.core.jaxpr_as_fun(params['jaxpr'])
+      f.__name__ = params['name']
+      fun = jax.linear_util.wrap_init(f)
+      return self.process_call(primitive, fun, tracers, params)
 
     inputs = [t.val for t in tracers]
     outputs = list(jax.tree_util.tree_leaves(val_out))
@@ -212,7 +218,7 @@ class DotTrace(jax.core.Trace):
 
   def process_call(self, call_primitive, f, tracers, params):
     assert call_primitive.multiple_results
-    if (call_primitive is jax.interpreters.xla.xla_call_p and
+    if (call_primitive in (jax.interpreters.xla.xla_call_p, pjit.pjit_p) and
         params.get('inline', False)):
       f = _interpret_subtrace(f, self.main)
       vals_out = f.call_wrapped(*[t.val for t in tracers])

@@ -92,7 +92,7 @@ class DotTest(parameterized.TestCase):
     self.assertEmpty(graph.nodes)
     self.assertEmpty(graph.edges)
     jit, = graph.subgraphs
-    self.assertEqual(jit.title, "xla_call (my_function)")
+    self.assertIn(jit.title, ("xla_call (my_function)", "pjit (my_function)"))
 
   def test_pmap(self):
     def my_function(x):

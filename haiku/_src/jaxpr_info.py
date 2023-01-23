@@ -332,7 +332,7 @@ def _process_eqn(eqn: jax.core.JaxprEqn, seen: Set[str],
       jaxpr = eqn.params['jaxpr'].jaxpr
       flops_multiplier = eqn.params['length'] // eqn.params['unroll']
     elif eqn.primitive.name == 'pjit':
-      name = 'pjit'
+      name = eqn.params['name']
       jaxpr = eqn.params['jaxpr'].jaxpr
     elif eqn.primitive.name in ['custom_jvp_call', 'custom_vjp_call']:
       name = eqn.primitive.name.replace('_call', '')

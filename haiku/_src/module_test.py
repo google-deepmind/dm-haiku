@@ -404,7 +404,7 @@ class ModuleTest(parameterized.TestCase):
 
     def add_one_interceptor(f, args, kwargs, context):
       call_count.append(None)
-      self.assertLen(context, 3)
+      self.assertLen(context, 4)
       self.assertIs(context.module, mod)
       self.assertEqual(context.method_name, "__call__")
       self.assertEqual(context.orig_method(2), 2)
@@ -461,6 +461,41 @@ class ModuleTest(parameterized.TestCase):
          module.intercept_methods(op_interceptor(lambda a: a + 1)):
       y = mod(x)
     self.assertEqual(y, (x + 1) ** 2)
+
+  @test_utils.transform_and_run
+  def test_intercept_methods_orig_class(self):
+    class A(module.Module):
+      def __call__(self):
+        pass
+
+    class B(A):
+      def __call__(self):  # pylint: disable=useless-parent-delegation
+        return super().__call__()
+
+    class C(B):
+      def __init__(self, name=None):
+        super().__init__(name=name)
+
+    log = []
+
+    def log_orig_class(f, args, kwargs, context):
+      log.append(
+          (type(context.module), context.orig_class, context.method_name))
+      return f(*args, **kwargs)
+
+    with module.intercept_methods(log_orig_class):
+      B()()
+      C()()
+
+    self.assertEqual(log, [
+        # b = B()
+        (B, B, "__init__"),
+        # b()
+        (B, B, "__call__"), (B, A, "__call__"),
+        # c = C()
+        (C, C, "__init__"),  # NOTE: No entry for `(module.Module, __init__)`.
+        # c()
+        (C, B, "__call__"), (C, A, "__call__")])
 
   @test_utils.transform_and_run
   def test_name_scope_trivial(self):

@@ -14,6 +14,7 @@
 # ==============================================================================
 """Base Haiku module."""
 
+import asyncio
 import contextlib
 import functools
 import inspect
@@ -57,6 +58,7 @@ class ModuleMetaclass(type(Protocol)):
       clsdict: Dict[str, Any],
   ) -> Type[T]:
     method_names = []
+    cls_fut = asyncio.Future()
 
     for key, value in clsdict.items():
       if key == "module_name":
@@ -70,10 +72,11 @@ class ModuleMetaclass(type(Protocol)):
 
       elif isinstance(value, property):
         # TODO(tomhennigan) Preserve the type of property subclasses.
+        p = value
         clsdict[key] = property(
-            value.fget if not value.fget else wrap_method(key, value.fget),
-            value.fset if not value.fset else wrap_method(key, value.fset),
-            value.fdel if not value.fdel else wrap_method(key, value.fdel),
+            p.fget if not p.fget else wrap_method(key, p.fget, cls_fut.result),
+            p.fset if not p.fset else wrap_method(key, p.fset, cls_fut.result),
+            p.fdel if not p.fdel else wrap_method(key, p.fdel, cls_fut.result),
             doc=value.__doc__)
 
       elif inspect.isfunction(value):
@@ -93,6 +96,9 @@ class ModuleMetaclass(type(Protocol)):
 
     cls = super(ModuleMetaclass, mcs).__new__(mcs, name, bases, clsdict)
 
+    # Provides access to the class object to method interceptors.
+    cls_fut.set_result(cls)
+
     for method_name in method_names:
       # Note: the code below is subtle, we need to ensure that we're wrapping
       # the method bound to the class. In some cases (e.g. `wrapt`) this is
@@ -102,7 +108,7 @@ class ModuleMetaclass(type(Protocol)):
       # to decorator functions using args[0]).
       # Equivalent to: `cls.__dict__[method_name].__get__(None, cls)`
       method = getattr(cls, method_name)
-      method = wrap_method(method_name, method)
+      method = wrap_method(method_name, method, cls_fut.result)
       setattr(cls, method_name, method)
 
     return cls
@@ -118,7 +124,7 @@ class ModuleMetaclass(type(Protocol)):
     module = cls.__new__(cls, *args, **kwargs)  # pytype: disable=wrong-arg-types
 
     # Now attempt to initialize the object.
-    init = wrap_method("__init__", cls.__init__)
+    init = wrap_method("__init__", cls.__init__, lambda: cls)
     init(module, *args, **kwargs)
 
     if (config.get_config().module_auto_repr and
@@ -195,11 +201,14 @@ class MethodContext(NamedTuple):
       short circuit all the other interceptors, in general you should prefer to
       call the ``next_fun`` passed to your interceptor which will run
       ``orig_method`` after running all other interceptors.
+    orig_class: The class which defined `orig_method`. Note that when
+      using inheritance this is not necessarily the same as `type(module)`.
   """
 
   module: "Module"
   method_name: str
   orig_method: Callable[..., Any]
+  orig_class: Type["Module"]
 
 
 Args = Tuple[Any]
@@ -264,6 +273,7 @@ def run_interceptors(  # pylint: disable=invalid-name
     bound_method: Callable[..., Any],
     method_name: str,
     self: "Module",
+    orig_class: Type["Module"],
     *args: Args,
     **kwargs: Kwargs,
 ) -> Any:
@@ -273,7 +283,8 @@ def run_interceptors(  # pylint: disable=invalid-name
 
   ctx = MethodContext(module=self,
                       method_name=method_name,
-                      orig_method=bound_method)
+                      orig_method=bound_method,
+                      orig_class=orig_class)
   interceptor_stack_copy = interceptor_stack.clone()
 
   def next_fun(*args, **kwargs):
@@ -382,12 +393,14 @@ def name_scope(
   return NameScope(name, method_name)
 
 
-def wrap_method(method_name, unbound_method):
+def wrap_method(method_name, unbound_method, cls_resolver):
   """Wraps `method` such that it enters name stack and runs method interceptors.
 
   Args:
     method_name: The name of the method (e.g. "__call__").
     unbound_method: An unbound method to wrap.
+    cls_resolver: A callable the returns the Module subclass which defined this
+      method.
 
   Returns:
     A function that runs the original method but in a context where parameters
@@ -415,8 +428,10 @@ def wrap_method(method_name, unbound_method):
     with frame.module(state), _module_method_call(self, method_name):
       # hk.Module enters the module name scope for all methods.
       module_name = getattr(self, "module_name", None)
+      orig_class = cls_resolver()
       f = functools.partial(unbound_method, self)
-      f = functools.partial(run_interceptors, f, method_name, self)
+      f = functools.partial(run_interceptors, f, method_name, self,
+                            orig_class)
       if module_name:
         local_module_name = module_name.split("/")[-1]
         f = jax.named_call(f, name=local_module_name)

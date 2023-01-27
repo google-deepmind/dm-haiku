@@ -14,7 +14,6 @@
 # ==============================================================================
 """Base Haiku module."""
 
-import asyncio
 import contextlib
 import functools
 import inspect
@@ -45,6 +44,25 @@ _APPLY_NAME_SCOPE = "__haiku_name_scope"
 _CUSTOM_NAME = "__haiku_custom_name"
 
 
+class Future:
+  """Represents a value that will be produced eventually."""
+
+  def __init__(self):
+    self._result_set = False
+    self._result = None
+
+  def set_result(self, result: Type["Module"]):
+    if self._result_set:
+      raise ValueError("Result already set.")
+    self._result_set = True
+    self._result = result
+
+  def result(self) -> Type["Module"]:
+    if not self._result_set:
+      raise ValueError("Result not set.")
+    return self._result
+
+
 # We subclass `type(Protocol)` in order to avoid metaclass conflicts when
 # defining modules that also inherit from `Protocol`. Note that `type(Protocol)`
 # already inherits from `abc.ABCMeta`.
@@ -58,7 +76,7 @@ class ModuleMetaclass(type(Protocol)):
       clsdict: Dict[str, Any],
   ) -> Type[T]:
     method_names = []
-    cls_fut = asyncio.Future()
+    cls_fut = Future()
 
     for key, value in clsdict.items():
       if key == "module_name":

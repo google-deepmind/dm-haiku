@@ -27,6 +27,7 @@ from haiku._src import config
 from haiku._src import data_structures
 from haiku._src.typing import (  # pylint: disable=g-multiple-import
     Initializer,
+    LiftingModuleType,
     Params,
     State,
     Module,
@@ -344,6 +345,22 @@ def current_name() -> str:
     return "~"
 
 
+def get_lift_prefix() -> Optional[str]:
+  """Get full lifted prefix from frame_stack if in lifted init."""
+  if params_frozen():
+    return None
+
+  prefixes = []
+  for frame in frame_stack:
+    if frame.module_stack:
+      module = frame.module_stack.peek().module
+      if isinstance(module, LiftingModuleType) and module._prefix_name:  # pylint: disable=protected-access
+        prefixes.append(module._prefix_name)  # pylint: disable=protected-access
+
+  prefix = "/".join(prefixes[::-1])
+  return f"{prefix}/" if prefix else None
+
+
 def assert_context(public_symbol_name):
   if not frame_stack:
     raise ValueError(
@@ -505,9 +522,11 @@ def get_parameter(
   frame = current_frame()
 
   fq_name = bundle_name + "/" + name
-  context = GetterContext(full_name=fq_name, module=current_module(),
+  context = GetterContext(full_name=fq_name,
+                          module=current_module(),
                           original_dtype=dtype, original_shape=shape,
-                          original_init=init)
+                          original_init=init,
+                          lifted_prefix_name=get_lift_prefix())
 
   if bundle_name not in frame.params:
     param = None
@@ -571,6 +590,15 @@ class GetterContext(NamedTuple):
       :func:`~haiku.get_state` was originally called with.
     original_shape: The shape that :func:`~haiku.get_parameter` or
       :func:`~haiku.get_state` was originally called with.
+    original_init: The initializer that :func:`~haiku.get_parameter` or
+      :func:`~haiku.get_state` was originally called with.
+    lifted_prefix_name: The module names of all enclosing lifted modules (see
+      :func:`~haiku.lift` for more context). Adding this string as a prefix to
+      `full_name` will be equal to the final parameter name in the outer
+      transform's parameter dictionary.
+      NOTE: When :func:`~haiku.get_parameter` or :func:`~haiku.get_state` is
+      called in an `apply` context, this name will always be None because only
+      `init` functions are lifted.
     module_name: The full name of enclosing modules.
     name: The name of this parameter.
   """
@@ -579,6 +607,7 @@ class GetterContext(NamedTuple):
   original_dtype: Any
   original_shape: Sequence[int]
   original_init: Optional[Initializer]
+  lifted_prefix_name: Optional[str]
 
   @property
   def module_name(self):
@@ -768,6 +797,13 @@ class SetterContext(NamedTuple):
       called with.
     original_shape: The shape that :func:`~haiku.set_state` or
       :func:`~haiku.get_state` was originally called with.
+    lifted_prefix_name: The module names of all enclosing lifted modules (see
+      :func:`~haiku.lift` for more context). Adding this string as a prefix to
+      `full_name` will be equal to the final parameter name in the outer
+      transform's parameter dictionary.
+      NOTE: When :func:`~haiku.get_parameter` or :func:`~haiku.get_state` is
+      called in an `apply` context, this name will always be None because only
+      `init` functions are lifted.
     module_name: The full name of enclosing modules.
     name: The name of this state.
   """
@@ -775,6 +811,7 @@ class SetterContext(NamedTuple):
   module: Optional[Module]
   original_dtype: Any
   original_shape: Sequence[int]
+  lifted_prefix_name: Optional[str]
 
   @property
   def module_name(self):
@@ -1106,7 +1143,8 @@ def get_state(
   bundle_name = current_name()
   state = current_frame().state[bundle_name]
   fq_name = f"{bundle_name}/{name}"
-  context = GetterContext(fq_name, current_module(), dtype, shape, init)
+  context = GetterContext(fq_name, current_module(),
+                          dtype, shape, init, get_lift_prefix())
 
   value = state.get(name, None)
   if value is None:
@@ -1175,8 +1213,10 @@ def set_state(name: str, value):
     shape = jax.tree_util.tree_map(maybe_shape, value)
     dtype = jax.tree_util.tree_map(maybe_dtype, value)
     fq_name = bundle_name + "/" + name
-    context = SetterContext(full_name=fq_name, module=current_module(),
-                            original_dtype=dtype, original_shape=shape)
+    context = SetterContext(full_name=fq_name,
+                            module=current_module(), original_dtype=dtype,
+                            original_shape=shape,
+                            lifted_prefix_name=get_lift_prefix())
     value = run_setters(state_setter_stack, context, value)
 
     if value is DO_NOT_STORE:

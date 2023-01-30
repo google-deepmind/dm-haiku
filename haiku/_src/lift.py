@@ -22,6 +22,7 @@ from haiku._src import base
 from haiku._src import data_structures
 from haiku._src import module
 from haiku._src import transform
+from haiku._src.typing import LiftingModuleType
 
 T = TypeVar("T")
 MutableBundle = MutableMapping[str, MutableMapping[str, Any]]
@@ -76,7 +77,7 @@ def add_state_to_init_fn(
 
 
 # TODO(tycai): Make sure transformed functions have better names.
-class LiftingModule(hk.Module):
+class LiftingModule(hk.Module, LiftingModuleType):
   """See :func:`lift` or :func:`lift_with_state`."""
 
   def __init__(self,

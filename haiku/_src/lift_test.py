@@ -39,6 +39,14 @@ class Bias(module.Module):
     return x + b
 
 
+def with_lift(f, *, name="inner"):
+  def wrapped(*a, **k):
+    init, apply = transform.transform(f)
+    params = lift.lift(init, name=name)(None, *a, **k)
+    return apply(params, None, *a, **k)
+  return wrapped
+
+
 def with_transparent_lift(f):
   def wrapped(*a, **k):
     init, apply = transform.transform(f)
@@ -575,6 +583,37 @@ class LiftTest(parameterized.TestCase):
       self.assertEqual(w, expected)
       self.assertEmpty(params)
       self.assertEqual(state, {"lifted/~": {"w": expected}})
+
+  @parameterized.named_parameters(
+      ("lift", with_lift, "outer/inner/"),
+      ("transparent_lift", with_transparent_lift, "outer/"),
+      ("nested_lift", lambda f: with_lift(with_lift(f)), "outer/inner/inner/"),
+      ("nested_transparent_lift",
+       lambda f: with_transparent_lift(with_transparent_lift(f)),
+       "outer/"),
+  )
+  def test_custom_full_lift_prefix(self, lift_fn, expected_name):
+    def my_creator(next_creator, shape, dtype, init, context):
+      self.assertEqual(context.lifted_prefix_name, expected_name)
+      return next_creator(shape, dtype, init)
+
+    def my_getter(next_getter, value, context):
+      if transform.running_init():
+        self.assertEqual(context.lifted_prefix_name, expected_name)
+      return next_getter(value)
+
+    class Outer(module.Module):
+      def __call__(self, x):
+        with base.custom_getter(my_getter), base.custom_creator(my_creator):
+          return lift_fn(lambda x: Bias()(x))(x)  # pylint: disable=unnecessary-lambda
+
+    @transform.transform
+    def fn(x):
+      return Outer()(x)
+
+    x = jnp.ones([10, 10])
+    params_with_lift = fn.init(None, x)
+    fn.apply(params_with_lift, None, x)
 
 if __name__ == "__main__":
   absltest.main()

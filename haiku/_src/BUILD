@@ -372,6 +372,7 @@ hk_py_library(
         ":data_structures",
         ":module",
         ":transform",
+        ":typing",
     ],
 )
 

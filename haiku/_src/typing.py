@@ -37,6 +37,12 @@ State = Mapping[str, Mapping[str, jnp.ndarray]]
 PRNGKey = jnp.ndarray  # pylint: disable=invalid-name
 
 
+# Parent type of hk._src.lift.LiftingModule, defined here to get around circular
+# dependency
+class LiftingModuleType:
+  pass
+
+
 class StrictProtocol(Protocol):
 
   def __init_subclass__(cls, **kwargs):

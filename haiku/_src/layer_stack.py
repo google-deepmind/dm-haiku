@@ -96,7 +96,7 @@ class _LayerStack(module.Module):
       return params
 
     rng = base.maybe_next_rng_key()
-    lifted_init_fn = lift.transparent_lift(scanned_init_fn)
+    lifted_init_fn = lift.transparent_lift(scanned_init_fn, allow_reuse=True)
     params = lifted_init_fn(x, rng)
 
     # Use scan during apply, threading through random seed so that it's

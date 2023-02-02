@@ -26,6 +26,7 @@ from haiku._src import layer_stack
 from haiku._src import module
 from haiku._src import multi_transform
 from haiku._src import transform
+from haiku._src import utils
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -510,6 +511,29 @@ class LayerStackTest(parameterized.TestCase):
     for y_t, (a, b) in zip(y_all, reversed(backward)):
       np.testing.assert_allclose(y_t, a * init_value + b, rtol=1e-6)
     np.testing.assert_allclose(y_0, y_all[0], rtol=1e-6)
+
+  def test_parameter_reuse(self):
+
+    def block(x: jax.Array) -> jax.Array:
+      h = basic.Linear(output_size=x.shape[-1], with_bias=False)(x)
+      h = jax.nn.relu(h)
+      return h
+
+    class MLP(basic.hk.Module):
+
+      def __call__(self, x):
+        return layer_stack.layer_stack(5)(block)(x)
+
+    def f(x):
+      mlp = MLP()
+      return mlp(mlp(x))
+
+    x = jnp.ones((2, 2))
+    params = transform.transform(f).init(jax.random.PRNGKey(0), x)
+
+    param_size = utils.tree_size(params)
+    # 5 layers * (2 * 2 weights) = 20.
+    np.testing.assert_equal(param_size, 20)
 
 
 if __name__ == "__main__":

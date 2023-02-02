@@ -611,6 +611,7 @@ hk_py_test(
         ":module",
         ":multi_transform",
         ":transform",
+        ":utils",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax

@@ -88,9 +88,9 @@ class LiftingModule(hk.Module, LiftingModuleType):
     super().__init__(name=name)
     self._init_fn = init_fn
     if transparent:
-      self._prefix_name = "/".join(self.module_name.split("/")[:-1])
+      self.prefix_name = "/".join(self.module_name.split("/")[:-1])
     else:
-      self._prefix_name = self.module_name
+      self.prefix_name = self.module_name
     self._allow_reuse = allow_reuse
 
   def __call__(self, *args, **kwargs):
@@ -104,18 +104,18 @@ class LiftingModule(hk.Module, LiftingModuleType):
       pack_into_dict(
           inner_params,
           outer_params,
-          self._prefix_name,
+          self.prefix_name,
           check_param_reuse=check_param_reuse)
       pack_into_dict(
           inner_state,
           outer_state,
-          self._prefix_name,
+          self.prefix_name,
           state=True,
           check_param_reuse=check_param_reuse)
       return inner_params, inner_state
     else:
-      if self._prefix_name:
-        prefix = f"{self._prefix_name}/"
+      if self.prefix_name:
+        prefix = f"{self.prefix_name}/"
       else:
         prefix = ""
       inner_params = unpack_from_dict(outer_params, prefix)

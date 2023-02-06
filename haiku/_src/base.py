@@ -354,8 +354,8 @@ def get_lift_prefix() -> Optional[str]:
   for frame in frame_stack:
     if frame.module_stack:
       module = frame.module_stack.peek().module
-      if isinstance(module, LiftingModuleType) and module._prefix_name:  # pylint: disable=protected-access
-        prefixes.append(module._prefix_name)  # pylint: disable=protected-access
+      if isinstance(module, LiftingModuleType) and module.prefix_name:
+        prefixes.append(module.prefix_name)
 
   prefix = "/".join(prefixes[::-1])
   return f"{prefix}/" if prefix else None

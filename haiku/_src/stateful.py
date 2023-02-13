@@ -900,37 +900,8 @@ def while_loop(cond_fun, body_fun, init_val):
   return val
 
 
-def named_call(
-    fun: Callable[..., Any],
-    *,
-    name: Optional[str] = None,
-) -> Callable[..., Any]:
-  """Wraps a function in an XLA name_scope and maintains Haiku state."""
-
-  @functools.wraps(fun)
-  def hide_non_jaxtype_outputs(fun, side_channel):
-    @functools.wraps(fun)
-    def named_call_hidden_outputs(*args, **kwargs):
-      out = fun(*args, **kwargs)
-      out_leaves, treedef = jax.tree_util.tree_flatten(out)
-
-      # Partition the output into valid and invalid JAX output. The invalid
-      # output types are not returned from the function, but moved out
-      # through a side channel.
-      # In order to easily merge the output back later, replace the elements
-      # of the other partition with Nones.
-      out_leaves = [(x, None) if isinstance(x, jnp.ndarray) else (None, x)
-                    for x in out_leaves]
-      jax_types, non_jaxtypes = zip(*out_leaves)
-      side_channel["non_jaxtypes"] = non_jaxtypes
-      side_channel["treedef"] = treedef
-      return jax_types
-    return named_call_hidden_outputs
-
-  @functools.wraps(fun)
-  def wrapper(*args, **kwargs):
-    return jax.named_call(fun, name=name)(*args, **kwargs)
-  return wrapper
+# TODO(lenamartens): remove this alias.
+named_call = jax.named_call
 
 
 def eval_shape(fun, *args, **kwargs):

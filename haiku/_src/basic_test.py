@@ -233,7 +233,11 @@ class LinearTest(parameterized.TestCase):
     rng = jax.random.PRNGKey(42)
     x = np.ones([1, 1])
     params = f.init(rng, x)
-    c = jax.xla_computation(lambda x: f.apply(params, None, x))(x)
+    c = (
+        jax.jit(lambda x: f.apply(params, None, x))
+        .lower(x)
+        .compiler_ir(dialect="hlo")
+    )
     hlo = c.as_hlo_text()
     op_line = next(l for l in hlo.split("\n") if "dot(" in l)
     if precision is not None and precision != jax.lax.Precision.DEFAULT:

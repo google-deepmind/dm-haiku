@@ -827,7 +827,7 @@ class StatefulTest(parameterized.TestCase):
     def f(x):
       return naming_things_is_hard(x) + naming_things_is_hard(x)
 
-    c = jax.xla_computation(f)(1.)
+    c = jax.jit(f).lower(1.).compiler_ir(dialect='hlo')
     print_opts = jax.xla.xe.HloPrintOptions.short_parsable()
     print_opts.print_metadata = True
     hlo_text = c.as_hlo_module().to_string(print_opts)

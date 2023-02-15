@@ -18,24 +18,27 @@ import collections
 import contextlib
 import functools
 import html
-from typing import Any, Callable, NamedTuple, List, Optional
+from typing import Any, Callable, List, NamedTuple, Optional
 
 from haiku._src import config
 from haiku._src import data_structures
 from haiku._src import module
 from haiku._src import utils
 import jax
+import jax.core
 from jax.experimental import pjit
+from jax.interpreters import xla
+
 
 # Import tree if available, but only throw error at runtime.
 # Permits us to drop dm-tree from deps.
 try:
   import tree  # pylint: disable=g-import-not-at-top
-except ImportError as e:
+except ImportError:
   tree = None
 
 
-graph_stack = data_structures.ThreadLocalStack()
+graph_stack = data_structures.ThreadLocalStack['Graph']()
 Node = collections.namedtuple('Node', 'id,title,outputs')
 Edge = collections.namedtuple('Edge', 'a,b')
 
@@ -218,7 +221,7 @@ class DotTrace(jax.core.Trace):
 
   def process_call(self, call_primitive, f, tracers, params):
     assert call_primitive.multiple_results
-    if (call_primitive in (jax.interpreters.xla.xla_call_p, pjit.pjit_p) and
+    if (call_primitive in (xla.xla_call_p, pjit.pjit_p) and
         params.get('inline', False)):
       f = _interpret_subtrace(f, self.main)
       vals_out = f.call_wrapped(*[t.val for t in tracers])

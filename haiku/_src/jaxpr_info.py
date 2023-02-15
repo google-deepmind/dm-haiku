@@ -40,6 +40,7 @@ from typing import Any, Callable, Dict, List, Mapping, NamedTuple, Set, Sequence
 
 from haiku._src import summarise
 import jax
+import jax.core
 from jax.experimental import maps
 
 

@@ -16,13 +16,14 @@
 
 import enum
 import types
-from typing import Optional, Union
+from typing import Optional, Sequence, Union
 
 from haiku._src import base
 from haiku._src import initializers
 from haiku._src import module
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 # If you are forking replace this with `import haiku as hk`.
 hk = types.ModuleType("haiku")
@@ -60,7 +61,7 @@ class Embed(hk.Module):
       self,
       vocab_size: Optional[int] = None,
       embed_dim: Optional[int] = None,
-      embedding_matrix: Optional[jnp.ndarray] = None,
+      embedding_matrix: Optional[Union[np.ndarray, jnp.ndarray]] = None,
       w_init: Optional[hk.initializers.Initializer] = None,
       lookup_style: Union[str, hk.EmbedLookupStyle] = "ARRAY_INDEX",
       name: Optional[str] = None,
@@ -137,7 +138,7 @@ class Embed(hk.Module):
 
   def __call__(
       self,
-      ids: jnp.ndarray,
+      ids: Union[jnp.ndarray, Sequence[int]],
       lookup_style: Optional[Union[str, hk.EmbedLookupStyle]] = None,
       precision: Optional[jax.lax.Precision] = None,
   ) -> jnp.ndarray:

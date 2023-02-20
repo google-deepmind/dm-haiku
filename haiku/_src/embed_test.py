@@ -80,7 +80,7 @@ class EmbedTest(parameterized.TestCase):
         ValueError,
         "hk.Embed's __call__ method must take an array of integer dtype but "
         "was called with an array of float32"):
-      emb([1.0, 2.0])
+      emb([1.0, 2.0])  # type: ignore
 
   @test_utils.transform_and_run
   def test_embed_invalid_lookup(self):

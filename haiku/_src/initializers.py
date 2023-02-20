@@ -57,7 +57,9 @@ def _compute_fans(shape, fan_in_axes=None):
 class Constant(hk.initializers.Initializer):
   """Initializes with a constant."""
 
-  def __init__(self, constant: Union[float, int, jnp.ndarray]):
+  def __init__(
+      self, constant: Union[float, int, complex, np.ndarray, jnp.ndarray]
+  ):
     """Constructs a Constant initializer.
 
     Args:
@@ -93,7 +95,7 @@ class TruncatedNormal(hk.initializers.Initializer):
 
   def __init__(self,
                stddev: Union[float, jnp.ndarray] = 1.,
-               mean: Union[float, jnp.ndarray] = 0.):
+               mean: Union[float, complex, jnp.ndarray] = 0.):
     """Constructs a :class:`TruncatedNormal` initializer.
 
     Args:
@@ -292,7 +294,7 @@ class Identity(Initializer):
   Constructs a 2D identity matrix or batches of these.
   """
 
-  def __init__(self, gain: Union[float, jnp.ndarray] = 1.0):
+  def __init__(self, gain: Union[float, np.ndarray, jnp.ndarray] = 1.0):
     """Constructs an :class:`Identity` initializer.
 
     Args:

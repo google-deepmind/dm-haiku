@@ -16,7 +16,7 @@
 
 import re
 import types
-from typing import Optional
+from typing import Optional, Union
 import warnings
 
 from haiku._src import base
@@ -91,7 +91,7 @@ class ExponentialMovingAverage(hk.Module):
 
   def __call__(
       self,
-      value: jnp.ndarray,
+      value: Union[float, jax.Array],
       update_stats: bool = True,
   ) -> jnp.ndarray:
     """Updates the EMA and returns the new value.
@@ -106,7 +106,7 @@ class ExponentialMovingAverage(hk.Module):
     Returns:
       The exponentially weighted average of the input value.
     """
-    if not isinstance(value, jnp.ndarray):
+    if not isinstance(value, jax.Array):
       value = jnp.asarray(value)
 
     counter = hk.get_state("counter", (), jnp.int32,

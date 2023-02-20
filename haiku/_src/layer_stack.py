@@ -50,7 +50,7 @@ def _check_no_varargs(f):
         "arguments")
 
 
-def _get_rng_stack(count: int) -> jnp.ndarray:
+def _get_rng_stack(count: int) -> Optional[jnp.ndarray]:
   rng = base.maybe_next_rng_key()
   if rng is None:
     return None

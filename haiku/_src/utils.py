@@ -22,7 +22,7 @@ import re
 from typing import Any, Sequence, Tuple, Type, TypeVar, Union
 
 import jax
-import jax.numpy as jnp
+
 
 T = TypeVar("T")
 
@@ -268,7 +268,7 @@ def simple_dtype(dtype) -> str:
   return dtype
 
 
-def format_array(x: jnp.ndarray) -> str:
+def format_array(x: Any) -> str:
   """Formats the given array showing dtype and shape info."""
   return simple_dtype(x.dtype) + "[" + ",".join(map(str, x.shape)) + "]"
 

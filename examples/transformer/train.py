@@ -29,7 +29,7 @@ $ python3 examples/transformer/train.py \
 """
 
 import time
-from typing import Any, MutableMapping, NamedTuple, Tuple
+from typing import Any, MutableMapping, NamedTuple, Tuple, Union
 
 from absl import app
 from absl import flags
@@ -77,7 +77,7 @@ class TrainingState(NamedTuple):
 def main(_):
 
   # Create the model.
-  def forward(tokens: jnp.ndarray) -> jnp.ndarray:
+  def forward(tokens: Union[np.ndarray, jnp.ndarray]) -> jnp.ndarray:
     lm = model.LanguageModel(
         model_size=MODEL_SIZE,
         vocab_size=dataset.VOCAB_SIZE,

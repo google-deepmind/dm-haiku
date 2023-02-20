@@ -99,7 +99,7 @@ class Bias(hk.Module):
   def __call__(
       self,
       inputs: jnp.ndarray,
-      multiplier: Union[float, jnp.ndarray] = None,
+      multiplier: Optional[Union[float, jnp.ndarray]] = None,
   ) -> jnp.ndarray:
     """Adds bias to ``inputs`` and optionally multiplies by ``multiplier``.
 

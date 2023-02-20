@@ -69,7 +69,7 @@ def topk_mask(value: jnp.ndarray, density_fraction: float) -> jnp.ndarray:
   return mask
 
 
-def zhugupta_func(progress: jnp.ndarray) -> jnp.ndarray:
+def zhugupta_func(progress: float) -> float:
   """From 'To Prune or Not To Prune' :cite:`zhu2017prune`."""
   return 1. - (1. - progress)**3
 

@@ -238,7 +238,7 @@ class Column:
   align: str = "left"
 
 
-def owned_params(module: ModuleDetails) -> Mapping[str, jnp.ndarray]:
+def owned_params(module: ModuleDetails) -> Mapping[str, ArraySpec]:
   out = {}
   for fq_name, param in module.params.items():
     module_name, param_name = fq_name.rsplit("/", 1)

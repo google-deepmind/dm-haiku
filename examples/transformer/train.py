@@ -101,7 +101,7 @@ def main(_):
   @hk.transform
   def loss_fn(data: _Batch) -> jnp.ndarray:
     """Computes the (scalar) LM loss on `data` w.r.t. params."""
-    logits = forward(data.inputs)
+    logits = forward(data.inputs)  # pytype: disable=wrong-arg-types  # jax-ndarray
     targets = jax.nn.one_hot(data.targets, dataset.VOCAB_SIZE)
     assert logits.shape == targets.shape
 

@@ -96,7 +96,7 @@ class Bias(hk.Module):
     self.b_init = b_init or jnp.zeros
     self.bias_shape = None
 
-  def __call__(
+  def __call__(  # pytype: disable=annotation-type-mismatch  # jax-ndarray
       self,
       inputs: jnp.ndarray,
       multiplier: Optional[Union[float, jnp.ndarray]] = None,

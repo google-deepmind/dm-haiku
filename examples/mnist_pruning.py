@@ -293,7 +293,7 @@ def main(_):
     # we start pruning at iteration 1000 and end at iteration 8000
     progress = min(max((step - 1000.) / 8000., 0.), 1.)
     if step % 200 == 0:
-      sparsity_fraction = zhugupta_func(progress)
+      sparsity_fraction = zhugupta_func(progress)  # pytype: disable=wrong-arg-types  # jax-ndarray
       masks = update_mask(params, sparsity_fraction, module_sparsity)
     avg_params = ema_update(params, avg_params)
   print(per_layer_sparsities)

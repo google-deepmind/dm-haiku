@@ -69,16 +69,16 @@ class MovingAveragesTest(parameterized.TestCase):
   @test_utils.transform_and_run
   def test_call(self):
     ema = moving_averages.ExponentialMovingAverage(0.5)
-    self.assertAlmostEqual(ema(3.), 3.)
-    self.assertAlmostEqual(ema(6.), 5.)
+    self.assertAlmostEqual(ema(3.), 3.)  # pytype: disable=wrong-arg-types  # jax-ndarray
+    self.assertAlmostEqual(ema(6.), 5.)  # pytype: disable=wrong-arg-types  # jax-ndarray
 
   @test_utils.transform_and_run
   def test_fast_slow_decay(self):
     ema_fast = moving_averages.ExponentialMovingAverage(0.2)
     ema_slow = moving_averages.ExponentialMovingAverage(0.8)
-    np.testing.assert_allclose(ema_fast(1.), ema_slow(1.), rtol=1e-4)
+    np.testing.assert_allclose(ema_fast(1.), ema_slow(1.), rtol=1e-4)  # pytype: disable=wrong-arg-types  # jax-ndarray
     # Expect fast decay to increase more quickly than slow.
-    self.assertGreater(ema_fast(2.), ema_slow(2.))
+    self.assertGreater(ema_fast(2.), ema_slow(2.))  # pytype: disable=wrong-arg-types  # jax-ndarray
 
   @test_utils.transform_and_run
   def test_fast_slow_decay_without_update(self):
@@ -86,11 +86,11 @@ class MovingAveragesTest(parameterized.TestCase):
     ema_slow = moving_averages.ExponentialMovingAverage(0.8)
     # This shouldn't have an effect.
     np.testing.assert_allclose(
-        ema_fast(1., update_stats=False),
-        ema_slow(1., update_stats=False),
+        ema_fast(1., update_stats=False),  # pytype: disable=wrong-arg-types  # jax-ndarray
+        ema_slow(1., update_stats=False),  # pytype: disable=wrong-arg-types  # jax-ndarray
         rtol=1e-4)
-    np.testing.assert_allclose(ema_fast(1.), ema_slow(1.), rtol=1e-4)
-    self.assertGreater(ema_fast(2.), ema_slow(2.))
+    np.testing.assert_allclose(ema_fast(1.), ema_slow(1.), rtol=1e-4)  # pytype: disable=wrong-arg-types  # jax-ndarray
+    self.assertGreater(ema_fast(2.), ema_slow(2.))  # pytype: disable=wrong-arg-types  # jax-ndarray
 
   def test_ema_is_identity_on_unchanged_data(self):
     def f(x):

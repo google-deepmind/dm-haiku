@@ -35,7 +35,7 @@ class InitializersTest(parameterized.TestCase):
     # API and get the right shapes and dtypes out.
     inits = [
         initializers.Constant(42.0),
-        initializers.Constant(as_np_f64(42.0)),
+        initializers.Constant(as_np_f64(42.0)),  # pytype: disable=wrong-arg-types  # jax-ndarray
         initializers.RandomNormal(),
         initializers.RandomNormal(2.0),
         initializers.RandomNormal(as_np_f64(2.0)),
@@ -67,7 +67,7 @@ class InitializersTest(parameterized.TestCase):
         initializers.TruncatedNormal(),
         initializers.Orthogonal(),
         initializers.Identity(),
-        initializers.Identity(as_np_f64(2.0)),
+        initializers.Identity(as_np_f64(2.0)),  # pytype: disable=wrong-arg-types  # jax-ndarray
 
         # Users are supposed to be able to use these.
         jnp.zeros,
@@ -164,13 +164,13 @@ class InitializersTest(parameterized.TestCase):
     # This just makes sure we can call the initializers in accordance to the
     # API and get the right shapes and dtypes out.
     inits = [
-        initializers.Constant(42. + 1j * 1729.),
+        initializers.Constant(42. + 1j * 1729.),  # pytype: disable=wrong-arg-types  # jax-ndarray
         initializers.RandomNormal(),
         initializers.RandomNormal(2.0),
         initializers.RandomNormal(2. - 3j),
         initializers.TruncatedNormal(),
         initializers.TruncatedNormal(2.),
-        initializers.TruncatedNormal(2., 1. - 1j),
+        initializers.TruncatedNormal(2., 1. - 1j),  # pytype: disable=wrong-arg-types  # jax-ndarray
 
         # Users are supposed to be able to use these.
         jnp.zeros,

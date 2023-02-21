@@ -175,7 +175,7 @@ class BaseTest(parameterized.TestCase):
 
   def test_invalid_rng(self):
     with self.assertRaisesRegex(ValueError, "not a JAX PRNGKey"):
-      base.new_context(rng="nonsense")  # type: ignore
+      base.new_context(rng="nonsense")  # pytype: disable=wrong-arg-types  # jax-ndarray
 
   def test_invalid_rng_none_ignored(self):
     with base.new_context(rng=None):
@@ -524,7 +524,7 @@ class BaseTest(parameterized.TestCase):
 
   def test_prng_sequence_invalid_input(self):
     with self.assertRaisesRegex(ValueError, "not a JAX PRNGKey"):
-      base.PRNGSequence("nonsense")  # type: ignore
+      base.PRNGSequence("nonsense")  # pytype: disable=wrong-arg-types  # jax-ndarray
 
   def test_prng_sequence_wrong_shape(self):
     with self.assertRaisesRegex(ValueError,

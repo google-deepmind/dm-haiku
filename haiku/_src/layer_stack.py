@@ -53,7 +53,7 @@ def _check_no_varargs(f):
 def _get_rng_stack(count: int) -> Optional[jnp.ndarray]:
   rng = base.maybe_next_rng_key()
   if rng is None:
-    return None
+    return None  # pytype: disable=bad-return-type  # jax-ndarray
   return jax.random.split(rng, count)
 
 

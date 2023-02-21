@@ -45,7 +45,7 @@ class EmbedTest(parameterized.TestCase):
                         [_1D_IDS, _2D_IDS, _3D_IDS]))
   @test_utils.transform_and_run
   def test_lookup(self, lookup_style, inp_ids):
-    emb = embed.Embed(embedding_matrix=_EMBEDDING_MATRIX,
+    emb = embed.Embed(embedding_matrix=_EMBEDDING_MATRIX,  # pytype: disable=wrong-arg-types  # jax-ndarray
                       lookup_style=lookup_style)
     np.testing.assert_allclose(
         emb(inp_ids),
@@ -58,7 +58,7 @@ class EmbedTest(parameterized.TestCase):
   @test_utils.transform_and_run
   def test_default_creation(self, lookup_style):
     emb = embed.Embed(vocab_size=6, embed_dim=12, lookup_style=lookup_style)
-    self.assertEqual(emb(_1D_IDS).shape, (2, 12))
+    self.assertEqual(emb(_1D_IDS).shape, (2, 12))  # pytype: disable=wrong-arg-types  # jax-ndarray
 
   @test_utils.transform_and_run
   def test_no_creation_args(self):
@@ -68,31 +68,31 @@ class EmbedTest(parameterized.TestCase):
   @test_utils.transform_and_run
   def test_inconsistent_creation_args(self):
     with self.assertRaisesRegex(ValueError, "supplied but the `vocab_size`"):
-      embed.Embed(embedding_matrix=_EMBEDDING_MATRIX, vocab_size=4)
+      embed.Embed(embedding_matrix=_EMBEDDING_MATRIX, vocab_size=4)  # pytype: disable=wrong-arg-types  # jax-ndarray
     with self.assertRaisesRegex(ValueError, "supplied but the `embed_dim`"):
-      embed.Embed(embedding_matrix=_EMBEDDING_MATRIX, embed_dim=5)
+      embed.Embed(embedding_matrix=_EMBEDDING_MATRIX, embed_dim=5)  # pytype: disable=wrong-arg-types  # jax-ndarray
 
   @test_utils.transform_and_run
   def test_embed_dtype_check(self):
-    emb = embed.Embed(
+    emb = embed.Embed(  # pytype: disable=wrong-arg-types  # jax-ndarray
         embedding_matrix=_EMBEDDING_MATRIX, lookup_style="ARRAY_INDEX")
     with self.assertRaisesRegex(
         ValueError,
         "hk.Embed's __call__ method must take an array of integer dtype but "
         "was called with an array of float32"):
-      emb([1.0, 2.0])  # type: ignore
+      emb([1.0, 2.0])  # pytype: disable=wrong-arg-types  # jax-ndarray
 
   @test_utils.transform_and_run
   def test_embed_invalid_lookup(self):
     lookup_style = "FOO"
-    emb = embed.Embed(embedding_matrix=_EMBEDDING_MATRIX, lookup_style="FOO")
+    emb = embed.Embed(embedding_matrix=_EMBEDDING_MATRIX, lookup_style="FOO")  # pytype: disable=wrong-arg-types  # jax-ndarray
     with self.assertRaisesRegex(AttributeError, lookup_style):
-      emb(_1D_IDS)
+      emb(_1D_IDS)  # pytype: disable=wrong-arg-types  # jax-ndarray
 
   @test_utils.transform_and_run
   def test_embed_property_check(self):
     lookup_style = "ONE_HOT"
-    emb = embed.Embed(
+    emb = embed.Embed(  # pytype: disable=wrong-arg-types  # jax-ndarray
         embedding_matrix=_EMBEDDING_MATRIX, lookup_style=lookup_style)
 
     self.assertEqual(emb.vocab_size, 3)

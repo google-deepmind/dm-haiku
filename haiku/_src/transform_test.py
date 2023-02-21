@@ -376,7 +376,7 @@ class TransformTest(parameterized.TestCase):
 
   def test_prng_sequence_invalid_input(self):
     with self.assertRaisesRegex(ValueError, "not a JAX PRNGKey"):
-      base.PRNGSequence("nonsense")  # type: ignore
+      base.PRNGSequence("nonsense")  # pytype: disable=wrong-arg-types  # jax-ndarray
 
   def test_prng_sequence_wrong_shape(self):
     with self.assertRaisesRegex(ValueError,

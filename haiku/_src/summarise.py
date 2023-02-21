@@ -244,7 +244,7 @@ def owned_params(module: ModuleDetails) -> Mapping[str, ArraySpec]:
     module_name, param_name = fq_name.rsplit("/", 1)
     if module_name == module.module.module_name:
       out[param_name] = param
-  return out
+  return out  # pytype: disable=bad-return-type  # jax-ndarray
 
 
 def format_owned_params(invocation: MethodInvocation) -> str:

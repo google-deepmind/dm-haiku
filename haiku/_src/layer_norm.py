@@ -121,9 +121,9 @@ class LayerNorm(hk.Module):
     self.scale_init = scale_init or jnp.ones
     self.offset_init = offset_init or jnp.zeros
     self.use_fast_variance = use_fast_variance
+    self._param_axis_passed_explicitly = param_axis is not None
     self.param_axis = (
         (-1,) if param_axis is None else to_axes_or_slice(param_axis))
-    self._param_axis_passed_explicitly = param_axis is not None
 
   def __call__(
       self,

@@ -236,7 +236,8 @@ class DotTrace(jax.core.Trace):
 
   process_map = process_call
 
-  def process_custom_jvp_call(self, primitive, fun, jvp, tracers):
+  def process_custom_jvp_call(self, primitive, fun, jvp, tracers, *,
+                              symbolic_zeros):
     # Drop the custom differentiation rule.
     del primitive, jvp  # Unused.
     return fun.call_wrapped(*tracers)

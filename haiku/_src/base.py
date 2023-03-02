@@ -698,7 +698,7 @@ def custom_creator_unsafe(
     stack.enter_context(state_creator_stack(creator))
   return stack
 
-NextGetter = Callable[[str, jnp.ndarray], jnp.ndarray]
+NextGetter = Callable[[jnp.ndarray], jnp.ndarray]
 Getter = Callable[[NextGetter, jnp.ndarray, GetterContext], jnp.ndarray]
 
 

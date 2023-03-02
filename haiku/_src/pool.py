@@ -19,6 +19,7 @@ from typing import Optional, Sequence, Tuple, Union
 import warnings
 
 from haiku._src import module
+import jax
 from jax import lax
 import jax.numpy as jnp
 import numpy as np
@@ -30,7 +31,7 @@ del module
 
 
 def _infer_shape(
-    x: jnp.ndarray,
+    x: jax.Array,
     size: Union[int, Sequence[int]],
     channel_axis: Optional[int] = -1,
 ) -> Tuple[int, ...]:
@@ -72,12 +73,12 @@ def _warn_if_unsafe(window_shape, strides):
 
 
 def max_pool(
-    value: jnp.ndarray,
+    value: jax.Array,
     window_shape: Union[int, Sequence[int]],
     strides: Union[int, Sequence[int]],
     padding: str,
     channel_axis: Optional[int] = -1,
-) -> jnp.ndarray:
+) -> jax.Array:
   """Max pool.
 
   Args:
@@ -103,12 +104,12 @@ def max_pool(
 
 
 def avg_pool(
-    value: jnp.ndarray,
+    value: jax.Array,
     window_shape: Union[int, Sequence[int]],
     strides: Union[int, Sequence[int]],
     padding: str,
     channel_axis: Optional[int] = -1,
-) -> jnp.ndarray:
+) -> jax.Array:
   """Average pool.
 
   Args:
@@ -176,7 +177,7 @@ class MaxPool(hk.Module):
     self.padding = padding
     self.channel_axis = channel_axis
 
-  def __call__(self, value: jnp.ndarray) -> jnp.ndarray:
+  def __call__(self, value: jax.Array) -> jax.Array:
     return max_pool(value, self.window_shape, self.strides,
                     self.padding, self.channel_axis)
 
@@ -210,6 +211,6 @@ class AvgPool(hk.Module):
     self.padding = padding
     self.channel_axis = channel_axis
 
-  def __call__(self, value: jnp.ndarray) -> jnp.ndarray:
+  def __call__(self, value: jax.Array) -> jax.Array:
     return avg_pool(value, self.window_shape, self.strides,
                     self.padding, self.channel_axis)

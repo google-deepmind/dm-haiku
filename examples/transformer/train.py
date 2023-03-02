@@ -77,7 +77,7 @@ class TrainingState(NamedTuple):
 def main(_):
 
   # Create the model.
-  def forward(tokens: Union[np.ndarray, jnp.ndarray]) -> jnp.ndarray:
+  def forward(tokens: Union[np.ndarray, jax.Array]) -> jax.Array:
     lm = model.LanguageModel(
         model_size=MODEL_SIZE,
         vocab_size=dataset.VOCAB_SIZE,
@@ -99,7 +99,7 @@ def main(_):
 
   # Create the loss.
   @hk.transform
-  def loss_fn(data: _Batch) -> jnp.ndarray:
+  def loss_fn(data: _Batch) -> jax.Array:
     """Computes the (scalar) LM loss on `data` w.r.t. params."""
     logits = forward(data.inputs)
     targets = jax.nn.one_hot(data.targets, dataset.VOCAB_SIZE)
@@ -133,7 +133,7 @@ def main(_):
     return new_state, metrics
 
   @jax.jit
-  def init(rng: jnp.ndarray, data) -> TrainingState:
+  def init(rng: jax.Array, data) -> TrainingState:
     rng, init_rng = jax.random.split(rng)
     initial_params = loss_fn.init(init_rng, data)
     initial_opt_state = optimiser.init(initial_params)

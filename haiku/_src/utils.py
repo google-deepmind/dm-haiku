@@ -207,7 +207,7 @@ def tree_size(tree) -> int:
   25557032 params, size: 51.11MB
 
   Args:
-    tree: A tree of jnp.ndarrays.
+    tree: A tree of jax.Arrays.
 
   Returns:
     The total size (number of elements) of the array(s) in the input.
@@ -245,7 +245,7 @@ def tree_bytes(tree) -> int:
   25557032 params, size: 51.11MB
 
   Args:
-    tree: A tree of jnp.ndarrays.
+    tree: A tree of jax.Arrays.
 
   Returns:
     The total size in bytes of the array(s) in the input.

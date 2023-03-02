@@ -94,7 +94,7 @@ class RMSNorm(hk.Module):
     else:
       self.param_axis = layer_norm.to_axes_or_slice(param_axis)
 
-  def __call__(self, inputs: jnp.ndarray):
+  def __call__(self, inputs: jax.Array):
     """Connects the layer norm.
 
     Args:

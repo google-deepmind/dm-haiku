@@ -51,7 +51,7 @@ ThreadLocalStack = data_structures.ThreadLocalStack[T]
 
 ModuleState = collections.namedtuple("ModuleState", ("module", "method_name"))
 StatePair = collections.namedtuple("StatePair", ("initial", "current"))
-MutableParams = MutableMapping[str, MutableMapping[str, jnp.ndarray]]
+MutableParams = MutableMapping[str, MutableMapping[str, jax.Array]]
 MutableState = MutableMapping[str, MutableMapping[str, StatePair]]
 
 # TODO(tomhennigan) Should creator_stack be part of frame?
@@ -489,7 +489,7 @@ def get_parameter(
     shape: Sequence[int],
     dtype: Any = jnp.float32,
     init: Optional[Initializer] = None,
-) -> jnp.ndarray:
+) -> jax.Array:
   """Creates or reuses a parameter for the given transformed function.
 
   >>> print(hk.get_parameter("w", [], init=jnp.ones))
@@ -510,7 +510,7 @@ def get_parameter(
       parameter.
 
   Returns:
-    A jnp.ndarray with the parameter of the given shape.
+    A jax.Array with the parameter of the given shape.
   """
   assert_context("get_parameter")
   assert_jax_usage("get_parameter")
@@ -620,9 +620,9 @@ class GetterContext(NamedTuple):
     return name
 
 
-NextCreator = Callable[[Sequence[int], Any, Initializer], jnp.ndarray]
+NextCreator = Callable[[Sequence[int], Any, Initializer], jax.Array]
 Creator = Callable[
-    [NextCreator, Sequence[int], Any, Initializer, GetterContext], jnp.ndarray]
+    [NextCreator, Sequence[int], Any, Initializer, GetterContext], jax.Array]
 
 
 def run_creators(
@@ -631,7 +631,7 @@ def run_creators(
     shape: Sequence[int],
     dtype: Any = jnp.float32,
     init: Optional[Initializer] = None,
-) -> jnp.ndarray:
+) -> jax.Array:
   """See :func:`custom_creator` for usage."""
   assert stack
   stack = stack.clone()
@@ -698,15 +698,15 @@ def custom_creator_unsafe(
     stack.enter_context(state_creator_stack(creator))
   return stack
 
-NextGetter = Callable[[jnp.ndarray], jnp.ndarray]
-Getter = Callable[[NextGetter, jnp.ndarray, GetterContext], jnp.ndarray]
+NextGetter = Callable[[jax.Array], jax.Array]
+Getter = Callable[[NextGetter, jax.Array, GetterContext], jax.Array]
 
 
 def run_getters(
     stack: Stack[Getter],
     context: GetterContext,
-    value: jnp.ndarray,
-) -> jnp.ndarray:
+    value: jax.Array,
+) -> jax.Array:
   """See :func:`custom_getter` for usage."""
   assert stack
   stack = stack.clone()
@@ -1057,7 +1057,7 @@ def next_rng_key_internal() -> PRNGKey:
 
 
 @replaceable
-def next_rng_keys(num: int) -> jnp.ndarray:
+def next_rng_keys(num: int) -> jax.Array:
   """Returns one or more JAX random keys split from the current global key.
 
   >>> k1, k2 = hk.next_rng_keys(2)
@@ -1103,7 +1103,7 @@ def get_state(
     shape: Optional[Sequence[int]] = None,
     dtype: Any = jnp.float32,
     init: Optional[Initializer] = None,
-) -> jnp.ndarray:
+) -> jax.Array:
   """Gets the current value for state with an optional initializer.
 
   "State" can be used to represent mutable state in your network. The most
@@ -1136,7 +1136,7 @@ def get_state(
       state.
 
   Returns:
-    A jnp.ndarray with the state of the given shape.
+    A jax.Array with the state of the given shape.
   """
   assert_context("get_state")
   assert_jax_usage("get_state")

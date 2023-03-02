@@ -58,7 +58,7 @@ class Constant(hk.initializers.Initializer):
   """Initializes with a constant."""
 
   def __init__(
-      self, constant: Union[float, int, complex, np.ndarray, jnp.ndarray]
+      self, constant: Union[float, int, complex, np.ndarray, jax.Array]
   ):
     """Constructs a Constant initializer.
 
@@ -67,7 +67,7 @@ class Constant(hk.initializers.Initializer):
     """
     self.constant = constant
 
-  def __call__(self, shape: Sequence[int], dtype: Any) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype: Any) -> jax.Array:
     return jnp.broadcast_to(jnp.asarray(self.constant), shape).astype(dtype)
 
 
@@ -84,7 +84,7 @@ class RandomNormal(hk.initializers.Initializer):
     self.stddev = stddev
     self.mean = mean
 
-  def __call__(self, shape: Sequence[int], dtype) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype) -> jax.Array:
     m = jax.lax.convert_element_type(self.mean, dtype)
     s = jax.lax.convert_element_type(self.stddev, dtype)
     return m + s * jax.random.normal(hk.next_rng_key(), shape, dtype)
@@ -94,8 +94,8 @@ class TruncatedNormal(hk.initializers.Initializer):
   """Initializes by sampling from a truncated normal distribution."""
 
   def __init__(self,
-               stddev: Union[float, jnp.ndarray] = 1.,
-               mean: Union[float, complex, jnp.ndarray] = 0.):
+               stddev: Union[float, jax.Array] = 1.,
+               mean: Union[float, complex, jax.Array] = 0.):
     """Constructs a :class:`TruncatedNormal` initializer.
 
     Args:
@@ -106,7 +106,7 @@ class TruncatedNormal(hk.initializers.Initializer):
     self.stddev = stddev
     self.mean = mean
 
-  def __call__(self, shape: Sequence[int], dtype: Any) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype: Any) -> jax.Array:
     real_dtype = jnp.finfo(dtype).dtype
     m = jax.lax.convert_element_type(self.mean, dtype)
     s = jax.lax.convert_element_type(self.stddev, real_dtype)
@@ -133,7 +133,7 @@ class RandomUniform(hk.initializers.Initializer):
     self.minval = minval
     self.maxval = maxval
 
-  def __call__(self, shape: Sequence[int], dtype: Any) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype: Any) -> jax.Array:
     return jax.random.uniform(hk.next_rng_key(), shape, dtype, self.minval,
                               self.maxval)
 
@@ -198,7 +198,7 @@ class VarianceScaling(hk.initializers.Initializer):
     self.distribution = distribution
     self.fan_in_axes = fan_in_axes
 
-  def __call__(self, shape: Sequence[int], dtype: Any) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype: Any) -> jax.Array:
     scale = self.scale
     fan_in, fan_out = _compute_fans(shape, self.fan_in_axes)
     if self.mode == 'fan_in':
@@ -239,7 +239,7 @@ class UniformScaling(hk.initializers.Initializer):
     """
     self.scale = scale
 
-  def __call__(self, shape: Sequence[int], dtype: Any) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype: Any) -> jax.Array:
     input_size = np.product(shape[:-1])
     max_val = np.sqrt(3 / input_size) * self.scale
     return RandomUniform(-max_val, max_val)(shape, dtype)
@@ -271,7 +271,7 @@ class Orthogonal(hk.initializers.Initializer):
     self.scale = scale
     self.axis = axis
 
-  def __call__(self, shape: Sequence[int], dtype: Any) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype: Any) -> jax.Array:
     if len(shape) < 2:
       raise ValueError('Orthogonal initializer requires at least a 2D shape.')
     n_rows = shape[self.axis]
@@ -294,7 +294,7 @@ class Identity(Initializer):
   Constructs a 2D identity matrix or batches of these.
   """
 
-  def __init__(self, gain: Union[float, np.ndarray, jnp.ndarray] = 1.0):
+  def __init__(self, gain: Union[float, np.ndarray, jax.Array] = 1.0):
     """Constructs an :class:`Identity` initializer.
 
     Args:
@@ -302,7 +302,7 @@ class Identity(Initializer):
     """
     self.gain = gain
 
-  def __call__(self, shape: Sequence[int], dtype: Any) -> jnp.ndarray:
+  def __call__(self, shape: Sequence[int], dtype: Any) -> jax.Array:
     shape = tuple(shape)
     if len(shape) < 2:
       raise ValueError('Identity initializer requires at least a 2D shape.')

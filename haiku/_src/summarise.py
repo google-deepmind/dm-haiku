@@ -126,7 +126,7 @@ def get_call_stack() -> Sequence[ModuleDetails]:
 
 def to_spec(tree):
   return jax.tree_util.tree_map(
-      lambda x: ArraySpec.from_array(x) if isinstance(x, jnp.ndarray) else x,
+      lambda x: ArraySpec.from_array(x) if isinstance(x, jax.Array) else x,
       tree)
 
 IGNORED_METHODS = ("__init__", "params_dict", "state_dict")

@@ -124,12 +124,12 @@ class BatchNorm(hk.Module):
 
   def __call__(
       self,
-      inputs: jnp.ndarray,
+      inputs: jax.Array,
       is_training: bool,
       test_local_stats: bool = False,
-      scale: Optional[jnp.ndarray] = None,
-      offset: Optional[jnp.ndarray] = None,
-  ) -> jnp.ndarray:
+      scale: Optional[jax.Array] = None,
+      offset: Optional[jax.Array] = None,
+  ) -> jax.Array:
     """Computes the normalized version of the input.
 
     Args:

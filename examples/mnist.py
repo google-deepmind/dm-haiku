@@ -38,7 +38,7 @@ class TrainingState(NamedTuple):
   opt_state: optax.OptState
 
 
-def net_fn(images: jnp.ndarray) -> jnp.ndarray:
+def net_fn(images: jax.Array) -> jax.Array:
   """Standard LeNet-300-100 MLP network."""
   x = images.astype(jnp.float32) / 255.
   mlp = hk.Sequential([
@@ -70,7 +70,7 @@ def main(_):
   network = hk.without_apply_rng(hk.transform(net_fn))
   optimiser = optax.adam(1e-3)
 
-  def loss(params: hk.Params, batch: Batch) -> jnp.ndarray:
+  def loss(params: hk.Params, batch: Batch) -> jax.Array:
     """Cross-entropy classification loss, regularised by L2 weight decay."""
     batch_size, *_ = batch.image.shape
     logits = network.apply(params, batch.image)
@@ -83,7 +83,7 @@ def main(_):
     return -log_likelihood / batch_size + 1e-4 * l2_regulariser
 
   @jax.jit
-  def evaluate(params: hk.Params, batch: Batch) -> jnp.ndarray:
+  def evaluate(params: hk.Params, batch: Batch) -> jax.Array:
     """Evaluation metric (classification accuracy)."""
     logits = network.apply(params, batch.image)
     predictions = jnp.argmax(logits, axis=-1)

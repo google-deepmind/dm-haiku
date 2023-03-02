@@ -53,7 +53,7 @@ class SimpleNet(hk.Module):
   def __call__(
       self,
       timestep: dm_env.TimeStep,
-  ) -> Tuple[jnp.ndarray, jnp.ndarray]:
+  ) -> Tuple[jax.Array, jax.Array]:
     """Process a batch of observations."""
     torso = hk.Sequential([hk.Flatten(),
                            hk.Linear(128), jax.nn.relu,
@@ -76,9 +76,9 @@ class Agent:
   def step(
       self,
       params: hk.Params,
-      rng: jnp.ndarray,
+      rng: jax.Array,
       timestep: dm_env.TimeStep,
-  ) -> Tuple[jnp.ndarray, jnp.ndarray]:
+  ) -> Tuple[jax.Array, jax.Array]:
     """Steps on a single observation."""
     timestep = jax.tree_util.tree_map(lambda t: jnp.expand_dims(t, 0), timestep)
     logits, _ = self._net(params, timestep)
@@ -87,7 +87,7 @@ class Agent:
     action = jnp.squeeze(action, axis=-1)
     return action, logits
 
-  def loss(self, params: hk.Params, trajs: Transition) -> jnp.ndarray:
+  def loss(self, params: hk.Params, trajs: Transition) -> jax.Array:
     """Computes a loss of trajs wrt params."""
     # Re-run the agent over the trajectories.
     # Due to https://github.com/google/jax/issues/1459, we use hk.BatchApply
@@ -154,7 +154,7 @@ def preprocess_step(ts: dm_env.TimeStep) -> dm_env.TimeStep:
 
 def run_actor(
     agent: Agent,
-    rng_key: jnp.ndarray,
+    rng_key: jax.Array,
     get_params: Callable[[], hk.Params],
     enqueue_traj: Callable[[Transition], None],
     unroll_len: int,

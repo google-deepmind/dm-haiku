@@ -140,10 +140,10 @@ class GroupNorm(hk.Module):
 
   def __call__(
       self,
-      x: jnp.ndarray,
-      scale: Optional[jnp.ndarray] = None,
-      offset: Optional[jnp.ndarray] = None,
-  ) -> jnp.ndarray:
+      x: jax.Array,
+      scale: Optional[jax.Array] = None,
+      offset: Optional[jax.Array] = None,
+  ) -> jax.Array:
     """Returns normalized inputs.
 
     Args:
@@ -214,7 +214,7 @@ class GroupNorm(hk.Module):
 
     return x
 
-  def _initialize(self, x: jnp.ndarray, channels: int):
+  def _initialize(self, x: jax.Array, channels: int):
     assert self.rank is None
     self.rank = x.ndim
 

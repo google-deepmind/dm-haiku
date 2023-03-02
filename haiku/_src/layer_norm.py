@@ -127,10 +127,10 @@ class LayerNorm(hk.Module):
 
   def __call__(
       self,
-      inputs: jnp.ndarray,
-      scale: Optional[jnp.ndarray] = None,
-      offset: Optional[jnp.ndarray] = None,
-  ) -> jnp.ndarray:
+      inputs: jax.Array,
+      scale: Optional[jax.Array] = None,
+      offset: Optional[jax.Array] = None,
+  ) -> jax.Array:
     """Connects the layer norm.
 
     Args:

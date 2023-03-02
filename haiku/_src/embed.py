@@ -61,7 +61,7 @@ class Embed(hk.Module):
       self,
       vocab_size: Optional[int] = None,
       embed_dim: Optional[int] = None,
-      embedding_matrix: Optional[Union[np.ndarray, jnp.ndarray]] = None,
+      embedding_matrix: Optional[Union[np.ndarray, jax.Array]] = None,
       w_init: Optional[hk.initializers.Initializer] = None,
       lookup_style: Union[str, hk.EmbedLookupStyle] = "ARRAY_INDEX",
       name: Optional[str] = None,
@@ -138,10 +138,10 @@ class Embed(hk.Module):
 
   def __call__(
       self,
-      ids: Union[jnp.ndarray, Sequence[int]],
+      ids: Union[jax.Array, Sequence[int]],
       lookup_style: Optional[Union[str, hk.EmbedLookupStyle]] = None,
       precision: Optional[jax.lax.Precision] = None,
-  ) -> jnp.ndarray:
+  ) -> jax.Array:
     r"""Lookup embeddings.
 
     Looks up an embedding vector for each value in ``ids``. All ids must be

@@ -93,7 +93,7 @@ class ExponentialMovingAverage(hk.Module):
       self,
       value: Union[float, jax.Array],
       update_stats: bool = True,
-  ) -> jnp.ndarray:
+  ) -> jax.Array:
     """Updates the EMA and returns the new value.
 
     Args:

@@ -18,7 +18,7 @@ import abc
 import typing
 from typing import Any, Callable, Mapping, Sequence
 
-import jax.numpy as jnp
+import jax
 from typing_extensions import Protocol, runtime_checkable  # pylint: disable=multiple-statements,g-multiple-import
 
 # pytype: disable=module-attr
@@ -29,12 +29,12 @@ except AttributeError:
   Module = Any
 # pytype: enable=module-attr
 
-Initializer = Callable[[Sequence[int], Any], jnp.ndarray]
-Params = Mapping[str, Mapping[str, jnp.ndarray]]
-State = Mapping[str, Mapping[str, jnp.ndarray]]
+Initializer = Callable[[Sequence[int], Any], jax.Array]
+Params = Mapping[str, Mapping[str, jax.Array]]
+State = Mapping[str, Mapping[str, jax.Array]]
 
 # Missing JAX types.
-PRNGKey = jnp.ndarray  # pylint: disable=invalid-name
+PRNGKey = jax.Array  # pylint: disable=invalid-name
 
 
 class LiftingModuleType:
@@ -62,11 +62,11 @@ class ModuleProtocol(StrictProtocol, Protocol):
   module_name: str
 
   @abc.abstractmethod
-  def params_dict(self) -> Mapping[str, jnp.array]:
+  def params_dict(self) -> Mapping[str, jax.Array]:
     raise NotImplementedError
 
   @abc.abstractmethod
-  def state_dict(self) -> Mapping[str, jnp.array]:
+  def state_dict(self) -> Mapping[str, jax.Array]:
     raise NotImplementedError
 
 

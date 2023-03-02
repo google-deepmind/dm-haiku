@@ -32,7 +32,7 @@ class MyModel(module.Module):
   def __init__(self, name: Optional[str] = None):
     super().__init__(name=name)
 
-  def __call__(self, x: jnp.ndarray):
+  def __call__(self, x: jax.Array):
     return conv.Conv2D(16, 3)(x)
 
 

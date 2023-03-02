@@ -33,7 +33,7 @@ import jax.numpy as jnp
 def jax_fn_with_filter(
     jax_fn: Callable[..., Any],
     f: Callable[..., Any],
-    predicate: Callable[[str, str, jnp.ndarray], bool],
+    predicate: Callable[[str, str, jax.Array], bool],
     **jax_fn_kwargs) -> Callable[..., Any]:
   """Applies a jax functionn to a given function after modifying its signature.
 

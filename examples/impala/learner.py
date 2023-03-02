@@ -92,7 +92,7 @@ class Learner:
       self,
       theta: hk.Params,
       trajectories: util.Transition,
-  ) -> Tuple[jnp.ndarray, Dict[str, jnp.ndarray]]:
+  ) -> Tuple[jax.Array, Dict[str, jax.Array]]:
     """Compute vtrace-based actor-critic loss."""
     initial_state = jax.tree_util.tree_map(
         lambda t: t[0], trajectories.agent_state)

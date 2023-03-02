@@ -157,10 +157,10 @@ class Linear(hk.Module):
 
   def __call__(
       self,
-      inputs: jnp.ndarray,
+      inputs: jax.Array,
       *,
       precision: Optional[lax.Precision] = None,
-  ) -> jnp.ndarray:
+  ) -> jax.Array:
     """Computes a linear transform of the input."""
     if not inputs.shape:
       raise ValueError("Input must not be scalar.")
@@ -186,7 +186,7 @@ class Linear(hk.Module):
 
 
 def ndim_at_least(x, num_dims):
-  if not isinstance(x, jnp.ndarray):
+  if not isinstance(x, jax.Array):
     x = jnp.asarray(x)
   return x.ndim >= num_dims
 
@@ -294,7 +294,7 @@ def expand_apply(f, axis=0):
   return wrapper
 
 
-def dropout(rng: PRNGKey, rate: float, x: jnp.ndarray) -> jnp.ndarray:
+def dropout(rng: PRNGKey, rate: float, x: jax.Array) -> jax.Array:
   """Randomly drop units in the input at a given rate.
 
   See: http://www.cs.toronto.edu/~hinton/absps/dropout.pdf
@@ -319,7 +319,7 @@ def dropout(rng: PRNGKey, rate: float, x: jnp.ndarray) -> jnp.ndarray:
 
 
 # Separated out to support monkey patching.
-def dropout_impl(rng: PRNGKey, rate: float, x: jnp.ndarray) -> jnp.ndarray:
+def dropout_impl(rng: PRNGKey, rate: float, x: jax.Array) -> jax.Array:
   """See dropout."""
   try:
     if rate < 0 or rate >= 1:

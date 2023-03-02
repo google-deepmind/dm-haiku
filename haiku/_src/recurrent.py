@@ -272,8 +272,8 @@ class LSTMState(NamedTuple):
     hidden: Hidden state.
     cell: Cell state.
   """
-  hidden: jnp.ndarray
-  cell: jnp.ndarray
+  hidden: jax.Array
+  cell: jax.Array
 
 
 class LSTM(RNNCore):
@@ -318,9 +318,9 @@ class LSTM(RNNCore):
 
   def __call__(
       self,
-      inputs: jnp.ndarray,
+      inputs: jax.Array,
       prev_state: LSTMState,
-  ) -> Tuple[jnp.ndarray, LSTMState]:
+  ) -> Tuple[jax.Array, LSTMState]:
     if len(inputs.shape) > 2 or not inputs.shape:
       raise ValueError("LSTM input must be rank-1 or rank-2.")
     x_and_h = jnp.concatenate([inputs, prev_state.hidden], axis=-1)
@@ -401,7 +401,7 @@ class ConvNDLSTM(RNNCore):
       self,
       inputs,
       state: LSTMState,
-  ) -> Tuple[jnp.ndarray, LSTMState]:
+  ) -> Tuple[jax.Array, LSTMState]:
     input_to_hidden = hk.ConvND(
         num_spatial_dims=self.num_spatial_dims,
         output_channels=4 * self.output_channels,

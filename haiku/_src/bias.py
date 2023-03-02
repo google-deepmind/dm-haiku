@@ -21,6 +21,7 @@ from haiku._src import base
 from haiku._src import initializers
 from haiku._src import module
 from haiku._src import utils
+import jax
 import jax.numpy as jnp
 
 # If you are forking replace this block with `import haiku as hk`.
@@ -98,9 +99,9 @@ class Bias(hk.Module):
 
   def __call__(
       self,
-      inputs: jnp.ndarray,
-      multiplier: Optional[Union[float, jnp.ndarray]] = None,
-  ) -> jnp.ndarray:
+      inputs: jax.Array,
+      multiplier: Optional[Union[float, jax.Array]] = None,
+  ) -> jax.Array:
     """Adds bias to ``inputs`` and optionally multiplies by ``multiplier``.
 
     Args:

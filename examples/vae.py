@@ -43,7 +43,7 @@ class Config:
 
 
 class Batch(NamedTuple):
-  image: jnp.ndarray  # [B, H, W, C]
+  image: jax.Array  # [B, H, W, C]
 
 
 def load_dataset(split: str, batch_size: int, seed: int) -> Iterator[Batch]:
@@ -65,7 +65,7 @@ class Encoder(hk.Module):
   latent_size: int
   hidden_size: int = 512
 
-  def __call__(self, x: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
+  def __call__(self, x: jax.Array) -> Tuple[jax.Array, jax.Array]:
     """Encodes an image as an isotropic Guassian latent code."""
     x = hk.Flatten()(x)
     x = hk.Linear(self.hidden_size)(x)
@@ -85,7 +85,7 @@ class Decoder(hk.Module):
   output_shape: Sequence[int]
   hidden_size: int = 512
 
-  def __call__(self, z: jnp.ndarray) -> jnp.ndarray:
+  def __call__(self, z: jax.Array) -> jax.Array:
     """Decodes a latent code into Bernoulli log-odds over an output image."""
     z = hk.Linear(self.hidden_size)(z)
     z = jax.nn.relu(z)
@@ -97,10 +97,10 @@ class Decoder(hk.Module):
 
 
 class VAEOutput(NamedTuple):
-  image: jnp.ndarray
-  mean: jnp.ndarray
-  variance: jnp.ndarray
-  logits: jnp.ndarray
+  image: jax.Array
+  mean: jax.Array
+  variance: jax.Array
+  logits: jax.Array
 
 
 @dataclasses.dataclass
@@ -110,7 +110,7 @@ class VariationalAutoEncoder(hk.Module):
   encoder: Encoder
   decoder: Decoder
 
-  def __call__(self, x: jnp.ndarray) -> VAEOutput:
+  def __call__(self, x: jax.Array) -> VAEOutput:
     """Forward pass of the variational autoencoder."""
     x = x.astype(jnp.float32)
     mean, stddev = self.encoder(x)
@@ -126,7 +126,7 @@ class VariationalAutoEncoder(hk.Module):
 class TrainingState(NamedTuple):
   params: hk.Params
   opt_state: optax.OptState
-  rng_key: jnp.ndarray
+  rng_key: jax.Array
 
 
 def main(_):
@@ -143,7 +143,7 @@ def main(_):
     return vae(x)
 
   @jax.jit
-  def loss_fn(params, rng_key, batch: Batch) -> jnp.ndarray:
+  def loss_fn(params, rng_key, batch: Batch) -> jax.Array:
     """ELBO loss: E_p[log(x)] - KL(d||q), where p ~ Be(0.5) and q ~ N(0,1)."""
 
     # Run the model on the inputs.

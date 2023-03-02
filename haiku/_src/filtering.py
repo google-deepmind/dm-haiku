@@ -19,7 +19,7 @@ from typing import Any, Callable, Generator, Mapping, Tuple, TypeVar
 
 from haiku._src import data_structures
 from haiku._src import utils
-import jax.numpy as jnp
+import jax
 
 T = TypeVar("T")
 InT = TypeVar("InT")
@@ -47,7 +47,7 @@ def traverse(
 
 
 def partition(
-    predicate: Callable[[str, str, jnp.ndarray], bool],
+    predicate: Callable[[str, str, jax.Array], bool],
     structure: Mapping[str, Mapping[str, T]],
 ) -> Tuple[Mapping[str, Mapping[str, T]], Mapping[str, Mapping[str, T]]]:
   """Partitions the input structure in two according to a given predicate.

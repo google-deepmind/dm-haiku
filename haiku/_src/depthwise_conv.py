@@ -22,6 +22,7 @@ from haiku._src import initializers
 from haiku._src import module
 from haiku._src import utils
 
+import jax
 from jax import lax
 import jax.numpy as jnp
 import numpy as np
@@ -103,7 +104,7 @@ class DepthwiseConvND(hk.Module):
     else:
       self.dn = DIMENSION_NUMBERS_NCSPATIAL[self.num_spatial_dims]
 
-  def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:
+  def __call__(self, inputs: jax.Array) -> jax.Array:
     channel_index = hk.get_channel_index(self.data_format)
     w_shape = self.kernel_shape + (1, self.channel_multiplier *
                                    inputs.shape[channel_index])
@@ -194,7 +195,7 @@ class SeparableDepthwiseConv2D(hk.Module):
         b_init=b_init,
         data_format=data_format)
 
-  def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:
+  def __call__(self, inputs: jax.Array) -> jax.Array:
     return self._conv2(self._conv1(inputs))
 
 

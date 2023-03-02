@@ -42,9 +42,9 @@ SEED = flags.DEFINE_integer('seed', 42, '')
 
 
 class LoopValues(NamedTuple):
-  tokens: jnp.ndarray
+  tokens: jax.Array
   state: Any
-  rng_key: jnp.ndarray
+  rng_key: jax.Array
 
 
 class TrainingState(NamedTuple):
@@ -69,7 +69,7 @@ def make_optimizer() -> optax.GradientTransformation:
   return optax.adam(LEARNING_RATE.value)
 
 
-def sequence_loss(batch: dataset.Batch) -> jnp.ndarray:
+def sequence_loss(batch: dataset.Batch) -> jax.Array:
   """Unrolls the network over a sequence of inputs & targets, gets loss."""
   # Note: this function is impure; we hk.transform() it below.
   core = make_network()
@@ -93,10 +93,10 @@ def update(state: TrainingState, batch: dataset.Batch) -> TrainingState:
 
 
 def sample(
-    rng_key: jnp.ndarray,
-    context: jnp.ndarray,
+    rng_key: jax.Array,
+    context: jax.Array,
     sample_length: int,
-) -> jnp.ndarray:
+) -> jax.Array:
   """Draws samples from the model, given an initial context."""
   # Note: this function is impure; we hk.transform() it below.
   assert context.ndim == 1  # No batching for now.

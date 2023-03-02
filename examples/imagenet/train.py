@@ -59,7 +59,7 @@ flags.DEFINE_bool('dataset_transpose', False, help='')
 flags.DEFINE_bool('dataset_zeros', False, help='')
 FLAGS = flags.FLAGS
 
-Scalars = Mapping[str, jnp.ndarray]
+Scalars = Mapping[str, jax.Array]
 
 
 class TrainState(NamedTuple):
@@ -80,7 +80,7 @@ def get_initial_loss_scale() -> jmp.LossScale:
 def _forward(
     batch: dataset.Batch,
     is_training: bool,
-) -> jnp.ndarray:
+) -> jax.Array:
   """Forward application of the resnet."""
   images = batch['images']
   if FLAGS.dataset_transpose:
@@ -95,7 +95,7 @@ def _forward(
 forward = hk.transform_with_state(_forward)
 
 
-def lr_schedule(step: jnp.ndarray) -> jnp.ndarray:
+def lr_schedule(step: jax.Array) -> jax.Array:
   """Cosine learning rate schedule."""
   train_split = dataset.Split.from_string(FLAGS.train_split)
 
@@ -122,7 +122,7 @@ def make_optimizer() -> optax.GradientTransformation:
       optax.scale_by_schedule(lr_schedule), optax.scale(-1))
 
 
-def l2_loss(params: Iterable[jnp.ndarray]) -> jnp.ndarray:
+def l2_loss(params: Iterable[jax.Array]) -> jax.Array:
   return 0.5 * sum(jnp.sum(jnp.square(p)) for p in params)
 
 
@@ -131,7 +131,7 @@ def loss_fn(
     state: hk.State,
     loss_scale: jmp.LossScale,
     batch: dataset.Batch,
-) -> Tuple[jnp.ndarray, Tuple[jnp.ndarray, hk.State]]:
+) -> Tuple[jax.Array, Tuple[jax.Array, hk.State]]:
   """Computes a regularized loss for the given batch."""
   logits, state = forward.apply(params, state, None, batch, is_training=True)
   labels = jax.nn.one_hot(batch['labels'], 1000)
@@ -190,7 +190,7 @@ def train_step(
   return train_state, scalars
 
 
-def initial_state(rng: jnp.ndarray, batch: dataset.Batch) -> TrainState:
+def initial_state(rng: jax.Array, batch: dataset.Batch) -> TrainState:
   """Computes the initial network state."""
   params, state = forward.init(rng, batch, is_training=True)
   opt_state = make_optimizer().init(params)
@@ -206,7 +206,7 @@ def eval_batch(
     params: hk.Params,
     state: hk.State,
     batch: dataset.Batch,
-) -> jnp.ndarray:
+) -> jax.Array:
   """Evaluates a batch."""
   logits, _ = forward.apply(params, state, None, batch, is_training=False)
   predicted_label = jnp.argmax(logits, axis=-1)

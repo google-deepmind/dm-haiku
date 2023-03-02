@@ -91,7 +91,7 @@ class SpectralNorm(hk.Module):
       value,
       update_stats: bool = True,
       error_on_non_matrix: bool = False,
-  ) -> jnp.ndarray:
+  ) -> jax.Array:
     """Performs Spectral Normalization and returns the new value.
 
     Args:

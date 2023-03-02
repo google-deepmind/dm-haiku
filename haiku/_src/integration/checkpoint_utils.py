@@ -23,7 +23,7 @@ import jax
 import jax.numpy as jnp
 
 
-def format_tensor(tensor: jnp.ndarray) -> str:
+def format_tensor(tensor: jax.Array) -> str:
   shape = list(tensor.shape)
   dtype = utils.simple_dtype(tensor.dtype)
   return f"{dtype}{shape}"

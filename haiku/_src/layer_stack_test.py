@@ -348,7 +348,7 @@ class LayerStackTest(parameterized.TestCase):
         np.array(True))
 
   @classmethod
-  def _compute_weights(cls, stack_height: int, alpha: jnp.ndarray):
+  def _compute_weights(cls, stack_height: int, alpha: jax.Array):
     forward = [(alpha, alpha)]
     backward = [(stack_height * alpha, stack_height * alpha)]
     for i in range(2, stack_height + 1):

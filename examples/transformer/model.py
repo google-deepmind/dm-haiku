@@ -31,7 +31,7 @@ import jax.numpy as jnp
 import numpy as np
 
 
-def layer_norm(x: jnp.ndarray) -> jnp.ndarray:
+def layer_norm(x: jax.Array) -> jax.Array:
   """Applies a unique LayerNorm to x with default settings."""
   ln = hk.LayerNorm(axis=-1, create_scale=True, create_offset=True)
   return ln(x)
@@ -50,11 +50,11 @@ class Transformer(hk.Module):
 
   def __call__(
       self,
-      embeddings: jnp.ndarray,  # [B, T, D]
-      mask: jnp.ndarray,  # [B, T]
+      embeddings: jax.Array,  # [B, T, D]
+      mask: jax.Array,  # [B, T]
       *,
       is_training: bool = True,
-  ) -> jnp.ndarray:  # [B, T, D]
+  ) -> jax.Array:  # [B, T, D]
     """Transforms input embedding sequences to output embedding sequences."""
 
     initializer = hk.initializers.VarianceScaling(2 / self.num_layers)
@@ -106,10 +106,10 @@ class LanguageModel(hk.Module):
 
   def __call__(
       self,
-      tokens: jnp.ndarray,
+      tokens: jax.Array,
       *,
       is_training: bool = True,
-  ) -> jnp.ndarray:
+  ) -> jax.Array:
     """Forward pass, producing a sequence of logits."""
     input_mask = jnp.greater(tokens, self.pad_token)
     unused_batch_size, seq_len = tokens.shape

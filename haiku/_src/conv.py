@@ -22,6 +22,7 @@ from haiku._src import initializers
 from haiku._src import module
 from haiku._src import pad
 from haiku._src import utils
+import jax
 from jax import lax
 import jax.numpy as jnp
 import numpy as np
@@ -76,7 +77,7 @@ class ConvND(hk.Module):
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
       data_format: str = "channels_last",
-      mask: Optional[jnp.ndarray] = None,
+      mask: Optional[jax.Array] = None,
       feature_group_count: int = 1,
       name: Optional[str] = None,
   ):
@@ -153,10 +154,10 @@ class ConvND(hk.Module):
 
   def __call__(
       self,
-      inputs: jnp.ndarray,
+      inputs: jax.Array,
       *,
       precision: Optional[lax.Precision] = None,
-  ) -> jnp.ndarray:
+  ) -> jax.Array:
     """Connects ``ConvND`` layer.
 
     Args:
@@ -241,7 +242,7 @@ class Conv1D(ConvND):
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
       data_format: str = "NWC",
-      mask: Optional[jnp.ndarray] = None,
+      mask: Optional[jax.Array] = None,
       feature_group_count: int = 1,
       name: Optional[str] = None,
   ):
@@ -308,7 +309,7 @@ class Conv2D(ConvND):
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
       data_format: str = "NHWC",
-      mask: Optional[jnp.ndarray] = None,
+      mask: Optional[jax.Array] = None,
       feature_group_count: int = 1,
       name: Optional[str] = None,
   ):
@@ -375,7 +376,7 @@ class Conv3D(ConvND):
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
       data_format: str = "NDHWC",
-      mask: Optional[jnp.ndarray] = None,
+      mask: Optional[jax.Array] = None,
       feature_group_count: int = 1,
       name: Optional[str] = None,
   ):
@@ -478,7 +479,7 @@ class ConvNDTranspose(hk.Module):
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
       data_format: str = "channels_last",
-      mask: Optional[jnp.ndarray] = None,
+      mask: Optional[jax.Array] = None,
       name: Optional[str] = None,
   ):
     """Initializes the module.
@@ -538,10 +539,10 @@ class ConvNDTranspose(hk.Module):
 
   def __call__(
       self,
-      inputs: jnp.ndarray,
+      inputs: jax.Array,
       *,
       precision: Optional[lax.Precision] = None,
-  ) -> jnp.ndarray:
+  ) -> jax.Array:
     """Computes the transposed convolution of the input.
 
     Args:
@@ -625,7 +626,7 @@ class Conv1DTranspose(ConvNDTranspose):
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
       data_format: str = "NWC",
-      mask: Optional[jnp.ndarray] = None,
+      mask: Optional[jax.Array] = None,
       name: Optional[str] = None,
   ):
     """Initializes the module.
@@ -679,7 +680,7 @@ class Conv2DTranspose(ConvNDTranspose):
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
       data_format: str = "NHWC",
-      mask: Optional[jnp.ndarray] = None,
+      mask: Optional[jax.Array] = None,
       name: Optional[str] = None,
   ):
     """Initializes the module.
@@ -733,7 +734,7 @@ class Conv3DTranspose(ConvNDTranspose):
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
       data_format: str = "NDHWC",
-      mask: Optional[jnp.ndarray] = None,
+      mask: Optional[jax.Array] = None,
       name: Optional[str] = None,
   ):
     """Initializes the module.

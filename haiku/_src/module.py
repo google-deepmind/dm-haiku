@@ -254,7 +254,7 @@ def intercept_methods(interceptor: MethodGetter):
   ...     return next_f(*args, **kwargs)
   ...
   ...   def cast_if_array(x):
-  ...     if isinstance(x, jnp.ndarray):
+  ...     if isinstance(x, jax.Array):
   ...       x = x.astype(jnp.float32)
   ...     return x
   ...

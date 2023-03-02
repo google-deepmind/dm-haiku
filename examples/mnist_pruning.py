@@ -26,12 +26,12 @@ import optax
 import tensorflow_datasets as tfds
 
 Batch = Mapping[str, np.ndarray]
-Predicate = Callable[[str, str, jnp.ndarray], bool]
-PredicateMap = Mapping[Predicate, jnp.ndarray]
-ModuleSparsity = Sequence[Tuple[Predicate, jnp.ndarray]]
+Predicate = Callable[[str, str, jax.Array], bool]
+PredicateMap = Mapping[Predicate, jax.Array]
+ModuleSparsity = Sequence[Tuple[Predicate, jax.Array]]
 
 
-def topk_mask(value: jnp.ndarray, density_fraction: float) -> jnp.ndarray:
+def topk_mask(value: jax.Array, density_fraction: float) -> jax.Array:
   """Return a mask with 1s marking the top fraction of value.
 
   Note: This routine takes care to make sure that ties are handled without
@@ -76,7 +76,7 @@ def zhugupta_func(progress: float) -> float:
 
 def _create_partitions(
     module_sparsity: ModuleSparsity, params: hk.Params
-) -> Tuple[Sequence[hk.Params], Sequence[jnp.ndarray], hk.Params]:
+) -> Tuple[Sequence[hk.Params], Sequence[jax.Array], hk.Params]:
   """Partition params based on sparsity_predicate_map.
 
   Args:
@@ -106,7 +106,7 @@ def _create_partitions(
   return list_of_trees, sparsity_list, tail
 
 
-def sparsity_ignore(m: str, n: str, v: jnp.ndarray) -> bool:
+def sparsity_ignore(m: str, n: str, v: jax.Array) -> bool:
   """Any parameter matching these conditions should generally not be pruned."""
   # n == 'b' when param is a bias
   return n == "b" or v.ndim == 1 or "batchnorm" in m or "batch_norm" in m
@@ -149,7 +149,7 @@ def update_mask(params: hk.Params, sparsity_fraction: float,
   params_to_prune, sparsities, _ = _create_partitions(module_sparsity, params)
   masks = []
 
-  def map_fn(x: jnp.ndarray, sparsity: float) -> jnp.ndarray:
+  def map_fn(x: jax.Array, sparsity: float) -> jax.Array:
     return topk_mask(jnp.abs(x), 1. - sparsity * sparsity_fraction)
 
   for tree, sparsity in zip(params_to_prune, sparsities):
@@ -169,7 +169,7 @@ def get_sparsity(params: hk.Params):
   return total_params, total_nnz, leaf_sparsity
 
 
-def net_fn(batch: Batch) -> jnp.ndarray:
+def net_fn(batch: Batch) -> jax.Array:
   """Standard LeNet-300-100 MLP network."""
   x = batch["image"].astype(jnp.float32) / 255.
   mlp = hk.Sequential([
@@ -213,7 +213,7 @@ def main(_):
 
   # Training loss (cross-entropy).
   @jax.jit
-  def loss(params: hk.Params, batch: Batch) -> jnp.ndarray:
+  def loss(params: hk.Params, batch: Batch) -> jax.Array:
     """Compute the loss of the network, including L2."""
     logits = net.apply(params, batch)
     labels = jax.nn.one_hot(batch["label"], 10)
@@ -227,7 +227,7 @@ def main(_):
 
   # Evaluation metric (classification accuracy).
   @jax.jit
-  def accuracy(params: hk.Params, batch: Batch) -> jnp.ndarray:
+  def accuracy(params: hk.Params, batch: Batch) -> jax.Array:
     predictions = net.apply(params, batch)
     return jnp.mean(jnp.argmax(predictions, axis=-1) == batch["label"])
 

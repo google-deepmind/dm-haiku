@@ -64,7 +64,7 @@ class MobileNetV1Block(hk.Module):
     self.use_bn = use_bn
     self.with_bias = not use_bn
 
-  def __call__(self, inputs: jnp.ndarray, is_training: bool) -> jnp.ndarray:
+  def __call__(self, inputs: jax.Array, is_training: bool) -> jax.Array:
     depthwise = hk.DepthwiseConv2D(
         channel_multiplier=1,
         kernel_shape=3,
@@ -131,7 +131,7 @@ class MobileNetV1(hk.Module):
     self.with_bias = not use_bn
     self.num_classes = num_classes
 
-  def __call__(self, inputs: jnp.ndarray, is_training: bool) -> jnp.ndarray:
+  def __call__(self, inputs: jax.Array, is_training: bool) -> jax.Array:
     initial_conv = hk.Conv2D(
         output_channels=32,
         kernel_shape=(3, 3),

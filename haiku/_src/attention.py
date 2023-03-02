@@ -103,11 +103,11 @@ class MultiHeadAttention(hk.Module):
 
   def __call__(
       self,
-      query: jnp.ndarray,
-      key: jnp.ndarray,
-      value: jnp.ndarray,
-      mask: Optional[jnp.ndarray] = None,
-  ) -> jnp.ndarray:
+      query: jax.Array,
+      key: jax.Array,
+      value: jax.Array,
+      mask: Optional[jax.Array] = None,
+  ) -> jax.Array:
     """Computes (optionally masked) MHA with queries, keys & values.
 
     This module broadcasts over zero or more 'batch-like' leading dimensions.
@@ -156,10 +156,10 @@ class MultiHeadAttention(hk.Module):
   @hk.transparent
   def _linear_projection(
       self,
-      x: jnp.ndarray,
+      x: jax.Array,
       head_size: int,
       name: Optional[str] = None,
-  ) -> jnp.ndarray:
+  ) -> jax.Array:
     y = hk.Linear(self.num_heads * head_size, w_init=self.w_init, name=name)(x)
     *leading_dims, _ = x.shape
     return y.reshape((*leading_dims, self.num_heads, head_size))

@@ -24,7 +24,6 @@ from haiku._src import lift
 from haiku._src import module
 from haiku._src import transform
 import jax
-import jax.numpy as jnp
 
 
 class LayerStackStateError(Exception):
@@ -34,7 +33,7 @@ LayerStackCarry = collections.namedtuple("LayerStackCarry", ["x"])
 LayerStackScanned = collections.namedtuple("LayerStackScanned",
                                            ["params", "rng", "args_ys"])
 
-# WrappedFn should take in arbitrarily nested `jnp.ndarray`, and return the
+# WrappedFn should take in arbitrarily nested `jax.Array`, and return the
 # exact same type. We cannot express this with `typing`. So we just use it
 # to inform the user. In reality, the typing below will accept anything.
 NestedArray = Any
@@ -50,7 +49,7 @@ def _check_no_varargs(f):
         "arguments")
 
 
-def _get_rng_stack(count: int) -> Optional[jnp.ndarray]:
+def _get_rng_stack(count: int) -> Optional[jax.Array]:
   rng = base.maybe_next_rng_key()
   if rng is None:
     return None
@@ -125,9 +124,9 @@ class _LayerStack(module.Module):
     return carry.x, zs
 
   def _call_wrapped(self,
-                    x: jnp.ndarray,
+                    x: jax.Array,
                     *args,
-                    ) -> Tuple[jnp.ndarray, Optional[jnp.ndarray]]:
+                    ) -> Tuple[jax.Array, Optional[jax.Array]]:
     raise NotImplementedError()
 
 
@@ -187,7 +186,7 @@ def layer_stack(num_layers: int,
 
   A function is valid if it uses only explicit position parameters, and
   its return type matches its input type. The position parameters can be
-  arbitrarily nested structures with ``jnp.ndarray`` at the leaf nodes. Note
+  arbitrarily nested structures with ``jax.Array`` at the leaf nodes. Note
   that kwargs are not supported, neither are functions with variable number
   of parameters (specified by ``*args``).
 

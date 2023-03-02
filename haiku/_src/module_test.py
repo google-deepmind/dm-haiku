@@ -902,7 +902,7 @@ class DataLinear(module.Module):
 class DataMLP(module.Module):
 
   output_sizes: Sequence[int]
-  activation: Callable[[jnp.ndarray], jnp.ndarray] = jax.nn.relu
+  activation: Callable[[jax.Array], jax.Array] = jax.nn.relu
   name: Optional[str] = None
 
   def __call__(self, x):

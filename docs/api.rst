@@ -1007,6 +1007,7 @@ Automatic Mixed Precision
     current_policy
     get_policy
     clear_policy
+    push_policy
 
 set_policy
 ~~~~~~~~~~
@@ -1027,6 +1028,11 @@ clear_policy
 ~~~~~~~~~~~~
 
 .. autofunction:: clear_policy
+
+push_policy
+~~~~~~~~~~~~
+
+.. autofunction:: push_policy
 
 🚧 Experimental
 ===============

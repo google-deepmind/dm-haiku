@@ -32,11 +32,8 @@ import jmp
 def with_policy(cls: Type[module.Module], policy: Optional[jmp.Policy]):
   def decorator(f):
     def wrapper(*args, **kwargs):
-      mixed_precision.set_policy(cls, policy)
-      try:
+      with mixed_precision.push_policy(cls, policy):
         return f(*args, **kwargs)
-      finally:
-        mixed_precision.clear_policy(cls)
     return wrapper
   return decorator
 
@@ -156,6 +153,48 @@ class MixedPrecisionTest(absltest.TestCase):
     x = jnp.ones([])
     self.assertEqual(cls1()(x).dtype, jnp.float16)
     self.assertEqual(cls2()(x).dtype, jnp.bfloat16)
+
+  @test_utils.transform_and_run
+  def test_push_policy(self):
+    policy = jmp.get_policy('o=f16')
+    test = self
+
+    class FooModule(module.Module):
+
+      def __call__(self):
+        test.assertEqual(mixed_precision.current_policy(), policy)
+
+    mod = FooModule()
+    with mixed_precision.push_policy(FooModule, policy):
+      self.assertEqual(mixed_precision.get_policy(FooModule), policy)
+      mod()
+
+    self.assertIsNone(mixed_precision.get_policy(FooModule))
+
+  @test_utils.transform_and_run
+  def test_push_policy_maintains_old_policy(self):
+    old_policy = jmp.get_policy('o=f16')
+    new_policy = jmp.get_policy('o=f64')
+    self.assertIsNone(mixed_precision.get_policy(InnerModule))
+    mixed_precision.set_policy(InnerModule, old_policy)
+    with mixed_precision.push_policy(InnerModule, new_policy):
+      self.assertEqual(mixed_precision.get_policy(InnerModule), new_policy)
+    self.assertEqual(mixed_precision.get_policy(InnerModule), old_policy)
+    mixed_precision.clear_policy(InnerModule)
+
+  @test_utils.transform_and_run
+  def test_push_policy_not_allowed_in_method_of_same_class(self):
+    any_policy = jmp.get_policy('o=f16')
+
+    class PushesInMethod(module.Module):
+
+      def __call__(self):
+        with mixed_precision.push_policy(PushesInMethod, any_policy):
+          pass
+
+    mod = PushesInMethod()
+    with self.assertRaisesRegex(ValueError, 'same class is not supported'):
+      mod()
 
   @with_policy(InnerModule, jmp.get_policy('p=f16,c=f32,o=f16'))
   def test_clear_global_policy(self):

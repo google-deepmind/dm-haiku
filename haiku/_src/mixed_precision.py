@@ -34,7 +34,7 @@ hk.custom_creator = base.custom_creator
 hk.MethodContext = module.MethodContext
 hk.Module = module.Module
 Stack = data_structures.Stack[T]
-del base, data_structures
+del data_structures
 
 ClassInfo = collections.namedtuple('ClassInfo', 'module,qualname')
 ClassInfoOrType = Union[ClassInfo, Type[hk.Module]]
@@ -108,6 +108,7 @@ def current_policy() -> Optional[jmp.Policy]:
     :func:`clear_policy`: Clears any policies associated with a class.
     :func:`get_policy`: Gets the policy for a given class.
     :func:`set_policy`: Sets a policy for a given class.
+    :func:`push_policy`: Context manager for setting policies.
   """
   tls = _thread_local_state
   return tls.current_policy if tls.has_current_policy else None
@@ -132,6 +133,7 @@ def get_policy(cls: Type[hk.Module]) -> Optional[jmp.Policy]:
     :func:`current_policy`: Retrieves the currently active policy (if any).
     :func:`clear_policy`: Clears any policies associated with a class.
     :func:`set_policy`: Sets a policy for a given class.
+    :func:`push_policy`: Context manager for setting policies.
   """
   return _thread_local_state.get_policy(cls)
 
@@ -187,12 +189,53 @@ def set_policy(cls: Type[hk.Module], policy: jmp.Policy):
     policy: A JMP policy to apply to the module.
 
   See Also:
+    :func:`push_policy`: Context manager for setting policies.
     :func:`current_policy`: Retrieves the currently active policy (if any).
     :func:`clear_policy`: Clears any policies associated with a class.
     :func:`get_policy`: Gets the policy for a given class.
   """
   assert policy is not None, 'To unset policies use clear_policy.'
   _thread_local_state.set_policy(cls, policy)
+
+
+@contextlib.contextmanager
+def push_policy(cls: Type[hk.Module], policy: jmp.Policy):
+  """Sets the given policy for the given class while the context is active.
+
+  Args:
+    cls: A Haiku module class.
+    policy: A JMP policy to apply to the module.
+
+  Yields:
+    ``None``.
+
+  See also:
+    :func:`clear_policy`: Clears any policies associated with a class.
+    :func:`get_policy`: Gets the policy for a given class.
+    :func:`set_policy`: Sets a policy for a given class.
+    :func:`current_policy`: Retrieves the currently active policy (if any).
+  """
+  assert policy is not None, 'To unset policies use clear_policy.'
+
+  # Check for trying to push a new policy inside a module method. In theory it
+  # is safe to do this when varying the parameter dtype, but we are defensive
+  # and ask users to set policies before calling module methods to avoid
+  # confusion.
+  current_module = base.inside_transform() and base.current_module()
+  if (current_module and
+      key_for_module(type(current_module)) == key_for_module(cls)):
+    raise ValueError(
+        'Pushing a policy inside a method on the same class is not supported.')
+
+  old_policy = get_policy(cls)
+  set_policy(cls, policy)
+  try:
+    yield
+  finally:
+    if old_policy is not None:
+      set_policy(cls, old_policy)
+    else:
+      clear_policy(cls)
 
 
 def clear_policy(cls: Type[hk.Module]):
@@ -205,6 +248,7 @@ def clear_policy(cls: Type[hk.Module]):
     :func:`current_policy`: Retrieves the currently active policy (if any).
     :func:`get_policy`: Gets the policy for a given class.
     :func:`set_policy`: Sets a policy for a given class.
+    :func:`push_policy`: Context manager for setting policies.
   """
   _thread_local_state.clear_policy(cls)
 

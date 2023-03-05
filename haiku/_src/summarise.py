@@ -17,7 +17,6 @@
 import dataclasses
 import functools
 import pprint
-import types
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple, TypeVar, Union
 
 from haiku._src import base
@@ -30,14 +29,17 @@ import jax.numpy as jnp
 import numpy as np
 import tabulate as tabulate_lib
 
+
 # If you are forking replace this block with `import haiku as hk`.
-hk = types.ModuleType("haiku")
-hk.Module = module_lib.Module
-hk.MethodContext = module_lib.MethodContext
-hk.intercept_methods = module_lib.intercept_methods
-hk.transform_with_state = transform.transform_with_state
-hk.Transformed = transform.Transformed
-hk.TransformedWithState = transform.TransformedWithState
+# pylint: disable=invalid-name
+class hk:
+  Module = module_lib.Module
+  MethodContext = module_lib.MethodContext
+  intercept_methods = module_lib.intercept_methods
+  transform_with_state = transform.transform_with_state
+  Transformed = transform.Transformed
+  TransformedWithState = transform.TransformedWithState
+# pylint: enable=invalid-name
 del module_lib
 
 T = TypeVar("T")

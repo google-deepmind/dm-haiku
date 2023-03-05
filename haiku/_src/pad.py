@@ -15,7 +15,6 @@
 """Padding module for Haiku."""
 
 from collections import abc
-import types
 import typing
 from typing import Any, Callable, Sequence, Union, Tuple
 
@@ -23,9 +22,13 @@ from haiku._src import utils
 
 PadFn = Callable[[int], Tuple[int, int]]
 
-hk = types.ModuleType("haiku")
-hk.pad = types.ModuleType("haiku.pad")
-hk.pad.PadFn = PadFn
+
+# If you are forking replace this block with `import haiku as hk`.
+# pylint: disable=invalid-name
+class hk:
+  class pad:
+    PadFn = PadFn
+# pylint: enable=invalid-name
 
 
 def valid(effective_kernel_size: int) -> Tuple[int, int]:

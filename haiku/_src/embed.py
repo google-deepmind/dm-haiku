@@ -15,7 +15,6 @@
 """Modules for performing embedding lookups in Haiku."""
 
 import enum
-import types
 from typing import Optional, Sequence, Union
 
 from haiku._src import base
@@ -25,11 +24,14 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
+
 # If you are forking replace this with `import haiku as hk`.
-hk = types.ModuleType("haiku")
-hk.get_parameter = base.get_parameter
-hk.Module = module.Module
-hk.initializers = initializers
+# pylint: disable=invalid-name
+class hk:
+  get_parameter = base.get_parameter
+  Module = module.Module
+  initializers = initializers
+# pylint: enable=invalid-name
 del base, module, initializers
 
 
@@ -63,7 +65,7 @@ class Embed(hk.Module):
       embed_dim: Optional[int] = None,
       embedding_matrix: Optional[Union[np.ndarray, jax.Array]] = None,
       w_init: Optional[hk.initializers.Initializer] = None,
-      lookup_style: Union[str, hk.EmbedLookupStyle] = "ARRAY_INDEX",
+      lookup_style: Union[str, EmbedLookupStyle] = "ARRAY_INDEX",
       name: Optional[str] = None,
       precision: jax.lax.Precision = jax.lax.Precision.HIGHEST,
   ):

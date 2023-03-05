@@ -14,7 +14,6 @@
 # ==============================================================================
 """Haiku initializers."""
 
-import types
 from typing import Any, Sequence, Union
 
 from haiku._src import base
@@ -23,11 +22,15 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-# If forking replace this block with `import haiku as hk`.
-hk = types.ModuleType('haiku')
-hk.next_rng_key = base.next_rng_key
-hk.initializers = types.ModuleType('haiku.initializers')
-hk.initializers.Initializer = Initializer
+
+# If you are forking replace this block with `import haiku as hk`.
+# pylint: disable=invalid-name
+class hk:
+  next_rng_key = base.next_rng_key
+
+  class initializers:
+    Initializer = Initializer
+# pylint: enable=invalid-name
 del base
 
 
@@ -288,7 +291,7 @@ class Orthogonal(hk.initializers.Initializer):
     return jax.lax.convert_element_type(self.scale, dtype) * q_mat
 
 
-class Identity(Initializer):
+class Identity(hk.initializers.Initializer):
   """Initializer that generates the identity matrix.
 
   Constructs a 2D identity matrix or batches of these.

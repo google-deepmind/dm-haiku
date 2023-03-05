@@ -17,7 +17,6 @@
 import collections
 import contextlib
 import threading
-import types
 from typing import Dict, Type, TypeVar, Optional, Union
 
 from haiku._src import base
@@ -27,12 +26,16 @@ import jmp
 
 T = TypeVar('T')
 
-# If you are forking replace this with `import haiku as hk`.
-hk = types.ModuleType('haiku')
-hk.custom_getter = base.custom_getter
-hk.custom_creator = base.custom_creator
-hk.MethodContext = module.MethodContext
-hk.Module = module.Module
+
+# If you are forking replace this block with `import haiku as hk`.
+# pylint: disable=invalid-name
+class hk:
+  custom_getter = base.custom_getter
+  custom_creator = base.custom_creator
+  MethodContext = module.MethodContext
+  Module = module.Module
+# pylint: enable=invalid-name
+# TODO(slebedev): This make the module non-forkable.
 Stack = data_structures.Stack[T]
 del data_structures
 

@@ -14,7 +14,6 @@
 # ==============================================================================
 """Batch Norm."""
 
-import types
 from typing import Optional, Sequence, Union
 
 from haiku._src import base
@@ -26,13 +25,16 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
+
 # If you are forking replace this with `import haiku as hk`.
-hk = types.ModuleType("haiku")
-hk.get_parameter = base.get_parameter
-hk.initializers = initializers
-hk.Module = module.Module
-hk.ExponentialMovingAverage = moving_averages.ExponentialMovingAverage
-hk.get_channel_index = utils.get_channel_index
+# pylint: disable=invalid-name
+class hk:
+  get_parameter = base.get_parameter
+  initializers = initializers
+  Module = module.Module
+  ExponentialMovingAverage = moving_averages.ExponentialMovingAverage
+  get_channel_index = utils.get_channel_index
+# pylint: enable=invalid-name
 del base, initializers, module, moving_averages, utils
 
 

@@ -24,7 +24,6 @@ The average pooling is currently done via a mean, and returns (N, 1, 1, 1024).
 If something different is desired, replace with AvgPool.
 """
 
-import types
 from typing import Optional, Sequence
 
 from haiku._src import basic
@@ -37,14 +36,17 @@ from haiku._src import reshape
 import jax
 import jax.numpy as jnp
 
-# If forking replace this block with `import haiku as hk`.
-hk = types.ModuleType("haiku")
-hk.Module = module.Module
-hk.BatchNorm = batch_norm.BatchNorm
-hk.Conv2D = conv.Conv2D
-hk.DepthwiseConv2D = depthwise_conv.DepthwiseConv2D
-hk.Flatten = reshape.Flatten
-hk.Linear = basic.Linear
+
+# If you are forking replace this with `import haiku as hk`.
+# pylint: disable=invalid-name
+class hk:
+  Module = module.Module
+  BatchNorm = batch_norm.BatchNorm
+  Conv2D = conv.Conv2D
+  DepthwiseConv2D = depthwise_conv.DepthwiseConv2D
+  Flatten = reshape.Flatten
+  Linear = basic.Linear
+# pylint: enable=invalid-name
 del basic, batch_norm, conv, depthwise_conv, module, reshape
 
 

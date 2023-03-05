@@ -14,15 +14,18 @@
 # ==============================================================================
 """Enables module construction to be deferred."""
 
-import types
 from typing import Callable, Generic, Sequence, TypeVar
 
 from haiku._src import base
 from haiku._src import module
 
+
 # If you are forking replace this with `import haiku as hk`.
-hk = types.ModuleType("haiku")
-hk.Module = module.Module
+# pylint: disable=invalid-name
+class hk:
+  Module = module.Module
+# pylint: enable=invalid-name
+del module
 
 # TODO(tomhennigan): Should be CallableModule.
 T = TypeVar("T", bound=hk.Module)

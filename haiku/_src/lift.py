@@ -15,7 +15,6 @@
 """Lifting parameters in Haiku."""
 
 import functools
-import types
 from typing import Any, Callable, Mapping, MutableMapping, Optional, Tuple, TypeVar
 
 from haiku._src import base
@@ -24,17 +23,20 @@ from haiku._src import module
 from haiku._src import transform
 from haiku._src.typing import LiftingModuleType
 
-T = TypeVar("T")
-MutableBundle = MutableMapping[str, MutableMapping[str, Any]]
 
 # If you are forking replace this with `import haiku as hk`.
-hk = types.ModuleType("haiku")
-hk.Params = base.Params
-hk.State = base.State
-hk.Module = module.Module
-hk.running_init = transform.running_init
-hk.data_structures = data_structures
+# pylint: disable=invalid-name
+class hk:
+  Params = base.Params
+  State = base.State
+  Module = module.Module
+  running_init = transform.running_init
+  data_structures = data_structures
+# pylint: enable=invalid-name
 del module, data_structures, transform
+
+T = TypeVar("T")
+MutableBundle = MutableMapping[str, MutableMapping[str, Any]]
 
 
 def pack_into_dict(src: hk.Params,

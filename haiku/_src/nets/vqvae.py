@@ -14,7 +14,6 @@
 # ==============================================================================
 """Haiku implementation of VQ-VAE https://arxiv.org/abs/1711.00937."""
 
-import types
 from typing import Any, Optional
 
 from haiku._src import base
@@ -25,14 +24,17 @@ from haiku._src import moving_averages
 import jax
 import jax.numpy as jnp
 
-# If forking replace this with `import haiku as hk`.
-hk = types.ModuleType("haiku")
-hk.get_parameter = base.get_parameter
-hk.get_state = base.get_state
-hk.set_state = base.set_state
-hk.initializers = initializers
-hk.ExponentialMovingAverage = moving_averages.ExponentialMovingAverage
-hk.Module = module.Module
+
+# If you are forking replace this with `import haiku as hk`.
+# pylint: disable=invalid-name
+class hk:
+  get_parameter = base.get_parameter
+  get_state = base.get_state
+  set_state = base.set_state
+  initializers = initializers
+  ExponentialMovingAverage = moving_averages.ExponentialMovingAverage
+  Module = module.Module
+# pylint: enable=invalid-name
 del base, initializers, module, moving_averages
 
 

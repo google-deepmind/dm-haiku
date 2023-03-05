@@ -15,7 +15,6 @@
 """Base Haiku module."""
 
 import inspect
-import types
 from typing import Any, Callable, List, Mapping, NamedTuple, Optional, Tuple, TypeVar, Union
 
 from haiku._src import analytics
@@ -24,11 +23,15 @@ from haiku._src import data_structures
 from haiku._src import typing
 import jax
 
+
 # If you are forking replace this with `import haiku as hk`.
-hk = types.ModuleType("haiku")
-hk.PRNGSequence = base.PRNGSequence
-hk.Params = typing.Params
-hk.State = typing.State
+# pylint: disable=invalid-name
+class hk:
+  PRNGSequence = base.PRNGSequence
+  Params = typing.Params
+  State = typing.State
+# pylint: enable=invalid-name
+# TODO(slebedev): This makes the module non-forkable.
 PRNGKey = typing.PRNGKey
 del typing
 

@@ -34,7 +34,6 @@ K = TypeVar("K")
 V = TypeVar("V")
 T = TypeVar("T")
 U = TypeVar("U")
-PyTreeDef = type(jax.tree_util.tree_structure(None))
 
 
 class Stack(Generic[T]):
@@ -176,7 +175,7 @@ def _repr_item(k, v):
 
 class FlatComponents(NamedTuple):
   leaves: Sequence[Any]
-  structure: PyTreeDef
+  structure: jax.tree_util.PyTreeDef
 
 
 class FlatMap(Mapping[K, V]):

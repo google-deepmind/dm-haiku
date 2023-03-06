@@ -37,7 +37,6 @@ hk.State = typing.State
 _transform = transform
 del transform, typing
 
-PyTreeDef = Any
 TemplateFn = Callable[..., Any]
 TreeOfApplyFns = Any
 
@@ -343,6 +342,6 @@ def without_apply_rng(f: TransformedT) -> TransformedT:
   return f_new
 
 
-def make_tree(f: Callable[[int], Any], treedef: PyTreeDef):
+def make_tree(f: Callable[[int], Any], treedef: jax.tree_util.PyTreeDef):
   leaves = list(map(f, range(treedef.num_leaves)))
   return jax.tree_util.tree_unflatten(treedef, leaves)

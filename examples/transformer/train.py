@@ -141,7 +141,7 @@ def main(_):
         params=initial_params,
         opt_state=initial_opt_state,
         rng=rng,
-        step=np.array(0),
+        step=jnp.array(0),
     )
 
   # Create the dataset.

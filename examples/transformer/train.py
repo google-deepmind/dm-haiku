@@ -137,7 +137,7 @@ def main(_):
     rng, init_rng = jax.random.split(rng)
     initial_params = loss_fn.init(init_rng, data)
     initial_opt_state = optimiser.init(initial_params)
-    return TrainingState(
+    return TrainingState(  # pytype: disable=wrong-arg-types  # jax-devicearray
         params=initial_params,
         opt_state=initial_opt_state,
         rng=rng,

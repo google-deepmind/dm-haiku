@@ -70,8 +70,8 @@ class TrainingState(NamedTuple):
   """Container for the training state."""
   params: hk.Params
   opt_state: optax.OptState
-  rng: jnp.DeviceArray
-  step: jnp.DeviceArray
+  rng: jax.Array
+  step: jax.Array
 
 
 def main(_):

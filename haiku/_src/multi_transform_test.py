@@ -30,7 +30,7 @@ State = typing.State
 Params = typing.Params
 
 
-def _assert_arrays_equal(x: jnp.DeviceArray, y: jnp.DeviceArray) -> None:
+def _assert_arrays_equal(x: jax.Array, y: jax.Array) -> None:
   np.testing.assert_almost_equal(np.array(x), np.array(y), decimal=5)
 
 

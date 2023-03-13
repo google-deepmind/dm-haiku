@@ -14,7 +14,6 @@
 # ==============================================================================
 """(Multi-Head) Attention module for use in Transformer architectures."""
 
-import types
 from typing import Optional
 import warnings
 
@@ -25,12 +24,15 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
+
 # If you are forking replace this with `import haiku as hk`.
-hk = types.ModuleType("haiku")
-hk.Module = module.Module
-hk.Linear = basic.Linear
-hk.transparent = module.transparent
-hk.initializers = initializers
+# pylint: disable=invalid-name
+class hk:
+  Module = module.Module
+  Linear = basic.Linear
+  transparent = module.transparent
+  initializers = initializers
+# pylint: enable=invalid-name
 del basic, module, initializers
 
 

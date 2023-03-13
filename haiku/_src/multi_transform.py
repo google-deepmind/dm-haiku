@@ -19,7 +19,6 @@
 import dataclasses
 import functools
 import inspect
-import types
 from typing import Any, Callable, NamedTuple, Optional, Tuple, TypeVar
 
 from haiku._src import analytics
@@ -27,13 +26,17 @@ from haiku._src import transform
 from haiku._src import typing
 import jax
 
-# If you are forking replace this with `import haiku as hk`.
-hk = types.ModuleType('haiku')
-hk.transform_with_state = transform.transform_with_state
-hk.Transformed = transform.Transformed
-hk.TransformedWithState = transform.TransformedWithState
-hk.Params = typing.Params
-hk.State = typing.State
+
+# If you are forking replace this block with `import haiku as hk`.
+# pylint: disable=invalid-name
+class hk:
+  transform_with_state = transform.transform_with_state
+  Transformed = transform.Transformed
+  TransformedWithState = transform.TransformedWithState
+  Params = typing.Params
+  State = typing.State
+# pylint: enable=invalid-name
+# TODO(slebedev): This makes the module non-forkable.
 _transform = transform
 del transform, typing
 

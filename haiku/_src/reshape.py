@@ -14,16 +14,18 @@
 # ==============================================================================
 """Reshaping Haiku modules."""
 
-import types
 from typing import Optional, Sequence
 
 from haiku._src import module
 import jax.numpy as jnp
 import numpy as np
 
-# If you are forking replace this block with `import haiku as hk`.
-hk = types.ModuleType("haiku")
-hk.Module = module.Module
+
+# If you are forking replace this with `import haiku as hk`.
+# pylint: disable=invalid-name
+class hk:
+  Module = module.Module
+# pylint: enable=invalid-name
 del module
 
 

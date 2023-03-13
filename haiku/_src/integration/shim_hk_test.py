@@ -47,10 +47,12 @@ class ShimHkTest(parameterized.TestCase):
         raise ValueError(f"`hk.{name}` is not part of the actual Haiku API")
 
       actual_value = getattr(hk, name)
-      if isinstance(shim_value, types.ModuleType):
-        assert isinstance(actual_value, types.ModuleType)
+      if isinstance(actual_value, types.ModuleType):
+        # Most shimmed submodules are instance of types.ModuleType, but some
+        # are nested classes, e.g. `hk.pad`.
+        self.assertIsInstance(shim_value, (type, types.ModuleType))
       else:
-        assert actual_value == shim_value
+        self.assertEqual(actual_value, shim_value)
 
 if __name__ == "__main__":
   absltest.main()

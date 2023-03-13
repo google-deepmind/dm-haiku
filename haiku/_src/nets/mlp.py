@@ -14,7 +14,6 @@
 # ==============================================================================
 """A minimal interface mlp module."""
 
-import types
 from typing import Callable, Iterable, Optional
 
 from haiku._src import base
@@ -23,14 +22,17 @@ from haiku._src import initializers
 from haiku._src import module
 import jax
 
-# If forking replace this block with `import haiku as hk`.
-hk = types.ModuleType("haiku")
-hk.Module = module.Module
-hk.initializers = initializers
-hk.get_parameter = base.get_parameter
-hk.PRNGSequence = base.PRNGSequence
-hk.Linear = basic.Linear
-hk.dropout = basic.dropout
+
+# If you are forking replace this with `import haiku as hk`.
+# pylint: disable=invalid-name
+class hk:
+  Module = module.Module
+  initializers = initializers
+  get_parameter = base.get_parameter
+  PRNGSequence = base.PRNGSequence
+  Linear = basic.Linear
+  dropout = basic.dropout
+# pylint: enable=invalid-name
 del base, basic, module
 
 

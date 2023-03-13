@@ -14,7 +14,6 @@
 # ==============================================================================
 """Resnet."""
 
-import types
 from typing import Mapping, Optional, Sequence, Union, Any
 
 from haiku._src import basic
@@ -25,14 +24,18 @@ from haiku._src import pool
 import jax
 import jax.numpy as jnp
 
-# If forking replace this block with `import haiku as hk`.
-hk = types.ModuleType("haiku")
-hk.Module = module.Module
-hk.BatchNorm = batch_norm.BatchNorm
-hk.Conv2D = conv.Conv2D
-hk.Linear = basic.Linear
-hk.max_pool = pool.max_pool
+
+# If you are forking replace this with `import haiku as hk`.
+# pylint: disable=invalid-name
+class hk:
+  Module = module.Module
+  BatchNorm = batch_norm.BatchNorm
+  Conv2D = conv.Conv2D
+  Linear = basic.Linear
+  max_pool = pool.max_pool
+# pylint: enable=invalid-name
 del basic, batch_norm, conv, module, pool
+
 FloatStrOrBool = Union[str, float, bool]
 
 

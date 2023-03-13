@@ -18,7 +18,6 @@ Reference: https://arxiv.org/abs/1910.07467
 """
 
 from collections import abc
-import types
 from typing import Optional, Sequence, Union
 
 from haiku._src import base
@@ -28,11 +27,14 @@ from haiku._src import module
 import jax
 import jax.numpy as jnp
 
+
 # If you are forking replace this with `import haiku as hk`.
-hk = types.ModuleType("haiku")
-hk.get_parameter = base.get_parameter
-hk.initializers = initializers
-hk.Module = module.Module
+# pylint: disable=invalid-name
+class hk:
+  get_parameter = base.get_parameter
+  initializers = initializers
+  Module = module.Module
+# pylint: enable=invalid-name
 del base, module, initializers
 
 AxisOrAxes = Union[int, Sequence[int], slice]

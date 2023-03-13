@@ -15,7 +15,6 @@
 """Haiku recurrent core."""
 
 import abc
-import types
 from typing import Any, NamedTuple, Optional, Sequence, Tuple, Union
 
 from haiku._src import base
@@ -28,14 +27,18 @@ import jax
 import jax.nn
 import jax.numpy as jnp
 
+
 # If you are forking replace this with `import haiku as hk`.
-hk = types.ModuleType("haiku")
-hk.initializers = initializers
-hk.Linear = basic.Linear
-hk.ConvND = conv.ConvND
-hk.get_parameter = base.get_parameter
-hk.Module = module.Module
-hk.scan = stateful.scan
+# pylint: disable=invalid-name
+class hk:
+  initializers = initializers
+  Linear = basic.Linear
+  ConvND = conv.ConvND
+  get_parameter = base.get_parameter
+  Module = module.Module
+  scan = stateful.scan
+# pylint: enable=invalid-name
+# TODO(slebedev): This makes the module non-forkable.
 inside_transform = base.inside_transform
 del base, basic, conv, initializers, module
 

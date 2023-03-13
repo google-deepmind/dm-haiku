@@ -14,7 +14,6 @@
 # ==============================================================================
 """Bias module."""
 
-import types
 from typing import Optional, Sequence, Union
 
 from haiku._src import base
@@ -24,11 +23,14 @@ from haiku._src import utils
 import jax
 import jax.numpy as jnp
 
-# If you are forking replace this block with `import haiku as hk`.
-hk = types.ModuleType("haiku")
-hk.get_parameter = base.get_parameter
-hk.initializers = initializers
-hk.Module = module.Module
+
+# If you are forking replace this with `import haiku as hk`.
+# pylint: disable=invalid-name
+class hk:
+  get_parameter = base.get_parameter
+  initializers = initializers
+  Module = module.Module
+# pylint: enable=invalid-name
 del base, module
 
 

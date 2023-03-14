@@ -160,6 +160,12 @@ class ModuleMetaclass(type(Protocol)):
 
     return module
 
+  @property
+  def __signature__(cls):  # pylint: disable=no-self-argument
+    signature = inspect.signature(cls.__init__)
+    params = tuple(signature.parameters.values())
+    return signature.replace(parameters=params[1:])
+
 
 class MethodContext(NamedTuple):
   r"""Read only state showing the calling context for a method.

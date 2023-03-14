@@ -17,6 +17,7 @@
 import abc
 import contextlib
 import dataclasses
+import inspect
 import sys
 from typing import Callable, Optional, Sequence, TypeVar, Type
 
@@ -665,6 +666,33 @@ class ModuleTest(parameterized.TestCase):
   def test_auto_repr(self):
     m = IdentityModule()
     self.assertEqual(str(m), "IdentityModule()")
+
+  def test_signature(self):
+    captures_expected = inspect.Signature(
+        parameters=(
+            inspect.Parameter(
+                name="mod", kind=inspect.Parameter.POSITIONAL_OR_KEYWORD
+            ),
+        )
+    )
+    self.assertEqual(inspect.signature(CapturesModule), captures_expected)
+    datalinear_expected = inspect.Signature(
+        parameters=(
+            inspect.Parameter(
+                name="output_size",
+                kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                annotation=int,
+            ),
+            inspect.Parameter(
+                name="name",
+                kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                default=None,
+                annotation=Optional[str],
+            ),
+        ),
+        return_annotation=None,
+    )
+    self.assertEqual(inspect.signature(DataLinear), datalinear_expected)
 
   @test_utils.transform_and_run
   @config.with_config(module_auto_repr=False)

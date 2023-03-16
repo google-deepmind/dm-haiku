@@ -374,6 +374,144 @@ def params_frozen():
   return current_frame().params_frozen
 
 
+def get_params() -> Params:
+  """Returns the parameters for the current :func:`transform`.
+
+  >>> def report(when):
+  ...   shapes = jax.tree_util.tree_map(jnp.shape, hk.experimental.get_params())
+  ...   print(f'{when}: {shapes}')
+  >>> def f(x):
+  ...   report('Before call')
+  ...   x = hk.Linear(1)(x)
+  ...   report('After call')
+  ...   return x
+  >>> f = hk.transform(f)
+  >>> rng = jax.random.PRNGKey(42)
+  >>> x = jnp.ones([1, 1])
+
+  During ``init`` the parameters dictionary will get populated as modules are
+  called:
+
+  >>> params = f.init(rng, x)
+  Before call: {}
+  After call: {'linear': {'b': (1,), 'w': (1, 1)}}
+
+  During ``apply`` the parameters dictionary will remain unchanged:
+
+  >>> _ = f.apply(params, None, x)
+  Before call: {'linear': {'b': (1,), 'w': (1, 1)}}
+  After call: {'linear': {'b': (1,), 'w': (1, 1)}}
+
+  NOTE: Does not run :func:`custom_getters` or parameter initializers.
+
+  Returns:
+    A copy of the parameters dictionary. During ``init`` this dictionary will
+    be populated with any parameters that have been created so far. During
+    ``apply`` this will contain all parameters of all modules (the params dict
+    does not change during apply).
+
+  See also:
+    :func:`get_initial_state`: The initial state for the function.
+    :func:`get_current_state`: The current state for the function.
+  """
+  assert_context("get_params")
+  return current_context().collect_params()
+
+
+def get_initial_state() -> State:
+  """Returns the initial state for the current :func:`transform_with_state`.
+
+  Example:
+
+  >>> def report(when):
+  ...   state = jax.tree_util.tree_map(int, hk.experimental.get_initial_state())
+  ...   print(f'{when}: {state}')
+  >>> def f():
+  ...   report('Before get_state')
+  ...   x = hk.get_state('x', [], init=jnp.zeros)
+  ...   report('After get_state')
+  ...   hk.set_state('x', x + 1)
+  ...   report('After set_state')
+  >>> f = hk.transform_with_state(f)
+
+  During ``init``, the first set value (either directly via :func:`set_state` or
+  via the ``init`` argument to :func:`get_state`) will be returned:
+
+  >>> _, state = f.init(None)
+  Before get_state: {}
+  After get_state: {'~': {'x': 0}}
+  After set_state: {'~': {'x': 0}}
+
+  During ``apply`` the value passed into the ``apply`` function will be used:
+
+  >>> state = {'~': {'x': 10}}
+  >>> _ = f.apply({}, state, None)
+  Before get_state: {'~': {'x': 10}}
+  After get_state: {'~': {'x': 10}}
+  After set_state: {'~': {'x': 10}}
+
+  NOTE: Does not run :func:`custom_getters` or state initializers.
+
+  Returns:
+    A copy of the state dictionary that would be returned from ``init`` or
+    passed into ``apply``.
+
+  See also:
+    :func:`get_params`: The current parameters for the function.
+    :func:`get_current_state`: The current state for the function.
+  """
+  assert_context("get_initial_state")
+  return current_context().collect_initial_state()
+
+
+def get_current_state() -> State:
+  """Returns the current state for the current :func:`transform_with_state`.
+
+  Example:
+
+  >>> def report(when):
+  ...   state = jax.tree_util.tree_map(int, hk.experimental.get_current_state())
+  ...   print(f'{when}: {state}')
+  >>> def f():
+  ...   report('Before get_state')
+  ...   x = hk.get_state('x', [], init=jnp.zeros)
+  ...   report('After get_state')
+  ...   hk.set_state('x', x + 1)
+  ...   report('After set_state')
+  >>> f = hk.transform_with_state(f)
+
+  During ``init``, the most recently set value (either directly via
+  :func:`set_state` or via the ``init`` argument to :func:`get_state`) will be
+  returned:
+
+  >>> _, state = f.init(None)
+  Before get_state: {}
+  After get_state: {'~': {'x': 0}}
+  After set_state: {'~': {'x': 1}}
+
+  During ``apply`` the most recently set value will be used, if no value has
+  been set then the value that is passed into ``apply`` will be used:
+
+  >>> state = {'~': {'x': 10}}
+  >>> _ = f.apply({}, state, None)
+  Before get_state: {'~': {'x': 10}}
+  After get_state: {'~': {'x': 10}}
+  After set_state: {'~': {'x': 11}}
+
+  NOTE: Does not run :func:`custom_getters` or state initializers.
+
+  Returns:
+    A copy of the state dictionary that would be returned from ``init`` or
+    ``apply``.
+
+  See also:
+    :func:`get_params`: The current parameters for the function.
+    :func:`get_initial_state`: The initial state for the function.
+  """
+  assert_context("get_current_state")
+  return current_context().collect_state()
+
+
 @final
 class DoNotStore:
   r"""Causes a parameter or state value to not be stored.

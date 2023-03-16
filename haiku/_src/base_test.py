@@ -808,5 +808,89 @@ class BaseTest(parameterized.TestCase):
         hk_keys = hk.next_rng_keys(size)
         np.testing.assert_array_equal(hk_keys, expected_keys)
 
+  @parameterized.parameters(
+      base.get_params, base.get_current_state, base.get_initial_state
+  )
+  def test_get_params_or_state_must_be_inside_transform(self, f):
+    with self.assertRaisesRegex(ValueError,
+                                "must be used as part of an `hk.transform`"):
+      f()
+
+  def test_get_params_or_state_empty(self):
+    def f():
+      self.assertEmpty(base.get_params())
+      self.assertEmpty(base.get_initial_state())
+      self.assertEmpty(base.get_current_state())
+
+    test_utils.transform_and_run(f)
+
+  def test_get_params_or_state(self):
+    sidechannel = [({}, {}, {}), ({}, {}, {})]
+
+    def f():
+      sidechannel[0] = (
+          base.get_params(),
+          base.get_initial_state(),
+          base.get_current_state(),
+      )
+      base.get_parameter("w", [], init=jnp.ones)
+      x = base.get_state("x", [], init=jnp.zeros)
+      base.set_state("x", x + 1)
+      sidechannel[1] = (
+          base.get_params(),
+          base.get_initial_state(),
+          base.get_current_state(),
+      )
+
+    f = test_utils.transform.transform_with_state(f)
+
+    params, state = f.init(None)
+    (
+        (params_before, initial_state_before, current_state_before),
+        (params_after, initial_state_after, current_state_after),
+    ) = sidechannel
+    # Initially params/state are empty.
+    self.assertEmpty(params_before)
+    self.assertEmpty(initial_state_before)
+    self.assertEmpty(current_state_before)
+    # At the end of the function the params and initial state should match the
+    # output of the init function.
+    self.assertEqual(params, params_after)
+    self.assertEqual(state, initial_state_after)
+    # The current state at the end of the function should have advanced.
+    self.assertEqual(current_state_after, {"~": {"x": 1}})
+    # The arrays at the leaves of the various dicts should alias.
+    self.assertIs(params["~"]["w"], params_after["~"]["w"])
+    self.assertIs(state["~"]["x"], initial_state_after["~"]["x"])
+    # But the dicts themselves should be different.
+    self.assertIsNot(params, params_after)
+    self.assertIsNot(params_before, params_after)
+    self.assertIsNot(params["~"], params_after["~"])
+
+    _, state = f.apply(params, state, None)
+    (
+        (params_before, initial_state_before, current_state_before),
+        (params_after, initial_state_after, current_state_after),
+    ) = sidechannel
+    # The params should always match the parameters passed into the apply
+    # function.
+    self.assertEqual(params_before, params_after)
+    self.assertEqual(params, params_after)
+    # Initial state should not change during the apply function.
+    self.assertEqual(initial_state_before, initial_state_after)
+    self.assertEqual(initial_state_before, {"~": {"x": 0}})
+    # The current state at the end of the function should match the output of
+    # apply.
+    self.assertEqual(state, current_state_after)
+    # The arrays at the leaves of the various dicts should alias.
+    self.assertIs(params_before["~"]["w"], params_after["~"]["w"])
+    self.assertIs(params["~"]["w"], params_after["~"]["w"])
+    self.assertIs(state["~"]["x"], current_state_after["~"]["x"])
+    # But the dicts themselves should be different.
+    self.assertIsNot(params, params_after)
+    self.assertIsNot(params_before, params_after)
+    self.assertIsNot(params["~"], params_after["~"])
+    self.assertIsNot(params_before["~"], params_after["~"])
+
 if __name__ == "__main__":
   absltest.main()

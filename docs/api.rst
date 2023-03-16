@@ -1129,6 +1129,9 @@ Managing State
     LiftWithStateUpdater
     check_jax_usage
     DO_NOT_STORE
+    get_params
+    get_initial_state
+    get_current_state
 
 current_name
 ~~~~~~~~~~~~
@@ -1179,6 +1182,21 @@ DO_NOT_STORE
 ~~~~~~~~~~~~
 
 .. autoclass:: DO_NOT_STORE
+
+get_params
+~~~~~~~~~~
+
+.. autofunction:: get_params
+
+get_initial_state
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: get_initial_state
+
+get_current_state
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: get_current_state
 
 Optimizations
 -------------

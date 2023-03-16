@@ -22,6 +22,9 @@ from haiku._src.base import current_name
 from haiku._src.base import custom_creator
 from haiku._src.base import custom_getter
 from haiku._src.base import DO_NOT_STORE
+from haiku._src.base import get_current_state
+from haiku._src.base import get_initial_state
+from haiku._src.base import get_params
 from haiku._src.base import GetterContext
 from haiku._src.config import check_jax_usage
 from haiku._src.config import module_auto_repr
@@ -65,6 +68,9 @@ __all__ = (
     "DO_NOT_STORE",
     "force_name",
     "intercept_methods",
+    "get_current_state",
+    "get_initial_state",
+    "get_params",
     "jaxpr_info",
     "layer_stack",
     "lift",

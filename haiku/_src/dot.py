@@ -239,13 +239,13 @@ class DotTrace(jax.core.Trace):
   def process_custom_jvp_call(self, primitive, fun, jvp, tracers, *,
                               symbolic_zeros):
     # Drop the custom differentiation rule.
-    del primitive, jvp, symbolic_zeros  # Unused.
+    del primitive, jvp  # Unused.
     return fun.call_wrapped(*tracers)
 
   def process_custom_vjp_call(self, primitive, fun, fwd, bwd, tracers,
-                              out_trees, symbolic_zeros):
+                              out_trees):
     # Drop the custom differentiation rule.
-    del primitive, fwd, bwd, out_trees, symbolic_zeros  # Unused.
+    del primitive, fwd, bwd, out_trees  # Unused.
     return fun.call_wrapped(*tracers)
 
 

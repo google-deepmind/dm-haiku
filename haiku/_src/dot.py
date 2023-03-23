@@ -27,7 +27,6 @@ from haiku._src import utils
 import jax
 import jax.core
 from jax.experimental import pjit
-from jax.interpreters import xla
 
 
 # Import tree if available, but only throw error at runtime.
@@ -221,7 +220,7 @@ class DotTrace(jax.core.Trace):
 
   def process_call(self, call_primitive, f, tracers, params):
     assert call_primitive.multiple_results
-    if (call_primitive in (xla.xla_call_p, pjit.pjit_p) and
+    if (call_primitive in (pjit.pjit_p,) and
         params.get('inline', False)):
       f = _interpret_subtrace(f, self.main)
       vals_out = f.call_wrapped(*[t.val for t in tracers])

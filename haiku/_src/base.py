@@ -1228,6 +1228,41 @@ def maybe_next_rng_key() -> Optional[PRNGKey]:
     return None
 
 
+def maybe_get_rng_sequence_state() -> Optional[PRNGSequenceState]:
+  """Returns the internal state of the PRNG sequence.
+
+  Returns:
+    The internal state if random numbers are available, else ``None``.
+  """
+  assert_context("maybe_get_rng_sequence_state")
+  rng_seq = current_frame().rng_stack.peek()
+  if rng_seq is not None:
+    return rng_seq.internal_state
+  else:
+    return None
+
+
+def replace_rng_sequence_state(state: PRNGSequenceState):
+  """Replaces the internal state of the PRNG sequence with the given state.
+
+  Args:
+    state: The new internal state or ``None``.
+
+  Raises:
+    MissingRNGError: If random numbers aren't available.
+  """
+  assert_context("replace_rng_sequence_state")
+  rng_seq = current_frame().rng_stack.peek()
+  if rng_seq is None:
+    raise MissingRNGError(
+        "replace_rng_sequence_state requires an RNG to be passed into the"
+        " transformed function"
+    )
+
+  assert_jax_usage("replace_rng_sequence_state")
+  rng_seq.replace_internal_state(state)
+
+
 def extract_state(state: MutableState, *, initial) -> State:
   state = {m: {k: (v.initial if initial else v.current) for k, v in p.items()}
            for m, p in state.items()}

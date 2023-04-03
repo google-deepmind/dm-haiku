@@ -1132,6 +1132,8 @@ Managing State
     get_params
     get_initial_state
     get_current_state
+    maybe_get_rng_sequence_state
+    replace_rng_sequence_state
 
 current_name
 ~~~~~~~~~~~~
@@ -1197,6 +1199,16 @@ get_current_state
 ~~~~~~~~~~~~~~~~~
 
 .. autofunction:: get_current_state
+
+maybe_get_rng_sequence_state
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: maybe_get_rng_sequence_state
+
+replace_rng_sequence_state
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: replace_rng_sequence_state
 
 Optimizations
 -------------

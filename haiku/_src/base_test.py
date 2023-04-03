@@ -43,6 +43,11 @@ def with_rng_example():
   with base.with_rng(jax.random.PRNGKey(42)):
     pass
 
+
+def replace_rng_sequence_state_example():
+  base.replace_rng_sequence_state((jax.random.PRNGKey(42), tuple()))
+
+
 # Methods in Haiku that mutate internal state.
 SIDE_EFFECTING_FUNCTIONS = (
     ("get_parameter", lambda: base.get_parameter("w", [], init=jnp.zeros)),
@@ -52,6 +57,10 @@ SIDE_EFFECTING_FUNCTIONS = (
     ("next_rng_keys", lambda: base.next_rng_keys(2)),
     ("reserve_rng_keys", lambda: base.reserve_rng_keys(2)),
     ("with_rng", with_rng_example),
+    (
+        "replace_rng_sequence_state",
+        replace_rng_sequence_state_example,
+    ),
 )
 
 # JAX transforms and control flow that need to be aware of Haiku internal
@@ -209,6 +218,91 @@ class BaseTest(parameterized.TestCase):
     maybe_three()
     self.assertLen(rngs, 6)
     self.assertTrue(jnp.all(jnp.array(rngs) == jnp.array(maybes)))
+
+  def test_maybe_get_rng_seq_state_no_transform(self):
+    with self.assertRaisesRegex(
+        ValueError, "must be used as part of an `hk.transform`"
+    ):
+      base.maybe_get_rng_sequence_state()
+
+  @test_utils.transform_and_run(seed=None)
+  def test_maybe_get_rng_seq_state_no_rng(self):
+    self.assertIsNone(base.maybe_get_rng_sequence_state())
+
+  def test_maybe_get_rng_seq_state_vs_next_rng(self):
+    rngs_next = []
+    rngs_state = []
+
+    @test_utils.transform_and_run
+    def next_rng_three():
+      for _ in range(3):
+        rngs_next.append(base.next_rng_key())
+
+    @test_utils.transform_and_run
+    def get_state_three():
+      rng_state = base.maybe_get_rng_sequence_state()
+      for _ in range(3):
+        seq = hk.PRNGSequence(rng_state)
+        rng = next(seq)
+        rng_state = seq.internal_state
+        rngs_state.append(rng)
+
+    next_rng_three()
+    get_state_three()
+    self.assertLen(rngs_next, 6)
+    self.assertTrue(jnp.all(jnp.array(rngs_next) == jnp.array(rngs_state)))
+
+  def test_replace_rng_seq_state_no_transform(self):
+    with self.assertRaisesRegex(
+        ValueError, "must be used as part of an `hk.transform`"
+    ):
+      base.replace_rng_sequence_state((jax.random.PRNGKey(42), tuple()))
+
+  @test_utils.transform_and_run(seed=None)
+  def test_replace_rng_seq_state_no_rng(self):
+    with self.assertRaisesRegex(
+        base.MissingRNGError,
+        "requires an RNG to be passed into the transformed function",
+    ):
+      base.replace_rng_sequence_state((jax.random.PRNGKey(42), tuple()))
+
+  @test_utils.transform_and_run(seed=1)
+  def test_replace_then_get_rng_seq_state(self):
+    rng_state = (
+        jax.random.PRNGKey(123),
+        (jax.random.PRNGKey(234), jax.random.PRNGKey(345)),
+    )
+    base.replace_rng_sequence_state(rng_state)
+    self.assertEqual(base.maybe_get_rng_sequence_state(), rng_state)
+
+  def test_replace_get_rng_seq_state_vs_no_replace(self):
+    rngs_no_replace = []
+    rngs_replace = []
+    seed = 123
+
+    @test_utils.transform_and_run(seed=seed)
+    def no_replace_three():
+      for _ in range(3):
+        rngs_no_replace.append(base.next_rng_key())
+
+    @test_utils.transform_and_run(seed=1)
+    def replace_three():
+      if hk.running_init():
+        replace_seed = seed
+      else:
+        replace_seed = seed + 1
+      base.replace_rng_sequence_state(
+          (jax.random.PRNGKey(replace_seed), tuple())
+      )
+      for _ in range(3):
+        rngs_replace.append(base.next_rng_key())
+
+    no_replace_three()
+    replace_three()
+    self.assertLen(rngs_no_replace, 6)
+    self.assertTrue(
+        jnp.all(jnp.array(rngs_no_replace) == jnp.array(rngs_replace))
+    )
 
   @parameterized.parameters(
       (base.get_parameter, base.custom_creator, "collect_params"),

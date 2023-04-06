@@ -14,11 +14,14 @@
 # ==============================================================================
 """Tests for haiku._src.reshape."""
 
+import unittest
+
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import reshape
 from haiku._src import test_utils
 from haiku._src import transform
+import jax
 from jax.experimental import jax2tf
 import jax.numpy as jnp
 import numpy as np
@@ -66,6 +69,11 @@ class ReshapeTest(parameterized.TestCase):
       init_fn(None)
 
   def test_reshape_convert(self):
+    if jax.default_backend() in {"tpu"}:
+      raise unittest.SkipTest(
+          "Jax2tf native_serialization eager mode is not support in TPU"
+      )
+
     # A function containing a hk.reshape on a polymorphic dimension.  We want
     # to make sure we can convert this method using `jax.jax2tf`.
     def f(inputs):

@@ -337,7 +337,8 @@ def transform(f, *, apply_rng=True) -> Transformed:
 
   return without_state(transform_with_state(f))
 
-COMPILED_FN_TYPES = (jax.xla.xe.PjitFunction, jax.xla.xe.PmapFunction)  # pytype: disable=name-error
+COMPILED_FN_TYPES = (jax.interpreters.xla.xe.PjitFunction,
+                     jax.interpreters.xla.xe.PmapFunction)  # pytype: disable=name-error
 
 
 def check_not_jax_transformed(f):

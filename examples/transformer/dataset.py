@@ -56,7 +56,7 @@ def load_ascii_dataset(
   if not corpus.isascii():
     raise ValueError('Loaded corpus is not ASCII.')
 
-  if '\0' in corpus:  # Reserve 0 codepoint for pad token.
+  if chr(PAD_TOKEN) in corpus:  # Reserve 0 codepoint for pad token.
     raise ValueError('Corpus must not contain the null byte.')
 
   # Naively tokenise by taking ASCII codepoints.

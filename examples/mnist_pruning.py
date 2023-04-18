@@ -184,13 +184,15 @@ def net_fn(batch: Batch) -> jax.Array:
 def load_dataset(
     split: str,
     *,
-    is_training: bool,
+    shuffle: bool,
     batch_size: int,
 ) -> Iterator[Batch]:
   """Loads the dataset as a generator of batches."""
-  ds = tfds.load("mnist:3.*.*", split=split).cache().repeat()
-  if is_training:
-    ds = ds.shuffle(10 * batch_size, seed=0)
+  ds, ds_info = tfds.load("mnist:3.*.*", split=split, with_info=True)
+  ds.cache()
+  if shuffle:
+    ds = ds.shuffle(ds_info.splits[split].num_examples, seed=0)
+  ds = ds.repeat()
   ds = ds.batch(batch_size)
   return iter(tfds.as_numpy(ds))
 
@@ -249,9 +251,9 @@ def main(_):
     return optax.incremental_update(params, avg_params, step_size=0.001)
 
   # Make datasets.
-  train = load_dataset("train", is_training=True, batch_size=1000)
-  train_eval = load_dataset("train", is_training=False, batch_size=10000)
-  test_eval = load_dataset("test", is_training=False, batch_size=10000)
+  train = load_dataset("train", shuffle=True, batch_size=1000)
+  train_eval = load_dataset("train", shuffle=False, batch_size=10000)
+  test_eval = load_dataset("test", shuffle=False, batch_size=10000)
 
   # Implemenation note: It is possible to avoid pruned_params and just use
   # a single params which progressively gets pruned.  The updates also don't

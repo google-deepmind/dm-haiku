@@ -991,14 +991,16 @@ def custom_setter(setter: Setter) -> contextlib.AbstractContextManager:
 
 def assert_is_prng_key(key: PRNGKey):
   """Asserts that the given input looks like a `jax.random.PRNGKey`."""
-  type_error = ValueError("The provided key is not a JAX PRNGKey but a "
-                          f"{type(key)}:\n{key}")
+  # The error message has to be constructed lazily to avoid an extra
+  # device-to-host copy.
+  make_error = lambda: ValueError(  # pylint: disable=g-long-lambda
+      f"The provided key is not a JAX PRNGKey but a {type(key)}:\n{key}")
   if jax.config.jax_enable_custom_prng:
     if not isinstance(key, jax.random.KeyArray):
-      raise type_error
+      raise make_error()
   else:
     if not hasattr(key, "shape") or not hasattr(key, "dtype"):
-      raise type_error
+      raise make_error()
     config_hint = ""
     default_impl = jax.random.default_prng_impl()
     expected_shape = default_impl.key_shape

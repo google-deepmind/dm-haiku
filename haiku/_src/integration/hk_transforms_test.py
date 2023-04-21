@@ -150,9 +150,9 @@ class HaikuTransformsTest(parameterized.TestCase):
       x = jax.random.uniform(rng, shape, dtype)
 
     def g(x, name_scopes=False):
-      hk.experimental.profiler_name_scopes(enabled=name_scopes)
-      mod = module_fn()
-      return mod(x)
+      with hk.config.context(profiler_name_scopes=name_scopes):
+        mod = module_fn()
+        return mod(x)
 
     f = hk.transform_with_state(g)
 
@@ -162,9 +162,6 @@ class HaikuTransformsTest(parameterized.TestCase):
     jax.tree_util.tree_map(
         assert_allclose, f.apply(params, state, rng, x),
         f.apply(params, state, rng, x, name_scopes=True))
-
-    # TODO(lenamartens): flip to True when default changes
-    hk.experimental.profiler_name_scopes(enabled=False)
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
   def test_optimize_rng_use_under_jit(self, module_fn: ModuleFn, shape, dtype):

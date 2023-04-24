@@ -21,7 +21,6 @@ import threading
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import config
-import jax
 
 
 class ConfigTest(parameterized.TestCase):
@@ -144,6 +143,4 @@ class ConfigTest(parameterized.TestCase):
       config.rng_reserve_size(-1)
 
 if __name__ == "__main__":
-  # TODO(tomhennigan): Remove this unused import.
-  del jax  # This is only needed for an internal build test to pass.
   absltest.main()

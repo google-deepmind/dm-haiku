@@ -23,8 +23,8 @@ import collections
 import contextlib
 import pprint
 import threading
-from typing import (Any, Callable, Dict, Generic, Mapping, NamedTuple, Optional,
-                    Sequence, TypeVar, Union)
+from typing import (Any, Callable, Deque, Dict, Generic, Iterator, Mapping,
+                    NamedTuple, Optional, Sequence, TypeVar, Union)
 
 from haiku._src import config
 from haiku._src import utils
@@ -40,12 +40,12 @@ class Stack(Generic[T]):
   """Stack supporting push/pop/peek."""
 
   def __init__(self):
-    self._storage = collections.deque()
+    self._storage: Deque[T] = collections.deque()
 
-  def __len__(self):
+  def __len__(self) -> int:
     return len(self._storage)
 
-  def __iter__(self):
+  def __iter__(self) -> Iterator[T]:
     return iter(reversed(self._storage))
 
   def clone(self):
@@ -73,7 +73,7 @@ class Stack(Generic[T]):
     return self._storage[depth]
 
   @contextlib.contextmanager
-  def __call__(self, elem):
+  def __call__(self, elem: T) -> Iterator[None]:  # pytype: disable=invalid-annotation
     self.push(elem)
     try:
       yield

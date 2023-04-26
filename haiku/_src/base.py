@@ -998,6 +998,11 @@ def assert_is_prng_key(key: PRNGKey):
   if jax.config.jax_enable_custom_prng:
     if not isinstance(key, jax.random.KeyArray):
       raise make_error()
+    if key.shape:
+      raise ValueError(
+          "Provided key did not have expected shape and/or dtype: "
+          f"expected=(shape=(), dtype={key.dtype}), "
+          f"actual=(shape={key.shape}, dtype={key.dtype})")
   else:
     if not hasattr(key, "shape") or not hasattr(key, "dtype"):
       raise make_error()

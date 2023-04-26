@@ -625,6 +625,12 @@ class BaseTest(parameterized.TestCase):
                                 "key did not have expected shape and/or dtype"):
       base.PRNGSequence(jax.random.split(jax.random.PRNGKey(42), 2))
 
+  def test_prng_sequence_wrong_shape_custom_prng(self):
+    with self.assertRaisesRegex(ValueError,
+                                "key did not have expected shape and/or dtype"):
+      with jax.enable_custom_prng():
+        base.PRNGSequence(jax.random.split(jax.random.PRNGKey(42), 2))
+
   def test_prng_reserve(self):
     k = jax.random.PRNGKey(42)
     s = base.PRNGSequence(k)

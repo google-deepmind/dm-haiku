@@ -14,7 +14,6 @@
 # ==============================================================================
 """Tests for haiku._src.stateful."""
 
-import functools
 import itertools as it
 
 from absl.testing import absltest
@@ -44,7 +43,6 @@ HK_OVERLOADED_JAX_PURE_EXPECTING_FNS = (
 
     # ("make_jaxpr", stateful.make_jaxpr),
     ("eval_shape", lambda f: (lambda x: [f(x), stateful.eval_shape(f, x)])),
-    ("named_call", stateful.named_call),
 
     # Parallelization.
     # TODO(tomhennigan): Add missing features (e.g. pjit,xmap).
@@ -753,85 +751,6 @@ class StatefulTest(parameterized.TestCase):
     np.testing.assert_allclose(state["counting_module"]["count"], iters,
                                rtol=1e-4)
     np.testing.assert_allclose(y, iters, rtol=1e-4)
-
-  def test_named_call(self):
-    def f(x):
-      return stateful.named_call(SquareModule(), name="square")(x)
-
-    x = jnp.array(2.)
-    rng = jax.random.PRNGKey(42)
-    init, apply = transform.transform_with_state(f)
-    params, state = init(rng, x)
-    y, state = jax.jit(apply)(params, state, rng, x)
-    self.assertEqual(y, x ** 2)
-
-  @parameterized.parameters(jax.jit, jax.grad, jax.vmap, jax.remat)
-  def test_named_call_jax_transforms(self, jax_transform):
-    f = jnp.sum
-    x = jnp.array([1.])
-
-    unnamed_out = jax_transform(f)(x)
-    named_out = jax_transform(stateful.named_call(f, name="test"))(x)
-
-    self.assertEqual(unnamed_out, named_out)
-
-  def test_static_argnums_named_call(self):
-    f = stateful.named_call(lambda x, y: y if x else None,
-                            name="test")
-    f = jax.jit(f, static_argnums=(0,))
-    out = f(True, 5)
-    self.assertEqual(out, 5)
-
-  def test_named_call_non_jaxtype_arg(self):
-    # For the test to fail without the invalid JaxType filter we need to pass
-    # in a valid JaxType that forces the invalid Jaxtype to be raised to an
-    # abstract value.
-    def f(not_a_jaxtype, a_jaxtype):
-      # then Jax needs to try and evaluate the abstractified non-JaxType
-      if not_a_jaxtype:
-        return a_jaxtype
-      return 0
-
-    f = stateful.named_call(f, name="test")
-    out = jax.jit(f, static_argnums=(0,))("not a Jaxtype", 1)
-    self.assertEqual(out, 1)
-
-  @parameterized.parameters("hi", None, object(), object)
-  def test_named_call_non_jaxtype_result(self, non_jaxtype):
-    def fun_with_non_jaxtype_output(x, non_jaxtype):
-      return x, non_jaxtype
-
-    def jitted_fun(x, non_jaxtype):
-      named_fun = stateful.named_call(fun_with_non_jaxtype_output)
-      # The non-jaxtype is returned out of named_call (which is supported),
-      # but is not returned out of the jit (which should not be supported).
-      x, non_jaxtype_out = named_fun(x, non_jaxtype)
-      self.assertEqual(non_jaxtype_out, non_jaxtype)
-      return x
-
-    jitted_fun = jax.jit(jitted_fun, static_argnums=1)
-    self.assertEqual(jitted_fun(0, non_jaxtype), 0)
-
-  def test_named_call_partial_function(self):
-    f = stateful.named_call(lambda x, y: y if x else None)
-    f = jax.jit(functools.partial(f, True))
-    out = f(5)
-    self.assertEqual(out, 5)
-
-  def test_named_call_default_name(self):
-    @stateful.named_call
-    def naming_things_is_hard(x):
-      return x ** 2
-
-    @jax.jit
-    def f(x):
-      return naming_things_is_hard(x) + naming_things_is_hard(x)
-
-    c = jax.jit(f).lower(1.).compiler_ir(dialect='hlo')
-    print_opts = jax.xla.xe.HloPrintOptions.short_parsable()
-    print_opts.print_metadata = True
-    hlo_text = c.as_hlo_module().to_string(print_opts)
-    self.assertIn("naming_things_is_hard", hlo_text)
 
   def test_eval_shape(self):
     def some_shape_changing_fun(x):

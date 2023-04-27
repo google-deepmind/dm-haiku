@@ -267,8 +267,8 @@ def check_jax_usage(enabled: bool = True) -> bool:
 def profiler_name_scopes(enabled: bool = True) -> bool:
   """Enable/disable profiler name_scopes on all haiku module methods.
 
-  Note: currently only enables for ``__call__``. See: :func:`named_call` if you
-  want to annotate other methods explicitly.
+  Note: currently only enables for ``__call__``. See: :func:`jax.named_call` if
+  you want to annotate other methods explicitly.
 
   Args:
     enabled: Whether to enable name scopes or not.

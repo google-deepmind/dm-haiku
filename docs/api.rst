@@ -1044,13 +1044,8 @@ TensorFlow Profiler
 
 .. autosummary::
 
-    named_call
     profiler_name_scopes
 
-named_call
-~~~~~~~~~~
-
-.. autofunction:: named_call
 
 profiler_name_scopes
 ~~~~~~~~~~~~~~~~~~~~

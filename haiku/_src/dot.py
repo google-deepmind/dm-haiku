@@ -20,7 +20,6 @@ import functools
 import html
 from typing import Any, Callable, List, NamedTuple, Optional
 
-from haiku._src import config
 from haiku._src import data_structures
 from haiku._src import module
 from haiku._src import utils
@@ -84,9 +83,7 @@ def to_dot(fun: Callable[..., Any]) -> Callable[..., str]:
   graph_fun = to_graph(fun)
   @functools.wraps(fun)
   def wrapped_fun(*args) -> str:
-    # Disable namescopes so they don't show up in the generated dot.
-    with config.context(profiler_name_scopes=False):
-      return _graph_to_dot(*graph_fun(*args))
+    return _graph_to_dot(*graph_fun(*args))
   return wrapped_fun
 
 

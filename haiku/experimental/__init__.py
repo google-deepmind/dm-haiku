@@ -47,7 +47,6 @@ from haiku._src.module import MethodContext
 from haiku._src.module import name_like
 from haiku._src.module import name_scope
 from haiku._src.random import optimize_rng_use
-from haiku._src.stateful import named_call
 from haiku._src.summarise import ArraySpec
 from haiku._src.summarise import eval_summary
 from haiku._src.summarise import MethodInvocation
@@ -85,7 +84,6 @@ __all__ = (
     "ModuleDetails",
     "name_like",
     "name_scope",
-    "named_call",
     "optimize_rng_use",
     "GetterContext",
     "ParamContext",

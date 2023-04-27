@@ -900,10 +900,6 @@ def while_loop(cond_fun, body_fun, init_val):
   return val
 
 
-# TODO(lenamartens): remove this alias.
-named_call = jax.named_call
-
-
 def eval_shape(fun, *args, **kwargs):
   """Equivalent to jax.eval_shape with any changed Haiku state discarded."""
   if not base.inside_transform():

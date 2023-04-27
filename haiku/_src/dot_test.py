@@ -14,14 +14,11 @@
 # ==============================================================================
 """Tests for haiku._src.dot."""
 
-from unittest import mock
-
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import config
 from haiku._src import dot
 from haiku._src import module
-from haiku._src import stateful
 from haiku._src import test_utils
 import jax
 import jax.numpy as jnp
@@ -75,15 +72,6 @@ class DotTest(parameterized.TestCase):
     add_out, = add_node.outputs
     self.assertEqual(add_out, c)
 
-  @test_utils.transform_and_run
-  def test_no_namescopes_inside_abstract_dot(self):
-    mod = AddModule()
-    a = b = jax.ShapeDtypeStruct(shape=tuple(), dtype=jnp.float32)
-    with config.context(profiler_name_scopes=True):
-      with mock.patch.object(stateful, "named_call") as mock_f:
-        _ = dot.abstract_to_dot(mod)(a, b)
-        mock_f.assert_not_called()
-
   def test_call(self):
     def my_function(x):
       return x
@@ -104,14 +92,6 @@ class DotTest(parameterized.TestCase):
     self.assertEmpty(graph.edges)
     jit, = graph.subgraphs
     self.assertEqual(jit.title, "xla_pmap (my_function)")
-
-  @test_utils.transform_and_run
-  def test_no_namescopes_inside_dot(self):
-    mod = AddModule()
-    with config.context(profiler_name_scopes=True):
-      with mock.patch.object(stateful, "named_call") as mock_f:
-        _ = dot.to_dot(mod)(1, 1)
-        mock_f.assert_not_called()
 
   @parameterized.parameters({True, False})
   def test_module_namescope_setting_unchanged(self, flag):

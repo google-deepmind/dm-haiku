@@ -71,6 +71,17 @@ hk_py_test(
     deps = [":base_test_lib"],
 )
 
+# TODO(b/199564969): remove once we always enable_custom_prng
+hk_py_test(
+    name = "base_test_custom_prng",
+    srcs = ["base_test.py"],
+    env = {
+        "JAX_ENABLE_CUSTOM_PRNG": "true",
+    },
+    main = "base_test.py",
+    deps = [":base_test_lib"],
+)
+
 hk_py_library(
     name = "config",
     srcs = ["config.py"],
@@ -243,6 +254,25 @@ hk_py_library(
 hk_py_test(
     name = "batch_norm_test",
     srcs = ["batch_norm_test.py"],
+    deps = [
+        ":base",
+        ":batch_norm",
+        ":test_utils",
+        ":transform",
+        # pip: absl/testing:absltest
+        # pip: jax
+        # pip: numpy
+    ],
+)
+
+# TODO(b/199564969): remove once we always enable_custom_prng
+hk_py_test(
+    name = "batch_norm_test_custom_prng",
+    srcs = ["batch_norm_test.py"],
+    env = {
+        "JAX_ENABLE_CUSTOM_PRNG": "true",
+    },
+    main = "batch_norm_test.py",
     deps = [
         ":base",
         ":batch_norm",
@@ -823,6 +853,30 @@ hk_py_library(
 hk_py_test(
     name = "stateful_test",
     srcs = ["stateful_test.py"],
+    deps = [
+        ":base",
+        ":base_test_lib",
+        ":config",
+        ":initializers",
+        ":module",
+        ":stateful",
+        ":test_utils",
+        ":transform",
+        # pip: absl/testing:absltest
+        # pip: absl/testing:parameterized
+        # pip: jax
+        # pip: numpy
+    ],
+)
+
+# TODO(b/199564969): remove once we always enable_custom_prng
+hk_py_test(
+    name = "stateful_test_custom_prng",
+    srcs = ["stateful_test.py"],
+    env = {
+        "JAX_ENABLE_CUSTOM_PRNG": "true",
+    },
+    main = "stateful_test.py",
     deps = [
         ":base",
         ":base_test_lib",

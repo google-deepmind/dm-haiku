@@ -1221,7 +1221,7 @@ def next_rng_keys(num: int) -> jax.Array:
   assert_context("next_rng_keys")
   assert_jax_usage("next_rng_keys")
   rng_seq = rng_seq_or_fail()
-  return jnp.vstack(rng_seq.take(num))
+  return jnp.stack(rng_seq.take(num))
 
 
 def maybe_next_rng_key() -> Optional[PRNGKey]:

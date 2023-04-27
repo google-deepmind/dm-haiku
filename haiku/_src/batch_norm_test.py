@@ -97,7 +97,8 @@ class BatchNormTest(absltest.TestCase):
     f = transform.transform_with_state(f)
 
     inputs = np.arange(ldc * 4).reshape(ldc, 4)
-    key = np.broadcast_to(jax.random.PRNGKey(42), (ldc, 2))
+    key = jax.random.PRNGKey(42)
+    key = jnp.broadcast_to(key, (ldc, *key.shape))
     params, state = jax.pmap(f.init, axis_name="i")(key, inputs)
     result, _ = jax.pmap(f.apply, axis_name="i")(params, state, key, inputs)
 
@@ -128,7 +129,8 @@ class BatchNormTest(absltest.TestCase):
     f = transform.transform_with_state(f)
 
     inputs = np.arange(ldc * 4).reshape(ldc, 4).astype(np.float32)
-    key = np.broadcast_to(jax.random.PRNGKey(42), (ldc, 2))
+    key = jax.random.PRNGKey(42)
+    key = jnp.broadcast_to(key, (ldc, *key.shape))
     params, state = jax.pmap(f.init, axis_name="i")(key, inputs)
     result, _ = jax.pmap(f.apply, axis_name="i")(params, state, key, inputs)
 

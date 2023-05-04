@@ -167,8 +167,9 @@ def without_state(f: TransformedWithState) -> Transformed:
   def init_fn(*args, **kwargs):
     params, state = f.init(*args, **kwargs)
     if state:
-      raise ValueError("If your transformed function uses `hk.{get,set}_state` "
-                       "then use `hk.transform_with_state`.")
+      raise base.NonEmptyStateError(
+          "If your transformed function uses `hk.{get,set}_state` then use "
+          "`hk.transform_with_state`.")
     return params
 
   init_fn.__signature__ = sig_remove_state(inspect.signature(f.init))
@@ -183,8 +184,9 @@ def without_state(f: TransformedWithState) -> Transformed:
 
     out, state = f.apply(params, None, *args, **kwargs)
     if state:
-      raise ValueError("If your transformed function uses `hk.{get,set}_state` "
-                       "then use `hk.transform_with_state`.")
+      raise base.NonEmptyStateError(
+          "If your transformed function uses `hk.{get,set}_state` then use "
+          "`hk.transform_with_state`.")
     return out
 
   apply_fn.__signature__ = sig_remove_state(

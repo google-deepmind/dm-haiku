@@ -1506,3 +1506,7 @@ def assert_state_unchanged():
 
 class StateChangedError(AssertionError):
   pass
+
+
+class NonEmptyStateError(ValueError):
+  """Error thrown when state is used without using `transform_with_state`."""

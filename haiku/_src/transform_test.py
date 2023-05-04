@@ -309,7 +309,8 @@ class TransformTest(parameterized.TestCase):
 
     init_fn, _ = transform.without_state(transform.transform_with_state(f))
 
-    with self.assertRaisesRegex(ValueError, "use.*transform_with_state"):
+    with self.assertRaisesRegex(base.NonEmptyStateError,
+                                "use.*transform_with_state"):
       init_fn(None)
 
   def test_with_empty_state(self):
@@ -438,7 +439,8 @@ class TransformTest(parameterized.TestCase):
     f = lambda: base.set_state("~", 1)
     f = transform.without_state(transform.transform_with_state(f))
     rng = jax.random.PRNGKey(42)
-    with self.assertRaisesRegex(ValueError, "use.*transform_with_state"):
+    with self.assertRaisesRegex(base.NonEmptyStateError,
+                                "use.*transform_with_state"):
       params = f.init(rng)
       f.apply(params, rng)
 

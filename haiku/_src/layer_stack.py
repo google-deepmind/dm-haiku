@@ -74,7 +74,7 @@ class _LayerStack(module.Module):
     count = self._count
     try:
       init_fn, apply_fn = transform.transform(self._call_wrapped)
-    except ValueError as e:
+    except base.NonEmptyStateError as e:
       raise LayerStackStateError("LayerStack can only be used on Haiku "
                                  "functions which do not make use of Haiku "
                                  "state.") from e

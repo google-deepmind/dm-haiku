@@ -42,7 +42,6 @@ class BiasTest(absltest.TestCase):
     params = transform.transform(f).init(None)
     self.assertEmpty(params["bias"]["b"].shape)
 
-  @test_utils.transform_and_run
   def test_bias_dims_custom(self):
     b, d1, d2, d3 = range(1, 5)
     def f():
@@ -56,7 +55,6 @@ class BiasTest(absltest.TestCase):
     self.assertEqual(params["bias"]["b"].shape, (d1, 1, d3))
     self.assertEqual(out.shape, (b, d1, d2, d3))
 
-  @test_utils.transform_and_run
   def test_bias_dims_negative_out_of_order(self):
     def f():
       mod = bias.Bias(bias_dims=[-1, -2])

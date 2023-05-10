@@ -180,7 +180,7 @@ class VqvaeTest(parameterized.TestCase):
           functools.partial(my_function, axis_name=axis_name))
 
       rng = jax.random.PRNGKey(42)
-      rng = jnp.broadcast_to(rng, (jax.local_device_count(), rng.shape[0]))
+      rng = jnp.broadcast_to(rng, (jax.local_device_count(), *rng.shape))
 
       params, state = jax.pmap(
           vqvae_f.init, axis_name='i')(rng, inputs)

@@ -98,16 +98,23 @@ class TruncatedNormal(hk.initializers.Initializer):
 
   def __init__(self,
                stddev: Union[float, jax.Array] = 1.,
-               mean: Union[float, complex, jax.Array] = 0.):
+               mean: Union[float, complex, jax.Array] = 0.0,
+               lower: Union[float, jax.Array] = -2.0,
+               upper: Union[float, jax.Array] = 2.0,
+               ):
     """Constructs a :class:`TruncatedNormal` initializer.
 
     Args:
       stddev: The standard deviation parameter of the truncated
         normal distribution.
       mean: The mean of the truncated normal distribution.
+      lower: Float or array representing the lower bound for truncation.
+      upper: Float or array representing the upper bound for truncation.
     """
     self.stddev = stddev
     self.mean = mean
+    self.lower = lower
+    self.upper = upper
 
   def __call__(self, shape: Sequence[int], dtype: Any) -> jax.Array:
     real_dtype = jnp.finfo(dtype).dtype
@@ -116,8 +123,8 @@ class TruncatedNormal(hk.initializers.Initializer):
     is_complex = jnp.issubdtype(dtype, jnp.complexfloating)
     if is_complex:
       shape = [2, *shape]
-    unscaled = jax.random.truncated_normal(hk.next_rng_key(), -2., 2., shape,
-                                           real_dtype)
+    unscaled = jax.random.truncated_normal(
+        hk.next_rng_key(), self.lower, self.upper, shape, real_dtype)
     if is_complex:
       unscaled = unscaled[0] + 1j * unscaled[1]
     return s * unscaled + m

@@ -771,6 +771,10 @@ def vmap(
   initalizing (e.g. creating model parameters) or applying the model. An easy
   way to do this is to set ``split_rng=(not hk.running_init())``.
 
+  For more advanced use cases, such as mapping module parameters, we suggest
+  users instead use :func:`lift` or :func:`~haiku.experimental.transparent_lift`
+  in combination with :func:`jax.vmap`.
+
   Args:
     fun: See :func:`jax.vmap`.
     in_axes: See :func:`jax.vmap`.
@@ -792,7 +796,6 @@ def vmap(
         f"{fun.__name__} must have at least one non-None value in in_axes "
         "to use with `hk.vmap`.")
 
-  # TODO(tomhennigan): Allow configuration of params/state mapping.
   params_axes = state_axes = None
   rng_axes = (0 if split_rng else None)
   haiku_state_axes = InternalState(params_axes, state_axes, rng_axes)

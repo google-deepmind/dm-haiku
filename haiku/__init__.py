@@ -119,6 +119,8 @@ from haiku._src.transform import TransformedWithState
 from haiku._src.transform import with_empty_state
 from haiku._src.transform import without_state
 from haiku._src.typing import ModuleProtocol
+from haiku._src.typing import MutableParams
+from haiku._src.typing import MutableState
 from haiku._src.typing import Params
 from haiku._src.typing import State
 from haiku._src.typing import SupportsCall
@@ -168,6 +170,8 @@ __all__ = (
     "MultiHeadAttention",
     "MultiTransformed",
     "MultiTransformedWithState",
+    "MutableParams",
+    "MutableState",
     "PRNGSequence",
     "Params",
     "RNNCore",

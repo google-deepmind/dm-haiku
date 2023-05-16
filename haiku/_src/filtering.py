@@ -15,7 +15,8 @@
 """Functions for filtering parameters and state in Haiku."""
 
 import collections
-from typing import Any, Callable, Generator, Mapping, Tuple, TypeVar
+from typing import (Any, Callable, Generator, Mapping, MutableMapping, Tuple,
+                    TypeVar)
 
 from haiku._src import data_structures
 from haiku._src import utils
@@ -187,7 +188,7 @@ def map(  # pylint: disable=redefined-builtin
 def merge(
     *structures: Mapping[str, Mapping[str, Any]],
     check_duplicates: bool = False,
-) -> Mapping[str, Mapping[str, Any]]:
+) -> MutableMapping[str, MutableMapping[str, Any]]:
   """Merges multiple input structures.
 
   >>> weights = {'linear': {'w': None}}

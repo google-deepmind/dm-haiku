@@ -15,10 +15,14 @@
 # pylint: disable=g-importing-member
 """Type hints."""
 
+from haiku._src.typing import MutableParams
+from haiku._src.typing import MutableState
 from haiku._src.typing import Params
 from haiku._src.typing import State
 
 __all__ = (
+    "MutableParams",
+    "MutableState",
     "Params",
     "State",
 )

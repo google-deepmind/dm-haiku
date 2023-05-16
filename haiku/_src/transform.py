@@ -30,6 +30,8 @@ class hk:
   PRNGSequence = base.PRNGSequence
   Params = typing.Params
   State = typing.State
+  MutableParams = typing.MutableParams
+  MutableState = typing.MutableState
 # pylint: enable=invalid-name
 # TODO(slebedev): This makes the module non-forkable.
 PRNGKey = typing.PRNGKey
@@ -101,7 +103,7 @@ class Transformed(NamedTuple):
   """
 
   # Args: [Optional[PRNGKey], ...]
-  init: Callable[..., hk.Params]
+  init: Callable[..., hk.MutableParams]
 
   # Args: [Params, Optional[PRNGKey], ...]
   apply: Callable[..., Any]
@@ -116,10 +118,10 @@ class TransformedWithState(NamedTuple):
   """
 
   # Args: [Optional[PRNGKey], ...]
-  init: Callable[..., Tuple[hk.Params, hk.State]]
+  init: Callable[..., Tuple[hk.MutableParams, hk.MutableState]]
 
   # Args: [hk.Params, hk.State, Optional[PRNGKey], ...]
-  apply: Callable[..., Tuple[Any, hk.State]]
+  apply: Callable[..., Tuple[Any, hk.MutableState]]
 
 
 def to_prng_sequence(rng, err_msg) -> Optional[hk.PRNGSequence]:
@@ -164,7 +166,7 @@ def without_state(f: TransformedWithState) -> Transformed:
     A transformed function that does not take or return state.
   """
 
-  def init_fn(*args, **kwargs):
+  def init_fn(*args, **kwargs) -> hk.MutableParams:
     params, state = f.init(*args, **kwargs)
     if state:
       raise base.NonEmptyStateError(
@@ -230,14 +232,15 @@ def with_empty_state(f: Transformed) -> TransformedWithState:
     A transformed function that does accepts and returns state.
   """
 
-  def init_fn(*args, **kwargs):
+  def init_fn(*args, **kwargs) -> Tuple[hk.MutableParams, hk.MutableState]:
     params = f.init(*args, **kwargs)
     state = data_structures.to_haiku_dict({})
     return params, state
 
   init_fn.__signature__ = sig_add_state(inspect.signature(f.init))
 
-  def apply_fn(params, state, *args, **kwargs):
+  def apply_fn(params: hk.Params, state: Optional[hk.State],
+               *args, **kwargs) -> Tuple[Any, hk.MutableState]:
     del state
     out = f.apply(params, *args, **kwargs)
     state = data_structures.to_haiku_dict({})
@@ -416,7 +419,7 @@ def transform_with_state(f) -> TransformedWithState:
       rng: Optional[Union[PRNGKey, int]],
       *args,
       **kwargs,
-  ) -> Tuple[hk.Params, hk.State]:
+  ) -> Tuple[hk.MutableParams, hk.MutableState]:
     """Initializes your function collecting parameters and state."""
     rng = to_prng_sequence(rng, err_msg=INIT_RNG_ERROR)
     with base.new_context(rng=rng) as ctx:
@@ -441,7 +444,7 @@ def transform_with_state(f) -> TransformedWithState:
       rng: Optional[Union[PRNGKey, int]],
       *args,
       **kwargs,
-  ) -> Tuple[Any, hk.State]:
+  ) -> Tuple[Any, hk.MutableState]:
     """Applies your function injecting parameters and state."""
     uses_state = state is not None
     params = check_mapping("params", params)

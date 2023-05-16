@@ -16,7 +16,7 @@
 
 import abc
 import typing
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Callable, Mapping, MutableMapping, Sequence
 
 import jax
 from typing_extensions import Protocol, runtime_checkable  # pylint: disable=multiple-statements,g-multiple-import
@@ -31,7 +31,9 @@ except AttributeError:
 
 Initializer = Callable[[Sequence[int], Any], jax.Array]
 Params = Mapping[str, Mapping[str, jax.Array]]
+MutableParams = MutableMapping[str, MutableMapping[str, jax.Array]]
 State = Mapping[str, Mapping[str, jax.Array]]
+MutableState = MutableMapping[str, MutableMapping[str, jax.Array]]
 
 # Missing JAX types.
 PRNGKey = jax.Array  # pylint: disable=invalid-name

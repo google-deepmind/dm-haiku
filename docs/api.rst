@@ -202,7 +202,9 @@ Type Hints
 
     LSTMState
     Params
+    MutableParams
     State
+    MutableState
     Transformed
     TransformedWithState
     MultiTransformed
@@ -220,10 +222,21 @@ Params
 
 .. autoclass:: Params
 
+MutableParams
+~~~~~~
+
+.. autoclass:: MutableParams
+
 State
 ~~~~~
 
 .. autoclass:: State
+
+MutableState
+~~~~~~
+
+.. autoclass:: MutableState
+
 
 Transformed
 ~~~~~~~~~~~

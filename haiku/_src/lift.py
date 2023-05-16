@@ -124,7 +124,6 @@ class LiftingModule(hk.Module, LiftingModuleType):
       inner_state = unpack_from_dict(outer_state, prefix)
       inner_state = base.extract_state(inner_state, initial=False)
       inner_params = hk.data_structures.to_haiku_dict(inner_params)
-      inner_state = hk.data_structures.to_haiku_dict(inner_state)
       return inner_params, inner_state
 
 

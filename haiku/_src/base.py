@@ -18,9 +18,8 @@ import collections
 import contextlib
 import functools
 import itertools as it
-from typing import (Callable, Iterator, Iterable, MutableMapping, NamedTuple,
-                    Optional, Set, Tuple, Union, Any, Sequence, Mapping,
-                    FrozenSet, TypeVar)
+from typing import (Callable, Iterator, Iterable, NamedTuple, Optional, Set,
+                    Tuple, Union, Any, Sequence, Mapping, FrozenSet, TypeVar)
 import warnings
 
 from haiku._src import config
@@ -29,7 +28,9 @@ from haiku._src.typing import (  # pylint: disable=g-multiple-import
     Initializer,
     LiftingModuleType,
     Params,
+    MutableParams,
     State,
+    MutableState,
     Module,
     PRNGKey,
 )
@@ -51,8 +52,6 @@ ThreadLocalStack = data_structures.ThreadLocalStack[T]
 
 ModuleState = collections.namedtuple("ModuleState", ("module", "method_name"))
 StatePair = collections.namedtuple("StatePair", ("initial", "current"))
-MutableParams = MutableMapping[str, MutableMapping[str, jax.Array]]
-MutableState = MutableMapping[str, MutableMapping[str, StatePair]]
 
 # TODO(tomhennigan) Should creator_stack be part of frame?
 frame_stack: ThreadLocalStack["Frame"] = ThreadLocalStack()
@@ -85,7 +84,7 @@ class Frame(NamedTuple):
   """A frame represents all of the per-transform values in Haiku."""
 
   # JAX values.
-  params: Union[Params, MutableParams]
+  params: MutableParams
   state: Optional[MutableState]
   rng_stack: Stack[Optional["PRNGSequence"]]
 
@@ -165,8 +164,8 @@ class HaikuContext:
 
   def __init__(
       self,
-      params: Union[Params, MutableParams],
-      state: Union[State, MutableState],
+      params: MutableParams,
+      state: MutableState,
       rng: Optional["PRNGSequence"],
       freeze_params: bool,
   ):
@@ -181,13 +180,13 @@ class HaikuContext:
     self.__counter = collections.Counter()
     self.__teardown_callbacks = []
 
-  def collect_params(self) -> Params:
+  def collect_params(self) -> MutableParams:
     return data_structures.to_haiku_dict(self.__params)
 
-  def collect_initial_state(self) -> State:
+  def collect_initial_state(self) -> MutableState:
     return extract_state(self.__state, initial=True)
 
-  def collect_state(self) -> State:
+  def collect_state(self) -> MutableState:
     return extract_state(self.__state, initial=False)
 
   def add_teardown_callback(self, f):
@@ -1270,7 +1269,7 @@ def replace_rng_sequence_state(state: PRNGSequenceState):
   rng_seq.replace_internal_state(state)
 
 
-def extract_state(state: MutableState, *, initial) -> State:
+def extract_state(state: State, *, initial) -> MutableState:
   state = {m: {k: (v.initial if initial else v.current) for k, v in p.items()}
            for m, p in state.items()}
   state = data_structures.to_haiku_dict(state)

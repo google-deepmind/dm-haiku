@@ -35,6 +35,8 @@ class hk:
   TransformedWithState = transform.TransformedWithState
   Params = typing.Params
   State = typing.State
+  MutableParams = typing.MutableParams
+  MutableState = typing.MutableState
 # pylint: enable=invalid-name
 # TODO(slebedev): This makes the module non-forkable.
 _transform = transform
@@ -58,7 +60,7 @@ class MultiTransformed(NamedTuple):
   """
 
   # Args: [Optional[PRNGKey], ...]
-  init: Callable[..., hk.Params]
+  init: Callable[..., hk.MutableParams]
 
   # PyTree[Callable[[hk.Params, Optional[PRNGKey], ...], Any]]
   apply: Any
@@ -78,10 +80,10 @@ class MultiTransformedWithState(NamedTuple):
   """
 
   # Args: [Optional[PRNGKey], ...]
-  init: Callable[..., Tuple[hk.Params, hk.State]]
+  init: Callable[..., Tuple[hk.MutableParams, hk.MutableState]]
 
   # PyTree[Callable[[hk.Params, hk.State, Optional[PRNGKey], ...],
-  #                 Tuple[Any, hk.State]]]
+  #                 Tuple[Any, hk.MutableState]]]
   apply: Any
 
 
@@ -138,7 +140,7 @@ def multi_transform_with_state(
   """
   analytics.log_once('multi_transform_with_state')
 
-  def init_fn(*args, **kwargs):
+  def init_fn(*args, **kwargs) -> Tuple[hk.MutableParams, hk.MutableState]:
     """Returns initial state for the transformed functions."""
     return f()[0](*args, **kwargs)
 
@@ -236,7 +238,7 @@ def multi_transform(
 
 def without_state(f: MultiTransformedWithState) -> MultiTransformed:
   """Converts ``MultiTransformedWithState`` to ``MultiTransformed``."""
-  def init_fn(rng, *args, **kwargs) -> hk.Params:
+  def init_fn(rng, *args, **kwargs) -> hk.MutableParams:
     params, state = f.init(rng, *args, **kwargs)
     if state:
       raise ValueError(
@@ -244,7 +246,7 @@ def without_state(f: MultiTransformedWithState) -> MultiTransformed:
           '`hk.multi_transform_with_state`.')
     return params
 
-  def apply_without_state(orig_apply_fn) -> Any:
+  def apply_without_state(orig_apply_fn):
     def apply_fn(params: hk.Params, rng, *args, **kwargs):
       out, state = orig_apply_fn(params, None, rng, *args, **kwargs)
       if state:

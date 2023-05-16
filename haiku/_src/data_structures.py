@@ -24,7 +24,8 @@ import contextlib
 import pprint
 import threading
 from typing import (Any, Callable, Deque, Dict, Generic, Iterator, Mapping,
-                    NamedTuple, Optional, Sequence, TypeVar, Union)
+                    MutableMapping, NamedTuple, Optional, Sequence, TypeVar,
+                    Union)
 
 from haiku._src import config
 from haiku._src import utils
@@ -123,7 +124,7 @@ def to_mutable_dict(mapping):
   return out
 
 
-def to_haiku_dict(structure: Mapping[K, V]) -> Mapping[K, V]:
+def to_haiku_dict(structure: Mapping[K, V]) -> MutableMapping[K, V]:
   """Returns a copy of the given two level structure.
 
   Uses the same mapping type as Haiku will return from ``init`` or ``apply``

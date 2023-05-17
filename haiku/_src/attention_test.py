@@ -121,6 +121,33 @@ class MultiHeadAttentionTest(parameterized.TestCase):
     mha2 = attention.MultiHeadAttention(2, 3, w_init_scale=5)
     self.assertIsInstance(mha2.w_init, initializers.VarianceScaling)
 
+  @test_utils.transform_and_run
+  def test_b_init(self):
+
+    w_init = initializers.Constant(3)
+    b_init = initializers.Constant(4)
+    mha1 = attention.MultiHeadAttention(2, 3, w_init=w_init, b_init=b_init)
+    self.assertIs(mha1.b_init, b_init)
+
+  @parameterized.named_parameters(
+      ("with_bias_true", True, 2),
+      ("with_bias_false", False, 1),
+  )
+  def test_with_bias(self, with_bias, expected_params):
+    def f(key, query, value):
+      w_init = initializers.Constant(3)
+      mha1 = attention.MultiHeadAttention(2, 3, w_init=w_init,
+                                          with_bias=with_bias)
+      return mha1(key, query, value)
+
+    rng = jax.random.PRNGKey(42)
+    init, _ = transform.transform(f)
+    query = key = jnp.zeros((5, 3))
+    value = jnp.zeros((5, 10))
+    params = init(rng, key, query, value)
+    for module_params in params.values():
+      self.assertLen(module_params, expected_params)
+
 
 if __name__ == "__main__":
   absltest.main()

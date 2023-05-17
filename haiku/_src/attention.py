@@ -63,6 +63,8 @@ class MultiHeadAttention(hk.Module):
       w_init_scale: Optional[float] = None,
       *,
       w_init: Optional[hk.initializers.Initializer] = None,
+      with_bias: bool = True,
+      b_init: Optional[hk.initializers.Initializer] = None,
       value_size: Optional[int] = None,
       model_size: Optional[int] = None,
       name: Optional[str] = None,
@@ -76,6 +78,9 @@ class MultiHeadAttention(hk.Module):
       w_init: Initialiser for weights in the linear map. Once `w_init_scale` is
         fully deprecated `w_init` will become mandatory. Until then it has a
         default value of `None` for backwards compatability.
+      with_bias: Whether to add a bias when computing various linear
+        projections.
+      b_init: Optional initializer for bias. By default, zero.
       value_size: Optional size of the value projection (V). If None, defaults
         to the key size (K).
       model_size: Optional size of the output embedding (D'). If None, defaults
@@ -102,6 +107,8 @@ class MultiHeadAttention(hk.Module):
     if w_init is None:
       w_init = hk.initializers.VarianceScaling(w_init_scale)
     self.w_init = w_init
+    self.with_bias = with_bias
+    self.b_init = b_init
 
   def __call__(
       self,
@@ -152,7 +159,8 @@ class MultiHeadAttention(hk.Module):
     attn = jnp.reshape(attn, (*leading_dims, sequence_length, -1))  # [T', H*V]
 
     # Apply another projection to get the final embeddings.
-    final_projection = hk.Linear(self.model_size, w_init=self.w_init)
+    final_projection = hk.Linear(self.model_size, w_init=self.w_init,
+                                 with_bias=self.with_bias, b_init=self.b_init)
     return final_projection(attn)  # [T', D']
 
   @hk.transparent
@@ -162,6 +170,7 @@ class MultiHeadAttention(hk.Module):
       head_size: int,
       name: Optional[str] = None,
   ) -> jax.Array:
-    y = hk.Linear(self.num_heads * head_size, w_init=self.w_init, name=name)(x)
+    y = hk.Linear(self.num_heads * head_size, w_init=self.w_init,
+                  with_bias=self.with_bias, b_init=self.b_init, name=name)(x)
     *leading_dims, _ = x.shape
     return y.reshape((*leading_dims, self.num_heads, head_size))

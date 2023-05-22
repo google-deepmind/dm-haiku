@@ -994,9 +994,11 @@ def assert_is_prng_key(key: PRNGKey):
   # device-to-host copy.
   make_error = lambda: ValueError(  # pylint: disable=g-long-lambda
       f"The provided key is not a JAX PRNGKey but a {type(key)}:\n{key}")
-  if jax.config.jax_enable_custom_prng:
-    if not isinstance(key, jax.random.KeyArray):
-      raise make_error()
+  if (jax.config.jax_enable_custom_prng and
+      not isinstance(key, jax.random.PRNGKeyArray)):
+    raise make_error()
+
+  if isinstance(key, jax.random.PRNGKeyArray):
     if key.shape:
       raise ValueError(
           "Provided key did not have expected shape and/or dtype: "
@@ -1042,7 +1044,11 @@ class PRNGSequence(Iterator[PRNGKey]):
 
   def __init__(self, key_or_seed: Union[PRNGKey, int, PRNGSequenceState]):
     """Creates a new :class:`PRNGSequence`."""
-    if isinstance(key_or_seed, tuple):
+    if isinstance(key_or_seed, jax.random.PRNGKeyArray):
+      assert_is_prng_key(key_or_seed)
+      self._key = jnp.asarray(key_or_seed)
+      self._subkeys = collections.deque()
+    elif isinstance(key_or_seed, tuple):
       key, subkeys = key_or_seed
       assert_is_prng_key(key)
       for subkey in subkeys:

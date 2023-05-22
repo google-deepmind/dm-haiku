@@ -27,6 +27,11 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
+# TODO(jakevdp): remove attr check once jax>=0.4.11 is required
+KEY_FUNCS = [jax.random.PRNGKey]
+if hasattr(jax.random, "key"):
+  KEY_FUNCS.append(jax.random.key)
+
 # TODO(tomhennigan) Improve test coverage.
 
 custom_state_creator = functools.partial(
@@ -597,18 +602,19 @@ class BaseTest(parameterized.TestCase):
     self.assertEqual(ctx.collect_state(), {"~": {"count": 1}})
 
   @parameterized.product(
-      seed=[42, 28], wrap_seed=[True, False], jitted=[True, False])
-  def test_prng_sequence(self, seed, wrap_seed, jitted):
+      seed=[42, 28], wrap_seed=[True, False], jitted=[True, False],
+      key_func=KEY_FUNCS)
+  def test_prng_sequence(self, seed, wrap_seed, jitted, key_func):
     def create_random_values(key_or_seed):
       key_seq = base.PRNGSequence(key_or_seed)
       return (jax.random.normal(next(key_seq), []),
               jax.random.normal(next(key_seq), []))
     # Values using our sequence.
-    key_or_seed = jax.random.PRNGKey(seed) if wrap_seed else seed
+    key_or_seed = key_func(seed) if wrap_seed else seed
     seq_v1, seq_v2 = (jax.jit(create_random_values)(key_or_seed)
                       if jitted else create_random_values(key_or_seed))
     # Generate values using manual splitting.
-    key = jax.random.PRNGKey(seed)
+    key = key_func(seed)
     key, temp_key = jax.random.split(key)
     raw_v1 = jax.random.normal(temp_key, [])
     _, temp_key = jax.random.split(key)

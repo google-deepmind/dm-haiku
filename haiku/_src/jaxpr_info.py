@@ -21,9 +21,6 @@ The resulting nested `Module` information can either be consumed directly, or
 formatted in a textual representation using `format_module` or in an interactive
 HTML tree visualization using `as_html` or `as_html_page`.
 
-Note: `hk.experimental.profiler_name_scopes(enabled=True)` must be set to
-capture Haiku module information.
-
 Example usage:
 
     mod = jaxpr_info.make_model_info(my_callable)(some, arguments)
@@ -111,8 +108,6 @@ def make_model_info(
     axis_env: Optional[Sequence[Tuple[Any, int]]] = None,
 ) -> Callable[..., Module]:
   """Creates a function that computes flop, param and state information.
-
-  Requires hk.experimental.profiler_name_scopes(enabled=True).
 
   Args:
     f: The function for which to compute information. Haiku modules and

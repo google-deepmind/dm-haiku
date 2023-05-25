@@ -142,28 +142,6 @@ class HaikuTransformsTest(parameterized.TestCase):
         grad_hk_remat(params, state, rng, x))
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
-  def test_profiler_name_scopes(self, module_fn: ModuleFn, shape, dtype):
-    rng = jax.random.PRNGKey(42)
-    if jnp.issubdtype(dtype, jnp.integer):
-      x = jax.random.randint(rng, shape, 0, np.prod(shape), dtype)
-    else:
-      x = jax.random.uniform(rng, shape, dtype)
-
-    def g(x, name_scopes=False):
-      with hk.config.context(profiler_name_scopes=name_scopes):
-        mod = module_fn()
-        return mod(x)
-
-    f = hk.transform_with_state(g)
-
-    assert_allclose = functools.partial(np.testing.assert_allclose, atol=1e-5)
-
-    params, state = f.init(rng, x)
-    jax.tree_util.tree_map(
-        assert_allclose, f.apply(params, state, rng, x),
-        f.apply(params, state, rng, x, name_scopes=True))
-
-  @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
   def test_optimize_rng_use_under_jit(self, module_fn: ModuleFn, shape, dtype):
     rng = jax.random.PRNGKey(42)
     if jnp.issubdtype(dtype, jnp.integer):

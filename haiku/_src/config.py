@@ -26,15 +26,15 @@ class Config:
   module_auto_repr: bool
   restore_flatmap: bool
   rng_reserve_size: int
-  profiler_name_scopes: bool
 
   @classmethod
   def default(cls) -> "Config":
-    return Config(check_jax_usage=False,
-                  module_auto_repr=True,
-                  restore_flatmap=False,
-                  rng_reserve_size=1,
-                  profiler_name_scopes=False)
+    return Config(
+        check_jax_usage=False,
+        module_auto_repr=True,
+        restore_flatmap=False,
+        rng_reserve_size=1,
+    )
 
 
 def write(config, **overrides):
@@ -52,7 +52,6 @@ def context(
     module_auto_repr: Optional[bool] = None,
     restore_flatmap: Optional[bool] = None,
     rng_reserve_size: Optional[int] = None,
-    profiler_name_scopes: Optional[bool] = None,
 ):
   """Context manager for setting config options.
 
@@ -76,8 +75,6 @@ def context(
       can improve compilation and run-time of your model. Changing the
       reservation size will change RNG keys returned by ``next_rng_key``, and
       will change the generated random numbers.
-    profiler_name_scopes: Enable/disable profiler name_scopes on all Haiku
-      module methods.
 
   Returns:
     Context manager that applies the given configs while active.
@@ -93,7 +90,6 @@ def set(
     module_auto_repr: Optional[bool] = None,
     restore_flatmap: Optional[bool] = None,
     rng_reserve_size: Optional[int] = None,
-    profiler_name_scopes: Optional[bool] = None,
 ):
   """Sets the given config option(s).
 
@@ -117,8 +113,6 @@ def set(
       can improve compilation and run-time of your model. Changing the
       reservation size will change RNG keys returned by ``next_rng_key``, and
       will change the generated random numbers.
-    profiler_name_scopes: Enable/disable profiler name_scopes on all Haiku
-      module methods.
   """
   write(get_config(), **filter_none_values(locals()))
 # pylint: enable=redefined-outer-name,unused-argument,redefined-builtin
@@ -262,22 +256,6 @@ def check_jax_usage(enabled: bool = True) -> bool:
   config = get_config()
   previous_value, config.check_jax_usage = config.check_jax_usage, enabled
   return previous_value
-
-
-def profiler_name_scopes(enabled: bool = True) -> bool:
-  """Enable/disable profiler name_scopes on all haiku module methods.
-
-  Note: currently only enables for ``__call__``. See: :func:`jax.named_call` if
-  you want to annotate other methods explicitly.
-
-  Args:
-    enabled: Whether to enable name scopes or not.
-  Returns:
-    The previous value of the name_scopes setting.
-  """
-  config = get_config()
-  before, config.profiler_name_scopes = config.profiler_name_scopes, enabled
-  return before
 
 
 def rng_reserve_size(size: int) -> int:

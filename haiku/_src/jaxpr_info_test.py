@@ -17,7 +17,6 @@ from typing import Optional
 
 from absl import logging
 from absl.testing import absltest
-from haiku._src import config
 from haiku._src import conv
 from haiku._src import jaxpr_info
 from haiku._src import module
@@ -37,14 +36,6 @@ class MyModel(module.Module):
 
 
 class JaxprInfoTest(absltest.TestCase):
-
-  def setUp(self):
-    super().setUp()
-    self.prev_profiler_name_scopes = config.profiler_name_scopes(enabled=True)
-
-  def tearDown(self):
-    super().tearDown()
-    config.profiler_name_scopes(self.prev_profiler_name_scopes)
 
   def test_simple_expression(self):
 

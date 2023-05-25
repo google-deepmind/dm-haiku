@@ -16,7 +16,6 @@
 
 from absl.testing import absltest
 from absl.testing import parameterized
-from haiku._src import config
 from haiku._src import dot
 from haiku._src import module
 from haiku._src import test_utils
@@ -92,12 +91,6 @@ class DotTest(parameterized.TestCase):
     self.assertEmpty(graph.edges)
     jit, = graph.subgraphs
     self.assertEqual(jit.title, "xla_pmap (my_function)")
-
-  @parameterized.parameters({True, False})
-  def test_module_namescope_setting_unchanged(self, flag):
-    with config.context(profiler_name_scopes=flag):
-      _ = dot.to_dot(lambda x: x)(jnp.ones((1, 1)))
-      self.assertEqual(config.get_config().profiler_name_scopes, flag)
 
 
 class AddModule(module.Module):

@@ -1052,18 +1052,6 @@ push_policy
 
 .. automodule:: haiku.experimental
 
-TensorFlow Profiler
--------------------
-
-.. autosummary::
-
-    profiler_name_scopes
-
-
-profiler_name_scopes
-~~~~~~~~~~~~~~~~~~~~
-
-.. autofunction:: profiler_name_scopes
 
 Graphviz Visualisation
 ----------------------

@@ -30,7 +30,6 @@ from haiku._src.base import maybe_get_rng_sequence_state
 from haiku._src.base import replace_rng_sequence_state
 from haiku._src.config import check_jax_usage
 from haiku._src.config import module_auto_repr
-from haiku._src.config import profiler_name_scopes
 from haiku._src.config import rng_reserve_size
 from haiku._src.dot import abstract_to_dot
 from haiku._src.dot import to_dot
@@ -89,7 +88,6 @@ __all__ = (
     "ParamContext",
     "replace_rng_sequence_state",
     "rng_reserve_size",
-    "profiler_name_scopes",
     "tabulate",
     "to_dot",
     "transparent_lift",

@@ -190,6 +190,9 @@ def layer_stack(num_layers: int,
   that kwargs are not supported, neither are functions with variable number
   of parameters (specified by ``*args``).
 
+  Note that `layer_stack` cannot at the moment be used with functions that build
+  Haiku modules with state.
+
   If ``with_per_layer_inputs=False`` then the new, wrapped function can be
   understood as performing the following:
 

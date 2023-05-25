@@ -14,10 +14,10 @@
 # ==============================================================================
 """Tests for haiku._src.layer_stack."""
 
+import collections
 import functools
 from absl.testing import absltest
 from absl.testing import parameterized
-
 from haiku._src import base
 from haiku._src import basic
 from haiku._src import config
@@ -547,6 +547,72 @@ class LayerStackTest(parameterized.TestCase):
     param_size = utils.tree_size(params)
     # 5 layers * (2 * 2 weights) = 20.
     np.testing.assert_equal(param_size, 20)
+
+  def test_parameter_splitting(self):
+    num_layers = 3
+
+    class Splitter(layer_stack.LayerStackParamSplitter):
+
+      def split_params(self, stacked_params: base.Params) -> base.Params:
+        split_params = {}
+        for mod_name, mod_params in stacked_params.items():
+          mod_params = jax.tree_util.tree_map(
+              lambda x: jnp.split(x, num_layers), mod_params
+          )
+          for i in range(num_layers):
+            split_params[f"{mod_name}/{i}"] = {
+                k: jnp.squeeze(vs[i], axis=0) for k, vs in mod_params.items()
+            }
+        return split_params
+
+      def stack_params(self, split_params: base.Params) -> base.Params:
+        param_lists = collections.defaultdict(
+            lambda: collections.defaultdict(dict)
+        )
+        for mod_name, mod_params in split_params.items():
+          mod_name, i = mod_name.rsplit("/", maxsplit=1)
+          i = int(i)
+          for k, v in mod_params.items():
+            param_lists[mod_name][k][i] = v
+
+        stacked_params = {}
+        for mod_name, mod_params in param_lists.items():
+          stacked_params[mod_name] = {
+              k: jnp.stack([v for _, v in sorted(vs.items())])
+              for k, vs in mod_params.items()
+          }
+        return stacked_params
+
+    def block(x: jax.Array) -> jax.Array:
+      return basic.Linear(output_size=x.shape[-1])(x)
+
+    def nosplit_f(x):
+      return layer_stack.layer_stack(num_layers, name="stack")(block)(x)
+
+    def split_f(x):
+      return layer_stack.layer_stack(
+          num_layers, param_splitter=Splitter(), name="stack"
+      )(block)(x)
+
+    nosplit = transform.transform(nosplit_f)
+    split = transform.transform(split_f)
+
+    x = jnp.ones((2, 2))
+    rng = jax.random.PRNGKey(0)
+    nosplit_params = nosplit.init(rng, x)
+    split_params = split.init(rng, x)
+
+    self.assertLen(nosplit_params, 1)
+    self.assertLen(split_params, num_layers)
+    self.assertEqual(
+        utils.tree_size(nosplit_params), utils.tree_size(split_params)
+    )
+
+    np.testing.assert_allclose(
+        nosplit.apply(nosplit_params, rng, x),
+        split.apply(split_params, rng, x),
+        rtol=1e-6,
+    )
 
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@
 import collections
 import functools
 import inspect
-from typing import Any, Callable, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Protocol, Tuple, Union
 
 from haiku._src import base
 from haiku._src import lift
@@ -56,19 +56,43 @@ def _get_rng_stack(count: int) -> Optional[jax.Array]:
   return jax.random.split(rng, count)
 
 
+class LayerStackParamSplitter(Protocol):
+  """Modify params tree of stacked layers."""
+
+  def split_params(self, stacked_params: base.Params) -> base.Params:
+    ...
+
+  def stack_params(self, split_params: base.Params) -> base.Params:
+    ...
+
+
+class NoSplitter(LayerStackParamSplitter):
+  """Passthrough params trees without modification."""
+
+  def split_params(self, stacked_params: base.Params) -> base.Params:
+    return stacked_params
+
+  def stack_params(self, split_params: base.Params) -> base.Params:
+    return split_params
+
+
 class _LayerStack(module.Module):
   """Module to compose parameterized functions, implemented as a scan."""
 
-  def __init__(self,
-               count: int,
-               unroll: int,
-               pass_reverse_to_layer_fn: bool = False,
-               name: Optional[str] = None):
+  def __init__(
+      self,
+      count: int,
+      unroll: int,
+      param_splitter: LayerStackParamSplitter,
+      pass_reverse_to_layer_fn: bool = False,
+      name: Optional[str] = None,
+  ):
     """Iterate f count times, with non-shared parameters."""
     super().__init__(name=name)
     self._count = count
     self._unroll = unroll
     self._pass_reverse_to_layer_fn = pass_reverse_to_layer_fn
+    self._param_splitter = param_splitter
 
   def __call__(self, x, *args_ys, reverse=False):
     count = self._count
@@ -87,7 +111,7 @@ class _LayerStack(module.Module):
     def scanned_init_fn(x, rng):
       _, params = jax.lax.scan(per_layer_init_fn, (x, rng), args_ys,
                                length=self._count)
-      return params
+      return self._param_splitter.split_params(params)
 
     rng = base.maybe_next_rng_key()
     lifted_init_fn = lift.transparent_lift(scanned_init_fn, allow_reuse=True)
@@ -115,9 +139,11 @@ class _LayerStack(module.Module):
     rng = _get_rng_stack(count)
 
     carry = LayerStackCarry(x=x)
-    scanned = LayerStackScanned(params=params,
-                                rng=rng,
-                                args_ys=args_ys)
+    scanned = LayerStackScanned(
+        params=self._param_splitter.stack_params(params),
+        rng=rng,
+        args_ys=args_ys,
+    )
 
     carry, zs = jax.lax.scan(
         layer, carry, scanned, length=count, unroll=self._unroll,
@@ -134,15 +160,22 @@ class _LayerStack(module.Module):
 class _LayerStackNoPerLayer(_LayerStack):
   """_LayerStack impl with no per-layer inputs provided to the function."""
 
-  def __init__(self,
-               f: WrappedFn,
-               count: int,
-               unroll: int,
-               pass_reverse_to_layer_fn: bool = False,
-               name: Optional[str] = None):
-    super().__init__(count=count, unroll=unroll,
-                     pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
-                     name=name)
+  def __init__(
+      self,
+      f: WrappedFn,
+      count: int,
+      unroll: int,
+      param_splitter: LayerStackParamSplitter,
+      pass_reverse_to_layer_fn: bool = False,
+      name: Optional[str] = None,
+  ):
+    super().__init__(
+        count=count,
+        unroll=unroll,
+        param_splitter=param_splitter,
+        pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
+        name=name,
+    )
     _check_no_varargs(f)
     self._f = f
 
@@ -160,15 +193,22 @@ class _LayerStackNoPerLayer(_LayerStack):
 class _LayerStackWithPerLayer(_LayerStack):
   """_LayerStack impl with per-layer inputs provided to the function."""
 
-  def __init__(self,
-               f: WrappedFn,
-               count: int,
-               unroll: int,
-               pass_reverse_to_layer_fn: bool = False,
-               name: Optional[str] = None):
-    super().__init__(count=count, unroll=unroll,
-                     pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
-                     name=name)
+  def __init__(
+      self,
+      f: WrappedFn,
+      count: int,
+      unroll: int,
+      param_splitter: LayerStackParamSplitter,
+      pass_reverse_to_layer_fn: bool = False,
+      name: Optional[str] = None,
+  ):
+    super().__init__(
+        count=count,
+        unroll=unroll,
+        param_splitter=param_splitter,
+        pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
+        name=name,
+    )
     self._f = f
 
   @module.transparent
@@ -176,11 +216,14 @@ class _LayerStackWithPerLayer(_LayerStack):
     return self._f(x, *args, **kwargs)
 
 
-def layer_stack(num_layers: int,
-                with_per_layer_inputs=False,
-                unroll: int = 1,
-                pass_reverse_to_layer_fn: bool = False,
-                name: Optional[str] = None):
+def layer_stack(
+    num_layers: int,
+    with_per_layer_inputs=False,
+    unroll: int = 1,
+    pass_reverse_to_layer_fn: bool = False,
+    param_splitter: LayerStackParamSplitter = NoSplitter(),
+    name: Optional[str] = None,
+):
   """Utility to wrap a Haiku function and recursively apply it to an input.
 
   This can be used to improve model compile times.
@@ -238,6 +281,10 @@ def layer_stack(num_layers: int,
   Crucially, any parameters created inside ``f`` will not be shared across
   iterations.
 
+  By default, the params created by layer_stack calls will be stacked along
+  axis=0 with shape[0]==num_layers.  However, this can be modified by a custom
+  param_splitter argument.
+
   Args:
     num_layers: The number of times to iterate the wrapped function.
     with_per_layer_inputs: Whether or not to pass per-layer inputs to the
@@ -246,8 +293,10 @@ def layer_stack(num_layers: int,
     pass_reverse_to_layer_fn: Whether or not to pass the ``reverse`` keyword to
       the function ``f``, so that it is aware if the layer stack is being run
       forward or in reverse (and the underlying ``scan``). To run the layer
-      stack in reverse you need to pass in ``reverse=True`` to the call to
-      the layer stack.
+      stack in reverse you need to pass in ``reverse=True`` to the call to the
+      layer stack.
+    param_splitter: Modifier for parameters generated by stacked layers.  By
+      default, parameters are not modified.
     name: name of the Haiku context.
 
   Returns:
@@ -260,17 +309,25 @@ def layer_stack(num_layers: int,
         for ys in jax.tree_util.tree_leaves(args):
           assert ys.shape[0] == num_layers
         return _LayerStackWithPerLayer(
-            f, num_layers, unroll=unroll,
+            f,
+            num_layers,
+            unroll=unroll,
+            param_splitter=param_splitter,
             pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
-            name=name)(x, *args, **kwargs)
+            name=name,
+        )(x, *args, **kwargs)
     else:
       _check_no_varargs(f)
       @functools.wraps(f)
       def wrapped(*args, **kwargs):
         ret = _LayerStackNoPerLayer(
-            f, num_layers, unroll=unroll,
+            f,
+            num_layers,
+            unroll=unroll,
+            param_splitter=param_splitter,
             pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
-            name=name)(args, None, **kwargs)[0]
+            name=name,
+        )(args, None, **kwargs)[0]
         if len(args) == 1:
           # If the function takes a single argument, we must also return a
           # single value, and not a tuple of length 1.

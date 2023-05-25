@@ -170,6 +170,19 @@ class LayerStackTest(parameterized.TestCase):
         ValueError, "The function `f` should not have any `varargs`"):
       build_and_init_stack(VarArgsModule)
 
+  def test_layer_stack_no_state_error(self):
+    def outer_fn_layer_stack(x):
+      stack = layer_stack.layer_stack(1)(lambda x: base.set_state("hi", x))
+      return stack(x)
+
+    layer_stack_fn = transform.transform_with_state(outer_fn_layer_stack)
+
+    x = jnp.ones((1,))
+
+    with self.assertRaisesRegex(layer_stack.LayerStackStateError,
+                                "LayerStack.*state"):
+      layer_stack_fn.init(None, x)
+
   @parameterized.parameters([1, 2, 4])
   def test_layer_stack_grads(self, unroll):
     """Compare layers_stack gradients to the equivalent unrolled stack.

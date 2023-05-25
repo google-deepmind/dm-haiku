@@ -72,12 +72,7 @@ class _LayerStack(module.Module):
 
   def __call__(self, x, *args_ys, reverse=False):
     count = self._count
-    try:
-      init_fn, apply_fn = transform.transform(self._call_wrapped)
-    except base.NonEmptyStateError as e:
-      raise LayerStackStateError("LayerStack can only be used on Haiku "
-                                 "functions which do not make use of Haiku "
-                                 "state.") from e
+    init_fn, apply_fn = transform.transform(self._call_wrapped)
 
     def per_layer_init_fn(c, a):
       c, rng = c
@@ -96,7 +91,13 @@ class _LayerStack(module.Module):
 
     rng = base.maybe_next_rng_key()
     lifted_init_fn = lift.transparent_lift(scanned_init_fn, allow_reuse=True)
-    params = lifted_init_fn(x, rng)
+
+    try:
+      params = lifted_init_fn(x, rng)
+    except base.NonEmptyStateError as e:
+      raise LayerStackStateError("LayerStack can only be used on Haiku "
+                                 "functions which do not make use of Haiku "
+                                 "state.") from e
 
     # Use scan during apply, threading through random seed so that it's
     # unique for each layer.

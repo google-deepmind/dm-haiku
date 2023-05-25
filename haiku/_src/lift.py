@@ -73,7 +73,8 @@ def add_state_to_init_fn(
   def wrapped_init_fn(*a, **k):
     params = init_fn(*a, **k)
     if not isinstance(params, Mapping):
-      raise ValueError("For stateful lifted functions use `hk.lift_with_state`")
+      raise base.NonEmptyStateError("For stateful lifted functions use "
+                                    "`hk.lift_with_state`")
     return params, {}
   return wrapped_init_fn
 

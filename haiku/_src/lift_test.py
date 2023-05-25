@@ -211,7 +211,8 @@ class LiftTest(parameterized.TestCase):
     f = transform.transform_with_state(
         lambda: base.get_state("w", [], init=jnp.zeros))
     lifted = lift.lift(f.init)  # pytype: disable=wrong-arg-types
-    with self.assertRaisesRegex(ValueError, "use.*lift_with_state"):
+    with self.assertRaisesRegex(base.NonEmptyStateError,
+                                "use.*lift_with_state"):
       lifted(None)
 
   def test_lift_with_state(self):

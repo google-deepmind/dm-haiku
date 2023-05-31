@@ -68,81 +68,88 @@ _Metrics = MutableMapping[str, Any]
 
 class TrainingState(NamedTuple):
   """Container for the training state."""
-  params: hk.Params
-  opt_state: optax.OptState
-  rng: jax.Array
-  step: jax.Array
+  params: hk.Params  # Current network parameters.
+  opt_state: optax.OptState  # Optimiser state (e.g. gradient moments).
+  rng_key: jax.Array  # RNG used for e.g. dropout. Split on each update step.
+  step: jax.Array  # Tracks the number of training steps.
 
 
-def main(_):
+def forward_pass(tokens: Union[np.ndarray, jax.Array]) -> jax.Array:
+  """Defines the forward pass of the language model."""
+  lm = model.LanguageModel(
+      model_size=MODEL_SIZE,
+      vocab_size=dataset.VOCAB_SIZE,
+      pad_token=dataset.PAD_TOKEN,
+      transformer=model.Transformer(
+          num_heads=NUM_HEADS,
+          num_layers=NUM_LAYERS,
+          attn_size=KEY_SIZE,
+          dropout_rate=DROPOUT_RATE,
+      ),
+  )
+  return lm(tokens)  # Logits, shape [B, T, V].
 
-  # Create the model.
-  def forward(tokens: Union[np.ndarray, jax.Array]) -> jax.Array:
-    lm = model.LanguageModel(
-        model_size=MODEL_SIZE,
-        vocab_size=dataset.VOCAB_SIZE,
-        pad_token=dataset.PAD_TOKEN,
-        transformer=model.Transformer(
-            num_heads=NUM_HEADS,
-            num_layers=NUM_LAYERS,
-            key_size=KEY_SIZE,
-            dropout_rate=DROPOUT_RATE,
-        ),
-    )
-    return lm(tokens)
 
-  # Create the optimiser.
-  optimiser = optax.chain(
+def optimiser() -> optax.GradientTransformation:
+  return optax.chain(
       optax.clip_by_global_norm(GRAD_CLIP_VALUE),
       optax.adam(LEARNING_RATE, b1=0.9, b2=0.99),
   )
 
-  # Create the loss.
-  @hk.transform
-  def loss_fn(data: _Batch) -> jax.Array:
-    """Computes the (scalar) LM loss on `data` w.r.t. params."""
-    logits = forward(data.inputs)
-    targets = jax.nn.one_hot(data.targets, dataset.VOCAB_SIZE)
-    assert logits.shape == targets.shape
 
-    mask = jnp.greater(data.inputs, 0)
-    log_likelihood = jnp.sum(targets * jax.nn.log_softmax(logits), axis=-1)
-    return -jnp.sum(log_likelihood * mask) / jnp.sum(mask)  # NLL per token.
+@hk.transform
+def loss_fn(data: _Batch) -> jax.Array:
+  """Computes the (scalar) language modelling loss on `data` w.r.t. params."""
+  logits = forward_pass(data.inputs)
+  log_probs = jax.nn.log_softmax(logits)  # [B, T, V]
+  onehot_targets = jax.nn.one_hot(data.targets, dataset.VOCAB_SIZE)
+  log_likelihood = jnp.sum(onehot_targets * log_probs, axis=-1)  # [B, T]
 
-  @jax.jit
-  def update(state: TrainingState, data) -> Tuple[TrainingState, _Metrics]:
-    """Does an SGD step and returns metrics."""
-    rng, new_rng = jax.random.split(state.rng)
-    loss_and_grad_fn = jax.value_and_grad(loss_fn.apply)
-    loss, gradients = loss_and_grad_fn(state.params, rng, data)
+  # Loss is the average negative log-likelihood per (non-masked) token.
+  mask = jnp.not_equal(data.inputs, dataset.PAD_TOKEN)  # [B, T]
+  return -jnp.sum(log_likelihood * mask) / jnp.sum(mask)  # []
 
-    updates, new_opt_state = optimiser.update(gradients, state.opt_state)
-    new_params = optax.apply_updates(state.params, updates)
 
-    new_state = TrainingState(
-        params=new_params,
-        opt_state=new_opt_state,
-        rng=new_rng,
-        step=state.step + 1,
-    )
+@jax.jit
+def init(rng: jax.Array, data: _Batch) -> TrainingState:
+  """Makes an initial training state (random parameters)."""
+  rng, init_rng = jax.random.split(rng)
+  initial_params = loss_fn.init(init_rng, data)
+  initial_opt_state = optimiser().init(initial_params)
+  return TrainingState(
+      params=initial_params,
+      opt_state=initial_opt_state,
+      rng_key=rng,
+      step=jnp.array(0),
+  )
 
-    metrics = {
-        'step': state.step,
-        'loss': loss,
-    }
-    return new_state, metrics
 
-  @jax.jit
-  def init(rng: jax.Array, data) -> TrainingState:
-    rng, init_rng = jax.random.split(rng)
-    initial_params = loss_fn.init(init_rng, data)
-    initial_opt_state = optimiser.init(initial_params)
-    return TrainingState(
-        params=initial_params,
-        opt_state=initial_opt_state,
-        rng=rng,
-        step=jnp.array(0),
-    )
+@jax.jit
+def update(
+    state: TrainingState, data: _Batch) -> Tuple[TrainingState, _Metrics]:
+  """Does an SGD step, returning a new training state and metrics."""
+  rng, net_rng = jax.random.split(state.rng_key)
+  loss_and_grad_fn = jax.value_and_grad(loss_fn.apply)
+  loss, gradients = loss_and_grad_fn(state.params, net_rng, data)
+
+  updates, new_opt_state = optimiser().update(gradients, state.opt_state)
+  new_params = optax.apply_updates(state.params, updates)
+
+  new_state = TrainingState(
+      params=new_params,
+      opt_state=new_opt_state,
+      rng_key=rng,
+      step=state.step + 1,
+  )
+
+  metrics = {
+      'step': state.step,
+      'loss': loss,
+  }
+  return new_state, metrics
+
+
+def main(_):
 
   # Create the dataset.
   with open(DATASET_PATH.value, mode='r') as file:
@@ -157,11 +164,11 @@ def main(_):
   data = next(train_dataset)
   state = init(rng, data)
 
-  # Start training (note we don't include any explicit eval in this example).
+  # Training loop (note we don't include any explicit eval in this example).
   prev_time = time.time()
   for step in range(MAX_STEPS):
-    data = next(train_dataset)
     state, metrics = update(state, data)
+    data = next(train_dataset)
     # We use JAX runahead to mask data preprocessing and JAX dispatch overheads.
     # Using values from state/metrics too often will block the runahead and can
     # cause these overheads to become more prominent.

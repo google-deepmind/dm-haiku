@@ -31,8 +31,8 @@ import jax.numpy as jnp
 import numpy as np
 
 
-def layer_norm(x: jax.Array) -> jax.Array:
-  """Applies a unique LayerNorm to x with default settings."""
+def _layer_norm(x: jax.Array) -> jax.Array:
+  """Applies a unique LayerNorm to `x` with default settings."""
   ln = hk.LayerNorm(axis=-1, create_scale=True, create_offset=True)
   return ln(x)
 
@@ -41,24 +41,21 @@ def layer_norm(x: jax.Array) -> jax.Array:
 class Transformer(hk.Module):
   """A transformer stack."""
 
-  num_heads: int
-  num_layers: int
-  key_size: int
-  dropout_rate: float
-  widening_factor: int = 4
-  name: Optional[str] = None
+  num_heads: int  # Number of attention heads.
+  num_layers: int  # Number of transformer (attention + MLP) layers to stack.
+  attn_size: int  # Size of the attention (key, query, value) vectors.
+  dropout_rate: float  # Probability with which to apply dropout.
+  widening_factor: int = 4  # Factor by which the MLP hidden layer widens.
+  name: Optional[str] = None  # Optional identifier for the module.
 
   def __call__(
       self,
       embeddings: jax.Array,  # [B, T, D]
       mask: jax.Array,  # [B, T]
-      *,
-      is_training: bool = True,
   ) -> jax.Array:  # [B, T, D]
     """Transforms input embedding sequences to output embedding sequences."""
 
     initializer = hk.initializers.VarianceScaling(2 / self.num_layers)
-    dropout_rate = self.dropout_rate if is_training else 0.
     _, seq_len, model_size = embeddings.shape
 
     # Compute causal mask for autoregressive sequence modelling.
@@ -71,13 +68,13 @@ class Transformer(hk.Module):
       # First the attention block.
       attn_block = hk.MultiHeadAttention(
           num_heads=self.num_heads,
-          key_size=self.key_size,
+          key_size=self.attn_size,
           model_size=model_size,
           w_init=initializer,
       )
-      h_norm = layer_norm(h)
+      h_norm = _layer_norm(h)
       h_attn = attn_block(h_norm, h_norm, h_norm, mask=mask)
-      h_attn = hk.dropout(hk.next_rng_key(), dropout_rate, h_attn)
+      h_attn = hk.dropout(hk.next_rng_key(), self.dropout_rate, h_attn)
       h = h + h_attn
 
       # Then the dense block.
@@ -86,12 +83,12 @@ class Transformer(hk.Module):
           jax.nn.gelu,
           hk.Linear(model_size, w_init=initializer),
       ])
-      h_norm = layer_norm(h)
+      h_norm = _layer_norm(h)
       h_dense = dense_block(h_norm)
-      h_dense = hk.dropout(hk.next_rng_key(), dropout_rate, h_dense)
+      h_dense = hk.dropout(hk.next_rng_key(), self.dropout_rate, h_dense)
       h = h + h_dense
 
-    return layer_norm(h)
+    return _layer_norm(h)
 
 
 @dataclasses.dataclass
@@ -99,17 +96,15 @@ class LanguageModel(hk.Module):
   """An autoregressive transformer-based language model."""
 
   transformer: Transformer
-  model_size: int
-  vocab_size: int
-  pad_token: int
-  name: Optional[str] = None
+  model_size: int  # Embedding size.
+  vocab_size: int  # Size of the vocabulary.
+  pad_token: int  # Identity of the padding token (used for masking inputs).
+  name: Optional[str] = None  # Optional identifier for the module.
 
   def __call__(
       self,
-      tokens: jax.Array,
-      *,
-      is_training: bool = True,
-  ) -> jax.Array:
+      tokens: jax.Array,  # Batch of sequences of input tokens, shape [B, T].
+  ) -> jax.Array:  # Batch of sequences of output token logits, shape [B, T, V].
     """Forward pass, producing a sequence of logits."""
     input_mask = jnp.greater(tokens, self.pad_token)
     unused_batch_size, seq_len = tokens.shape
@@ -124,11 +119,7 @@ class LanguageModel(hk.Module):
     input_embeddings = token_embeddings + positional_embeddings  # [B, T, D]
 
     # Run the transformer over the inputs.
-    embeddings = self.transformer(
-        input_embeddings,
-        input_mask,
-        is_training=is_training,
-    )  # [B, T, D]
+    embeddings = self.transformer(input_embeddings, input_mask)  # [B, T, D]
 
     # Decode the embeddings (here, we use untied weights).
     return hk.Linear(self.vocab_size)(embeddings)  # [B, T, V]

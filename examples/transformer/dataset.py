@@ -27,17 +27,18 @@ _T = TypeVar('_T')
 
 
 class Batch(NamedTuple):
-  inputs: np.ndarray  # Integer tokens, shape [B, T]
-  targets: np.ndarray  # Integer tokens, shape [B, T]
+  inputs: np.ndarray  # Integer tokens, shape [B, T].
+  targets: np.ndarray  # Integer tokens, shape [B, T].
 
 
-def _repeat_and_shuffle(
-    iterable: Iterable[_T], *, buffer_size: int) -> Iterator[_T]:
-  """Infinitely repeats, caches, and shuffles data from `iterable`."""
-  ds = itertools.cycle(iterable)
-  buffer = [next(ds) for _ in range(buffer_size)]
+def repeat(dataset: Iterable[_T]) -> Iterator[_T]:
+  return itertools.cycle(dataset)
+
+
+def shuffle(dataset: Iterator[_T], buffer_size: int) -> Iterator[_T]:
+  buffer = [next(dataset) for _ in range(buffer_size)]
   random.shuffle(buffer)
-  for item in ds:
+  for item in dataset:
     idx = random.randint(0, buffer_size - 1)  # Inclusive.
     result = buffer[idx]
     buffer[idx] = item
@@ -67,7 +68,7 @@ def load_ascii_dataset(
   num_batches, remainder = divmod(corpus.size, batch_size * crop_len)
   if remainder:
     corpus = corpus[:-remainder]  # Drop remainder (incomplete) batch.
-  corpus = corpus.reshape([-1, crop_len])
+  ds = corpus.reshape([-1, crop_len])
 
   if num_batches < num_shuffle_batches:
     raise ValueError(
@@ -75,7 +76,8 @@ def load_ascii_dataset(
         'sequence length or a smaller batch batch size.',
     )
 
-  ds = _repeat_and_shuffle(corpus, buffer_size=batch_size * num_shuffle_batches)
+  ds = repeat(ds)
+  ds = shuffle(ds, buffer_size=batch_size * num_shuffle_batches)
   while True:
     batch = np.stack([next(ds) for _ in range(batch_size)])
     yield Batch(inputs=batch[:, :-1], targets=batch[:, 1:])

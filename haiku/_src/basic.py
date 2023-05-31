@@ -188,7 +188,7 @@ class Linear(hk.Module):
 
 
 def ndim_at_least(x, num_dims):
-  if not isinstance(x, jax.Array):
+  if not (isinstance(x, jax.Array) or isinstance(x, np.ndarray)):
     x = jnp.asarray(x)
   return x.ndim >= num_dims
 
@@ -212,12 +212,12 @@ def merge_leading_dims(x, num_dims):
 
   # TODO(tomhennigan) Pass dtype here to account for empty slices.
   new_shape = (np.prod(x.shape[:num_dims]),) + x.shape[num_dims:]
-  return jnp.reshape(x, new_shape)
+  return x.reshape(new_shape)
 
 
 def split_leading_dim(x, to_dim):
   new_shape = to_dim + x.shape[1:]
-  return jnp.reshape(x, new_shape)
+  return x.reshape(new_shape)
 
 
 class BatchApply:

@@ -75,6 +75,18 @@ class BasicTest(parameterized.TestCase):
   def test_dropout_dynamic_range(self):
     jax.jit(basic.dropout)(base.next_rng_key(), 0.25, jnp.ones([3, 3]))
 
+  @parameterized.parameters(jnp, np)
+  def test_merge_leading_dims_preserves_type(self, xnp):
+    inputs = xnp.ones(shape=(2, 3, 4))
+    outputs = basic.merge_leading_dims(inputs, 2)
+    self.assertEqual(type(inputs), type(outputs))
+
+  @parameterized.parameters(jnp, np)
+  def test_split_leading_dims_preserves_type(self, xnp):
+    inputs = xnp.ones(shape=(2 * 3, 4))
+    outputs = basic.split_leading_dim(inputs, (2, 3))
+    self.assertEqual(type(inputs), type(outputs))
+
   def test_batchapply(self):
 
     def raises(a, b):

@@ -17,13 +17,14 @@
 import collections
 import functools
 import inspect
-from typing import Any, Callable, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Protocol, Tuple, Union
 
 from haiku._src import base
 from haiku._src import lift
 from haiku._src import module
 from haiku._src import transform
 import jax
+import jax.numpy as jnp
 
 
 class LayerStackStateError(Exception):
@@ -56,19 +57,108 @@ def _get_rng_stack(count: int) -> Optional[jax.Array]:
   return jax.random.split(rng, count)
 
 
-class _LayerStack(module.Module):
+class LayerStackTransparencyMapping(Protocol):
+  """Module name mapping for transparent layer_stack."""
+
+  def stacked_to_flat(self, stacked_module_name: str, scan_idx: int) -> str:
+    """Creates flat module name from stacked name and index during scan."""
+    ...
+
+  def flat_to_stacked(
+      self, unstacked_module_name: str
+  ) -> Optional[Tuple[str, int]]:
+    """Creates stacked module name and scan index from flat name.
+
+    Returns None when the module is not a part of layer_stack.  This happens
+    when the caller module transparently calling layer_stack has its own
+    parameters.  This function is basically inverse of `stacked_to_flat`,
+
+    Args:
+      unstacked_module_name: Name of the module to be converted to stacked.
+
+    Returns:
+      Name and layer index of the module when stacked.  None if the module is
+      not part of the stack.
+    """
+    ...
+
+
+def _split_params(
+    stacked_params: base.Params,
+    num_layers: int,
+    name_map: LayerStackTransparencyMapping,
+) -> base.Params:
+  """Splits the stacked parameters."""
+
+  def _split(x):
+    return [jnp.squeeze(s, axis=0) for s in jnp.split(x, x.shape[0], axis=0)]
+
+  params = {}
+  for mod_name, mod_params in stacked_params.items():
+    split_mod_params = {k: _split(v) for k, v in mod_params.items()}
+    for i in range(num_layers):
+      new_mod_name = name_map.stacked_to_flat(mod_name, i)
+      if new_mod_name in params:
+        raise ValueError(
+            f"Found conflicting unstacked module name for {mod_name} at"
+            f" {new_mod_name}."
+        )
+      params[new_mod_name] = {k: v[i] for k, v in split_mod_params.items()}
+
+  return params
+
+
+def _stack_params(
+    split_params: base.Params,
+    num_layers: int,
+    name_map: LayerStackTransparencyMapping,
+) -> base.Params:
+  """Stacks the split parameters."""
+  params = {}
+  make_empty_param_stack = lambda: ([None] * num_layers)
+
+  for mod_name, mod_params in split_params.items():
+    stacked_name_idx = name_map.flat_to_stacked(mod_name)
+    if stacked_name_idx is None:
+      continue
+    stacked_mod_name, idx = stacked_name_idx
+    if stacked_mod_name not in params:
+      params[stacked_mod_name] = collections.defaultdict(make_empty_param_stack)
+
+    for k, v in mod_params.items():
+      if params[stacked_mod_name][k][idx] is not None:
+        raise ValueError(
+            f"Found conflicting values for param {stacked_mod_name}/{k} at"
+            f" index {idx}."
+        )
+      params[stacked_mod_name][k][idx] = v
+
+  for mod_name, mod_params in params.items():
+    for k, v in mod_params.items():
+      if None in v:
+        raise ValueError(f"Couldn't find all params for {mod_name}/{k}: {v}")
+      mod_params[k] = jnp.stack(v, axis=0)
+
+  return params
+
+
+class _LayerStack:
   """Module to compose parameterized functions, implemented as a scan."""
 
-  def __init__(self,
-               count: int,
-               unroll: int,
-               pass_reverse_to_layer_fn: bool = False,
-               name: Optional[str] = None):
+  def __init__(
+      self,
+      count: int,
+      unroll: int,
+      pass_reverse_to_layer_fn: bool = False,
+      transparency_map: Optional[LayerStackTransparencyMapping] = None,
+      name: str = "",
+  ):
     """Iterate f count times, with non-shared parameters."""
-    super().__init__(name=name)
+    self._name = name
     self._count = count
     self._unroll = unroll
     self._pass_reverse_to_layer_fn = pass_reverse_to_layer_fn
+    self._transparency_map = transparency_map
 
   def __call__(self, x, *args_ys, reverse=False):
     count = self._count
@@ -87,12 +177,22 @@ class _LayerStack(module.Module):
     def scanned_init_fn(x, rng):
       _, params = jax.lax.scan(per_layer_init_fn, (x, rng), args_ys,
                                length=self._count)
-      return params
+      if self._transparency_map is not None:
+        return _split_params(params, self._count, self._transparency_map)
+      else:
+        return params
 
     rng = base.maybe_next_rng_key()
-    lifted_init_fn = lift.transparent_lift(scanned_init_fn, allow_reuse=True)
 
     try:
+      if self._transparency_map is not None:
+        lifted_init_fn = lift.transparent_lift(
+            scanned_init_fn, allow_reuse=True
+        )
+      else:
+        lifted_init_fn = lift.lift(
+            scanned_init_fn, allow_reuse=True, name=self._name
+        )
       params = lifted_init_fn(x, rng)
     except base.NonEmptyStateError as e:
       raise LayerStackStateError("LayerStack can only be used on Haiku "
@@ -114,6 +214,9 @@ class _LayerStack(module.Module):
 
     rng = _get_rng_stack(count)
 
+    if self._transparency_map is not None:
+      params = _stack_params(params, self._count, self._transparency_map)
+
     carry = LayerStackCarry(x=x)
     scanned = LayerStackScanned(params=params,
                                 rng=rng,
@@ -134,15 +237,22 @@ class _LayerStack(module.Module):
 class _LayerStackNoPerLayer(_LayerStack):
   """_LayerStack impl with no per-layer inputs provided to the function."""
 
-  def __init__(self,
-               f: WrappedFn,
-               count: int,
-               unroll: int,
-               pass_reverse_to_layer_fn: bool = False,
-               name: Optional[str] = None):
-    super().__init__(count=count, unroll=unroll,
-                     pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
-                     name=name)
+  def __init__(
+      self,
+      f: WrappedFn,
+      count: int,
+      unroll: int,
+      pass_reverse_to_layer_fn: bool = False,
+      transparency_map: Optional[LayerStackTransparencyMapping] = None,
+      name: str = "",
+  ):
+    super().__init__(
+        count=count,
+        unroll=unroll,
+        pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
+        transparency_map=transparency_map,
+        name=name,
+    )
     _check_no_varargs(f)
     self._f = f
 
@@ -160,15 +270,22 @@ class _LayerStackNoPerLayer(_LayerStack):
 class _LayerStackWithPerLayer(_LayerStack):
   """_LayerStack impl with per-layer inputs provided to the function."""
 
-  def __init__(self,
-               f: WrappedFn,
-               count: int,
-               unroll: int,
-               pass_reverse_to_layer_fn: bool = False,
-               name: Optional[str] = None):
-    super().__init__(count=count, unroll=unroll,
-                     pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
-                     name=name)
+  def __init__(
+      self,
+      f: WrappedFn,
+      count: int,
+      unroll: int,
+      pass_reverse_to_layer_fn: bool = False,
+      transparency_map: Optional[LayerStackTransparencyMapping] = None,
+      name: str = "",
+  ):
+    super().__init__(
+        count=count,
+        unroll=unroll,
+        pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
+        transparency_map=transparency_map,
+        name=name,
+    )
     self._f = f
 
   @module.transparent
@@ -176,11 +293,15 @@ class _LayerStackWithPerLayer(_LayerStack):
     return self._f(x, *args, **kwargs)
 
 
-def layer_stack(num_layers: int,
-                with_per_layer_inputs=False,
-                unroll: int = 1,
-                pass_reverse_to_layer_fn: bool = False,
-                name: Optional[str] = None):
+def layer_stack(
+    num_layers: int,
+    with_per_layer_inputs=False,
+    unroll: int = 1,
+    pass_reverse_to_layer_fn: bool = False,
+    transparent: bool = False,
+    transparency_map: Optional[LayerStackTransparencyMapping] = None,
+    name: Optional[str] = None,
+):
   """Utility to wrap a Haiku function and recursively apply it to an input.
 
   This can be used to improve model compile times.
@@ -246,13 +367,29 @@ def layer_stack(num_layers: int,
     pass_reverse_to_layer_fn: Whether or not to pass the ``reverse`` keyword to
       the function ``f``, so that it is aware if the layer stack is being run
       forward or in reverse (and the underlying ``scan``). To run the layer
-      stack in reverse you need to pass in ``reverse=True`` to the call to
-      the layer stack.
+      stack in reverse you need to pass in ``reverse=True`` to the call to the
+      layer stack.
+    transparent: Whether to apply layer_stack transparently.  When this is True,
+      and a correct transparency_map is provided, the parameters are generated
+      in such a way that layer_stack can be replaced by a regular for loop
+      without changing the parameter tree.
+    transparency_map: How to map stacked module names to flat names and reverse.
+      See ``LayerStackTransparencyMapping`` and ``layer_stack_test.py`` for an
+      example.
     name: name of the Haiku context.
 
   Returns:
     Callable that will produce a layer stack when called with a valid function.
   """
+  if transparent and transparency_map is None:
+    raise ValueError("transparency_map must be provided with transparent=True.")
+
+  if not name:
+    if with_per_layer_inputs:
+      name = "__layer_stack_with_per_layer"
+    else:
+      name = "__layer_stack_no_per_layer"
+
   def iterate(f):
     if with_per_layer_inputs:
       @functools.wraps(f)
@@ -260,17 +397,25 @@ def layer_stack(num_layers: int,
         for ys in jax.tree_util.tree_leaves(args):
           assert ys.shape[0] == num_layers
         return _LayerStackWithPerLayer(
-            f, num_layers, unroll=unroll,
+            f,
+            num_layers,
+            unroll=unroll,
             pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
-            name=name)(x, *args, **kwargs)
+            transparency_map=transparency_map,
+            name=name,
+        )(x, *args, **kwargs)
     else:
       _check_no_varargs(f)
       @functools.wraps(f)
       def wrapped(*args, **kwargs):
         ret = _LayerStackNoPerLayer(
-            f, num_layers, unroll=unroll,
+            f,
+            num_layers,
+            unroll=unroll,
             pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
-            name=name)(args, None, **kwargs)[0]
+            transparency_map=transparency_map,
+            name=name,
+        )(args, None, **kwargs)[0]
         if len(args) == 1:
           # If the function takes a single argument, we must also return a
           # single value, and not a tuple of length 1.

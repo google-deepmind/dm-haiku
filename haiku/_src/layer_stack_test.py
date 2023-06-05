@@ -15,9 +15,11 @@
 """Tests for haiku._src.layer_stack."""
 
 import functools
+import re
+from typing import Optional, Tuple
+
 from absl.testing import absltest
 from absl.testing import parameterized
-
 from haiku._src import base
 from haiku._src import basic
 from haiku._src import config
@@ -547,6 +549,54 @@ class LayerStackTest(parameterized.TestCase):
     param_size = utils.tree_size(params)
     # 5 layers * (2 * 2 weights) = 20.
     np.testing.assert_equal(param_size, 20)
+
+  def test_transparent(self):
+    num_layers = 3
+
+    class TransparencyMap(layer_stack.LayerStackTransparencyMapping):
+
+      def stacked_to_flat(self, stacked_module_name: str, scan_idx: int) -> str:
+        return stacked_module_name.replace("0", str(scan_idx))
+
+      def flat_to_stacked(
+          self, unstacked_module_name: str
+      ) -> Optional[Tuple[str, int]]:
+        idx = int(re.findall(r"\d+", unstacked_module_name)[0])
+        return unstacked_module_name.replace(str(idx), "0"), idx
+
+    def block(x: jax.Array, i: int) -> jax.Array:
+      return basic.Linear(output_size=x.shape[-1], name=f"linear_{i}")(x)
+
+    def looped(x: jax.Array) -> jax.Array:
+      for i in range(num_layers):
+        x = block(x, i)
+      return x
+
+    def stacked(x: jax.Array) -> jax.Array:
+      return layer_stack.layer_stack(
+          num_layers=3, transparent=True, transparency_map=TransparencyMap()
+      )(lambda y: block(y, 0))(x)
+
+    looped = transform.transform(looped)
+    stacked = transform.transform(stacked)
+
+    x = jnp.ones((2, 2))
+    rng = jax.random.PRNGKey(0)
+    looped_params = looped.init(rng, x)
+    stacked_params = stacked.init(rng, x)
+
+    self.assertEqual(
+        jax.tree_util.tree_structure(looped_params),
+        jax.tree_util.tree_structure(stacked_params),
+    )
+
+    # Use same set of params for both calls since stacked_params have different
+    # value than looped params because differences in RNG splitting.
+    np.testing.assert_allclose(
+        looped.apply(looped_params, rng, x),
+        stacked.apply(looped_params, rng, x),
+        rtol=1e-6,
+    )
 
 
 if __name__ == "__main__":

@@ -29,8 +29,8 @@ def zeros_creator(next_creator, shape, dtype, init, context):
   return next_creator(shape, dtype, init)
 
 
-def noop_dropout(rng, rate, x):
-  del rng, rate
+def noop_dropout(rng, rate, x, broadcast_dims=()):
+  del rng, rate, broadcast_dims
   return x
 
 

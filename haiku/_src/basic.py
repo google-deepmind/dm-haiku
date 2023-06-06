@@ -15,7 +15,7 @@
 """Basic Haiku modules and functions."""
 
 import functools
-from typing import Any, Callable, Iterable, Optional, Type
+from typing import Any, Callable, Iterable, Optional, Sequence, Type
 
 from haiku._src import base
 from haiku._src import initializers
@@ -296,7 +296,9 @@ def expand_apply(f, axis=0):
   return wrapper
 
 
-def dropout(rng: PRNGKey, rate: float, x: jax.Array) -> jax.Array:
+def dropout(
+    rng: PRNGKey, rate: float, x: jax.Array, broadcast_dims: Sequence[int] = ()
+) -> jax.Array:
   """Randomly drop units in the input at a given rate.
 
   See: http://www.cs.toronto.edu/~hinton/absps/dropout.pdf
@@ -306,6 +308,7 @@ def dropout(rng: PRNGKey, rate: float, x: jax.Array) -> jax.Array:
     rate: Probability that each element of ``x`` is discarded. Must be a scalar
       in the range ``[0, 1)``.
     x: The value to be dropped out.
+    broadcast_dims: specifies dimensions that will share the same dropout mask.
 
   Returns:
     x, but dropped out and scaled by ``1 / (1 - rate)``.
@@ -317,11 +320,13 @@ def dropout(rng: PRNGKey, rate: float, x: jax.Array) -> jax.Array:
     than what applications require. A work-around is to pass `rate` with a lower
     precision, e.g. using `np.float16(rate)`.
   """
-  return dropout_impl(rng, rate, x)
+  return dropout_impl(rng, rate, x, broadcast_dims=broadcast_dims)
 
 
 # Separated out to support monkey patching.
-def dropout_impl(rng: PRNGKey, rate: float, x: jax.Array) -> jax.Array:
+def dropout_impl(
+    rng: PRNGKey, rate: float, x: jax.Array, broadcast_dims: Sequence[int] = ()
+) -> jax.Array:
   """See dropout."""
   try:
     if rate < 0 or rate >= 1:
@@ -332,8 +337,16 @@ def dropout_impl(rng: PRNGKey, rate: float, x: jax.Array) -> jax.Array:
   except jax.errors.ConcretizationTypeError:
     pass
 
+  broadcast_shape = list(x.shape)
+  for dim in broadcast_dims:
+    if dim > len(broadcast_shape):
+      raise ValueError("Broadcast dimension does not exist. Got dimension "
+                       f"{dim} for shape {broadcast_shape}.")
+    broadcast_shape[dim] = 1
+
   keep_rate = 1.0 - rate
-  keep = jax.random.bernoulli(rng, keep_rate, shape=x.shape)
+  keep = jax.random.bernoulli(rng, keep_rate, shape=broadcast_shape)
+  keep = jnp.broadcast_to(keep, x.shape)
   return keep * x / keep_rate
 
 

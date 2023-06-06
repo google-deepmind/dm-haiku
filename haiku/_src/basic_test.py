@@ -68,11 +68,46 @@ class BasicTest(parameterized.TestCase):
     self.assertEqual(out.shape, (3, 2))
 
   @test_utils.transform_and_run
-  def test_dropout_connects(self):
-    basic.dropout(base.next_rng_key(), 0.25, jnp.ones([3, 3]))
+  def test_dropout(self):
+    rate = 0.25
+    x = basic.dropout(base.next_rng_key(),
+                      rate,
+                      jnp.ones([1000, 1000]))  # larger is less flaky test
+    self.assertAlmostEqual(jnp.mean(x == 0), rate, delta=0.001)
+    # The dropped out tensor is rescaled to preserve the same mean.
+    self.assertAlmostEqual(jnp.mean(x), 1.0, delta=0.01)
 
   @test_utils.transform_and_run
-  def test_dropout_dynamic_range(self):
+  def test_dropout_broadcasts(self):
+    x_in = jnp.ones([3, 3, 3, 3])
+    x_out = basic.dropout(base.next_rng_key(),
+                          0.5,
+                          x_in,
+                          broadcast_dims=(1,))
+    np.testing.assert_allclose(x_out[:, 0], x_out[:, 1])
+    np.testing.assert_allclose(x_out[:, 0], x_out[:, 2])
+    self.assertRaises(AssertionError, np.testing.assert_allclose,
+                      x_out[:, :, 0], x_out[:, :, 1])
+    self.assertRaises(AssertionError, np.testing.assert_allclose,
+                      x_out[:, :, 0], x_out[:, :, 2])
+    self.assertRaises(AssertionError, np.testing.assert_allclose,
+                      x_out[0], x_out[1])
+    self.assertEqual(x_in.shape, x_out.shape)
+
+    x_out = basic.dropout(base.next_rng_key(),
+                          0.5,
+                          x_in,
+                          broadcast_dims=(1, 2))
+    np.testing.assert_allclose(x_out[:, 0], x_out[:, 1])
+    np.testing.assert_allclose(x_out[:, 0], x_out[:, 2])
+    np.testing.assert_allclose(x_out[:, :, 0], x_out[:, :, 1])
+    np.testing.assert_allclose(x_out[:, :, 0], x_out[:, :, 2])
+    self.assertRaises(AssertionError, np.testing.assert_allclose,
+                      x_out[0], x_out[1])
+    self.assertEqual(x_in.shape, x_out.shape)
+
+  @test_utils.transform_and_run
+  def test_dropout_jit(self):
     jax.jit(basic.dropout)(base.next_rng_key(), 0.25, jnp.ones([3, 3]))
 
   @parameterized.parameters(jnp, np)

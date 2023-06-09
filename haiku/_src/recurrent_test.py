@@ -46,7 +46,7 @@ class DuplicateCore(recurrent.RNNCore):
 
 def make_sequence(shape):
   # Skips 0 for meaningful multiplicative interactions.
-  return np.arange(1, np.product(shape) + 1, dtype=np.float32).reshape(shape)
+  return np.arange(1, np.prod(shape) + 1, dtype=np.float32).reshape(shape)
 
 
 class RecurrentTest(parameterized.TestCase):

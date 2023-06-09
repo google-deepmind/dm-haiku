@@ -250,7 +250,7 @@ class UniformScaling(hk.initializers.Initializer):
     self.scale = scale
 
   def __call__(self, shape: Sequence[int], dtype: Any) -> jax.Array:
-    input_size = np.product(shape[:-1])
+    input_size = np.prod(shape[:-1])
     max_val = np.sqrt(3 / input_size) * self.scale
     return RandomUniform(-max_val, max_val)(shape, dtype)
 

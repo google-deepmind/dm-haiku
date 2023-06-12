@@ -829,6 +829,8 @@ hk_py_library(
 hk_py_test(
     name = "reshape_test",
     srcs = ["reshape_test.py"],
+    # TODO(necula): fails under native serialiation (runs CPU code on TPU)..
+    env = {"TF_XLA_FLAGS": "--tf_xla_call_module_disabled_checks=platform"},
     deps = [
         ":reshape",
         ":test_utils",

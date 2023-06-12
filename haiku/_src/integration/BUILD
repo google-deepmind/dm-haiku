@@ -263,6 +263,8 @@ hk_py_test(
     name = "jax2tf_test",
     timeout = "long",
     srcs = ["jax2tf_test.py"],
+    # TODO(necula): fails under native serialiation (runs CPU code on TPU).
+    env = {"TF_XLA_FLAGS": "--tf_xla_call_module_disabled_checks=platform"},
     shard_count = 50,
     deps = [
         ":descriptors",

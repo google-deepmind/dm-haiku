@@ -573,6 +573,19 @@ class StatefulTest(parameterized.TestCase):
     self.assertEqual(out, 4)
     self.assertEqual(m.count, 3)
 
+  @test_utils.transform_and_run
+  def test_map(self):
+    x = np.zeros((10, 10), dtype=np.float32)
+
+    def f(x):
+      self.assertLen(x.shape, 1)
+      return x + jax.random.uniform(base.next_rng_key())
+
+    if transform.running_init():
+      f(x[0])
+    else:
+      stateful.map(f, x)
+
   def test_vmap(self):
     def g(x):
       return CountingModule()(x)

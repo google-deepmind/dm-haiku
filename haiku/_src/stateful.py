@@ -27,6 +27,7 @@ import jax.numpy as jnp
 InternalState = collections.namedtuple("InternalState", "params,state,rng")
 Bundle = Mapping[str, Mapping[str, Any]]
 T = TypeVar("T")
+python_map = map  # pylint: disable=invalid-name
 
 
 def copy_structure(bundle: T) -> T:
@@ -575,7 +576,8 @@ def switch(index, branches, *operands):
   stateful_branch_mem = _memoize_by_id(stateful_branch)
   state = internal_state()
   out, state = jax.lax.switch(
-      index, tuple(map(stateful_branch_mem, branches)), (state, operands))
+      index, tuple(python_map(stateful_branch_mem, branches)), (state, operands)
+  )
   update_internal_state(state)
   return out
 
@@ -650,6 +652,13 @@ def scan(f, init, xs, length=None, reverse=False, unroll=1):
           lambda y0, ys: jnp.concatenate([y0, ys]), y0, ys)
 
   return carry, ys
+
+
+def map(f, xs):  # pylint: disable=redefined-builtin
+  """Equivalent to :func:`jax.lax.map` but with Haiku state passed in/out."""
+  g = lambda _, x: ((), f(x))
+  _, ys = scan(g, (), xs)
+  return ys
 
 
 def fori_loop(lower, upper, body_fun, init_val):

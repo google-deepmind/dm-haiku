@@ -105,6 +105,7 @@ from haiku._src.stateful import cond
 from haiku._src.stateful import eval_shape
 from haiku._src.stateful import fori_loop
 from haiku._src.stateful import grad
+from haiku._src.stateful import map  # pylint: disable=redefined-builtin
 from haiku._src.stateful import remat
 from haiku._src.stateful import scan
 from haiku._src.stateful import switch
@@ -207,6 +208,7 @@ __all__ = (
     "initializers",
     "intercept_methods",
     "lift",
+    "map",
     "max_pool",
     "maybe_next_rng_key",
     "mixed_precision",

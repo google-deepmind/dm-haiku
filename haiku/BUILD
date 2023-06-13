@@ -1,6 +1,15 @@
 # Description: Haiku is a neural network library for JAX.
+load("//tools/build_defs/license:license.bzl", "license")
 
-package(default_visibility = ["//visibility:private"])
+package(
+    default_applicable_licenses = ["//haiku:license"],
+    default_visibility = ["//visibility:private"],
+)
+
+license(
+    name = "license",
+    package_name = "haiku",
+)
 
 licenses(["notice"])
 

@@ -1,6 +1,9 @@
 load("//haiku/_src:build_defs.bzl", "hk_py_binary", "hk_py_library", "hk_py_test")
 
-package(default_visibility = [":__subpackages__"])
+package(
+    default_applicable_licenses = ["//haiku:license"],
+    default_visibility = [":__subpackages__"],
+)
 
 licenses(["notice"])
 

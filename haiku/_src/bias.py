@@ -120,7 +120,9 @@ class Bias(hk.Module):
     utils.assert_minimum_rank(inputs, 2)
     if self.output_size is not None and self.output_size != inputs.shape[1:]:
       raise ValueError(
-          f"Input shape must be {(-1,) + self.output_size} not {inputs.shape}")
+          f"Input shape must be {(-1,) + tuple(self.output_size)} not"
+          f" {inputs.shape}"
+      )
 
     self.bias_shape = calculate_bias_shape(inputs.shape, self.bias_dims)
     self.input_size = inputs.shape[1:]

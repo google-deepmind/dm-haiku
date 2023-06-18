@@ -159,11 +159,19 @@ class MLP(hk.Module):
     if name is None:
       name = self.name + "_reversed"
 
+    output_sizes = tuple(
+        layer.input_size
+        for layer in reversed(self.layers)
+        if layer.input_size is not None
+    )
+    if len(output_sizes) != len(self.layers):
+      raise ValueError("You cannot reverse an MLP until it has been called.")
     return MLP(
-        output_sizes=(layer.input_size for layer in reversed(self.layers)),
+        output_sizes=output_sizes,
         w_init=self.w_init,
         b_init=self.b_init,
         with_bias=self.with_bias,
         activation=self.activation,
         activate_final=activate_final,
-        name=name)
+        name=name,
+    )

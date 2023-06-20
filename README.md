@@ -425,7 +425,7 @@ To cite this repository:
 
 ```
 @software{haiku2020github,
-  author = {Tom Hennigan and Trevor Cai and Tamara Norman and Igor Babuschkin},
+  author = {Tom Hennigan and Trevor Cai and Tamara Norman and Lena Martens and Igor Babuschkin},
   title = {{H}aiku: {S}onnet for {JAX}},
   url = {http://github.com/deepmind/dm-haiku},
   version = {0.0.9},

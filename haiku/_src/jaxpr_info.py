@@ -163,8 +163,9 @@ def make_model_info(
         by_name = {k.replace('/~/', '/'): v for k, v in by_name.items()}
 
         for expr in module.expressions:
-          if expr.submodule:
-            _add_param_counts(expr.submodule, expr.submodule.name, by_name)
+          submodule = expr.submodule
+          if submodule:
+            _add_param_counts(submodule, submodule.name, by_name)
     finally:
       sys.setrecursionlimit(old_limit)
     return module
@@ -418,9 +419,11 @@ def _add_param_counts(model_info: Module, prefix: str,
       model_info.state_info[k.replace('/~/', '/').replace(prefix, '.')] = str(s)
 
   for expr in model_info.expressions:
-    if expr.submodule:
-      _add_param_counts(expr.submodule,
-                        os.path.join(prefix, expr.submodule.name), invocations)
+    submodule = expr.submodule
+    if submodule:
+      _add_param_counts(
+          submodule, os.path.join(prefix, submodule.name), invocations
+      )
 
 
 def _decimal_prefix(n: int, unit: str, precision: int = 4):

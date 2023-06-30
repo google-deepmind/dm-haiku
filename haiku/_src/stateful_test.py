@@ -871,7 +871,7 @@ def _callback_prim(forward, backward):
   prim = jax.core.Primitive("hk_callback")
   prim.def_impl(f_impl)
   prim.def_abstract_eval(f_impl)
-  jax.ad.deflinear(prim, b_impl)
+  jax.interpreters.ad.deflinear(prim, b_impl)
   return prim.bind
 
 

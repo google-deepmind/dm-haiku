@@ -586,7 +586,7 @@ def scan(f, init, xs, length=None, reverse=False, unroll=1):
   """Equivalent to :func:`jax.lax.scan` but with Haiku state passed in/out."""
   if not base.inside_transform():
     raise ValueError("hk.scan() should not be used outside of hk.transform(). "
-                     "Use jax.scan() instead.")
+                     "Use jax.lax.scan() instead.")
 
   if length is None:
     length = jax.tree_util.tree_leaves(xs)[0].shape[0]

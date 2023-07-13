@@ -57,11 +57,9 @@ _VMAP_SHAPE_INFERENCE_WARNING = (
     "When running under vmap, passing an `int` (except for `1`) for "
     "`window_shape` or `strides` will result in the wrong shape being inferred "
     "because the batch dimension is not visible to Haiku. Please update your "
-    "code to specify a full unbatched size. "
-    ""
+    "code to specify a full unbatched size.\n"
     "For example if you had `pool(x, window_shape=3, strides=1)` before, you "
-    "should now pass `pool(x, window_shape=(3, 3, 1), strides=1)`. "
-    ""
+    "should now pass `pool(x, window_shape=(3, 3, 1), strides=1)`. \n"
     "Haiku will assume that any additional dimensions in your input are "
     "batch dimensions, and will pad `window_shape` and `strides` accordingly "
     "making your module support both batched and per-example inputs."
@@ -85,11 +83,10 @@ def max_pool(
 
   Args:
     value: Value to pool.
-    window_shape: Shape of the pooling window, an int or same rank as value.
-    strides: Strides of the pooling window, an int or same rank as value.
+    window_shape: Shape of the pooling window, same rank as value.
+    strides: Strides of the pooling window, same rank as value.
     padding: Padding algorithm. Either ``VALID`` or ``SAME``.
-    channel_axis: Axis of the spatial channels for which pooling is skipped,
-      used to infer ``window_shape`` or ``strides`` if they are an integer.
+    channel_axis: Axis of the spatial channels for which pooling is skipped.
 
   Returns:
     Pooled result. Same rank as value.
@@ -116,11 +113,10 @@ def avg_pool(
 
   Args:
     value: Value to pool.
-    window_shape: Shape of the pooling window, an int or same rank as value.
-    strides: Strides of the pooling window, an int or same rank as value.
+    window_shape: Shape of the pooling window, same rank as value.
+    strides: Strides of the pooling window, same rank as value.
     padding: Padding algorithm. Either ``VALID`` or ``SAME``.
-    channel_axis: Axis of the spatial channels for which pooling is skipped,
-      used to infer ``window_shape`` or ``strides`` if they are an integer.
+    channel_axis: Axis of the spatial channels for which pooling is skipped.
 
   Returns:
     Pooled result. Same rank as value.
@@ -167,8 +163,8 @@ class MaxPool(hk.Module):
     """Max pool.
 
     Args:
-      window_shape: Shape of window to pool over. Same rank as value or ``int``.
-      strides: Strides for the window. Same rank as value or ``int``.
+      window_shape: Shape of the pooling window, same rank as value.
+      strides: Strides of the pooling window, same rank as value.
       padding: Padding algorithm. Either ``VALID`` or ``SAME``.
       channel_axis: Axis of the spatial channels for which pooling is skipped.
       name: String name for the module.
@@ -201,8 +197,8 @@ class AvgPool(hk.Module):
     """Average pool.
 
     Args:
-      window_shape: Shape of window to pool over. Same rank as value or ``int``.
-      strides: Strides for the window. Same rank as value or ``int``.
+      window_shape: Shape of the pooling window, same rank as value.
+      strides: Strides of the pooling window, same rank as value.
       padding: Padding algorithm. Either ``VALID`` or ``SAME``.
       channel_axis: Axis of the spatial channels for which pooling is skipped.
       name: String name for the module.

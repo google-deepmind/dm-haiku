@@ -15,6 +15,7 @@
 """Tests for haiku._src.random."""
 
 import functools
+from typing import Sequence
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -88,10 +89,11 @@ class CustomRNGTest(parameterized.TestCase):
       self.skipTest("init returns nothing, so compilation may DCE it")
 
     count = 0
-    def count_splits(_, shape):
+    def count_splits(_, num):
       nonlocal count
       count += 1
-      return jnp.zeros((*shape, 13), np.uint32)
+      num = tuple(num) if isinstance(num, Sequence) else (num,)
+      return jnp.zeros((*num, 13), np.uint32)
 
     differently_shaped_prng_impl = prng.PRNGImpl(
         # Testing a different key shape to make sure it's accepted by Haiku

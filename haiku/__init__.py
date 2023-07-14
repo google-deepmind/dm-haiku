@@ -127,7 +127,7 @@ from haiku._src.typing import State
 from haiku._src.typing import SupportsCall
 from haiku._src.utils import get_channel_index
 
-__version__ = "0.0.10.dev"
+__version__ = "0.0.10"
 
 __all__ = (
     "AvgPool",

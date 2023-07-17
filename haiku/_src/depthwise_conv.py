@@ -60,6 +60,7 @@ class DepthwiseConvND(hk.Module):
       num_spatial_dims: int,
       data_format: str,
       stride: Union[int, Sequence[int]] = 1,
+      rate: Union[int, Sequence[int]] = 1,
       padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
@@ -79,6 +80,9 @@ class DepthwiseConvND(hk.Module):
         default, ``channels_last``. See :func:`get_channel_index`.
       stride: Optional stride for the kernel. Either an integer or a sequence of
         length ``num_spatial_dims``. Defaults to 1.
+      rate: Optional kernel dilation rate. Either an integer or a sequence of
+        length ``num_spatial_dims``. 1 corresponds to standard ND convolution,
+        ``rate > 1`` corresponds to dilated convolution. Defaults to 1.
       padding: Optional padding algorithm. Either ``VALID``, ``SAME`` or a
         sequence of ``before, after`` pairs. Defaults to ``SAME``. See:
         https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
@@ -92,7 +96,7 @@ class DepthwiseConvND(hk.Module):
     self.kernel_shape = utils.replicate(kernel_shape, self.num_spatial_dims,
                                         "kernel_shape")
     self.lhs_dilation = (1,) * len(self.kernel_shape)
-    self.rhs_dilation = (1,) * len(self.kernel_shape)
+    self.rhs_dilation = utils.replicate(rate, num_spatial_dims, "rhs_dilation")
     self.channel_multiplier = channel_multiplier
     self.padding = padding
     self.stride = utils.replicate(stride, self.num_spatial_dims, "strides")
@@ -209,6 +213,7 @@ class DepthwiseConv1D(DepthwiseConvND):
       channel_multiplier: int,
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
+      rate: Union[int, Sequence[int]] = 1,
       padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
@@ -225,6 +230,9 @@ class DepthwiseConv1D(DepthwiseConvND):
         length 1.
       stride: Optional stride for the kernel. Either an integer or a sequence of
         length 1. Defaults to 1.
+      rate: Optional kernel dilation rate. Either an integer or a sequence of
+        length 1. 1 corresponds to standard ND convolution,
+        ``rate > 1`` corresponds to dilated convolution. Defaults to 1.
       padding: Optional padding algorithm. Either ``VALID``, ``SAME`` or a
         sequence of ``before, after`` pairs. Defaults to ``SAME``. See:
         https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
@@ -242,6 +250,7 @@ class DepthwiseConv1D(DepthwiseConvND):
         channel_multiplier=channel_multiplier,
         kernel_shape=kernel_shape,
         stride=stride,
+        rate=rate,
         padding=padding,
         with_bias=with_bias,
         w_init=w_init,
@@ -257,6 +266,7 @@ class DepthwiseConv2D(DepthwiseConvND):
       channel_multiplier: int,
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
+      rate: Union[int, Sequence[int]] = 1,
       padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
@@ -273,6 +283,9 @@ class DepthwiseConv2D(DepthwiseConvND):
         length 2.
       stride: Optional stride for the kernel. Either an integer or a sequence of
         length 2. Defaults to 1.
+      rate: Optional kernel dilation rate. Either an integer or a sequence of
+        length 1. 1 corresponds to standard ND convolution,
+        ``rate > 1`` corresponds to dilated convolution. Defaults to 1.
       padding: Optional padding algorithm. Either ``VALID``, ``SAME`` or a
         sequence of ``before, after`` pairs. Defaults to ``SAME``. See:
         https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
@@ -290,6 +303,7 @@ class DepthwiseConv2D(DepthwiseConvND):
         channel_multiplier=channel_multiplier,
         kernel_shape=kernel_shape,
         stride=stride,
+        rate=rate,
         padding=padding,
         with_bias=with_bias,
         w_init=w_init,
@@ -305,6 +319,7 @@ class DepthwiseConv3D(DepthwiseConvND):
       channel_multiplier: int,
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
+      rate: Union[int, Sequence[int]] = 1,
       padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
@@ -321,6 +336,9 @@ class DepthwiseConv3D(DepthwiseConvND):
         length 3.
       stride: Optional stride for the kernel. Either an integer or a sequence of
         length 3. Defaults to 1.
+      rate: Optional kernel dilation rate. Either an integer or a sequence of
+        length 1. 1 corresponds to standard ND convolution,
+        ``rate > 1`` corresponds to dilated convolution. Defaults to 1.
       padding: Optional padding algorithm. Either ``VALID``, ``SAME`` or a
         sequence of ``before, after`` pairs. Defaults to ``SAME``. See:
         https://www.tensorflow.org/xla/operation_semantics#conv_convolution.
@@ -338,6 +356,7 @@ class DepthwiseConv3D(DepthwiseConvND):
         channel_multiplier=channel_multiplier,
         kernel_shape=kernel_shape,
         stride=stride,
+        rate=rate,
         padding=padding,
         with_bias=with_bias,
         w_init=w_init,

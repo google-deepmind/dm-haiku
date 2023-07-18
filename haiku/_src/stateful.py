@@ -541,7 +541,7 @@ def cond(*args, **kwargs):
 
 @with_output_structure_hint
 def switch(index, branches, *operands):
-  """Equivalent to :func:`jax.lax.switch` but with Haiku state passed in/out.
+  r"""Equivalent to :func:`jax.lax.switch` but with Haiku state passed in/out.
 
   Note that creating parameters inside a switch branch is not supported, as such
   at init time we recommend you unconditionally evaluate all branches of your
@@ -564,7 +564,7 @@ def switch(index, branches, *operands):
     operands: Operands (A) input to whichever branch is applied.
 
   Returns:
-    Value (B) of branch(*operands) for the branch that was selected based on
+    Value (B) of branch(\*operands) for the branch that was selected based on
     index.
   """
   if not base.inside_transform():

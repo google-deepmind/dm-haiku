@@ -223,7 +223,7 @@ Params
 .. autoclass:: Params
 
 MutableParams
-~~~~~~
+~~~~~~~~~~~~~
 
 .. autoclass:: MutableParams
 
@@ -233,7 +233,7 @@ State
 .. autoclass:: State
 
 MutableState
-~~~~~~
+~~~~~~~~~~~~
 
 .. autoclass:: MutableState
 
@@ -941,6 +941,7 @@ Control Flow
 
     cond
     fori_loop
+    map
     scan
     switch
     while_loop
@@ -954,6 +955,11 @@ fori_loop
 ~~~~~~~~~
 
 .. autofunction:: fori_loop
+
+map
+~~~~~~~~~
+
+.. autofunction:: map
 
 scan
 ~~~~
@@ -1197,12 +1203,12 @@ get_current_state
 .. autofunction:: get_current_state
 
 maybe_get_rng_sequence_state
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autofunction:: maybe_get_rng_sequence_state
 
 replace_rng_sequence_state
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autofunction:: replace_rng_sequence_state
 
@@ -1213,6 +1219,7 @@ Optimizations
 
     optimize_rng_use
     layer_stack
+    LayerStackTransparencyMapping
     module_auto_repr
     fast_eval_shape
     rng_reserve_size
@@ -1227,6 +1234,11 @@ layer_stack
 
 .. autofunction:: layer_stack
 
+LayerStackTransparencyMapping
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: LayerStackTransparencyMapping
+
 module_auto_repr
 ~~~~~~~~~~~~~~~~
 
@@ -1238,7 +1250,7 @@ fast_eval_shape
 .. autofunction:: fast_eval_shape
 
 rng_reserve_size
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 .. autofunction:: rng_reserve_size
 

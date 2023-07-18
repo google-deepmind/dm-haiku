@@ -421,9 +421,9 @@ def lift_with_state(
   See also:
     :func:`~haiku.lift`: Register parameters with an outer transform.
     :func:`transparent_lift`: Register parameters with an outer transform
-      without a namespace.
+    without a namespace.
     :func:`transparent_lift_with_state`: Register parameters and state with an
-      outer transform without a namespace.
+    outer transform without a namespace.
   """
   base.assert_context("experimental.lift_with_state")
   params_and_state_fn = _to_callable(

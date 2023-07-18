@@ -231,3 +231,6 @@ nbsphinx_prolog = r"""
     __ https://github.com/deepmind/dm-haiku/blob/
         {{ env.config.release }}/{{ docname }}
 """
+
+# -- bibtex configuration ---------------------------------------------------
+bibtex_bibfiles = ['references.bib']

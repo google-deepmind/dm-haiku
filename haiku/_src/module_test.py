@@ -18,8 +18,7 @@ import abc
 import contextlib
 import dataclasses
 import inspect
-import sys
-from typing import Callable, Optional, Sequence, TypeVar, Type
+from typing import Callable, Optional, Sequence, TypeVar, Type, Protocol, runtime_checkable
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -30,13 +29,6 @@ from haiku._src import test_utils
 from haiku._src import transform
 import jax
 import jax.numpy as jnp
-
-# pylint: disable=g-import-not-at-top,g-multiple-import
-if sys.version_info < (3, 8):
-  from typing_extensions import Protocol, runtime_checkable
-else:
-  from typing import Protocol, runtime_checkable
-# pylint: enable=g-import-not-at-top,g-multiple-import
 
 T = TypeVar("T")
 

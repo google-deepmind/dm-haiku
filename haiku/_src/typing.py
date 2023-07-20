@@ -16,10 +16,9 @@
 
 import abc
 import typing
-from typing import Any, Callable, Mapping, MutableMapping, Sequence
+from typing import Any, Callable, Mapping, MutableMapping, Sequence, Protocol, runtime_checkable
 
 import jax
-from typing_extensions import Protocol, runtime_checkable  # pylint: disable=multiple-statements,g-multiple-import
 
 # pytype: disable=module-attr
 try:

@@ -14,12 +14,13 @@
 # ==============================================================================
 """Tests for haiku._src.typing."""
 
+from typing import Protocol
+
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import module
 from haiku._src import test_utils
 from haiku._src import typing
-from typing_extensions import Protocol
 
 
 class CallableModule(module.Module):

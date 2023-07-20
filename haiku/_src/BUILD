@@ -192,7 +192,6 @@ hk_py_library(
         ":stateful",
         ":utils",
         # pip: jax
-        # pip: typing_extensions
     ],
 )
 
@@ -208,7 +207,6 @@ hk_py_test(
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
-        # pip: typing_extensions
     ],
 )
 
@@ -903,7 +901,6 @@ hk_py_library(
     srcs = ["typing.py"],
     deps = [
         # pip: jax
-        # pip: typing_extensions
     ],
 )
 
@@ -916,7 +913,6 @@ hk_py_test(
         ":typing",
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
-        # pip: typing_extensions
     ],
 )
 

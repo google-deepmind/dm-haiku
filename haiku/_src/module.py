@@ -18,9 +18,8 @@ import contextlib
 import functools
 import inspect
 import re
-import sys
 from typing import (Any, Callable, ContextManager, Dict, Mapping, NamedTuple,
-                    Optional, Set, Tuple, Type, TypeVar)
+                    Optional, Protocol, Set, Tuple, Type, TypeVar)
 
 from haiku._src import base
 from haiku._src import config
@@ -29,12 +28,6 @@ from haiku._src import utils
 import jax
 import jax.numpy as jnp
 
-# pylint: disable=g-import-not-at-top
-if sys.version_info < (3, 8):
-  from typing_extensions import Protocol
-else:
-  from typing import Protocol
-# pylint: enable=g-import-not-at-top
 
 T = TypeVar("T")
 

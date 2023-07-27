@@ -683,6 +683,8 @@ def get_parameter(
     except MissingRNGError as e:
       if frame.params_frozen:
         raise param_missing_error from e
+      else:
+        raise e
 
     if param is DO_NOT_STORE:
       # Initializers or custom creators that return `DO_NOT_STORE` are required

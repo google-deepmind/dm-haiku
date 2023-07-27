@@ -137,6 +137,15 @@ class BaseTest(parameterized.TestCase):
           ValueError, "parameters must be created as part of `init`"):
         base.get_parameter("w", [], init=jnp.zeros)
 
+  def test_get_parameter_rng_exception(self):
+    with base.new_context():
+      with self.assertRaisesRegex(
+          base.MissingRNGError, "pass a non-None PRNGKey to init"
+      ):
+        base.get_parameter(
+            "w", [], init=lambda shape, dtype: base.next_rng_key()
+        )
+
   def test_get_parameter_wrong_shape(self):
     with base.new_context():
       with self.assertRaisesRegex(ValueError, "does not match shape"):

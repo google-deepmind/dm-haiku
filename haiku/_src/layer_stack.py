@@ -257,10 +257,9 @@ class _LayerStackNoPerLayer(_LayerStack):
     self._f = f
 
   @module.transparent
-  def _call_wrapped(self, args, y, **kwargs):
-    del y
-    ret = self._f(*args, **kwargs)
-    if len(args) == 1:
+  def _call_wrapped(self, x, **kwargs):
+    ret = self._f(*x, **kwargs)
+    if len(x) == 1:
       # If the function takes a single argument, the wrapped function receives
       # a tuple of length 1, and therefore it must return a tuple of length 1.
       ret = (ret,)
@@ -396,26 +395,28 @@ def layer_stack(
       def wrapped(x, *args, **kwargs):
         for ys in jax.tree_util.tree_leaves(args):
           assert ys.shape[0] == num_layers
-        return _LayerStackWithPerLayer(
+        mod = _LayerStackWithPerLayer(
             f,
             num_layers,
             unroll=unroll,
             pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
             transparency_map=transparency_map,
             name=name,
-        )(x, *args, **kwargs)
+        )
+        return mod(x, *args, **kwargs)
     else:
       _check_no_varargs(f)
       @functools.wraps(f)
       def wrapped(*args, **kwargs):
-        ret = _LayerStackNoPerLayer(
+        mod = _LayerStackNoPerLayer(
             f,
             num_layers,
             unroll=unroll,
             pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
             transparency_map=transparency_map,
             name=name,
-        )(args, None, **kwargs)[0]
+        )
+        ret = mod(x=args, **kwargs)[0]
         if len(args) == 1:
           # If the function takes a single argument, we must also return a
           # single value, and not a tuple of length 1.

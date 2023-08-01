@@ -30,7 +30,7 @@ from haiku._src import transform
 import jax
 import jax.numpy as jnp
 
-T = TypeVar("T")
+ModuleT = TypeVar("ModuleT", bound=module.Module)
 
 
 # TODO(tomhennigan) Improve test coverage.
@@ -1030,8 +1030,8 @@ class ModuleWithDoubleCall(module.Module):
 def create_module_from_qualified_name(
     name: str,
     *,
-    cls: Type[T] = module.Module,
-) -> T:
+    cls: Type[ModuleT] = module.Module,
+) -> ModuleT:
   if "/" in name:
     prefix, suffix = name.rsplit("/", 1)
     with module.name_scope(prefix):

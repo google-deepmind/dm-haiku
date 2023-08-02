@@ -13,6 +13,31 @@
 ![docs](https://readthedocs.org/projects/dm-haiku/badge/?version=latest)
 ![pypi](https://img.shields.io/pypi/v/dm-haiku)
 
+> [!IMPORTANT]
+> 📣 **As of July 2023 [Google DeepMind] recommends that new projects adopt
+> [Flax] (a neural network library originally developed by [Google Brain] and
+> now by [Google DeepMind]) instead of Haiku.** 📣
+>
+> At the time of writing [Flax] has superset of the features available in Haiku,
+> a [larger](https://github.com/google/flax/graphs/contributors) and
+> [more active](https://github.com/google/flax/activity) development team and
+> more adoption with users outside of Alphabet. [Flax] has
+> [more extensive documentation](https://flax.readthedocs.io/),
+> [examples](https://github.com/huggingface/transformers/tree/main/examples/flax)
+> and an [active community](https://huggingface.co/flax-community) creating end
+> to end examples.
+>
+> Haiku will remain best-effort supported, however the project will enter
+> [maintenance mode](https://en.wikipedia.org/wiki/Maintenance_mode), meaning
+> that development efforts will be focussed on bug fixes and compatibility with
+> new releases of JAX.
+>
+> New releases will be made to keep Haiku working with newer versions of Python
+> and [JAX], however we will not be adding (or accepting PRs for) new features.
+>
+> We have significant usage of Haiku internally at [Google DeepMind] and
+> currently plan to support Haiku in this mode indefinitely.
+
 ## What is Haiku?
 
 > Haiku is a tool<br>
@@ -440,3 +465,6 @@ and the year corresponds to the project's open-source release.
 [JAX]: https://github.com/google/jax
 [Sonnet]: https://github.com/deepmind/sonnet
 [Tensorflow]: https://github.com/tensorflow/tensorflow
+[Flax]: https://github.com/google/flax
+[Google DeepMind]: https://blog.google/technology/ai/april-ai-update/
+[Google Brain]: https://research.google/teams/brain/

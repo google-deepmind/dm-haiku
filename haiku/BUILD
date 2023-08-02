@@ -1,4 +1,6 @@
 # Description: Haiku is a neural network library for JAX.
+
+# Placeholder: load py_library
 load("//tools/build_defs/license:license.bzl", "license")
 
 package(

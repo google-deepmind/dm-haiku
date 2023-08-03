@@ -280,7 +280,7 @@ jax.tree_util.register_pytree_node(
 # This is only needed because some naughty people reach in to Haiku internals
 # and use `isinstance(x, haiku._src.data_structures.FlatMapping` (which was
 # renamed to FlatMap).
-# TODO(tomhennigan): If to_immutable_dict is remove this metaclass can go too.
+# TODO(tomhennigan): If to_immutable_dict is removed this metaclass can go too.
 class FlatMappingMeta(type(FlatMap)):
 
   def __instancecheck__(cls, instance) -> bool:

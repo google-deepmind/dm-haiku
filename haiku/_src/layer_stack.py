@@ -347,8 +347,7 @@ def layer_stack(
   >>> x = 0
   >>> ys_0 = jnp.array([1, 2, 3, 4])
   >>> ys_1 = jnp.array([5, 6, 7, 8])
-  >>> stack = hk.experimental.layer_stack(num_layers,
-  ...                                     with_per_layer_inputs=True)
+  >>> stack = hk.layer_stack(num_layers, with_per_layer_inputs=True)
   >>> x, zs = stack(f)(x, ys_0, ys_1)
   >>> print(x, zs)
   4 [ 6  8 10 12]

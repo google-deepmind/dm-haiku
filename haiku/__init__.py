@@ -24,16 +24,23 @@ from haiku import nets
 from haiku import pad
 from haiku import testing
 from haiku._src.attention import MultiHeadAttention
+from haiku._src.base import current_name
 from haiku._src.base import custom_creator
 from haiku._src.base import custom_getter
 from haiku._src.base import custom_setter
+from haiku._src.base import DO_NOT_STORE
+from haiku._src.base import get_current_state
+from haiku._src.base import get_initial_state
 from haiku._src.base import get_parameter
+from haiku._src.base import get_params
 from haiku._src.base import get_state
 from haiku._src.base import GetterContext
+from haiku._src.base import maybe_get_rng_sequence_state
 from haiku._src.base import maybe_next_rng_key
 from haiku._src.base import next_rng_key
 from haiku._src.base import next_rng_keys
 from haiku._src.base import PRNGSequence
+from haiku._src.base import replace_rng_sequence_state
 from haiku._src.base import reserve_rng_keys
 from haiku._src.base import set_state
 from haiku._src.base import SetterContext
@@ -61,15 +68,25 @@ from haiku._src.depthwise_conv import DepthwiseConv1D
 from haiku._src.depthwise_conv import DepthwiseConv2D
 from haiku._src.depthwise_conv import DepthwiseConv3D
 from haiku._src.depthwise_conv import SeparableDepthwiseConv2D
+from haiku._src.dot import to_dot
 from haiku._src.embed import Embed
 from haiku._src.embed import EmbedLookupStyle
 from haiku._src.group_norm import GroupNorm
 from haiku._src.layer_norm import InstanceNorm
 from haiku._src.layer_norm import LayerNorm
+from haiku._src.layer_stack import layer_stack
+from haiku._src.layer_stack import LayerStackTransparencyMapping
 from haiku._src.lift import lift
+from haiku._src.lift import lift_with_state
+from haiku._src.lift import LiftWithStateUpdater
+from haiku._src.lift import transparent_lift
+from haiku._src.lift import transparent_lift_with_state
+from haiku._src.module import force_name
 from haiku._src.module import intercept_methods
 from haiku._src.module import MethodContext
 from haiku._src.module import Module
+from haiku._src.module import name_like
+from haiku._src.module import name_scope
 from haiku._src.module import transparent
 from haiku._src.moving_averages import EMAParamsTree
 from haiku._src.moving_averages import ExponentialMovingAverage
@@ -150,6 +167,7 @@ __all__ = (
     "DepthwiseConv1D",
     "DepthwiseConv2D",
     "DepthwiseConv3D",
+    "DO_NOT_STORE",
     "EMAParamsTree",
     "Embed",
     "EmbedLookupStyle",
@@ -160,6 +178,8 @@ __all__ = (
     "GroupNorm",
     "IdentityCore",
     "InstanceNorm",
+    "LayerStackTransparencyMapping",
+    "LiftWithStateUpdater",
     "LSTM",
     "LSTMState",
     "LayerNorm",
@@ -192,6 +212,7 @@ __all__ = (
     "cond",
     "config",
     "eval_shape",
+    "current_name",
     "custom_creator",
     "custom_getter",
     "custom_setter",
@@ -201,26 +222,36 @@ __all__ = (
     "dynamic_unroll",
     "expand_apply",
     "fori_loop",
+    "force_name",
     "get_channel_index",
+    "get_current_state",
+    "get_initial_state",
+    "get_params",
     "get_parameter",
     "get_state",
     "grad",
     "initializers",
     "intercept_methods",
+    "layer_stack",
     "lift",
+    "lift_with_state",
     "map",
     "max_pool",
+    "maybe_get_rng_sequence_state",
     "maybe_next_rng_key",
     "mixed_precision",
     "multi_transform",
     "multi_transform_with_state",
     "multinomial",
+    "name_like",
+    "name_scope",
     "nets",
     "next_rng_key",
     "next_rng_keys",
     "one_hot",
     "pad",
     "remat",
+    "replace_rng_sequence_state",
     "reserve_rng_keys",
     "running_init",
     "scan",
@@ -228,10 +259,13 @@ __all__ = (
     "static_unroll",
     "switch",
     "testing",
+    "to_dot",
     "to_module",
     "transform",
     "transform_with_state",
     "transparent",
+    "transparent_lift",
+    "transparent_lift_with_state",
     "value_and_grad",
     "vmap",
     "while_loop",

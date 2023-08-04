@@ -277,8 +277,7 @@ def safe_get_module_name(module: Module) -> str:
       and module._creation_frame_id < closure_boundary_stack.peek()):  # pylint: disable=protected-access
     raise ValueError("You can't functionally close over a module which has "
                      "been intitialized outside of the function wrapped in "
-                     "hk.experimental.transparent_lift or "
-                     "hk.experimental.layer_stack.\n"
+                     "hk.transparent_lift or hk.layer_stack.\n"
                      "The module you closed over is called "
                      f"'{module.module_name}'.")
   return module.module_name
@@ -314,28 +313,28 @@ def current_name() -> str:
   ``~`` which matches the key in the params/state dict where top level values
   are stored.
 
-  >>> hk.experimental.current_name()
+  >>> hk.current_name()
   '~'
 
   Inside a module this returns the current module name:
 
   >>> class ExampleModule(hk.Module):
   ...   def __call__(self):
-  ...     return hk.experimental.current_name()
+  ...     return hk.current_name()
   >>> ExampleModule()()
   'example_module'
 
   Inside a name scope this returns the current name scope:
 
-  >>> with hk.experimental.name_scope('example_name_scope'):
-  ...   print(hk.experimental.current_name())
+  >>> with hk.name_scope('example_name_scope'):
+  ...   print(hk.current_name())
   example_name_scope
 
   Returns:
     The currently active module or name scope name. If modules or name scopes
     are in use returns ``~``.
   """
-  assert_context("experimental.current_name")
+  assert_context("current_name")
   module = current_module()
   if module is not None:
     return safe_get_module_name(module)
@@ -377,7 +376,7 @@ def get_params() -> Params:
   """Returns the parameters for the current :func:`transform`.
 
   >>> def report(when):
-  ...   shapes = jax.tree_util.tree_map(jnp.shape, hk.experimental.get_params())
+  ...   shapes = jax.tree_util.tree_map(jnp.shape, hk.get_params())
   ...   print(f'{when}: {shapes}')
   >>> def f(x):
   ...   report('Before call')
@@ -410,8 +409,8 @@ def get_params() -> Params:
     does not change during apply).
 
   See also:
-    :func:`get_initial_state`: The initial state for the function.
-    :func:`get_current_state`: The current state for the function.
+    - :func:`get_initial_state`: The initial state for the function.
+    - :func:`get_current_state`: The current state for the function.
   """
   assert_context("get_params")
   return current_context().collect_params()
@@ -423,7 +422,7 @@ def get_initial_state() -> State:
   Example:
 
   >>> def report(when):
-  ...   state = jax.tree_util.tree_map(int, hk.experimental.get_initial_state())
+  ...   state = jax.tree_util.tree_map(int, hk.get_initial_state())
   ...   print(f'{when}: {state}')
   >>> def f():
   ...   report('Before get_state')
@@ -456,8 +455,8 @@ def get_initial_state() -> State:
     passed into ``apply``.
 
   See also:
-    :func:`get_params`: The current parameters for the function.
-    :func:`get_current_state`: The current state for the function.
+    - :func:`get_params`: The current parameters for the function.
+    - :func:`get_current_state`: The current state for the function.
   """
   assert_context("get_initial_state")
   return current_context().collect_initial_state()
@@ -469,7 +468,7 @@ def get_current_state() -> State:
   Example:
 
   >>> def report(when):
-  ...   state = jax.tree_util.tree_map(int, hk.experimental.get_current_state())
+  ...   state = jax.tree_util.tree_map(int, hk.get_current_state())
   ...   print(f'{when}: {state}')
   >>> def f():
   ...   report('Before get_state')
@@ -504,8 +503,8 @@ def get_current_state() -> State:
     ``apply``.
 
   See also:
-    :func:`get_params`: The current parameters for the function.
-    :func:`get_initial_state`: The initial state for the function.
+    - :func:`get_params`: The current parameters for the function.
+    - :func:`get_initial_state`: The initial state for the function.
   """
   assert_context("get_current_state")
   return current_context().collect_state()
@@ -543,7 +542,7 @@ class DoNotStore:
 
   >>> def my_creator(next_creator, shape, dtype, init, context):
   ...   if context.module_name in pretrained:
-  ...     return hk.experimental.DO_NOT_STORE
+  ...     return hk.DO_NOT_STORE
   ...   return next_creator(shape, dtype, init)
 
   Then we need a getter that provides the parameter value from the pretrained
@@ -551,7 +550,7 @@ class DoNotStore:
 
   >>> def my_getter(next_getter, value, context):
   ...   if context.module_name in pretrained:
-  ...     assert value is hk.experimental.DO_NOT_STORE
+  ...     assert value is hk.DO_NOT_STORE
   ...     value = pretrained[context.module_name][context.name]
   ...   return next_getter(value)
 

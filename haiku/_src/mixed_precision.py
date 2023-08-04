@@ -108,10 +108,10 @@ def current_policy() -> Optional[jmp.Policy]:
     The currently active mixed precision policy, or ``None``.
 
   See also:
-    :func:`clear_policy`: Clears any policies associated with a class.
-    :func:`get_policy`: Gets the policy for a given class.
-    :func:`set_policy`: Sets a policy for a given class.
-    :func:`push_policy`: Context manager for setting policies.
+    - :func:`clear_policy`: Clears any policies associated with a class.
+    - :func:`get_policy`: Gets the policy for a given class.
+    - :func:`set_policy`: Sets a policy for a given class.
+    - :func:`push_policy`: Context manager for setting policies.
   """
   tls = _thread_local_state
   return tls.current_policy if tls.has_current_policy else None
@@ -132,11 +132,11 @@ def get_policy(cls: Type[hk.Module]) -> Optional[jmp.Policy]:
     A JMP policy that is used for the given class, or ``None`` if one is not
     active.
 
-  See Also:
-    :func:`current_policy`: Retrieves the currently active policy (if any).
-    :func:`clear_policy`: Clears any policies associated with a class.
-    :func:`set_policy`: Sets a policy for a given class.
-    :func:`push_policy`: Context manager for setting policies.
+  See also:
+    - :func:`current_policy`: Retrieves the currently active policy (if any).
+    - :func:`clear_policy`: Clears any policies associated with a class.
+    - :func:`set_policy`: Sets a policy for a given class.
+    - :func:`push_policy`: Context manager for setting policies.
   """
   return _thread_local_state.get_policy(cls)
 
@@ -191,11 +191,11 @@ def set_policy(cls: Type[hk.Module], policy: jmp.Policy):
     cls: A Haiku module class.
     policy: A JMP policy to apply to the module.
 
-  See Also:
-    :func:`push_policy`: Context manager for setting policies.
-    :func:`current_policy`: Retrieves the currently active policy (if any).
-    :func:`clear_policy`: Clears any policies associated with a class.
-    :func:`get_policy`: Gets the policy for a given class.
+  See also:
+    - :func:`push_policy`: Context manager for setting policies.
+    - :func:`current_policy`: Retrieves the currently active policy (if any).
+    - :func:`clear_policy`: Clears any policies associated with a class.
+    - :func:`get_policy`: Gets the policy for a given class.
   """
   assert policy is not None, 'To unset policies use clear_policy.'
   _thread_local_state.set_policy(cls, policy)
@@ -213,10 +213,10 @@ def push_policy(cls: Type[hk.Module], policy: jmp.Policy):
     ``None``.
 
   See also:
-    :func:`clear_policy`: Clears any policies associated with a class.
-    :func:`get_policy`: Gets the policy for a given class.
-    :func:`set_policy`: Sets a policy for a given class.
-    :func:`current_policy`: Retrieves the currently active policy (if any).
+    - :func:`clear_policy`: Clears any policies associated with a class.
+    - :func:`get_policy`: Gets the policy for a given class.
+    - :func:`set_policy`: Sets a policy for a given class.
+    - :func:`current_policy`: Retrieves the currently active policy (if any).
   """
   assert policy is not None, 'To unset policies use clear_policy.'
 
@@ -247,11 +247,11 @@ def clear_policy(cls: Type[hk.Module]):
   Args:
     cls: A Haiku module class.
 
-  See Also:
-    :func:`current_policy`: Retrieves the currently active policy (if any).
-    :func:`get_policy`: Gets the policy for a given class.
-    :func:`set_policy`: Sets a policy for a given class.
-    :func:`push_policy`: Context manager for setting policies.
+  See also:
+    - :func:`current_policy`: Retrieves the currently active policy (if any).
+    - :func:`get_policy`: Gets the policy for a given class.
+    - :func:`set_policy`: Sets a policy for a given class.
+    - :func:`push_policy`: Context manager for setting policies.
   """
   _thread_local_state.clear_policy(cls)
 

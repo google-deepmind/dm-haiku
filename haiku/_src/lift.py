@@ -238,12 +238,12 @@ def lift(
     both cases returns parameter values to be used with an ``apply`` function.
 
   See also:
-    :func:`~haiku.experimental.lift_with_state`: Register params and state
-      with an outer transform.
-    :func:`~haiku.experimental.transparent_lift`: Register params with an
-      outer transform without a namespace.
-    :func:`~haiku.experimental.transparent_lift_with_state`: Register params
-      and state with an outer transform without a namespace.
+    - :func:`lift_with_state`: Register params and state with an outer
+      transform.
+    - :func:`transparent_lift`: Register params with an outer transform
+      without a namespace.
+    - :func:`transparent_lift_with_state`: Register params and state with
+      an outer transform without a namespace.
   """
   base.assert_context("lift")
   init_fn = add_state_to_init_fn(init_fn)
@@ -277,9 +277,10 @@ def transparent_lift(
     both cases returns parameter values to be used with an ``apply`` function.
 
   See also:
-    :func:`~haiku.lift`: Register params with an outer transform.
-    :func:`lift_with_state`: Register params and state with an outer transform.
-    :func:`transparent_lift_with_state`: Register params and state with an
+    - :func:`lift`: Register params with an outer transform.
+    - :func:`lift_with_state`: Register params and state with an outer
+      transform.
+    - :func:`transparent_lift_with_state`: Register params and state with an
       outer transform without a namespace.
   """
 
@@ -397,7 +398,7 @@ def lift_with_state(
     ...   return hk.nets.ResNet50(1)(x, True)
     >>> g = hk.transform_with_state(g)
     >>> params_and_state_fn, updater = (
-    ...   hk.experimental.lift_with_state(g.init, name='f_lift'))
+    ...   hk.lift_with_state(g.init, name='f_lift'))
     >>> init_rng = hk.next_rng_key() if hk.running_init() else None
     >>> x = jnp.ones([1, 224, 224, 3])
     >>> params, state = params_and_state_fn(init_rng, x)
@@ -419,13 +420,13 @@ def lift_with_state(
     outer context with new state after ``apply`` is called.
 
   See also:
-    :func:`~haiku.lift`: Register parameters with an outer transform.
-    :func:`transparent_lift`: Register parameters with an outer transform
-    without a namespace.
-    :func:`transparent_lift_with_state`: Register parameters and state with an
-    outer transform without a namespace.
+    - :func:`lift`: Register parameters with an outer transform.
+    - :func:`transparent_lift`: Register parameters with an outer transform
+      without a namespace.
+    - :func:`transparent_lift_with_state`: Register parameters and state with an
+      outer transform without a namespace.
   """
-  base.assert_context("experimental.lift_with_state")
+  base.assert_context("lift_with_state")
   params_and_state_fn = _to_callable(
       LiftingModule(init_fn, allow_reuse=allow_reuse, name=name))
   if base.current_module():
@@ -461,9 +462,10 @@ def transparent_lift_with_state(
     outer context with new state after ``apply`` is called.
 
   See also:
-    :func:`~haiku.lift`: Register params with an outer transform.
-    :func:`lift_with_state`: Register params and state with an outer transform.
-    :func:`transparent_lift`: Register params with an outer transform
+    - :func:`lift`: Register params with an outer transform.
+    - :func:`lift_with_state`: Register params and state with an outer
+      transform.
+    - :func:`transparent_lift`: Register params with an outer transform
       without a namespace.
   """
 

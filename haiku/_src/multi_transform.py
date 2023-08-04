@@ -55,8 +55,8 @@ class MultiTransformed(NamedTuple):
       ``out = apply(params, rng, *a, **k)``.
 
   See also:
-    :class:`Transformed`: Single apply variant of multi-transform.
-    :class:`MultiTransformedWithState`: Multi apply with state variant.
+    - :class:`Transformed`: Single apply variant of multi-transform.
+    - :class:`MultiTransformedWithState`: Multi apply with state variant.
   """
 
   # Args: [Optional[PRNGKey], ...]
@@ -75,8 +75,8 @@ class MultiTransformedWithState(NamedTuple):
       ``out, state = apply(params, state, rng, *a, **k)``.
 
   See also:
-    :class:`TransformedWithState`: Single apply variant of multi-transform.
-    :class:`MultiTransformed`: Multi apply with state variant.
+    - :class:`TransformedWithState`: Single apply variant of multi-transform.
+    - :class:`MultiTransformed`: Multi apply with state variant.
   """
 
   # Args: [Optional[PRNGKey], ...]
@@ -135,8 +135,8 @@ def multi_transform_with_state(
     An ``init`` function and a tree of pure ``apply`` functions.
 
   See also:
-    :func:`transform_with_state`: Transform a single apply function.
-    :func:`multi_transform`: Transform multiple apply functions without state.
+    - :func:`transform_with_state`: Transform a single apply function.
+    - :func:`multi_transform`: Transform multiple apply functions without state.
   """
   analytics.log_once('multi_transform_with_state')
 

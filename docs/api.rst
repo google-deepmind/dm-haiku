@@ -64,8 +64,6 @@ Modules, Parameters and State
     get_parameter
     get_state
     set_state
-    transparent
-    lift
 
 Module
 ~~~~~~
@@ -92,16 +90,6 @@ set_state
 ~~~~~~~~~
 
 .. autofunction:: set_state
-
-transparent
-~~~~~~~~~~~~
-
-.. autofunction:: transparent
-
-lift
-~~~~
-
-.. autofunction:: lift
 
 Getters and Interceptors
 ------------------------
@@ -151,7 +139,6 @@ MethodContext
 
 .. autoclass:: MethodContext
 
-
 Random Numbers
 --------------
 
@@ -163,6 +150,8 @@ Random Numbers
     maybe_next_rng_key
     reserve_rng_keys
     with_rng
+    maybe_get_rng_sequence_state
+    replace_rng_sequence_state
 
 PRNGSequence
 ~~~~~~~~~~~~
@@ -194,6 +183,16 @@ with_rng
 ~~~~~~~~
 
 .. autofunction:: with_rng
+
+maybe_get_rng_sequence_state
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: maybe_get_rng_sequence_state
+
+replace_rng_sequence_state
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: replace_rng_sequence_state
 
 Type Hints
 ----------
@@ -267,6 +266,135 @@ SupportsCall
 ~~~~~~~~~~~~
 
 .. autoclass:: SupportsCall
+
+Advanced State Management
+=========================
+
+Lifting
+-------
+
+.. autosummary::
+
+    lift
+    lift_with_state
+    transparent_lift
+    transparent_lift_with_state
+    LiftWithStateUpdater
+
+lift
+~~~~
+
+.. autofunction:: lift
+
+lift_with_state
+~~~~~~~~~~~~~~~
+
+.. autofunction:: lift_with_state
+
+transparent_lift
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: transparent_lift
+
+transparent_lift_with_state
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: transparent_lift_with_state
+
+LiftWithStateUpdater
+~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: LiftWithStateUpdater
+
+Layer Stack
+-----------
+
+.. autosummary::
+
+    layer_stack
+    LayerStackTransparencyMapping
+
+layer_stack
+~~~~~~~~~~~
+
+.. autoclass:: layer_stack
+
+LayerStackTransparencyMapping
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: LayerStackTransparencyMapping
+
+Naming
+------
+
+.. autosummary::
+
+    name_scope
+    current_name
+    DO_NOT_STORE
+    get_params
+    get_current_state
+    get_initial_state
+    force_name
+    name_like
+    transparent
+
+name_scope
+~~~~~~~~~~
+
+.. autofunction:: name_scope
+
+current_name
+~~~~~~~~~~~~
+
+.. autofunction:: current_name
+
+DO_NOT_STORE
+~~~~~~~~~~~~
+
+.. autodata:: DO_NOT_STORE
+
+get_params
+~~~~~~~~~~
+
+.. autofunction:: get_params
+
+get_current_state
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: get_current_state
+
+get_initial_state
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: get_initial_state
+
+force_name
+~~~~~~~~~~
+
+.. autofunction:: force_name
+
+name_like
+~~~~~~~~~
+
+.. autofunction:: name_like
+
+transparent
+~~~~~~~~~~~~
+
+.. autofunction:: transparent
+
+Visualisation
+-------------
+
+.. autosummary::
+
+    to_dot
+
+to_dot
+~~~~~~~~~~~~~~~
+
+.. autofunction:: to_dot
 
 Common Modules
 ==============
@@ -1064,18 +1192,12 @@ Graphviz Visualisation
 
 .. autosummary::
 
-    to_dot
     abstract_to_dot
 
 abstract_to_dot
 ~~~~~~~~~~~~~~~
 
 .. autofunction:: abstract_to_dot
-
-to_dot
-~~~~~~
-
-.. autofunction:: to_dot
 
 Summarisation
 -------------
@@ -1121,96 +1243,12 @@ Managing State
 
 .. autosummary::
 
-    current_name
-    force_name
-    name_scope
-    name_like
-    lift_with_state
-    transparent_lift
-    transparent_lift_with_state
-    LiftWithStateUpdater
     check_jax_usage
-    DO_NOT_STORE
-    get_params
-    get_initial_state
-    get_current_state
-    maybe_get_rng_sequence_state
-    replace_rng_sequence_state
-
-current_name
-~~~~~~~~~~~~
-
-.. autofunction:: current_name
-
-force_name
-~~~~~~~~~~
-
-.. autofunction:: force_name
-
-name_scope
-~~~~~~~~~~
-
-.. autofunction:: name_scope
-
-name_like
-~~~~~~~~~
-
-.. autofunction:: name_like
-
-lift_with_state
-~~~~~~~~~~~~~~~
-
-.. autofunction:: lift_with_state
-
-transparent_lift
-~~~~~~~~~~~~~~~~
-
-.. autofunction:: transparent_lift
-
-transparent_lift_with_state
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autofunction:: transparent_lift_with_state
-
-LiftWithStateUpdater
-~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: LiftWithStateUpdater
 
 check_jax_usage
 ~~~~~~~~~~~~~~~
 
 .. autofunction:: check_jax_usage
-
-DO_NOT_STORE
-~~~~~~~~~~~~
-
-.. autoclass:: DO_NOT_STORE
-
-get_params
-~~~~~~~~~~
-
-.. autofunction:: get_params
-
-get_initial_state
-~~~~~~~~~~~~~~~~~
-
-.. autofunction:: get_initial_state
-
-get_current_state
-~~~~~~~~~~~~~~~~~
-
-.. autofunction:: get_current_state
-
-maybe_get_rng_sequence_state
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autofunction:: maybe_get_rng_sequence_state
-
-replace_rng_sequence_state
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autofunction:: replace_rng_sequence_state
 
 Optimizations
 -------------
@@ -1218,8 +1256,6 @@ Optimizations
 .. autosummary::
 
     optimize_rng_use
-    layer_stack
-    LayerStackTransparencyMapping
     module_auto_repr
     fast_eval_shape
     rng_reserve_size
@@ -1228,16 +1264,6 @@ optimize_rng_use
 ~~~~~~~~~~~~~~~~
 
 .. autofunction:: optimize_rng_use
-
-layer_stack
-~~~~~~~~~~~~~~~~
-
-.. autofunction:: layer_stack
-
-LayerStackTransparencyMapping
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: LayerStackTransparencyMapping
 
 module_auto_repr
 ~~~~~~~~~~~~~~~~

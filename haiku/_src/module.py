@@ -365,7 +365,7 @@ def name_scope(
 ) -> ContextManager[None]:
   """Context manager which adds a prefix to all new modules, params or state.
 
-  >>> with hk.experimental.name_scope("my_name_scope"):
+  >>> with hk.name_scope("my_name_scope"):
   ...   net = hk.Linear(1, name="my_linear")
   >>> net.module_name
   'my_name_scope/my_linear'
@@ -375,7 +375,7 @@ def name_scope(
 
   >>> class MyModule(hk.Module):
   ...   def __call__(self, x):
-  ...     with hk.experimental.name_scope("my_name_scope"):
+  ...     with hk.name_scope("my_name_scope"):
   ...       submodule = hk.Linear(1, name="submodule")
   ...       w = hk.get_parameter("w", [], init=jnp.ones)
   ...     return submodule(x) + w
@@ -406,7 +406,7 @@ def name_scope(
     A single use context manager that when active prefixes new modules,
     parameters or state with the given name.
   """
-  base.assert_context("experimental.name_scope")
+  base.assert_context("name_scope")
   return NameScope(name, method_name)
 
 
@@ -564,7 +564,7 @@ def force_name(name: str) -> str:
   >>> some_hyperparameter = True
   >>> if some_hyperparameter:
   ...   # Force mod1 and mod0 to have shared weights.
-  ...   mod1 = hk.Linear(1, name=hk.experimental.force_name(mod0.module_name))
+  ...   mod1 = hk.Linear(1, name=hk.force_name(mod0.module_name))
   ... else:
   ...   # mod0 and mod1 are independent.
   ...   mod1 = hk.Linear(1)
@@ -738,11 +738,11 @@ def name_like(method_name: str) -> Callable[[T], T]:
   ``__call__``:
 
   >>> class Autoencoder(hk.Module):
-  ...   @hk.experimental.name_like("__call__")
+  ...   @hk.name_like("__call__")
   ...   def encode(self, x):
   ...     return hk.Linear(10, name="enc")(x)  # name: autoencoder/enc
   ...
-  ...   @hk.experimental.name_like("__call__")
+  ...   @hk.name_like("__call__")
   ...   def decode(self, z):
   ...     return hk.Linear(10, name="dec")(z)  # name: autoencoder/dec
   ...
@@ -764,11 +764,11 @@ def name_like(method_name: str) -> Callable[[T], T]:
   is only applied within a method:
 
   >>> class Autoencoder(hk.Module):
-  ...   @hk.experimental.name_like("__call__")
+  ...   @hk.name_like("__call__")
   ...   def encode(self, x):
   ...     return hk.Linear(10)(x)  # name: autoencoder/linear
   ...
-  ...   @hk.experimental.name_like("__call__")
+  ...   @hk.name_like("__call__")
   ...   def decode(self, z):
   ...     return hk.Linear(10)(z)  # name: autoencoder/linear  <-- NOT INTENDED
 
@@ -776,11 +776,11 @@ def name_like(method_name: str) -> Callable[[T], T]:
   with their former name:
 
   >>> class Autoencoder(hk.Module):
-  ...   @hk.experimental.name_like("__call__")
+  ...   @hk.name_like("__call__")
   ...   def encode(self, x):
   ...     return hk.Linear(10, name="linear")(x)    # name: autoencoder/linear
   ...
-  ...   @hk.experimental.name_like("__call__")
+  ...   @hk.name_like("__call__")
   ...   def decode(self, z):
   ...     return hk.Linear(10, name="linear_1")(z)  # name: autoencoder/linear_1
 

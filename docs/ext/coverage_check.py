@@ -56,6 +56,11 @@ class HaikuCoverageCheck(builders.Builder):
     documented_objects = frozenset(self.env.domaindata["py"]["objects"])
     undocumented_objects = haiku_public_symbols() - documented_objects
     if undocumented_objects:
+      # Remove symbols that appear to have moved out of experimental.
+      for obj in tuple(undocumented_objects):
+        if obj.replace("haiku.experimental", "haiku") in documented_objects:
+          undocumented_objects.remove(obj)
+    if undocumented_objects:
       undocumented_objects = tuple(sorted(undocumented_objects))
       raise errors.SphinxError(
           "All public symbols must be included in our documentation, did you "

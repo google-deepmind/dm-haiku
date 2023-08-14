@@ -1073,7 +1073,8 @@ class PRNGSequence(Iterator[PRNGKey]):
       #     key, subkey3, subkey4 = jax.random.split(key, 3)  # reserve(2)
       #
       # Where subkey1->subkey4 are provided to the user in order when requested.
-      new_keys = tuple(jax.random.split(self._key, num + 1))
+      with jax.default_device(self._key.device()):
+        new_keys = tuple(jax.random.split(self._key, num + 1))
       self._key = new_keys[0]
       self._subkeys.extend(new_keys[1:])
 

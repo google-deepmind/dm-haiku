@@ -12,6 +12,7 @@ defusedxml==0.7.1
 docutils==0.17.1
 entrypoints==0.3
 flatbuffers==2.0
+flax==0.7.1
 idna==3.3
 imagesize==1.2.0
 importlib-resources==5.9.0

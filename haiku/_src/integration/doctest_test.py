@@ -25,6 +25,7 @@ from absl import logging
 from absl.testing import absltest
 from absl.testing import parameterized
 import chex
+import flax.linen as nn
 import haiku as hk
 from haiku._src import test_utils
 import jax
@@ -50,6 +51,7 @@ class DoctestTest(parameterized.TestCase):
               "jnp": jnp,
               "jax": jax,
               "jmp": jmp,
+              "nn": nn,
           })
       tests_symbols = ", ".join(module.__test__.keys())
       if num_attempted == 0:

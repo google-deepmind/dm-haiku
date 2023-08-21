@@ -52,6 +52,7 @@ from haiku._src.summarise import eval_summary
 from haiku._src.summarise import MethodInvocation
 from haiku._src.summarise import ModuleDetails
 from haiku._src.summarise import tabulate
+from haiku.experimental import flax
 from haiku.experimental import jaxpr_info
 
 # TODO(tomhennigan): Remove deprecated alias.
@@ -69,6 +70,7 @@ __all__ = (
     "DO_NOT_STORE",
     "force_name",
     "intercept_methods",
+    "flax",
     "get_current_state",
     "get_initial_state",
     "get_params",

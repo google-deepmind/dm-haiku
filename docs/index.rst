@@ -54,6 +54,7 @@ Alternatively, you can install via PyPI::
    :caption: Advanced
    :maxdepth: 1
 
+   notebooks/flax
    notebooks/jax2tf
    notebooks/build_your_own_haiku
    notebooks/visualization

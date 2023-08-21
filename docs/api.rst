@@ -267,8 +267,36 @@ SupportsCall
 
 .. autoclass:: SupportsCall
 
+Flax Interop
+============
+
+.. automodule:: haiku.experimental.flax
+
+Haiku inside Flax
+-----------------
+
+Module
+~~~~~~
+
+.. autoclass:: Module
+
+flatten_flax_to_haiku
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: flatten_flax_to_haiku
+
+Flax inside Haiku
+-----------------
+
+lift
+~~~~
+
+.. autofunction:: lift
+
 Advanced State Management
 =========================
+
+.. automodule:: haiku
 
 Lifting
 -------

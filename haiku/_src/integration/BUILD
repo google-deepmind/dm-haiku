@@ -90,6 +90,7 @@ hk_py_test(
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: chex
+        # pip: flax
         "//haiku",
         "//haiku/_src:test_utils",
         # pip: jax

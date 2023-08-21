@@ -141,6 +141,7 @@ import itertools
 import unittest
 
 import chex
+import flax.linen as nn
 import haiku as hk
 import jax
 import jax.numpy as jnp

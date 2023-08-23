@@ -661,7 +661,7 @@ class Module(object, metaclass=ModuleMetaclass):
   # Support @dataclass annotated modules.
   __post_init__ = __init__
 
-  def params_dict(self) -> Mapping[str, jnp.array]:
+  def params_dict(self) -> Mapping[str, jnp.ndarray]:
     """Returns parameters keyed by name for this module and submodules."""
     if not base.frame_stack:
       raise ValueError(
@@ -669,7 +669,7 @@ class Module(object, metaclass=ModuleMetaclass):
 
     return params_or_state_dict(self.module_name, self._submodules, "params")
 
-  def state_dict(self) -> Mapping[str, jnp.array]:
+  def state_dict(self) -> Mapping[str, jnp.ndarray]:
     """Returns state keyed by name for this module and submodules."""
     if not base.frame_stack:
       raise ValueError(
@@ -682,7 +682,7 @@ def params_or_state_dict(
     module_name: str,
     submodules: Set[str],
     which: str,
-) -> Mapping[str, jnp.array]:
+) -> Mapping[str, jnp.ndarray]:
   """Returns module parameters or state for the given module or submodules."""
   assert which in ("params", "state")
   out = {}

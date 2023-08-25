@@ -587,58 +587,6 @@ class TransformTest(parameterized.TestCase):
     _, state = f.apply({}, {}, None)
     self.assertEmpty(state)
 
-  def test_replace_transform(self):
-
-    def f():
-      return base.get_parameter("w", [], init=jnp.zeros)
-
-    init_fn, apply_fn = transform.transform(f)
-
-    params = init_fn(None)
-    self.assertEqual(params, {"~": {"w": jnp.array(0.)}})
-    out = apply_fn(params, None)
-    self.assertEqual(out, jnp.array(0.))
-
-    transform.transform._replace(lambda *_, **__: "hacked")  # pytype: disable=attribute-error
-    self.assertEqual(transform.transform(f), "hacked")
-    transform.transform._reset()  # pytype: disable=attribute-error
-
-    init_fn, apply_fn = transform.transform(f)
-
-    params = init_fn(None)
-    self.assertEqual(params, {"~": {"w": jnp.array(0.)}})
-    out = apply_fn(params, None)
-    self.assertEqual(out, jnp.array(0.))
-
-  def test_replace_transform_with_state(self):
-
-    def f():
-      w = base.get_parameter("w", [], init=jnp.zeros)
-      for _ in range(10):
-        count = base.get_state("count", (), jnp.int32, jnp.zeros)
-        base.set_state("count", count + 1 + w)
-      return count
-
-    init_fn, apply_fn = transform.transform_with_state(f)
-    params, state = init_fn(None)
-    self.assertEqual(params, {"~": {"w": jnp.array(0.)}})
-    self.assertEqual(state, {"~": {"count": 0}})
-    out, state = apply_fn(params, state, None)
-    self.assertEqual(out, jnp.array(9.))
-    self.assertEqual(state, {"~": {"count": 10}})
-
-    transform.transform._replace(lambda *_, **__: "hacked")  # pytype: disable=attribute-error
-    self.assertEqual(transform.transform(f), "hacked")
-    transform.transform._reset()  # pytype: disable=attribute-error
-
-    init_fn, apply_fn = transform.transform_with_state(f)
-    params, state = init_fn(None)
-    self.assertEqual(params, {"~": {"w": jnp.array(0.)}})
-    self.assertEqual(state, {"~": {"count": 0}})
-    out, state = apply_fn(params, state, None)
-    self.assertEqual(out, jnp.array(9.))
-    self.assertEqual(state, {"~": {"count": 10}})
-
   def test_signature_transform_with_state(self):
     @transform.transform_with_state
     def f(pos, key=37) -> int:

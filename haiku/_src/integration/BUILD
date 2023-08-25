@@ -310,19 +310,3 @@ hk_py_test(
         # pip: jax
     ],
 )
-
-hk_py_test(
-    name = "replaceable_funcs_test",
-    srcs = ["replaceable_funcs_test.py"],
-    deps = [
-        ":descriptors",
-        # pip: absl/testing:absltest
-        # pip: absl/testing:parameterized
-        "//haiku",
-        "//haiku/_src:base",
-        "//haiku/_src:stateful",
-        "//haiku/_src:test_utils",
-        # pip: jax
-        # pip: numpy
-    ],
-)

@@ -592,34 +592,11 @@ def check_not_none(value: Optional[T], msg: str) -> T:
   return value
 
 
-def replaceable(f: T) -> T:
-  """Decorator for functions that we want to have replaceable bodies."""
-
-  # pylint:disable=protected-access
-  @functools.wraps(f)
-  def wrapped(*args, **kwargs):
-    return wrapped._current(*args, **kwargs)
-
-  def replace(g):
-    wrapped._current = g
-
-  def reset():
-    wrapped._current = wrapped._original
-
-  wrapped._original = f
-  wrapped._current = f
-  wrapped._replace = replace
-  wrapped._reset = reset
-  # pylint:enable=protected-access
-  return wrapped
-
-
 def throw_if_run(shape, dtype):
   del shape, dtype
   raise ValueError("Initializer must be specified.")
 
 
-@replaceable
 def get_parameter(
     name: str,
     shape: Sequence[int],
@@ -1146,7 +1123,6 @@ def reserve_rng_keys(num: int):
   rng_seq.reserve(num)
 
 
-@replaceable
 def next_rng_key() -> PRNGKey:
   """Returns a unique JAX random key split from the current global key.
 
@@ -1201,7 +1177,6 @@ def next_rng_key_internal() -> PRNGKey:
   return next(rng_seq)
 
 
-@replaceable
 def next_rng_keys(num: int) -> jax.Array:
   """Returns one or more JAX random keys split from the current global key.
 
@@ -1277,7 +1252,6 @@ def extract_state(state: State, *, initial) -> MutableState:
   return state
 
 
-@replaceable
 def get_state(
     name: str,
     shape: Optional[Sequence[int]] = None,
@@ -1356,7 +1330,6 @@ maybe_shape = lambda x: getattr(x, "shape", None)
 maybe_dtype = lambda x: getattr(x, "dtype", None)
 
 
-@replaceable
 def set_state(name: str, value):
   """Sets the current value for some state.
 
@@ -1411,7 +1384,6 @@ def set_state(name: str, value):
   state[name] = StatePair(initial, current)
 
 
-@replaceable
 def with_rng(key: PRNGKey):
   """Provides a new sequence for :func:`next_rng_key` to draw from.
 

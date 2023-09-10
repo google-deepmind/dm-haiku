@@ -14,12 +14,13 @@
 # ==============================================================================
 """Base Haiku module."""
 
+import abc
 import contextlib
 import functools
 import inspect
 import re
 from typing import (Any, Callable, ContextManager, Dict, Mapping, NamedTuple,
-                    Optional, Protocol, Set, Tuple, Type, TypeVar)
+                    Optional, Set, Tuple, Type, TypeVar)
 
 from haiku._src import base
 from haiku._src import config
@@ -56,18 +57,17 @@ class Future:
     return self._result
 
 
-# We subclass `type(Protocol)` in order to avoid metaclass conflicts when
-# defining modules that also inherit from `Protocol`. Note that `type(Protocol)`
-# already inherits from `abc.ABCMeta`.
-class ModuleMetaclass(type(Protocol)):
+# We use abc.ABCMeta to avoid metaclass conflicts when defining modules
+# that also inherit from `Protocol`.
+class ModuleMetaclass(abc.ABCMeta):
   """Metaclass for `Module`."""
 
   def __new__(  # pylint: disable=bad-classmethod-argument
-      mcs: Type[Type[T]],
+      mcs: Type["ModuleMetaclass"],
       name: str,
       bases: Tuple[Type[Any], ...],
       clsdict: Dict[str, Any],
-  ) -> Type[T]:
+  ) -> "ModuleMetaclass":
     method_names = []
     cls_fut = Future()
 
@@ -94,12 +94,6 @@ class ModuleMetaclass(type(Protocol)):
         # We defer patching methods until after the type is created such that we
         # can trigger the descriptor binding them to the class.
         method_names.append(key)
-
-    # Without this any classes with @abc.abstract* elements in their dict fail
-    # isinstance checks.
-    # TODO(b/177339347): Remove this workaround once the underlying bug in
-    #                    `_ProtocolMeta.__instancecheck__` has been fixed.
-    clsdict.setdefault("_is_protocol", False)
 
     clsdict.setdefault(
         "__repr__",

@@ -629,7 +629,7 @@ class TransformTest(parameterized.TestCase):
   def test_signature_unsupported(self):
     # unsupported annotations should not error
     @transform.transform
-    def f() -> ...:
+    def f() -> Any:
       raise NotImplementedError
     def expected_f_init(rng: Optional[Union[PRNGKey, int]]) -> Params:
       del rng

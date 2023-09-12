@@ -124,7 +124,7 @@ class ModuleMetaclass(type(Protocol)):
 
     return cls
 
-  def __call__(cls: "ModuleMetaclass", *args, **kwargs) -> Any:  # pylint: disable=no-self-argument
+  def __call__(cls, *args, **kwargs) -> Any:  # pylint: disable=no-self-argument
     # Call new such that we have an un-initialized module instance that we can
     # still reference even if there is an exception during __init__. This is
     # needed such that we can make sure the name_scope constructed in __init__

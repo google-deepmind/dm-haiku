@@ -15,7 +15,7 @@
 """Tests for haiku._src.transform."""
 
 import inspect
-from typing import Any, Mapping, Optional, Tuple, Union
+from typing import Mapping, Optional, Tuple, Union
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -620,23 +620,6 @@ class TransformTest(parameterized.TestCase):
         params: Optional[Params], rng: Optional[Union[PRNGKey, int]],
         pos, *, key: int = 37) -> int:
       del params, rng, pos, key
-      raise NotImplementedError
-    self.assertEqual(
-        inspect.signature(f.init), inspect.signature(expected_f_init))
-    self.assertEqual(
-        inspect.signature(f.apply), inspect.signature(expected_f_apply))
-
-  def test_signature_unsupported(self):
-    # unsupported annotations should not error
-    @transform.transform
-    def f() -> ...:
-      raise NotImplementedError
-    def expected_f_init(rng: Optional[Union[PRNGKey, int]]) -> Params:
-      del rng
-      raise NotImplementedError
-    def expected_f_apply(
-        params: Optional[Params], rng: Optional[Union[PRNGKey, int]]) -> Any:
-      del params, rng
       raise NotImplementedError
     self.assertEqual(
         inspect.signature(f.init), inspect.signature(expected_f_init))

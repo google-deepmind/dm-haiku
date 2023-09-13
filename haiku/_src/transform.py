@@ -81,16 +81,12 @@ def sig_remove_state(s: inspect.Signature) -> inspect.Signature:
 def sig_add_state(s: inspect.Signature) -> inspect.Signature:
   """Add hk.State to the return type of a signature."""
   if s.return_annotation is inspect.Parameter.empty:
-    ret = Tuple[Any, hk.State]
+    ret = Any
   else:
-    try:
-      ret = Tuple[s.return_annotation, hk.State]
-    except TypeError:
-      # annotations are not strictly _required_ to contain type information
-      ret = Tuple[Any, hk.State]
+    ret = s.return_annotation
   return inspect.Signature(
       parameters=list(s.parameters.values()),
-      return_annotation=ret,
+      return_annotation=Tuple[ret, hk.State],
       __validate_parameters__=False)
 
 

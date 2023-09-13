@@ -406,7 +406,7 @@ def transform_with_state(f) -> TransformedWithState:
       "An UnexpectedTracerError was raised while inside a Haiku transformed "
       "function (see error above).\n"
       "Hint: are you using a JAX transform or JAX control-flow function "
-      "(jax.vmap/jax.scan/...) inside a Haiku transform? You might want to use "
+      "(jax.vmap/jax.lax.scan/...) inside a Haiku transform? You might want to use "
       "the Haiku version of the transform instead (hk.vmap/hk.scan/...).\n"
       "See https://dm-haiku.readthedocs.io/en/latest/notebooks/transforms.html "
       "on why you can't use JAX transforms inside a Haiku module.")

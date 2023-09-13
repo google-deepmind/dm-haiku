@@ -1,7 +1,6 @@
 chex>=0.0.4
 cloudpickle>=1.2.2
 dill
-flax>=0.7.1
 mock>=3.0.5
 pytest-xdist
 virtualenv

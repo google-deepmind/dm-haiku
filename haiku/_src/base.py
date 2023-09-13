@@ -1275,7 +1275,7 @@ def get_state(
   >>> print(hk.get_state("counter"))
   0.0
 
-  MOTE: state within the same :func:`transform` and/or :class:`Module` with the
+  NOTE: state within the same :func:`transform` and/or :class:`Module` with the
   same name have the same value:
 
   >>> c1 = hk.get_state("counter")

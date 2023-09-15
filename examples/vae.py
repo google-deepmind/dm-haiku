@@ -19,8 +19,9 @@ See "Auto-encoding variational Bayes" (Kingma & Welling, 2014) [0].
 [0]https://arxiv.org/abs/1312.6114
 """
 
+from collections.abc import Iterator, Sequence
 import dataclasses
-from typing import Iterator, Tuple, NamedTuple, Sequence
+from typing import NamedTuple
 
 from absl import app
 from absl import flags
@@ -65,7 +66,7 @@ class Encoder(hk.Module):
   latent_size: int
   hidden_size: int = 512
 
-  def __call__(self, x: jax.Array) -> Tuple[jax.Array, jax.Array]:
+  def __call__(self, x: jax.Array) -> tuple[jax.Array, jax.Array]:
     """Encodes an image as an isotropic Guassian latent code."""
     x = hk.Flatten()(x)
     x = hk.Linear(self.hidden_size)(x)

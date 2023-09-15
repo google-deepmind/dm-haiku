@@ -14,7 +14,8 @@
 # ==============================================================================
 """A minimal interface mlp module."""
 
-from typing import Callable, Iterable, Optional
+from collections.abc import Iterable
+from typing import Callable, Optional
 
 from haiku._src import base
 from haiku._src import basic

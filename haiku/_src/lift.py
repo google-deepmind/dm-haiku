@@ -14,8 +14,9 @@
 # ==============================================================================
 """Lifting parameters in Haiku."""
 
+from collections.abc import Mapping, MutableMapping
 import functools
-from typing import Any, Callable, Mapping, MutableMapping, Optional, Tuple, TypeVar
+from typing import Any, Callable, Optional, TypeVar
 
 from haiku._src import base
 from haiku._src import data_structures
@@ -69,7 +70,7 @@ def unpack_from_dict(src: hk.Params, prefix: str) -> MutableBundle:
 
 def add_state_to_init_fn(
     init_fn: Callable[..., hk.Params],
-) -> Callable[..., Tuple[hk.Params, hk.State]]:
+) -> Callable[..., tuple[hk.Params, hk.State]]:
   def wrapped_init_fn(*a, **k):
     params = init_fn(*a, **k)
     if not isinstance(params, Mapping):
@@ -363,11 +364,11 @@ def _to_callable(f: Callable[..., T]) -> Callable[..., T]:
 
 
 def lift_with_state(
-    init_fn: Callable[..., Tuple[hk.Params, hk.State]],
+    init_fn: Callable[..., tuple[hk.Params, hk.State]],
     *,
     allow_reuse: bool = False,
     name: str = "lifted",
-) -> Tuple[Callable[..., Tuple[hk.Params, hk.State]], LiftWithStateUpdater]:
+) -> tuple[Callable[..., tuple[hk.Params, hk.State]], LiftWithStateUpdater]:
   r"""Registers params and state from an init function in an outer transform.
 
   See :func:`lift`\ for more context on when to use ``lift``.
@@ -434,10 +435,10 @@ def lift_with_state(
 
 
 def transparent_lift_with_state(
-    init_fn: Callable[..., Tuple[hk.Params, hk.State]],
+    init_fn: Callable[..., tuple[hk.Params, hk.State]],
     *,
-    allow_reuse: bool = False
-) -> Tuple[Callable[..., Tuple[hk.Params, hk.State]], LiftWithStateUpdater]:
+    allow_reuse: bool = False,
+) -> tuple[Callable[..., tuple[hk.Params, hk.State]], LiftWithStateUpdater]:
   r"""Registers params and state in an outer transform without adding scope.
 
   Functionally this is equivalent to :func:`lift_with_state`\ but without

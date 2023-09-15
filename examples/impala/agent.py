@@ -15,7 +15,7 @@
 """A stateless agent interface."""
 import collections
 import functools
-from typing import Any, Callable, Optional, Tuple
+from typing import Any, Callable, Optional
 
 import dm_env
 import haiku as hk
@@ -81,7 +81,7 @@ class Agent:
       params: hk.Params,
       timestep: dm_env.TimeStep,
       state: Nest,
-  ) -> Tuple[AgentOutput, Nest]:
+  ) -> tuple[AgentOutput, Nest]:
     """For a given single-step, unbatched timestep, output the chosen action."""
     # Pad timestep, state to be [T, B, ...] and [B, ...] respectively.
     timestep = jax.tree_util.tree_map(lambda t: t[None, None, ...], timestep)

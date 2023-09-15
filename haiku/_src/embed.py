@@ -14,8 +14,9 @@
 # ==============================================================================
 """Modules for performing embedding lookups in Haiku."""
 
+from collections.abc import Sequence
 import enum
-from typing import Optional, Sequence, Union
+from typing import Optional, Union
 
 from haiku._src import base
 from haiku._src import initializers

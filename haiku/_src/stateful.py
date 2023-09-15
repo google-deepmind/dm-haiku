@@ -16,9 +16,10 @@
 
 import collections
 import collections.abc
+from collections.abc import Mapping, MutableMapping
 import functools
 import inspect
-from typing import Any, Callable, Mapping, MutableMapping, Optional, Tuple, TypeVar
+from typing import Any, Callable, Optional, TypeVar
 
 from haiku._src import base
 import jax
@@ -245,7 +246,7 @@ TwoLevelMappingToBox = Mapping[Any, Mapping[Any, Box]]
 def box_and_fill_missing(
     a: TwoLevelMapping,
     b: TwoLevelMapping,
-) -> Tuple[TwoLevelMappingToBox, TwoLevelMappingToBox]:
+) -> tuple[TwoLevelMappingToBox, TwoLevelMappingToBox]:
   """Returns boxed two level mappings with the same structure.
 
   It is assumed that ``a`` is a subset of ``b``.
@@ -712,7 +713,7 @@ def maybe_get_axis(axis: int, arrays: Any) -> Optional[int]:
 uniq = lambda x: tuple({k: None for k in x}.keys())
 
 
-def get_mapped_axis_size(args: Tuple[Any], in_axes: Any) -> int:
+def get_mapped_axis_size(args: tuple[Any], in_axes: Any) -> int:
   sizes = uniq(jax.tree_util.tree_leaves(
       jax.tree_util.tree_map(maybe_get_axis, in_axes, args)))
   assert sizes, "hk.vmap should guarantee non-empty in_axes"

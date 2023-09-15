@@ -27,12 +27,13 @@ Example usage:
     print(jaxpr_info.format_module(mod))
 
 """
+from collections.abc import Mapping, Sequence
 import dataclasses
 import itertools
 import logging
 import os
 import sys
-from typing import Any, Callable, Dict, List, Mapping, NamedTuple, Set, Sequence, Optional, Tuple
+from typing import Any, Callable, NamedTuple, Optional
 
 from haiku._src import summarise
 import jax
@@ -52,17 +53,17 @@ class Module:
 
   # Expressions that are directly part of this module, e.g. in the __call__
   # function.
-  expressions: List['Expression'] = dataclasses.field(default_factory=list)
+  expressions: list['Expression'] = dataclasses.field(default_factory=list)
 
   # How many parameters are used by this module, including all sub-modules,
   # and shape information for each parameter. Inferred from haiku module
   # information.
   total_param_size: int = 0
-  param_info: Dict[str, str] = dataclasses.field(default_factory=dict)
+  param_info: dict[str, str] = dataclasses.field(default_factory=dict)
 
   # Same as above, but for haiku state.
   total_state_size: int = 0
-  state_info: Dict[str, str] = dataclasses.field(default_factory=dict)
+  state_info: dict[str, str] = dataclasses.field(default_factory=dict)
 
 
 @dataclasses.dataclass
@@ -84,7 +85,7 @@ class Expression:
 
   # Some expressions take extra parameters, such as input/output dtypes for
   # casts.
-  params: Dict[str, str] = dataclasses.field(default_factory=dict)
+  params: dict[str, str] = dataclasses.field(default_factory=dict)
 
   # Some expressions, such as named_call, contain a whole subtree of modules
   # and expressions.
@@ -105,7 +106,7 @@ def make_model_info(
     name: Optional[str] = None,
     include_module_info: bool = True,
     compute_flops: Optional[ComputeFlopsFn] = None,
-    axis_env: Optional[Sequence[Tuple[Any, int]]] = None,
+    axis_env: Optional[Sequence[tuple[Any, int]]] = None,
 ) -> Callable[..., Module]:
   """Creates a function that computes flop, param and state information.
 
@@ -229,8 +230,12 @@ def _format_shape(var):
   return var.aval.str_short().replace('float', 'f')
 
 
-def _mark_seen(binder_idx: Dict[jax.core.Var, int], seen: Set[str],
-               var: jax.core.Var, scope: _ModuleScope) -> bool:
+def _mark_seen(
+    binder_idx: dict[jax.core.Var, int],
+    seen: set[str],
+    var: jax.core.Var,
+    scope: _ModuleScope,
+) -> bool:
   """Marks a variable as seen. Returns True if it was not previously seen."""
   key = scope.named_call_id + '/' + _var_to_str(binder_idx, var)
   if key in seen:
@@ -244,8 +249,9 @@ def _var_sort_key(s: str):
   return (1000 if s == '_' else len(s), s)
 
 
-def _var_to_str(binder_idx: Dict[jax.core.Var, int],
-                atom: jax.core.Atom) -> str:
+def _var_to_str(
+    binder_idx: dict[jax.core.Var, int], atom: jax.core.Atom
+) -> str:
   """Returns an atom name based on var binding order in its containing jaxpr."""
   if isinstance(atom, jax.core.DropVar):
     return '_'
@@ -260,11 +266,15 @@ def _var_to_str(binder_idx: Dict[jax.core.Var, int],
   return s
 
 
-def _process_eqn(eqn: jax.core.JaxprEqn, seen: Set[str],
-                 eqns_by_output: Mapping[str, jax.core.JaxprEqn],
-                 compute_flops: Optional[ComputeFlopsFn], scope: _ModuleScope,
-                 module: Module,
-                 binder_idx: Dict[jax.core.Var, int]) -> Optional[int]:
+def _process_eqn(
+    eqn: jax.core.JaxprEqn,
+    seen: set[str],
+    eqns_by_output: Mapping[str, jax.core.JaxprEqn],
+    compute_flops: Optional[ComputeFlopsFn],
+    scope: _ModuleScope,
+    module: Module,
+    binder_idx: dict[jax.core.Var, int],
+) -> Optional[int]:
   """Recursive walks the JaxprEqn to compute the flops it takes."""
   for out_var in eqn.outvars:
     _mark_seen(binder_idx, seen, out_var, scope)
@@ -366,9 +376,13 @@ def _process_eqn(eqn: jax.core.JaxprEqn, seen: Set[str],
   return flops
 
 
-def _process_jaxpr(jaxpr: jax.core.Jaxpr,
-                   compute_flops: Optional[ComputeFlopsFn], scope: _ModuleScope,
-                   seen: Set[str], module: Module) -> Optional[int]:
+def _process_jaxpr(
+    jaxpr: jax.core.Jaxpr,
+    compute_flops: Optional[ComputeFlopsFn],
+    scope: _ModuleScope,
+    seen: set[str],
+    module: Module,
+) -> Optional[int]:
   """Computes the flops used for a JAX expression, tracking module scope."""
   if isinstance(jaxpr, jax.core.ClosedJaxpr):
     return _process_jaxpr(jaxpr.jaxpr, compute_flops, scope, seen, module)

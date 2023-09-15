@@ -14,8 +14,8 @@
 # ==============================================================================
 """Tests for haiku._src.random."""
 
+from collections.abc import Sequence
 import functools
-from typing import Sequence
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -43,13 +43,16 @@ class RandomTest(absltest.TestCase):
     f_opt = transform.transform(random.optimize_rng_use(f))
     jax.tree_util.tree_map(
         assert_allclose,
-        f_opt.apply({}, key), tuple(jax.random.split(key, 3))[1:])
+        f_opt.apply({}, key),
+        tuple(jax.random.split(key, 3))[1:],
+    )
 
     # Without optimize_rng_use the keys should be equivalent to splitting in a
     # loop.
     f = transform.transform(f)
     jax.tree_util.tree_map(
-        assert_allclose, f.apply({}, key), tuple(split_for_n(key, 2)))
+        assert_allclose, f.apply({}, key), tuple(split_for_n(key, 2))
+    )
 
   def test_rbg_default_impl(self):
     with jax.default_prng_impl("rbg"):
@@ -64,8 +67,9 @@ class RandomTest(absltest.TestCase):
       key = jax.random.PRNGKey(42)[0:2]
       self.assertEqual(key.shape, (2,))
       init, _ = transform.transform(base.next_rng_key)
-      with self.assertRaisesRegex(ValueError,
-                                  "Init must be called with an RNG"):
+      with self.assertRaisesRegex(
+          ValueError, "Init must be called with an RNG"
+      ):
         init(key)
 
 
@@ -89,6 +93,7 @@ class CustomRNGTest(parameterized.TestCase):
       self.skipTest("init returns nothing, so compilation may DCE it")
 
     count = 0
+
     def count_splits(_, num):
       nonlocal count
       count += 1
@@ -101,7 +106,8 @@ class CustomRNGTest(parameterized.TestCase):
         seed=lambda _: jnp.zeros((13,), np.uint32),
         split=count_splits,
         random_bits=lambda *_, data: jnp.zeros(data, np.uint32),
-        fold_in=lambda key, _: key)
+        fold_in=lambda key, _: key,
+    )
 
     init, _ = transform.transform(base.next_rng_key)
     if do_jit:

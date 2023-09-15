@@ -14,7 +14,8 @@
 # ==============================================================================
 """A minimal MNIST classifier example."""
 
-from typing import Iterator, NamedTuple
+from collections.abc import Iterator
+from typing import NamedTuple
 
 from absl import app
 import haiku as hk

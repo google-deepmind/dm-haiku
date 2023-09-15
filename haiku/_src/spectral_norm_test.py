@@ -89,8 +89,7 @@ class SNParamsTreeTest(absltest.TestCase):
     init_fn, _ = transform.transform_with_state(g)
     _, params_state = init_fn(random.PRNGKey(428), params)
 
-    expected_sn_states = [
-        "{}/{}__{}".format(sn_name, linear_name, s) for s in ["w"]]
+    expected_sn_states = [f"{sn_name}/{linear_name}__{s}" for s in ["w"]]
     self.assertSameElements(expected_sn_states, params_state.keys())
 
 

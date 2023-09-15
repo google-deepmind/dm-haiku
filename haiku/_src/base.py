@@ -15,11 +15,11 @@
 """Base Haiku module."""
 
 import collections
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 import contextlib
 import functools
 import itertools as it
-from typing import (Callable, Iterator, Iterable, NamedTuple, Optional, Set,
-                    Tuple, Union, Any, Sequence, Mapping, FrozenSet, TypeVar)
+from typing import Any, Callable, NamedTuple, Optional, TypeVar, Union
 import warnings
 
 from haiku._src import config
@@ -27,12 +27,12 @@ from haiku._src import data_structures
 from haiku._src.typing import (  # pylint: disable=g-multiple-import
     Initializer,
     LiftingModuleType,
-    Params,
-    MutableParams,
-    State,
-    MutableState,
     Module,
+    MutableParams,
+    MutableState,
     PRNGKey,
+    Params,
+    State,
 )
 import jax
 from jax import config as jax_config
@@ -92,7 +92,7 @@ class Frame(NamedTuple):
   freeze_params: bool
   module_stack: Stack[ModuleState]
   counter_stack: Stack[collections.Counter]
-  used_names_stack: Stack[Set[str]]
+  used_names_stack: Stack[set[str]]
   jax_trace_stack: Stack[JaxTraceLevel]
   frame_id: int
 
@@ -999,7 +999,7 @@ def assert_is_prng_key(key: PRNGKey):
           f"actual=(shape={key.shape}, dtype={key.dtype}){config_hint}")
 
 
-PRNGSequenceState = Tuple[PRNGKey, Iterable[PRNGKey]]
+PRNGSequenceState = tuple[PRNGKey, Iterable[PRNGKey]]
 
 
 class PRNGSequence(Iterator[PRNGKey]):
@@ -1082,7 +1082,7 @@ class PRNGSequence(Iterator[PRNGKey]):
 
   next = __next__
 
-  def take(self, num) -> Tuple[PRNGKey, ...]:
+  def take(self, num) -> tuple[PRNGKey, ...]:
     self.reserve(max(num - len(self._subkeys), 0))
     return tuple(next(self) for _ in range(num))
 
@@ -1407,7 +1407,7 @@ def with_rng(key: PRNGKey):
   return current_frame().rng_stack(PRNGSequence(key))
 
 
-def param_names() -> FrozenSet[Tuple[str, str]]:
+def param_names() -> frozenset[tuple[str, str]]:
   """Returns all module and parameter names as a set of pairs."""
   out = []
   params = current_frame().params
@@ -1431,7 +1431,7 @@ def assert_no_new_parameters():
     raise AssertionError(f"New parameters were created: {list(sorted(diff))}")
 
 
-def _get_ids(collection_name: str) -> FrozenSet[int]:
+def _get_ids(collection_name: str) -> frozenset[int]:
   """Returns the identity for all state in the current context."""
   out = []
   collection = getattr(current_frame(), collection_name)

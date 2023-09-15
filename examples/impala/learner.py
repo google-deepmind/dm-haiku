@@ -18,7 +18,6 @@ import functools
 import itertools
 import queue
 import threading
-from typing import Dict, Tuple
 import warnings
 
 import dm_env
@@ -92,7 +91,7 @@ class Learner:
       self,
       theta: hk.Params,
       trajectories: util.Transition,
-  ) -> Tuple[jax.Array, Dict[str, jax.Array]]:
+  ) -> tuple[jax.Array, dict[str, jax.Array]]:
     """Compute vtrace-based actor-critic loss."""
     initial_state = jax.tree_util.tree_map(
         lambda t: t[0], trajectories.agent_state)
@@ -163,7 +162,7 @@ class Learner:
     """Enqueue trajectory."""
     self._host_q.put(traj)
 
-  def params_for_actor(self) -> Tuple[int, hk.Params]:
+  def params_for_actor(self) -> tuple[int, hk.Params]:
     return self._params_for_actor
 
   def host_to_device_worker(self):

@@ -14,8 +14,9 @@
 # ==============================================================================
 """Basic Haiku modules and functions."""
 
+from collections.abc import Iterable, Sequence
 import functools
-from typing import Any, Callable, Iterable, Optional, Sequence, Type
+from typing import Any, Callable, Optional
 
 from haiku._src import base
 from haiku._src import initializers
@@ -357,7 +358,7 @@ class CallableModule(hk.Module):
     raise NotImplementedError
 
 
-def to_module(f: Callable[..., Any]) -> Type[CallableModule]:
+def to_module(f: Callable[..., Any]) -> type[CallableModule]:
   """Converts a function into a callable module class.
 
   Sample usage:

@@ -23,7 +23,7 @@ See: https://arxiv.org/abs/1802.01561
 import functools
 import queue
 import threading
-from typing import Any, Callable, NamedTuple, Tuple
+from typing import Any, Callable, NamedTuple
 
 from absl import app
 from absl import logging
@@ -53,7 +53,7 @@ class SimpleNet(hk.Module):
   def __call__(
       self,
       timestep: dm_env.TimeStep,
-  ) -> Tuple[jax.Array, jax.Array]:
+  ) -> tuple[jax.Array, jax.Array]:
     """Process a batch of observations."""
     torso = hk.Sequential([hk.Flatten(),
                            hk.Linear(128), jax.nn.relu,
@@ -78,7 +78,7 @@ class Agent:
       params: hk.Params,
       rng: jax.Array,
       timestep: dm_env.TimeStep,
-  ) -> Tuple[jax.Array, jax.Array]:
+  ) -> tuple[jax.Array, jax.Array]:
     """Steps on a single observation."""
     timestep = jax.tree_util.tree_map(lambda t: jnp.expand_dims(t, 0), timestep)
     logits, _ = self._net(params, timestep)
@@ -199,7 +199,7 @@ class Learner:
       params: hk.Params,
       opt_state: optax.OptState,
       trajs: Transition,
-  ) -> Tuple[hk.Params, optax.OptState]:
+  ) -> tuple[hk.Params, optax.OptState]:
     g = jax.grad(self._agent.loss)(params, trajs)
     updates, new_opt_state = self._opt_update(g, opt_state)
     return optax.apply_updates(params, updates), new_opt_state

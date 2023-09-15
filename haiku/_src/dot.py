@@ -18,7 +18,7 @@ import collections
 import contextlib
 import functools
 import html
-from typing import Any, Callable, List, NamedTuple, Optional
+from typing import Any, Callable, NamedTuple, Optional
 
 from haiku._src import data_structures
 from haiku._src import module
@@ -45,9 +45,9 @@ class Graph(NamedTuple):
   """Represents a graphviz digraph/subgraph.."""
 
   title: str
-  nodes: List[Node]
-  edges: List[Edge]
-  subgraphs: List['Graph']
+  nodes: list[Node]
+  edges: list[Edge]
+  subgraphs: list['Graph']
 
   @classmethod
   def create(cls, title: Optional[str] = None):

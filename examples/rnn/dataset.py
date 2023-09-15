@@ -14,7 +14,7 @@
 # ==============================================================================
 """Tiny Shakespeare as a language modelling dataset."""
 
-from typing import Iterator, Mapping
+from collections.abc import Iterator, Mapping
 
 import numpy as np
 import tensorflow.compat.v2 as tf

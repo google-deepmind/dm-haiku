@@ -14,7 +14,8 @@
 # ==============================================================================
 """Utilities for checkpoints."""
 
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 import haiku as hk
 from haiku._src import utils

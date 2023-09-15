@@ -15,7 +15,7 @@
 
 """Utilities for converting Haiku modules to Flax modules."""
 
-from typing import Type, TypeVar, Union
+from typing import TypeVar, Union
 
 import flax.core
 import flax.linen as nn
@@ -117,7 +117,7 @@ class Module(nn.Module):
 
   @classmethod
   def create(
-      cls, hk_cls: Type[hk.SupportsCall], *init_args, **init_kwargs
+      cls, hk_cls: type[hk.SupportsCall], *init_args, **init_kwargs
   ) -> 'Module':
     """Converts a given Haiku module into a Flax ``nn.Module``.
 

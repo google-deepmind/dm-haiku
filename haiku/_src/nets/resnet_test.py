@@ -25,7 +25,7 @@ import jax.numpy as jnp
 import numpy as np
 
 
-_RESNETS = ["ResNet{}".format(i) for i in (18, 34, 50, 101, 152, 200)]
+_RESNETS = [f"ResNet{i}" for i in (18, 34, 50, 101, 152, 200)]
 _RESNET_NUM_PARAMS = [int(i * 1e6)
                       for i in (11.7, 21.8, 25.6, 44.5, 60.2, 64.7)]
 _RESNET_HAS_PROJECTION = [False, False, True, True, True, True]

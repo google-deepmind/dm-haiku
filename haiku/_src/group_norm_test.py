@@ -137,7 +137,8 @@ class GroupNormTest(parameterized.TestCase):
   def test_invalid_data_format(self, data_format):
     with self.assertRaisesRegex(
         ValueError,
-        "Unable to extract channel information from '{}'.".format(data_format)):
+        f"Unable to extract channel information from '{data_format}'.",
+    ):
       group_norm.GroupNorm(
           groups=5,
           data_format=data_format,

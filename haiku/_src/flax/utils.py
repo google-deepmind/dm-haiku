@@ -15,7 +15,8 @@
 
 """Utility functions for working with Haiku and Flax code."""
 
-from typing import Any, Mapping, MutableMapping, Sequence, Union
+from collections.abc import Mapping, MutableMapping, Sequence
+from typing import Any, Union
 
 from haiku._src import typing
 

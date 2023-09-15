@@ -28,8 +28,9 @@ $ python3 examples/transformer/train.py \
     --dataset_path=/tmp/shakespeare.txt --alsologtostderr
 """
 
+from collections.abc import MutableMapping
 import time
-from typing import Any, MutableMapping, NamedTuple, Tuple, Union
+from typing import Any, NamedTuple, Union
 
 from absl import app
 from absl import flags
@@ -126,7 +127,8 @@ def init(rng: jax.Array, data: _Batch) -> TrainingState:
 
 @jax.jit
 def update(
-    state: TrainingState, data: _Batch) -> Tuple[TrainingState, _Metrics]:
+    state: TrainingState, data: _Batch
+) -> tuple[TrainingState, _Metrics]:
   """Does an SGD step, returning a new training state and metrics."""
   rng, net_rng = jax.random.split(state.rng_key)
   loss_and_grad_fn = jax.value_and_grad(loss_fn.apply)
@@ -152,7 +154,7 @@ def update(
 def main(_):
 
   # Create the dataset.
-  with open(DATASET_PATH.value, mode='r') as file:
+  with open(DATASET_PATH.value) as file:
     train_dataset = dataset.load_ascii_dataset(
         corpus=file.read(),
         batch_size=BATCH_SIZE,

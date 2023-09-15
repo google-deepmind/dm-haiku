@@ -145,8 +145,7 @@ class EMAParamsTreeTest(absltest.TestCase):
     init_fn, _ = transform.transform_with_state(g)
     _, params_state = init_fn(None, params)
 
-    expected_ema_states = [
-        "{}/{}__{}".format(ema_name, linear_name, s) for s in ["w", "b"]]
+    expected_ema_states = [f"{ema_name}/{linear_name}__{s}" for s in ["w", "b"]]
     self.assertEqual(set(expected_ema_states), set(params_state.keys()))
 
   def test_ema_on_changing_data(self):

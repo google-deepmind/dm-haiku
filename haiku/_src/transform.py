@@ -14,8 +14,9 @@
 # ==============================================================================
 """Base Haiku module."""
 
+from collections.abc import Mapping
 import inspect
-from typing import Any, Callable, List, Mapping, NamedTuple, Optional, Tuple, TypeVar, Union
+from typing import Any, Callable, NamedTuple, Optional, TypeVar, Union
 
 from haiku._src import analytics
 from haiku._src import base
@@ -44,11 +45,10 @@ T = TypeVar("T")
 
 
 def sig_replace_leading_parameters(
-    s: inspect.Signature, n: int,
-    new_params: List[inspect.Parameter]) -> inspect.Signature:
+    s: inspect.Signature, n: int, new_params: list[inspect.Parameter]
+) -> inspect.Signature:
   """Replace the first n positional parameters of a signature."""
   p = list(s.parameters.values())
-  i = 0
   for i in range(n):
     if i >= len(p) or p[i].kind not in {
         inspect.Parameter.POSITIONAL_ONLY,
@@ -86,7 +86,7 @@ def sig_add_state(s: inspect.Signature) -> inspect.Signature:
     ret = s.return_annotation
   return inspect.Signature(
       parameters=list(s.parameters.values()),
-      return_annotation=Tuple[ret, hk.State],
+      return_annotation=tuple[ret, hk.State],
       __validate_parameters__=False)
 
 
@@ -114,10 +114,10 @@ class TransformedWithState(NamedTuple):
   """
 
   # Args: [Optional[PRNGKey], ...]
-  init: Callable[..., Tuple[hk.MutableParams, hk.MutableState]]
+  init: Callable[..., tuple[hk.MutableParams, hk.MutableState]]
 
   # Args: [hk.Params, hk.State, Optional[PRNGKey], ...]
-  apply: Callable[..., Tuple[Any, hk.MutableState]]
+  apply: Callable[..., tuple[Any, hk.MutableState]]
 
 
 def to_prng_sequence(rng, err_msg) -> Optional[hk.PRNGSequence]:
@@ -228,15 +228,16 @@ def with_empty_state(f: Transformed) -> TransformedWithState:
     A transformed function that does accepts and returns state.
   """
 
-  def init_fn(*args, **kwargs) -> Tuple[hk.MutableParams, hk.MutableState]:
+  def init_fn(*args, **kwargs) -> tuple[hk.MutableParams, hk.MutableState]:
     params = f.init(*args, **kwargs)
     state = data_structures.to_haiku_dict({})
     return params, state
 
   init_fn.__signature__ = sig_add_state(inspect.signature(f.init))
 
-  def apply_fn(params: hk.Params, state: Optional[hk.State],
-               *args, **kwargs) -> Tuple[Any, hk.MutableState]:
+  def apply_fn(
+      params: hk.Params, state: Optional[hk.State], *args, **kwargs
+  ) -> tuple[Any, hk.MutableState]:
     del state
     out = f.apply(params, *args, **kwargs)
     state = data_structures.to_haiku_dict({})
@@ -413,7 +414,7 @@ def transform_with_state(f) -> TransformedWithState:
       rng: Optional[Union[PRNGKey, int]],
       *args,
       **kwargs,
-  ) -> Tuple[hk.MutableParams, hk.MutableState]:
+  ) -> tuple[hk.MutableParams, hk.MutableState]:
     """Initializes your function collecting parameters and state."""
     rng = to_prng_sequence(rng, err_msg=INIT_RNG_ERROR)
     with base.new_context(rng=rng) as ctx:
@@ -425,11 +426,15 @@ def transform_with_state(f) -> TransformedWithState:
 
   init_fn.__signature__ = inspect.Signature(
       parameters=[
-          inspect.Parameter("rng", inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                            annotation=Optional[Union[PRNGKey, int]]),
-      ] + list(f_sig.parameters.values()),
-      return_annotation=Tuple[hk.Params, hk.State],
-      __validate_parameters__=False
+          inspect.Parameter(
+              "rng",
+              inspect.Parameter.POSITIONAL_OR_KEYWORD,
+              annotation=Optional[Union[PRNGKey, int]],
+          ),
+      ]
+      + list(f_sig.parameters.values()),
+      return_annotation=tuple[hk.Params, hk.State],
+      __validate_parameters__=False,
   )
 
   def apply_fn(
@@ -438,7 +443,7 @@ def transform_with_state(f) -> TransformedWithState:
       rng: Optional[Union[PRNGKey, int]],
       *args,
       **kwargs,
-  ) -> Tuple[Any, hk.MutableState]:
+  ) -> tuple[Any, hk.MutableState]:
     """Applies your function injecting parameters and state."""
     uses_state = state is not None
     params = check_mapping("params", params)

@@ -17,7 +17,7 @@
 import collections
 import functools
 import inspect
-from typing import Any, Callable, Optional, Protocol, Tuple, Union
+from typing import Any, Callable, Optional, Protocol, Union
 
 from haiku._src import base
 from haiku._src import lift
@@ -38,7 +38,7 @@ LayerStackScanned = collections.namedtuple("LayerStackScanned",
 # exact same type. We cannot express this with `typing`. So we just use it
 # to inform the user. In reality, the typing below will accept anything.
 NestedArray = Any
-WrappedFn = Callable[..., Union[NestedArray, Tuple[NestedArray]]]
+WrappedFn = Callable[..., Union[NestedArray, tuple[NestedArray]]]
 
 
 def _check_no_varargs(f):
@@ -66,7 +66,7 @@ class LayerStackTransparencyMapping(Protocol):
 
   def flat_to_stacked(
       self, unstacked_module_name: str
-  ) -> Optional[Tuple[str, int]]:
+  ) -> Optional[tuple[str, int]]:
     """Creates stacked module name and scan index from flat name.
 
     Returns None when the module is not a part of layer_stack.  This happens
@@ -201,8 +201,9 @@ class _LayerStack:
 
     # Use scan during apply, threading through random seed so that it's
     # unique for each layer.
-    def layer(carry: LayerStackCarry,
-              scanned: LayerStackScanned) -> Tuple[LayerStackCarry, Any]:
+    def layer(
+        carry: LayerStackCarry, scanned: LayerStackScanned
+    ) -> tuple[LayerStackCarry, Any]:
       rng = scanned.rng
       params = scanned.params
 
@@ -227,10 +228,11 @@ class _LayerStack:
         reverse=reverse)
     return carry.x, zs
 
-  def _call_wrapped(self,
-                    x: jax.Array,
-                    *args,
-                    ) -> Tuple[jax.Array, Optional[jax.Array]]:
+  def _call_wrapped(
+      self,
+      x: jax.Array,
+      *args,
+  ) -> tuple[jax.Array, Optional[jax.Array]]:
     raise NotImplementedError()
 
 

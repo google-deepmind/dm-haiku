@@ -15,8 +15,9 @@
 """Haiku types."""
 
 import abc
+from collections.abc import Mapping, MutableMapping, Sequence
 import typing
-from typing import Any, Callable, Mapping, MutableMapping, Sequence, Protocol, runtime_checkable
+from typing import Any, Callable, Protocol, runtime_checkable
 
 import jax
 

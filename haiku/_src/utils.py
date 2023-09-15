@@ -15,11 +15,12 @@
 """Misc utility functions."""
 
 import collections.abc
+from collections.abc import Sequence
 import decimal
 import inspect
 import pprint
 import re
-from typing import Any, Sequence, Tuple, Type, TypeVar, Union
+from typing import Any, TypeVar, Union
 
 import jax
 
@@ -38,7 +39,7 @@ def compare_or_false(a, b) -> bool:
     return False
 
 
-def auto_repr(cls: Type[Any], *args, **kwargs) -> str:
+def auto_repr(cls: type[Any], *args, **kwargs) -> str:
   """Derives a `__repr__` from constructor arguments of a given class.
 
       >>> class Foo:
@@ -116,7 +117,7 @@ def replicate(
     element: Union[T, Sequence[T]],
     num_times: int,
     name: str,
-) -> Tuple[T]:
+) -> tuple[T, ...]:
   """Replicates entry in `element` `num_times` if needed."""
   if (isinstance(element, (str, bytes)) or
       not isinstance(element, collections.abc.Sequence)):
@@ -126,8 +127,9 @@ def replicate(
   elif len(element) == num_times:
     return tuple(element)
   raise TypeError(
-      "{} must be a scalar or sequence of length 1 or sequence of length {}."
-      .format(name, num_times))
+      f"{name} must be a scalar or sequence of length 1 or sequence of "
+      f"length {num_times}."
+  )
 
 
 _SPATIAL_CHANNELS_FIRST = re.compile("^NC[^C]*$")

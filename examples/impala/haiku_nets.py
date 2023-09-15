@@ -120,7 +120,7 @@ class AtariDeepTorso(hk.Module):
           padding='SAME',
       )
       for j in range(num_blocks):
-        block = ResidualBlock(num_channels, name='residual_{}_{}'.format(i, j))
+        block = ResidualBlock(num_channels, name=f'residual_{i}_{j}')
         torso_out = block(torso_out)
 
     torso_out = jax.nn.relu(torso_out)

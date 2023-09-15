@@ -14,7 +14,8 @@
 # ==============================================================================
 """Haiku initializers."""
 
-from typing import Any, Sequence, Union
+from collections.abc import Sequence
+from typing import Any, Union
 
 from haiku._src import base
 from haiku._src.typing import Initializer

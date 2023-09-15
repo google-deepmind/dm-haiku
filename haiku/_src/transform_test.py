@@ -14,8 +14,9 @@
 # ==============================================================================
 """Tests for haiku._src.transform."""
 
+from collections.abc import Mapping
 import inspect
-from typing import Mapping, Optional, Tuple, Union
+from typing import Optional, Union
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -197,7 +198,7 @@ class TransformTest(parameterized.TestCase):
     def net():
       with base.custom_creator(counting_creator):
         for i in range(4):
-          base.get_parameter("w{}".format(i), [], init=jnp.zeros)
+          base.get_parameter(f"w{i}", [], init=jnp.zeros)
 
     init_fn, apply_fn = transform.transform(net)
 
@@ -551,11 +552,8 @@ class TransformTest(parameterized.TestCase):
         super().__init__()
         self.x = {}
 
-    # TensorFlow's checkpointing utils replaces dict with _DictWrapper which is
-    # not a Mapping subclass (it does however "quack like a Mapping" so we can
-    # treat it like one).
     m = Mod().x
-    self.assertNotIsInstance(m, Mapping)
+    self.assertIsInstance(m, Mapping)
     self.assertIs(transform.check_mapping("params", m), m)
 
   def test_do_not_store(self):
@@ -592,16 +590,23 @@ class TransformTest(parameterized.TestCase):
     def f(pos, key=37) -> int:
       del pos, key
       return 2
-    def expected_f_init(rng: Optional[Union[PRNGKey, int]],
-                        pos, key=37) -> Tuple[Params, State]:
+
+    def expected_f_init(
+        rng: Optional[Union[PRNGKey, int]], pos, key=37
+    ) -> tuple[Params, State]:
       del rng, pos, key
       raise NotImplementedError
+
     def expected_f_apply(
-        params: Optional[Params], state: Optional[State],
+        params: Optional[Params],
+        state: Optional[State],
         rng: Optional[Union[PRNGKey, int]],
-        pos, key=37) -> Tuple[int, State]:
+        pos,
+        key=37,
+    ) -> tuple[int, State]:
       del params, state, rng, pos, key
       raise NotImplementedError
+
     self.assertEqual(
         inspect.signature(f.init), inspect.signature(expected_f_init))
     self.assertEqual(

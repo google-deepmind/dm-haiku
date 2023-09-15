@@ -15,7 +15,8 @@
 """Haiku recurrent core."""
 
 import abc
-from typing import Any, NamedTuple, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Any, NamedTuple, Optional, Union
 
 from haiku._src import base
 from haiku._src import basic
@@ -56,7 +57,7 @@ class RNNCore(abc.ABC, hk.Module):
   """
 
   @abc.abstractmethod
-  def __call__(self, inputs, prev_state) -> Tuple[Any, Any]:
+  def __call__(self, inputs, prev_state) -> tuple[Any, Any]:
     """Run one step of the RNN.
 
     Args:
@@ -323,7 +324,7 @@ class LSTM(RNNCore):
       self,
       inputs: jax.Array,
       prev_state: LSTMState,
-  ) -> Tuple[jax.Array, LSTMState]:
+  ) -> tuple[jax.Array, LSTMState]:
     if len(inputs.shape) > 2 or not inputs.shape:
       raise ValueError("LSTM input must be rank-1 or rank-2.")
     x_and_h = jnp.concatenate([inputs, prev_state.hidden], axis=-1)
@@ -404,7 +405,7 @@ class ConvNDLSTM(RNNCore):
       self,
       inputs,
       state: LSTMState,
-  ) -> Tuple[jax.Array, LSTMState]:
+  ) -> tuple[jax.Array, LSTMState]:
     input_to_hidden = hk.ConvND(
         num_spatial_dims=self.num_spatial_dims,
         output_channels=4 * self.output_channels,

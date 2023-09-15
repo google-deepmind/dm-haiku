@@ -14,13 +14,13 @@
 # ==============================================================================
 """Depthwise Convolutional Haiku module."""
 
-from typing import Optional, Sequence, Union, Tuple
+from collections.abc import Sequence
+from typing import Optional, Union
 
 from haiku._src import base
 from haiku._src import initializers
 from haiku._src import module
 from haiku._src import utils
-
 import jax
 from jax import lax
 import jax.numpy as jnp
@@ -61,7 +61,7 @@ class DepthwiseConvND(hk.Module):
       data_format: str,
       stride: Union[int, Sequence[int]] = 1,
       rate: Union[int, Sequence[int]] = 1,
-      padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
+      padding: Union[str, Sequence[tuple[int, int]]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
@@ -152,7 +152,7 @@ class SeparableDepthwiseConv2D(hk.Module):
       channel_multiplier: int,
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
-      padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
+      padding: Union[str, Sequence[tuple[int, int]]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
@@ -214,7 +214,7 @@ class DepthwiseConv1D(DepthwiseConvND):
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
       rate: Union[int, Sequence[int]] = 1,
-      padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
+      padding: Union[str, Sequence[tuple[int, int]]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
@@ -267,7 +267,7 @@ class DepthwiseConv2D(DepthwiseConvND):
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
       rate: Union[int, Sequence[int]] = 1,
-      padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
+      padding: Union[str, Sequence[tuple[int, int]]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
@@ -320,7 +320,7 @@ class DepthwiseConv3D(DepthwiseConvND):
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
       rate: Union[int, Sequence[int]] = 1,
-      padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
+      padding: Union[str, Sequence[tuple[int, int]]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,

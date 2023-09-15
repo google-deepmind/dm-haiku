@@ -15,10 +15,11 @@
 """Tests for haiku._src.module."""
 
 import abc
+from collections.abc import Sequence
 import contextlib
 import dataclasses
 import inspect
-from typing import Callable, Optional, Sequence, TypeVar, Type, Protocol, runtime_checkable
+from typing import Callable, Optional, Protocol, TypeVar, runtime_checkable
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -234,7 +235,7 @@ class ModuleTest(parameterized.TestCase):
     for i, mod in enumerate(mods):
       w = mod()
       if i:
-        self.assertEqual(mod.params_dict(), {"scalar_module_{}/w".format(i): w})
+        self.assertEqual(mod.params_dict(), {f"scalar_module_{i}/w": w})
       else:
         self.assertEqual(mod.params_dict(), {"scalar_module/w": w})
 
@@ -257,8 +258,7 @@ class ModuleTest(parameterized.TestCase):
     for i, mod in enumerate(mods):
       w = mod()
       if i:
-        self.assertEqual(mod.state_dict(),
-                         {"scalar_state_module_{}/w".format(i): w})
+        self.assertEqual(mod.state_dict(), {f"scalar_state_module_{i}/w": w})
       else:
         self.assertEqual(mod.state_dict(), {"scalar_state_module/w": w})
 
@@ -1030,7 +1030,7 @@ class ModuleWithDoubleCall(module.Module):
 def create_module_from_qualified_name(
     name: str,
     *,
-    cls: Type[ModuleT] = module.Module,
+    cls: type[ModuleT] = module.Module,
 ) -> ModuleT:
   if "/" in name:
     prefix, suffix = name.rsplit("/", 1)
@@ -1038,6 +1038,7 @@ def create_module_from_qualified_name(
       return cls(name=suffix)
   else:
     return cls(name=name)
+
 
 if __name__ == "__main__":
   absltest.main()

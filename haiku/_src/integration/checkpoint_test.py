@@ -46,11 +46,10 @@ class CheckpointTest(parameterized.TestCase):
       raise ValueError(f"Missing checkpoint file: {file_path}\n\n"
                        f"Expected:\n\n{expected_json}")
 
-    with open(file_path, "r") as fp:
+    with open(file_path) as fp:
       actual = json.load(fp)
 
     self.assertEqual(expected, actual, msg=HOW_TO_REGENERATE)
 
 if __name__ == "__main__":
   absltest.main()
-

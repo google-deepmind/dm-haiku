@@ -14,8 +14,6 @@
 # ==============================================================================
 """Tests for Haiku modules running with leak checking."""
 
-from typing import Type
-
 from absl.testing import absltest
 from absl.testing import parameterized
 import haiku as hk
@@ -27,7 +25,7 @@ import jax.numpy as jnp
 ModuleFn = descriptors.ModuleFn
 
 
-def get_module_cls(module_fn: ModuleFn) -> Type[hk.Module]:
+def get_module_cls(module_fn: ModuleFn) -> type[hk.Module]:
   get_cls = lambda: type(descriptors.unwrap(module_fn()))
   return hk.testing.transform_and_run(get_cls)()
 

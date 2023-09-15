@@ -14,7 +14,7 @@
 # ==============================================================================
 """Tests for haiku._src.multi_transform."""
 import inspect
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import base
@@ -134,15 +134,19 @@ class MultiTransformTest(parameterized.TestCase):
     def f(pos, key=37) -> int:
       del pos, key
       return 2
-    def expected_f_init(rng: Optional[Union[PRNGKey, int]],
-                        pos, key=37) -> Tuple[Params, State]:
+
+    def expected_f_init(
+        rng: Optional[Union[PRNGKey, int]], pos, key=37
+    ) -> tuple[Params, State]:
       del rng, pos, key
       raise NotImplementedError
+
     def expected_f_apply(
-        params: Optional[Params], state: Optional[State],
-        pos, key=37) -> Tuple[int, State]:
+        params: Optional[Params], state: Optional[State], pos, key=37
+    ) -> tuple[int, State]:
       del params, state, pos, key
       raise NotImplementedError
+
     self.assertEqual(
         inspect.signature(f.init), inspect.signature(expected_f_init))
     self.assertEqual(

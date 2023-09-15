@@ -14,7 +14,8 @@
 # ==============================================================================
 """Module descriptors programatically describe how to use modules."""
 
-from typing import Any, Callable, NamedTuple, Type, Sequence
+from collections.abc import Sequence
+from typing import Any, Callable, NamedTuple
 
 import haiku as hk
 import jax
@@ -284,7 +285,7 @@ def unroll_descriptors(descriptors, unroller):
   """Returns `Recurrent` wrapped descriptors with the given unroller applied."""
   out = []
   for name, create, shape, dtype in descriptors:
-    name = "Recurrent({}, {})".format(name, unroller.__name__)
+    name = f"Recurrent({name}, {unroller.__name__})"
     out.append(
         ModuleDescriptor(name=name,
                          create=recurrent_factory(create, unroller),
@@ -293,7 +294,7 @@ def unroll_descriptors(descriptors, unroller):
   return tuple(out)
 
 
-def module_type(module_fn: ModuleFn) -> Type[hk.Module]:
+def module_type(module_fn: ModuleFn) -> type[hk.Module]:
   f = hk.transform_with_state(lambda: type(unwrap(module_fn())))
   return f.apply(*f.init(jax.random.PRNGKey(42)), None)[0]
 

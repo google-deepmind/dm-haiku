@@ -24,7 +24,8 @@ The average pooling is currently done via a mean, and returns (N, 1, 1, 1024).
 If something different is desired, replace with AvgPool.
 """
 
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from typing import Optional
 
 from haiku._src import basic
 from haiku._src import batch_norm
@@ -32,7 +33,6 @@ from haiku._src import conv
 from haiku._src import depthwise_conv
 from haiku._src import module
 from haiku._src import reshape
-
 import jax
 import jax.numpy as jnp
 

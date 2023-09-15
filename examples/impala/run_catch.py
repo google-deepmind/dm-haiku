@@ -15,7 +15,6 @@
 """Single-process IMPALA wiring."""
 
 import threading
-from typing import List
 
 from absl import app
 from bsuite.environments import catch
@@ -37,7 +36,7 @@ UNROLL_LENGTH = 20
 FRAMES_PER_ITER = ACTION_REPEAT * BATCH_SIZE * UNROLL_LENGTH
 
 
-def run_actor(actor: actor_lib.Actor, stop_signal: List[bool]):
+def run_actor(actor: actor_lib.Actor, stop_signal: list[bool]):
   """Runs an actor to produce num_trajectories trajectories."""
   while not stop_signal[0]:
     frame_count, params = actor.pull_params()

@@ -14,8 +14,9 @@
 # ==============================================================================
 """MNIST classifier with pruning as in https://arxiv.org/abs/1710.01878 ."""
 
+from collections.abc import Iterator, Mapping, Sequence
 import functools
-from typing import Callable, Iterator, Mapping, Sequence, Tuple
+from typing import Callable
 
 from absl import app
 import haiku as hk
@@ -28,7 +29,7 @@ import tensorflow_datasets as tfds
 Batch = Mapping[str, np.ndarray]
 Predicate = Callable[[str, str, jax.Array], bool]
 PredicateMap = Mapping[Predicate, jax.Array]
-ModuleSparsity = Sequence[Tuple[Predicate, jax.Array]]
+ModuleSparsity = Sequence[tuple[Predicate, jax.Array]]
 
 
 def topk_mask(value: jax.Array, density_fraction: float) -> jax.Array:
@@ -76,7 +77,7 @@ def zhugupta_func(progress: float) -> float:
 
 def _create_partitions(
     module_sparsity: ModuleSparsity, params: hk.Params
-) -> Tuple[Sequence[hk.Params], Sequence[jax.Array], hk.Params]:
+) -> tuple[Sequence[hk.Params], Sequence[jax.Array], hk.Params]:
   """Partition params based on sparsity_predicate_map.
 
   Args:
@@ -238,7 +239,7 @@ def main(_):
       params: hk.Params,
       opt_state: optax.OptState,
       batch: Batch,
-  ) -> Tuple[hk.Params, optax.OptState]:
+  ) -> tuple[hk.Params, optax.OptState]:
     """Learning rule (stochastic gradient descent)."""
     grads = jax.grad(loss)(params, batch)
     updates, opt_state = opt.update(grads, opt_state)

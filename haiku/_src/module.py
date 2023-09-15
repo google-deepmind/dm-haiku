@@ -14,12 +14,12 @@
 # ==============================================================================
 """Base Haiku module."""
 
+from collections.abc import Mapping
 import contextlib
 import functools
 import inspect
 import re
-from typing import (Any, Callable, ContextManager, Dict, Mapping, NamedTuple,
-                    Optional, Protocol, Set, Tuple, Type, TypeVar)
+from typing import Any, Callable, ContextManager, NamedTuple, Optional, Protocol, TypeVar
 
 from haiku._src import base
 from haiku._src import config
@@ -44,13 +44,13 @@ class Future:
     self._result_set = False
     self._result = None
 
-  def set_result(self, result: Type["Module"]):
+  def set_result(self, result: type["Module"]):
     if self._result_set:
       raise ValueError("Result already set.")
     self._result_set = True
     self._result = result
 
-  def result(self) -> Type["Module"]:
+  def result(self) -> type["Module"]:
     if not self._result_set:
       raise ValueError("Result not set.")
     return self._result
@@ -63,11 +63,11 @@ class ModuleMetaclass(type(Protocol)):
   """Metaclass for `Module`."""
 
   def __new__(  # pylint: disable=bad-classmethod-argument
-      mcs: Type[Type[T]],
+      mcs: type[type[T]],
       name: str,
-      bases: Tuple[Type[Any], ...],
-      clsdict: Dict[str, Any],
-  ) -> Type[T]:
+      bases: tuple[type[Any], ...],
+      clsdict: dict[str, Any],
+  ) -> type[T]:
     method_names = []
     cls_fut = Future()
 
@@ -105,7 +105,7 @@ class ModuleMetaclass(type(Protocol)):
         "__repr__",
         lambda module: module._auto_repr)  # pylint: disable=protected-access
 
-    cls = super(ModuleMetaclass, mcs).__new__(mcs, name, bases, clsdict)
+    cls = super().__new__(mcs, name, bases, clsdict)
 
     # Provides access to the class object to method interceptors.
     cls_fut.set_result(cls)
@@ -225,11 +225,11 @@ class MethodContext(NamedTuple):
   module: "Module"
   method_name: str
   orig_method: Callable[..., Any]
-  orig_class: Type["Module"]
+  orig_class: type["Module"]
 
 
-Args = Tuple[Any]
-Kwargs = Dict[str, Any]
+Args = tuple[Any]
+Kwargs = dict[str, Any]
 NextGetter = Callable[..., Any]
 MethodGetter = Callable[[NextGetter, Args, Kwargs, MethodContext], Any]
 interceptor_stack: ThreadLocalStack[MethodGetter] = ThreadLocalStack()
@@ -290,7 +290,7 @@ def run_interceptors(  # pylint: disable=invalid-name
     bound_method: Callable[..., Any],
     method_name: str,
     self: "Module",
-    orig_class: Type["Module"],
+    orig_class: type["Module"],
     *args: Args,
     **kwargs: Kwargs,
 ) -> Any:
@@ -478,7 +478,7 @@ _VALID_IDENTIFIER_R = re.compile(r"^[a-zA-Z_]([a-zA-Z0-9_])*$")
 valid_identifier = lambda name: bool(_VALID_IDENTIFIER_R.match(name))
 
 
-def name_and_number(name: str) -> Tuple[str, Optional[int]]:
+def name_and_number(name: str) -> tuple[str, Optional[int]]:
   splits = re.split(r"_(0|[1-9]\d*)$", name, 3)
   if len(splits) > 1:
     return splits[0], int(splits[1])
@@ -598,7 +598,7 @@ def check_name(component: str, name: str, allow_leading_tilde: bool = False):
                      "valid Python identifier)")
 
 
-class Module(object, metaclass=ModuleMetaclass):
+class Module(metaclass=ModuleMetaclass):
   """Base class for Haiku modules.
 
   A Haiku module is a lightweight container for variables and other modules.
@@ -653,7 +653,7 @@ class Module(object, metaclass=ModuleMetaclass):
       check_name(name, name)
       name = unique_and_canonical_name(name)
 
-    self._submodules: Set[str] = set()
+    self._submodules: set[str] = set()
     self.module_name = name
     self.name = self.module_name.split("/")[-1]
     self._creation_frame_id = base.current_frame().frame_id
@@ -680,7 +680,7 @@ class Module(object, metaclass=ModuleMetaclass):
 
 def params_or_state_dict(
     module_name: str,
-    submodules: Set[str],
+    submodules: set[str],
     which: str,
 ) -> Mapping[str, jnp.ndarray]:
   """Returns module parameters or state for the given module or submodules."""

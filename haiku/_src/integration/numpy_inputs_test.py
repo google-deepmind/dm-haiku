@@ -16,7 +16,6 @@
 
 import functools
 import os
-from typing import Tuple, Type
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -35,7 +34,7 @@ def tree_assert_allclose(a, b, *, atol=1e-6):
       functools.partial(np.testing.assert_allclose, atol=atol), a, b)
 
 
-def get_module_cls(module_fn: ModuleFn) -> Type[hk.Module]:
+def get_module_cls(module_fn: ModuleFn) -> type[hk.Module]:
   get_cls = lambda: type(descriptors.unwrap(module_fn()))
   return hk.testing.transform_and_run(get_cls)()
 
@@ -50,7 +49,7 @@ class NumpyInputsTest(parameterized.TestCase):
   def test_numpy_and_jax_results_close(
       self,
       module_fn: ModuleFn,
-      shape: Tuple[int, ...],
+      shape: tuple[int, ...],
       dtype: jnp.dtype,
       np_params: bool,
       np_inputs: bool,

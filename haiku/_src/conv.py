@@ -14,7 +14,8 @@
 # ==============================================================================
 """Convolutional Haiku modules."""
 
-from typing import Optional, Sequence, Union, Tuple
+from collections.abc import Sequence
+from typing import Optional, Union
 
 from haiku._src import base
 from haiku._src import initializers
@@ -73,8 +74,9 @@ class ConvND(hk.Module):
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
       rate: Union[int, Sequence[int]] = 1,
-      padding: Union[str, Sequence[Tuple[int, int]], hk.pad.PadFn,
-                     Sequence[hk.pad.PadFn]] = "SAME",
+      padding: Union[
+          str, Sequence[tuple[int, int]], hk.pad.PadFn, Sequence[hk.pad.PadFn]
+      ] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
@@ -238,8 +240,9 @@ class Conv1D(ConvND):
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
       rate: Union[int, Sequence[int]] = 1,
-      padding: Union[str, Sequence[Tuple[int, int]], hk.pad.PadFn,
-                     Sequence[hk.pad.PadFn]] = "SAME",
+      padding: Union[
+          str, Sequence[tuple[int, int]], hk.pad.PadFn, Sequence[hk.pad.PadFn]
+      ] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
@@ -305,8 +308,9 @@ class Conv2D(ConvND):
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
       rate: Union[int, Sequence[int]] = 1,
-      padding: Union[str, Sequence[Tuple[int, int]], hk.pad.PadFn,
-                     Sequence[hk.pad.PadFn]] = "SAME",
+      padding: Union[
+          str, Sequence[tuple[int, int]], hk.pad.PadFn, Sequence[hk.pad.PadFn]
+      ] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
@@ -372,8 +376,9 @@ class Conv3D(ConvND):
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
       rate: Union[int, Sequence[int]] = 1,
-      padding: Union[str, Sequence[Tuple[int, int]], hk.pad.PadFn,
-                     Sequence[hk.pad.PadFn]] = "SAME",
+      padding: Union[
+          str, Sequence[tuple[int, int]], hk.pad.PadFn, Sequence[hk.pad.PadFn]
+      ] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
@@ -437,7 +442,7 @@ def compute_adjusted_padding(
     stride: int,
     padding: str,
     dilation: int = 1,
-) -> Tuple[int, int]:
+) -> tuple[int, int]:
   """Computes adjusted padding for desired ConvTranspose `output_size`."""
   kernel_size = (kernel_size - 1) * dilation + 1
   if padding == "VALID":
@@ -476,7 +481,7 @@ class ConvNDTranspose(hk.Module):
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
       output_shape: Optional[Union[int, Sequence[int]]] = None,
-      padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
+      padding: Union[str, Sequence[tuple[int, int]]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
@@ -623,7 +628,7 @@ class Conv1DTranspose(ConvNDTranspose):
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
       output_shape: Optional[Union[int, Sequence[int]]] = None,
-      padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
+      padding: Union[str, Sequence[tuple[int, int]]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
@@ -677,7 +682,7 @@ class Conv2DTranspose(ConvNDTranspose):
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
       output_shape: Optional[Union[int, Sequence[int]]] = None,
-      padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
+      padding: Union[str, Sequence[tuple[int, int]]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,
@@ -731,7 +736,7 @@ class Conv3DTranspose(ConvNDTranspose):
       kernel_shape: Union[int, Sequence[int]],
       stride: Union[int, Sequence[int]] = 1,
       output_shape: Optional[Union[int, Sequence[int]]] = None,
-      padding: Union[str, Sequence[Tuple[int, int]]] = "SAME",
+      padding: Union[str, Sequence[tuple[int, int]]] = "SAME",
       with_bias: bool = True,
       w_init: Optional[hk.initializers.Initializer] = None,
       b_init: Optional[hk.initializers.Initializer] = None,

@@ -15,8 +15,8 @@
 """Functions for filtering parameters and state in Haiku."""
 
 import collections
-from typing import (Any, Callable, Generator, Mapping, MutableMapping, Tuple,
-                    TypeVar)
+from collections.abc import Generator, Mapping, MutableMapping
+from typing import (Any, Callable, TypeVar)
 
 from haiku._src import data_structures
 from haiku._src import utils
@@ -29,7 +29,7 @@ OutT = TypeVar("OutT")
 
 def traverse(
     structure: Mapping[str, Mapping[str, T]],
-) -> Generator[Tuple[str, str, T], None, None]:
+) -> Generator[tuple[str, str, T], None, None]:
   """Iterates over a structure yielding module names, names and values.
 
   NOTE: Items are iterated in key sorted order.
@@ -50,7 +50,7 @@ def traverse(
 def partition(
     predicate: Callable[[str, str, jax.Array], bool],
     structure: Mapping[str, Mapping[str, T]],
-) -> Tuple[Mapping[str, Mapping[str, T]], Mapping[str, Mapping[str, T]]]:
+) -> tuple[Mapping[str, Mapping[str, T]], Mapping[str, Mapping[str, T]]]:
   """Partitions the input structure in two according to a given predicate.
 
   For a given set of parameters, you can use :func:`partition` to split them:
@@ -85,7 +85,7 @@ def partition_n(
     fn: Callable[[str, str, T], int],
     structure: Mapping[str, Mapping[str, T]],
     n: int,
-) -> Tuple[Mapping[str, Mapping[str, T]], ...]:
+) -> tuple[Mapping[str, Mapping[str, T]], ...]:
   """Partitions a structure into `n` structures.
 
   For a given set of parameters, you can use :func:`partition_n` to split them
@@ -252,6 +252,6 @@ def is_subset(
     A boolean indicating whether all elements in subset are contained in
     superset.
   """
-  subset = set((m, n) for m, n, _ in traverse(subset))
-  superset = set((m, n) for m, n, _ in traverse(superset))
+  subset = {(m, n) for m, n, _ in traverse(subset)}
+  superset = {(m, n) for m, n, _ in traverse(superset)}
   return subset.issubset(superset)

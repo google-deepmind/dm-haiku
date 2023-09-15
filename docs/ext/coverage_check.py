@@ -14,7 +14,8 @@
 # ==============================================================================
 """Asserts all public symbols are covered in the docs."""
 
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 import haiku as hk
 from haiku._src import test_utils

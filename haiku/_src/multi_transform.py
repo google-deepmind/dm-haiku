@@ -19,7 +19,7 @@
 import dataclasses
 import functools
 import inspect
-from typing import Any, Callable, NamedTuple, Optional, Tuple, TypeVar
+from typing import Any, Callable, NamedTuple, Optional, TypeVar
 
 from haiku._src import analytics
 from haiku._src import transform
@@ -80,7 +80,7 @@ class MultiTransformedWithState(NamedTuple):
   """
 
   # Args: [Optional[PRNGKey], ...]
-  init: Callable[..., Tuple[hk.MutableParams, hk.MutableState]]
+  init: Callable[..., tuple[hk.MutableParams, hk.MutableState]]
 
   # PyTree[Callable[[hk.Params, hk.State, Optional[PRNGKey], ...],
   #                 Tuple[Any, hk.MutableState]]]
@@ -97,7 +97,7 @@ jax.tree_util.register_pytree_node(
 
 
 def multi_transform_with_state(
-    f: Callable[[], Tuple[TemplateFn, TreeOfApplyFns]],
+    f: Callable[[], tuple[TemplateFn, TreeOfApplyFns]],
 ) -> MultiTransformedWithState:
   """Transforms a collection of functions using Haiku into pure functions.
 
@@ -140,7 +140,7 @@ def multi_transform_with_state(
   """
   analytics.log_once('multi_transform_with_state')
 
-  def init_fn(*args, **kwargs) -> Tuple[hk.MutableParams, hk.MutableState]:
+  def init_fn(*args, **kwargs) -> tuple[hk.MutableParams, hk.MutableState]:
     """Returns initial state for the transformed functions."""
     return f()[0](*args, **kwargs)
 
@@ -173,7 +173,7 @@ def multi_transform_with_state(
 
 
 def multi_transform(
-    f: Callable[[], Tuple[TemplateFn, TreeOfApplyFns]],
+    f: Callable[[], tuple[TemplateFn, TreeOfApplyFns]],
 ) -> MultiTransformed:
   """Transforms a collection of functions using Haiku into pure functions.
 

@@ -176,7 +176,8 @@ class MLPTest(parameterized.TestCase):
     for index, linear in enumerate(mod.layers):
       self.assertEqual(
           repr(linear),
-          "Linear(output_size={}, name='linear_{}')".format(index + 1, index))
+          f"Linear(output_size={index + 1}, name='linear_{index}')",
+      )
 
   @parameterized.parameters(([30, 15],), ([8],), ([],))
   @test_utils.transform_and_run

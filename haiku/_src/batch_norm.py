@@ -14,7 +14,8 @@
 # ==============================================================================
 """Batch Norm."""
 
-from typing import Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 from haiku._src import base
 from haiku._src import initializers

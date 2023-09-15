@@ -14,7 +14,8 @@
 # ==============================================================================
 """Pooling Haiku modules."""
 
-from typing import Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 import warnings
 
 from haiku._src import module
@@ -36,7 +37,7 @@ def _infer_shape(
     x: jax.Array,
     size: Union[int, Sequence[int]],
     channel_axis: Optional[int] = -1,
-) -> Tuple[int, ...]:
+) -> tuple[int, ...]:
   """Infer shape for pooling window or strides."""
   if isinstance(size, int):
     if channel_axis and not 0 <= abs(channel_axis) < x.ndim:

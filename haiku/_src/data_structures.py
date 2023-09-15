@@ -20,12 +20,11 @@
 # for users.
 
 import collections
+from collections.abc import Iterator, Mapping, MutableMapping, Sequence
 import contextlib
 import pprint
 import threading
-from typing import (Any, Callable, Deque, Dict, Generic, Iterator, Mapping,
-                    MutableMapping, NamedTuple, Optional, Sequence, TypeVar,
-                    Union)
+from typing import Any, Callable, Deque, Generic, NamedTuple, Optional, TypeVar, Union
 
 from haiku._src import config
 from haiku._src import utils
@@ -152,7 +151,7 @@ def _to_dict_recurse(value: Any):
     return _copy_structure(value)
 
 
-def to_dict(mapping: Mapping[str, Mapping[str, T]]) -> Dict[str, Dict[str, T]]:
+def to_dict(mapping: Mapping[str, Mapping[str, T]]) -> dict[str, dict[str, T]]:
   """Returns a ``dict`` copy of the given two level structure.
 
   This method is guaranteed to return a copy of the input structure (e.g. even
@@ -251,8 +250,8 @@ class FlatMap(Mapping[K, V]):
 
   def __str__(self):
     single_line = "{}({{{}}})".format(
-        type(self).__name__,
-        ", ".join("{!r}: {!r}".format(k, v) for k, v in self.items()))
+        type(self).__name__, ", ".join(f"{k!r}: {v!r}" for k, v in self.items())
+    )
     if len(single_line) <= 80:
       return single_line
 
@@ -343,7 +342,8 @@ class frozendict(Mapping[K, V]):  # pylint: disable=invalid-name
   def __repr__(self):
     single_line = "{}({{{}}})".format(
         type(self).__name__,
-        ", ".join("{!r}: {!r}".format(k, self._storage[k]) for k in self._keys))
+        ", ".join(f"{k!r}: {self._storage[k]!r}" for k in self._keys),
+    )
     if len(single_line) <= 80:
       return single_line
 

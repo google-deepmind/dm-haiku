@@ -15,10 +15,11 @@
 """Tests for haiku._src.filtering."""
 
 import collections
+from collections.abc import Sequence
 import itertools
 import re
 import types
-from typing import Any, Callable, Sequence, Set, Tuple
+from typing import Any, Callable
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -75,16 +76,16 @@ def get_net(x):
   return jnp.mean(h)
 
 
-def get_names(params) -> Set[str]:
-  names = set([])
+def get_names(params) -> set[str]:
+  names = set()
   for path, module in params.items():
     for name in module.keys():
       names.add("/".join([path, name]))
   return names
 
 
-def to_set(params) -> Set[Tuple[str, Sequence[float]]]:
-  entries = set([])
+def to_set(params) -> set[tuple[str, Sequence[float]]]:
+  entries = set()
   for path, module in params.items():
     for key, value in module.items():
       entries.add(
@@ -110,22 +111,18 @@ class FilteringTest(parameterized.TestCase):
         lambda module_name, *_: module_name == "first_layer",
         params)
     self.assertEqual(
-        get_names(first_layer_params),
-        set(["first_layer/w", "first_layer/b"]))
+        get_names(first_layer_params), {"first_layer/w", "first_layer/b"}
+    )
     self.assertEqual(
-        get_names(second_layer_params),
-        set(["second_layer/w", "second_layer/b"]))
+        get_names(second_layer_params), {"second_layer/w", "second_layer/b"}
+    )
 
     # parse by variable type
     weights, biases = filtering.partition(
         lambda module_name, name, _: name == "w",
         params)  # pytype: disable=wrong-arg-types
-    self.assertEqual(
-        get_names(weights),
-        set(["first_layer/w", "second_layer/w"]))
-    self.assertEqual(
-        get_names(biases),
-        set(["first_layer/b", "second_layer/b"]))
+    self.assertEqual(get_names(weights), {"first_layer/w", "second_layer/w"})
+    self.assertEqual(get_names(biases), {"first_layer/b", "second_layer/b"})
 
     # Compose regexes
     regex = compile_regex(["first_layer.*", ".*w"])
@@ -134,20 +131,18 @@ class FilteringTest(parameterized.TestCase):
         params)
     self.assertEqual(
         get_names(matching),
-        set(["first_layer/w", "first_layer/b", "second_layer/w"]))
-    self.assertEqual(
-        get_names(not_matching),
-        set(["second_layer/b"]))
+        {"first_layer/w", "first_layer/b", "second_layer/w"},
+    )
+    self.assertEqual(get_names(not_matching), {"second_layer/b"})
 
     matching, not_matching = filtering.partition(
         lambda mod_name, name, _: mod_name == "first_layer" and name != "w",
         params)
-    self.assertEqual(
-        get_names(matching),
-        set(["first_layer/b"]))
+    self.assertEqual(get_names(matching), {"first_layer/b"})
     self.assertEqual(
         get_names(not_matching),
-        set(["first_layer/w", "second_layer/w", "second_layer/b"]))
+        {"first_layer/w", "second_layer/w", "second_layer/b"},
+    )
 
   @parameterized.parameters(*range(1, 8))
   def test_partition_n(self, n):
@@ -162,9 +157,9 @@ class FilteringTest(parameterized.TestCase):
       self.assertEqual(substructure, expected)
 
   def test_partition_n_nested(self):
-    nested_structure = {"layer": {"a": [1, 2, 3],
-                                  "b": set([object()]),
-                                  "c": {"a": "b"}}}
+    nested_structure = {
+        "layer": {"a": [1, 2, 3], "b": {object()}, "c": {"a": "b"}}
+    }
     cnt = itertools.count()
     fn = lambda m, n, v: next(cnt)
     out1, out2, out3 = filtering.partition_n(fn, nested_structure, 3)
@@ -193,9 +188,9 @@ class FilteringTest(parameterized.TestCase):
     self.assertEqual(expected, actual)
 
   def test_traverse_nested(self):
-    nested_structure = {"layer": {"a": [1, 2, 3],
-                                  "b": set([object()]),
-                                  "c": {"a": "b"}}}
+    nested_structure = {
+        "layer": {"a": [1, 2, 3], "b": {object()}, "c": {"a": "b"}}
+    }
     expected = [
         ("layer", x, nested_structure["layer"][x]) for x in ("a", "b", "c")
     ]
@@ -234,15 +229,13 @@ class FilteringTest(parameterized.TestCase):
         lambda module_name, *_: module_name == "second_layer",
         params)
     self.assertEqual(
-        get_names(second_layer_params),
-        set(["second_layer/w", "second_layer/b"]))
+        get_names(second_layer_params), {"second_layer/w", "second_layer/b"}
+    )
 
     biases = filtering.filter(
         lambda module_name, name, _: name == "b",
         params)  # pytype: disable=wrong-arg-types
-    self.assertEqual(
-        get_names(biases),
-        set(["first_layer/b", "second_layer/b"]))
+    self.assertEqual(get_names(biases), {"first_layer/b", "second_layer/b"})
 
   def test_transforms_with_filter(self):
     # Note to make sense of test:
@@ -262,8 +255,8 @@ class FilteringTest(parameterized.TestCase):
         predicate=lambda module_name, name, _: name == "w")
     df = df_fn(params, None, inputs)
     self.assertEqual(
-        to_set(df),
-        set([("first_layer/w", (3.0,)), ("second_layer/w", (2.5,))]))
+        to_set(df), {("first_layer/w", (3.0,)), ("second_layer/w", (2.5,))}
+    )
 
     fn = jax_fn_with_filter(
         jax_fn=jax.value_and_grad,
@@ -285,7 +278,8 @@ class FilteringTest(parameterized.TestCase):
 
     self.assertEqual(
         to_set(jf),
-        set([("first_layer/w", (3.0, 6.0)), ("second_layer/w", (2.5, 5.0))]))
+        {("first_layer/w", (3.0, 6.0)), ("second_layer/w", (2.5, 5.0))},
+    )
 
   def test_map(self):
     init_fn, _ = transform.transform(get_net)
@@ -326,7 +320,7 @@ class FilteringTest(parameterized.TestCase):
 
   def test_merge_nested(self):
     a = {"layer": {"a": [1, 2, 3]}}
-    b = {"layer": {"b": set([object()])}}
+    b = {"layer": {"b": {object()}}}
     c = {"layer": {"c": {"a": "b"}}}
     actual = filtering.merge(a, b, c)
     expected = {"layer": {"a": a["layer"]["a"],

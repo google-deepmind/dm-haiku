@@ -14,10 +14,11 @@
 # ==============================================================================
 """Summarises Haiku modules."""
 
+from collections.abc import Mapping, Sequence
 import dataclasses
 import functools
 import pprint
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Any, Callable, Optional, TypeVar, Union
 
 from haiku._src import base
 from haiku._src import data_structures
@@ -112,8 +113,8 @@ class MethodInvocation:
   """
 
   module_details: ModuleDetails
-  args_spec: Tuple[Any, ...]
-  kwargs_spec: Dict[str, Any]
+  args_spec: tuple[Any, ...]
+  kwargs_spec: dict[str, Any]
   output_spec: Any  # Actual: PyTree[Union[Any, ArraySpec]]
   context: hk.MethodContext
   call_stack: Sequence[ModuleDetails]
@@ -135,10 +136,10 @@ IGNORED_METHODS = ("__init__", "params_dict", "state_dict")
 
 
 def log_used_modules(
-    used_modules: List[MethodInvocation],
+    used_modules: list[MethodInvocation],
     next_f: Callable[..., T],
-    args: Tuple[Any, ...],
-    kwargs: Dict[str, Any],
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
     context: hk.MethodContext,
 ) -> T:
   """Method interceptor that logs used modules to the given list."""
@@ -297,12 +298,14 @@ all_columns = {
     "output": Column("Output", format_output),
     "params_size": Column(
         "Param count",
-        lambda r: "{:,}".format(utils.tree_size(r.module_details.params)),
-        "right"),
+        lambda r: f"{utils.tree_size(r.module_details.params):,}",
+        "right",
+    ),
     "params_bytes": Column(
         "Param bytes",
         lambda r: utils.format_bytes(utils.tree_bytes(r.module_details.params)),
-        "right"),
+        "right",
+    ),
 }
 
 DEFAULT_COLUMNS = ("module", "config", "owned_params", "input", "output",

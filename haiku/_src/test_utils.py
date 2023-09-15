@@ -14,12 +14,13 @@
 # ==============================================================================
 """Testing utilities for Haiku."""
 
+from collections.abc import Generator, Sequence
 import functools
 import inspect
 import itertools
 import os
 import types
-from typing import Any, Callable, Generator, Optional, Sequence, Tuple, TypeVar
+from typing import Any, Callable, Optional, TypeVar
 
 from absl.testing import parameterized
 from haiku._src import config
@@ -148,9 +149,9 @@ def transform_and_run(
 
 def find_internal_python_modules(
     root_module: types.ModuleType,
-) -> Sequence[Tuple[str, types.ModuleType]]:
+) -> Sequence[tuple[str, types.ModuleType]]:
   """Returns `(name, module)` for all Haiku submodules under `root_module`."""
-  modules = set([(root_module.__name__, root_module)])
+  modules = {(root_module.__name__, root_module)}
   visited = set()
   to_visit = [root_module]
 
@@ -176,10 +177,11 @@ def find_subclasses(
   seen = set()
   for _, module in find_internal_python_modules(root_python_module):
     for _, value in module.__dict__.items():
-      if inspect.isclass(value) and issubclass(value, base_class):
-        if value not in seen:
-          seen.add(value)
-          yield value
+      if not inspect.isclass(value) or isinstance(value, types.GenericAlias):
+        continue
+      if issubclass(value, base_class) and value not in seen:
+        seen.add(value)
+        yield value
 
 
 def combined_named_parameters(*parameters):
@@ -209,14 +211,14 @@ def combined_named_parameters(*parameters):
       functools.reduce(combine, r) for r in itertools.product(*parameters))
 
 
-def named_bools(name) -> Sequence[Tuple[str, bool]]:
+def named_bools(name) -> Sequence[tuple[str, bool]]:
   """Returns a pair of booleans suitable for use with ``named_parameters``."""
-  return (name, True), ("not_{}".format(name), False)
+  return (name, True), (f"not_{name}", False)
 
 
-def named_range(name, stop: int) -> Sequence[Tuple[str, int]]:
+def named_range(name, stop: int) -> Sequence[tuple[str, int]]:
   """Equivalent to `range()` but suitable for use with ``named_parameters``."""
-  return tuple(((f"{name}_{i}", i) for i in range(stop)))
+  return tuple((f"{name}_{i}", i) for i in range(stop))
 
 
 def with_environ(key: str, value: Optional[str]):

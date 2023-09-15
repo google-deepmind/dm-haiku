@@ -141,7 +141,8 @@ class ChannelIndexTest(parameterized.TestCase):
   def test_invalid_strings(self, data_format):
     with self.assertRaisesRegex(
         ValueError,
-        "Unable to extract channel information from '{}'.".format(data_format)):
+        f"Unable to extract channel information from '{data_format}'.",
+    ):
       utils.get_channel_index(data_format)
 
 if __name__ == "__main__":

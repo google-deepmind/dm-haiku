@@ -14,7 +14,8 @@
 # ==============================================================================
 """Resnet."""
 
-from typing import Mapping, Optional, Sequence, Union, Any
+from collections.abc import Mapping, Sequence
+from typing import Any, Optional, Union
 
 from haiku._src import basic
 from haiku._src import batch_norm

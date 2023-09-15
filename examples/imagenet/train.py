@@ -14,10 +14,11 @@
 # ==============================================================================
 """ResNet50 on ImageNet2012."""
 
+from collections.abc import Iterable, Mapping
 import contextlib
 import functools
 import timeit
-from typing import Iterable, Mapping, NamedTuple, Tuple
+from typing import NamedTuple
 
 from absl import app
 from absl import flags
@@ -131,7 +132,7 @@ def loss_fn(
     state: hk.State,
     loss_scale: jmp.LossScale,
     batch: dataset.Batch,
-) -> Tuple[jax.Array, Tuple[jax.Array, hk.State]]:
+) -> tuple[jax.Array, tuple[jax.Array, hk.State]]:
   """Computes a regularized loss for the given batch."""
   logits, state = forward.apply(params, state, None, batch, is_training=True)
   labels = jax.nn.one_hot(batch['labels'], 1000)
@@ -148,7 +149,7 @@ def loss_fn(
 def train_step(
     train_state: TrainState,
     batch: dataset.Batch,
-) -> Tuple[TrainState, Scalars]:
+) -> tuple[TrainState, Scalars]:
   """Applies an update to parameters and returns new state."""
   params, state, opt_state, loss_scale = train_state
   grads, (loss, new_state) = (

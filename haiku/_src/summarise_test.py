@@ -15,8 +15,8 @@
 """Tests for haiku._src.summarise."""
 # pylint: disable=unnecessary-lambda
 
+from collections.abc import Sequence
 import typing
-from typing import Sequence
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -73,11 +73,13 @@ class SummariseTest(parameterized.TestCase):
     invocations = get_summary(f)
     self.assertLen(invocations, num_calls)
     for invocation in invocations[1:]:
-      self.assertEqual(invocations[0].context.method_name,
-                       invocation.context.method_name)
+      self.assertEqual(
+          invocations[0].context.method_name, invocation.context.method_name
+      )
 
-  @test_utils.combined_named_parameters(test_utils.named_bools("params"),
-                                        test_utils.named_range("num_elems", 8))
+  @test_utils.combined_named_parameters(
+      test_utils.named_bools("params"), test_utils.named_range("num_elems", 8)
+  )
   def test_params_or_state(self, params, num_elems):
     def cls():
       for i in range(num_elems):
@@ -86,7 +88,7 @@ class SummariseTest(parameterized.TestCase):
 
     f = lambda: basic.to_module(cls)(name="foo")()
     invocations = get_summary(f)
-    invocation, = invocations
+    (invocation,) = invocations
     details = invocation.module_details
     d = details.params if params else details.state
     self.assertEqual(list(d), [f"foo/x{i}" for i in range(num_elems)])
@@ -124,7 +126,8 @@ class TabulateTest(parameterized.TestCase):
 
   def test_includes_no_param_modules(self):
     dropout_cls = basic.to_module(
-        lambda x: basic.dropout(base.next_rng_key(), 0.5, x))
+        lambda x: basic.dropout(base.next_rng_key(), 0.5, x)
+    )
 
     x = jnp.ones([4])
     f = lambda: dropout_cls(name="dropout")(x)
@@ -136,26 +139,24 @@ class TabulateTest(parameterized.TestCase):
     def f():
       IdentityModule(name="foo")(1)
       IdentityModule(name="bar")(1)
+
     rows = tabulate_to_list(f, columns=("module",))
-    expected = [["foo (IdentityModule)"],
-                ["bar (IdentityModule)"]]
+    expected = [["foo (IdentityModule)"], ["bar (IdentityModule)"]]
     self.assertEqual(rows, expected)
 
   def test_config_column(self):
     def f():
       IdentityModule(name="foo")(1)
       IdentityModule(name="bar")(1)
+
     rows = tabulate_to_list(f, columns=("config",))
-    expected = [["IdentityModule(name='foo')"],
-                ["IdentityModule(name='bar')"]]
+    expected = [["IdentityModule(name='foo')"], ["IdentityModule(name='bar')"]]
     self.assertEqual(rows, expected)
 
   def test_owned_params_column(self):
     f = lambda: CallsOtherModule(MultipleParametersModule())()
     rows = tabulate_to_list(f, columns=("owned_params",))
-    expected = [[""],
-                ["b: f32[40,50,60]\n"
-                 "w: f32[10,20,30]"]]
+    expected = [[""], ["b: f32[40,50,60]\nw: f32[10,20,30]"]]
     self.assertEqual(rows, expected)
 
   def test_owned_params_sorted_by_size_then_name(self):
@@ -168,16 +169,16 @@ class TabulateTest(parameterized.TestCase):
 
     f = lambda f=f: basic.to_module(f)()()
     rows = tabulate_to_list(f, columns=("owned_params",))
-    expected = [["d: f32[3]\n"
-                 "b: f32[2]\n"
-                 "c: f32[2]\n"
-                 "a: f32[1]"]]
+    expected = [["d: f32[3]\nb: f32[2]\nc: f32[2]\na: f32[1]"]]
     self.assertEqual(rows, expected)
 
   def test_output_column_structured(self):
-    f = lambda: IdentityModule()({"a": jnp.ones([32, 32]),  # pylint: disable=g-long-lambda
-                                  "b": [jnp.zeros([1]),
-                                        jnp.zeros([], jnp.int16)]})
+    f = lambda: IdentityModule()(  # pylint: disable=g-long-lambda
+        {
+            "a": jnp.ones([32, 32]),
+            "b": [jnp.zeros([1]), jnp.zeros([], jnp.int16)],
+        }
+    )
     rows = tabulate_to_list(f, columns=("output",))
     expected = [["{'a': f32[32,32], 'b': [f32[1], s16[]]}"]]
     self.assertEqual(rows, expected)

@@ -19,6 +19,7 @@ import contextlib
 import doctest
 import inspect
 import itertools
+import types
 import unittest
 
 from absl import logging
@@ -56,7 +57,7 @@ class DoctestTest(parameterized.TestCase):
       tests_symbols = ", ".join(module.__test__.keys())
       if num_attempted == 0:
         logging.info("No doctests in %s", tests_symbols)
-      self.assertEqual(num_failed, 0, "{} doctests failed".format(num_failed))
+      self.assertEqual(num_failed, 0, f"{num_failed} doctests failed")
       logging.info("%s tests passed in %s", num_attempted, tests_symbols)
 
     # `hk` et al import all dependencies from `src`, however doctest does not
@@ -81,7 +82,7 @@ class DoctestTest(parameterized.TestCase):
         continue
 
       logging.info("Testing name: %r value: %r", name, value)
-      if inspect.isclass(value):
+      if inspect.isclass(value) and not isinstance(value, types.GenericAlias):
         # Find unbound methods on classes, doctest doesn't seem to find them.
         test_names.append(name)
         module.__test__[name] = value

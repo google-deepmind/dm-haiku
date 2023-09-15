@@ -17,7 +17,7 @@
 import collections
 import contextlib
 import threading
-from typing import Dict, Type, TypeVar, Optional, Union
+from typing import TypeVar, Optional, Union
 
 from haiku._src import base
 from haiku._src import data_structures
@@ -40,10 +40,10 @@ Stack = data_structures.Stack[T]
 del data_structures
 
 ClassInfo = collections.namedtuple('ClassInfo', 'module,qualname')
-ClassInfoOrType = Union[ClassInfo, Type[hk.Module]]
+ClassInfoOrType = Union[ClassInfo, type[hk.Module]]
 
 
-def key_for_module(cls: Type[hk.Module]) -> ClassInfoOrType:
+def key_for_module(cls: type[hk.Module]) -> ClassInfoOrType:
   """Returns a suitable key for the given module class."""
   if '<locals>' in cls.__qualname__:
     # Some APIs (e.g. `hk.to_module`) are factory functions that create modules.
@@ -63,7 +63,7 @@ class _ThreadState(threading.local):
   def __init__(self):
     super().__init__()
     self._installed_interceptor = False
-    self._cls_policy: Dict[ClassInfoOrType, jmp.Policy] = {}
+    self._cls_policy: dict[ClassInfoOrType, jmp.Policy] = {}
     self._current_policy = Stack[jmp.Policy]()
 
   def push_current_policy(self, policy: jmp.Policy):
@@ -77,21 +77,22 @@ class _ThreadState(threading.local):
   def current_policy(self) -> jmp.Policy:
     return self._current_policy.peek()
 
-  def clear_policy(self, cls: Type[hk.Module]):
+  def clear_policy(self, cls: type[hk.Module]):
     key = key_for_module(cls)
     if key in self._cls_policy:
       del self._cls_policy[key]
 
-  def set_policy(self, cls: Type[hk.Module], policy: jmp.Policy):
+  def set_policy(self, cls: type[hk.Module], policy: jmp.Policy):
     if not self._installed_interceptor:
       module.intercept_methods_global(_mixed_precision_interceptor)
       self._installed_interceptor = True
     key = key_for_module(cls)
     self._cls_policy[key] = policy
 
-  def get_policy(self, cls: Type[hk.Module]) -> Optional[jmp.Policy]:
+  def get_policy(self, cls: type[hk.Module]) -> Optional[jmp.Policy]:
     key = key_for_module(cls)
     return self._cls_policy.get(key)
+
 
 _thread_local_state = _ThreadState()
 
@@ -117,7 +118,7 @@ def current_policy() -> Optional[jmp.Policy]:
   return tls.current_policy if tls.has_current_policy else None
 
 
-def get_policy(cls: Type[hk.Module]) -> Optional[jmp.Policy]:
+def get_policy(cls: type[hk.Module]) -> Optional[jmp.Policy]:
   """Retrieves the currently active policy for the given class.
 
   Note that policies applied explicitly to a top level class (e.g. ``ResNet``)
@@ -141,7 +142,7 @@ def get_policy(cls: Type[hk.Module]) -> Optional[jmp.Policy]:
   return _thread_local_state.get_policy(cls)
 
 
-def set_policy(cls: Type[hk.Module], policy: jmp.Policy):
+def set_policy(cls: type[hk.Module], policy: jmp.Policy):
   """Uses the given policy for all instances of the module class.
 
   NOTE: Policies are only applied to modules created in the current thread.
@@ -202,7 +203,7 @@ def set_policy(cls: Type[hk.Module], policy: jmp.Policy):
 
 
 @contextlib.contextmanager
-def push_policy(cls: Type[hk.Module], policy: jmp.Policy):
+def push_policy(cls: type[hk.Module], policy: jmp.Policy):
   """Sets the given policy for the given class while the context is active.
 
   Args:
@@ -241,7 +242,7 @@ def push_policy(cls: Type[hk.Module], policy: jmp.Policy):
       clear_policy(cls)
 
 
-def clear_policy(cls: Type[hk.Module]):
+def clear_policy(cls: type[hk.Module]):
   """Clears any policy assocated with the given class.
 
   Args:

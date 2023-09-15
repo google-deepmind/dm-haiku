@@ -14,9 +14,10 @@
 # ==============================================================================
 """A simple example loader for an ASCII language-modelling dataset."""
 
+from collections.abc import Iterable, Iterator
 import itertools
 import random
-from typing import Iterable, Iterator, NamedTuple, TypeVar
+from typing import NamedTuple, TypeVar
 
 import numpy as np
 

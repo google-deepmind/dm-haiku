@@ -14,10 +14,11 @@
 # ==============================================================================
 """ImageNet dataset with typical pre-processing."""
 
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 import enum
 import itertools as it
 import types
-from typing import Iterable, Iterator, Mapping, Optional, Sequence, Tuple
+from typing import Optional
 
 import jax
 import jax.numpy as jnp
@@ -204,7 +205,7 @@ def _to_tfds_split(split: Split) -> tfds.Split:
     return tfds.Split.VALIDATION
 
 
-def _shard(split: Split, shard_index: int, num_shards: int) -> Tuple[int, int]:
+def _shard(split: Split, shard_index: int, num_shards: int) -> tuple[int, int]:
   """Returns [start, end) for the given shard index."""
   assert shard_index < num_shards
   arange = np.arange(split.num_examples)
@@ -250,8 +251,8 @@ def _distorted_bounding_box_crop(
     jpeg_shape: tf.Tensor,
     bbox: tf.Tensor,
     min_object_covered: float,
-    aspect_ratio_range: Tuple[float, float],
-    area_range: Tuple[float, float],
+    aspect_ratio_range: tuple[float, float],
+    area_range: tuple[float, float],
     max_attempts: int,
 ) -> tf.Tensor:
   """Generates cropped_image using one of the bboxes randomly distorted."""

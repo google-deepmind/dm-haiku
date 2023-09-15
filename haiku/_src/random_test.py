@@ -72,16 +72,13 @@ class RandomTest(absltest.TestCase):
       ):
         init(key)
 
+  def test_invalid_key(self):
+    init, _ = transform.transform(base.next_rng_key)
+    with self.assertRaisesRegex(ValueError, "Init must be called with an RNG"):
+      init([1, 2])
+
 
 class CustomRNGTest(parameterized.TestCase):
-
-  def setUp(self):
-    super().setUp()
-    jax.config.update("jax_enable_custom_prng", True)
-
-  def tearDown(self):
-    super().tearDown()
-    jax.config.update("jax_enable_custom_prng", False)
 
   def test_non_custom_key(self):
     init, _ = transform.transform(base.next_rng_key)
@@ -115,11 +112,6 @@ class CustomRNGTest(parameterized.TestCase):
     key = prng.seed_with_impl(differently_shaped_prng_impl, 42)
     init(key)
     self.assertEqual(count, 1)
-
-  def test_invalid_custom_key(self):
-    init, _ = transform.transform(base.next_rng_key)
-    with self.assertRaisesRegex(ValueError, "Init must be called with an RNG"):
-      init(jnp.ones((2,), dtype=jnp.uint32))
 
 
 def split_for_n(key, n):

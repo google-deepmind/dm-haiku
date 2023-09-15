@@ -972,17 +972,24 @@ def assert_is_prng_key(key: PRNGKey):
   # device-to-host copy.
   make_error = lambda: ValueError(  # pylint: disable=g-long-lambda
       f"The provided key is not a JAX PRNGKey but a {type(key)}:\n{key}")
-  if jax.config.jax_enable_custom_prng:
-    if not isinstance(key, jax.random.KeyArray):
-      raise make_error()
+
+  if not hasattr(key, "shape") or not hasattr(key, "dtype"):
+    raise make_error()
+
+  if hasattr(jax.dtypes, "prng_key"):  # JAX 0.4.14 or newer
+    is_typed_prng = jax.dtypes.issubdtype(key.dtype, jax.dtypes.prng_key)
+  elif hasattr(jax.random, "PRNGKeyArray"):  # Older JAX versions
+    is_typed_prng = isinstance(key, jax.random.PRNGKeyArray)
+  else:  # Shouldn't get here, but just in case...
+    is_typed_prng = False
+
+  if is_typed_prng:
     if key.shape:
       raise ValueError(
           "Provided key did not have expected shape and/or dtype: "
           f"expected=(shape=(), dtype={key.dtype}), "
           f"actual=(shape={key.shape}, dtype={key.dtype})")
   else:
-    if not hasattr(key, "shape") or not hasattr(key, "dtype"):
-      raise make_error()
     config_hint = ""
     default_impl = jax.random.default_prng_impl()
     expected_shape = default_impl.key_shape

@@ -342,12 +342,12 @@ hk_py_library(
     name = "dot",
     srcs = ["dot.py"],
     deps = [
-        ":config",
+        ":config",  # build_cleaner: keep
         ":data_structures",
         ":module",
         ":utils",
         # pip: jax
-        # pip: tree
+        # pip: jax:extend
     ],
 )
 

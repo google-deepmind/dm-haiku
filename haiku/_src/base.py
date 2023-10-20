@@ -991,9 +991,10 @@ def assert_is_prng_key(key: PRNGKey):
           f"actual=(shape={key.shape}, dtype={key.dtype})")
   else:
     config_hint = ""
-    default_impl = jax.random.default_prng_impl()
-    expected_shape = default_impl.key_shape
-    if default_impl.key_shape != (2,):
+    default_key = jax.eval_shape(
+        lambda seed: jax.random.key_data(jax.random.key(seed)), 0)
+    expected_shape = default_key.shape
+    if default_key.shape != (2,):
       # Default PRNG impl is set to something different from threefry.
       config_hint = ("\nHint: jax_default_prng_impl has been set to "
                      f"'{jax_config.jax_default_prng_impl}', the shape "

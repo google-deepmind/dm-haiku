@@ -31,16 +31,13 @@ python3 -m venv "${VENV_DIR}"
 source "${VENV_DIR}/bin/activate"
 python --version
 
-# Install JAX.
+# Install dependencies.
 python -m pip install --upgrade pip setuptools
-python -m pip install -r requirements-jax.txt
+pip install -r requirements.txt -r requirements-jax.txt -r requirements-test.txt
 python -c 'import jax; print(jax.__version__)'
 
-# Run setup.py, this installs the python dependencies
+# Run setup.py to install Haiku itself.
 python -m pip install .
-
-# Python test dependencies.
-python -m pip install -r requirements-test.txt
 
 # Run tests using pytest.
 TEST_OPTS=()

@@ -21,7 +21,7 @@ from absl.testing import parameterized
 from haiku._src import initializers
 from haiku._src import test_utils
 import jax
-from jax.config import config
+from jax import config
 import jax.numpy as jnp
 import numpy as np
 

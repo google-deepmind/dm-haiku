@@ -22,7 +22,7 @@ from absl.testing import absltest
 from haiku._src import test_utils
 from haiku._src.integration import common
 from haiku._src.integration import descriptors
-from jax.config import config
+from jax import config
 import jax.numpy as jnp
 
 ModuleFn = descriptors.ModuleFn

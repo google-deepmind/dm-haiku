@@ -960,6 +960,7 @@ hk_py_test(
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
+        # pip: jax:extend
         # pip: numpy
     ],
 )

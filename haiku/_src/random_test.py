@@ -23,7 +23,7 @@ from haiku._src import base
 from haiku._src import random
 from haiku._src import transform
 import jax
-from jax import prng
+import jax.extend as jex
 import jax.numpy as jnp
 import numpy as np
 
@@ -97,7 +97,7 @@ class CustomRNGTest(parameterized.TestCase):
       num = tuple(num) if isinstance(num, Sequence) else (num,)
       return jnp.zeros((*num, 13), np.uint32)
 
-    differently_shaped_prng_impl = prng.PRNGImpl(
+    differently_shaped_prng_impl = jex.random.PRNGImpl(
         # Testing a different key shape to make sure it's accepted by Haiku
         key_shape=(13,),
         seed=lambda _: jnp.zeros((13,), np.uint32),
@@ -109,7 +109,7 @@ class CustomRNGTest(parameterized.TestCase):
     init, _ = transform.transform(base.next_rng_key)
     if do_jit:
       init = jax.jit(init)
-    key = prng.seed_with_impl(differently_shaped_prng_impl, 42)
+    key = jex.random.seed_with_impl(differently_shaped_prng_impl, 42)
     init(key)
     self.assertEqual(count, 1)
 

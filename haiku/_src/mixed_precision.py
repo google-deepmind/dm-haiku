@@ -163,19 +163,6 @@ def set_policy(cls: type[hk.Module], policy: jmp.Policy):
   >>> net = hk.nets.ResNet50(4)
   >>> x = jnp.ones([4, 224, 224, 3])
   >>> print(net(x, is_training=True))
-  [[nan nan nan nan]
-   [nan nan nan nan]
-   [nan nan nan nan]
-   [nan nan nan nan]]
-
-  Oh no, nan! This is because modules like batch norm are not numerically stable
-  in ``float16``. To address this, we apply a second policy to our batch norm
-  modules to keep them in full precision. We are careful to return a ``float16``
-  output from the module such that subsequent modules receive ``float16`` input:
-
-  >>> policy = jmp.get_policy('params=float32,compute=float32,output=float16')
-  >>> hk.mixed_precision.set_policy(hk.BatchNorm, policy)
-  >>> print(net(x, is_training=True))
   [[0. 0. 0. 0.]
    [0. 0. 0. 0.]
    [0. 0. 0. 0.]
@@ -186,7 +173,6 @@ def set_policy(cls: type[hk.Module], policy: jmp.Policy):
   speedup in training time with only a small impact on final top-1 accuracy.
 
   >>> hk.mixed_precision.clear_policy(hk.nets.ResNet50)
-  >>> hk.mixed_precision.clear_policy(hk.BatchNorm)
 
   Args:
     cls: A Haiku module class.

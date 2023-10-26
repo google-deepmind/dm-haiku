@@ -347,6 +347,7 @@ hk_py_library(
         ":module",
         ":utils",
         # pip: jax
+        # pip: jax:extend
         # pip: tree
     ],
 )

@@ -26,6 +26,7 @@ from haiku._src import utils
 import jax
 import jax.core
 from jax.experimental import pjit
+from jax.extend import linear_util as lu
 
 
 # Import tree if available, but only throw error at runtime.
@@ -134,7 +135,7 @@ def to_graph(fun):
   @functools.wraps(fun)
   def wrapped_fun(*args):
     """See `fun`."""
-    f = jax.linear_util.wrap_init(fun)
+    f = lu.wrap_init(fun)
     args_flat, in_tree = jax.tree_util.tree_flatten((args, {}))
     flat_fun, out_tree = jax.api_util.flatten_fun(f, in_tree)
     graph = Graph.create(title=name_or_str(fun))
@@ -160,7 +161,7 @@ def to_graph(fun):
   return wrapped_fun
 
 
-@jax.linear_util.transformation
+@lu.transformation
 def _interpret_subtrace(main, *in_vals):
   trace = DotTrace(main, jax.core.cur_sublevel())
   in_tracers = [DotTracer(trace, val) for val in in_vals]
@@ -202,7 +203,7 @@ class DotTrace(jax.core.Trace):
     if primitive is pjit.pjit_p:
       f = jax.core.jaxpr_as_fun(params['jaxpr'])
       f.__name__ = params['name']
-      fun = jax.linear_util.wrap_init(f)
+      fun = lu.wrap_init(f)
       return self.process_call(primitive, fun, tracers, params)
 
     inputs = [t.val for t in tracers]

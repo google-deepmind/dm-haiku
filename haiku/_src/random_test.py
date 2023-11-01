@@ -97,7 +97,14 @@ class CustomRNGTest(parameterized.TestCase):
       num = tuple(num) if isinstance(num, Sequence) else (num,)
       return jnp.zeros((*num, 13), np.uint32)
 
-    differently_shaped_prng_impl = jex.random.PRNGImpl(
+    # TODO(frostig): remove after JAX 0.4.20, use
+    # jex.random.define_prng_impl directly
+    if hasattr(jex.random, "define_prng_impl"):
+      def_prng_impl = jex.random.define_prng_impl
+    else:
+      def_prng_impl = jex.random.PRNGImpl
+
+    differently_shaped_prng_impl = def_prng_impl(
         # Testing a different key shape to make sure it's accepted by Haiku
         key_shape=(13,),
         seed=lambda _: jnp.zeros((13,), np.uint32),
@@ -109,7 +116,7 @@ class CustomRNGTest(parameterized.TestCase):
     init, _ = transform.transform(base.next_rng_key)
     if do_jit:
       init = jax.jit(init)
-    key = jex.random.seed_with_impl(differently_shaped_prng_impl, 42)
+    key = jax.random.key(42, impl=differently_shaped_prng_impl)
     init(key)
     self.assertEqual(count, 1)
 

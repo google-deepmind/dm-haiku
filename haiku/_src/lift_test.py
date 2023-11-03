@@ -47,10 +47,10 @@ def with_lift(f, *, name="inner"):
   return wrapped
 
 
-def with_transparent_lift(f):
+def with_transparent_lift(f, **kwargs):
   def wrapped(*a, **k):
     init, apply = transform.transform(f)
-    params = lift.transparent_lift(init)(None, *a, **k)
+    params = lift.transparent_lift(init, **kwargs)(None, *a, **k)
     return apply(params, None, *a, **k)
   return wrapped
 
@@ -471,6 +471,16 @@ class LiftTest(parameterized.TestCase):
     with self.assertRaisesRegex(
         ValueError, "close over a module.*transparent_lift"):
       fn.init(None, jnp.ones((10, 10)))
+
+  def test_transparent_lift_reuse_and_define_new(self):
+    f = lambda: base.get_parameter("w1", [], init=jnp.zeros)
+    g = lambda: base.get_parameter("w2", [], init=jnp.ones)
+    f = with_transparent_lift(f, allow_reuse=True)
+    g = with_transparent_lift(g, allow_reuse=True)
+
+    h = transform.transform(lambda: [f(), g()])
+    params = h.init(None)
+    self.assertEqual(params, {"~": {"w1": 0, "w2": 1}})
 
   def test_same_name_across_transforms_no_closed_error(self):
     init1, _ = transform.transform(lambda x: Bias()(x))  # pylint: disable=unnecessary-lambda

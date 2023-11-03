@@ -56,7 +56,8 @@ def pack_into_dict(src: hk.Params,
     value = dict(value)
     if state:
       value = {k: base.StatePair(v, v) for k, v in value.items()}
-    dst[new_key] = value
+    dst.setdefault(new_key, {})
+    dst[new_key].update(value)
 
 
 def unpack_from_dict(src: hk.Params, prefix: str) -> MutableBundle:

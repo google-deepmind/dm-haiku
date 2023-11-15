@@ -552,6 +552,10 @@ OVERRIDE_PREFIX = "FORCE:"
 def force_name(name: str) -> str:
   """Forces Haiku to use this name, ignoring all context information.
 
+  NOTE: This method is intended for advanced use cases only and should be
+  avoided whenever possible as it effectively enforces a singleton pattern when
+  setting absolute names.
+
   Haiku names modules according to where they are created (e.g. the stack of
   modules that created them, or the current :func:`~haiku.name_scope`). This
   function allows you to create modules that ignore all of this and have
@@ -577,7 +581,6 @@ def force_name(name: str) -> str:
 
   Args:
     name: String name for the module. For example ``"foo"`` or ``"foo/bar"``.
-
 
   Returns:
     A value suitable to pass into the ``name`` argument of any Haiku module

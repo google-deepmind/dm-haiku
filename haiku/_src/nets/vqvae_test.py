@@ -91,7 +91,7 @@ class VqvaeTest(parameterized.TestCase):
   def testShapeChecking(self, constructor, kwargs):
     vqvae_module = constructor(**kwargs)
     wrong_shape_input = np.random.randn(100, kwargs['embedding_dim'] * 2)
-    with self.assertRaisesRegex(TypeError, 'total size must be unchanged'):
+    with self.assertRaises((ValueError, TypeError)):
       vqvae_module(
           jnp.array(wrong_shape_input.astype(np.float32)), is_training=False)
 

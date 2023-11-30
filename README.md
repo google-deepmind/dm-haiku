@@ -15,8 +15,8 @@
 
 > [!IMPORTANT]
 > 📣 **As of July 2023 [Google DeepMind] recommends that new projects adopt
-> [Flax] (a neural network library originally developed by [Google Brain] and
-> now by [Google DeepMind]) instead of Haiku.** 📣
+> [Flax] instead of Haiku. [Flax] is a neural network library originally
+> developed by [Google Brain] and now by [Google DeepMind].** 📣
 >
 > At the time of writing [Flax] has superset of the features available in Haiku,
 > a [larger](https://github.com/google/flax/graphs/contributors) and

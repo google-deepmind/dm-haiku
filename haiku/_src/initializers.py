@@ -41,7 +41,7 @@ def _compute_fans(shape, fan_in_axes=None):
     fan_in = fan_out = 1
   elif len(shape) == 1:
     fan_in = fan_out = shape[0]
-  elif len(shape) == 2:
+  elif len(shape) == 2 and fan_in_axes is None:
     fan_in, fan_out = shape
   else:
     if fan_in_axes is not None:

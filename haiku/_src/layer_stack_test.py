@@ -17,7 +17,6 @@
 import functools
 import re
 from typing import Optional
-
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import base
@@ -595,6 +594,83 @@ class LayerStackTest(parameterized.TestCase):
     np.testing.assert_allclose(
         looped.apply(looped_params, rng, x),
         stacked.apply(looped_params, rng, x),
+        rtol=1e-6,
+    )
+
+  def test_layer_stack_transparent_with_custom_pytrees(self):
+    class TransparencyMap(layer_stack.LayerStackTransparencyMapping):
+
+      def stacked_to_flat(self, stacked_module_name: str, scan_idx: int) -> str:
+        return stacked_module_name.replace("0", str(scan_idx))
+
+      def flat_to_stacked(
+          self, unstacked_module_name: str
+      ) -> Optional[tuple[str, int]]:
+        idx = int(re.findall(r"\d+", unstacked_module_name)[0])
+        return unstacked_module_name.replace(str(idx), "0"), idx
+
+    @jax.tree_util.register_pytree_node_class
+    class CustomParam:
+
+      def __init__(self, param, name):
+        self.param = param
+        self.multiplier = name
+
+      def tree_flatten(self):
+        return ((self.param, self.multiplier), None)
+
+      @classmethod
+      def tree_unflatten(cls, aux, values):
+        del aux
+        return cls(*values)
+
+      @property
+      def shape(self) -> list[int]:
+        return self.param.shape
+
+    class CustomLinear:
+
+      def __init__(self, *args, **kwargs):
+        self.linear = basic.Linear(*args, **kwargs)
+
+      def __call__(self, x: CustomParam) -> CustomParam:
+        # Unwrap from CustomParam before invoking linear
+        return CustomParam(
+            self.linear(x.param * x.multiplier),
+            x.multiplier,
+        )
+
+    def block(x: CustomParam, i: int) -> CustomParam:
+      return CustomLinear(output_size=x.shape[-1], name=f"linear_{i}")(x)
+
+    def looped(x: CustomParam, num_layers: int = 1) -> CustomParam:
+      for i in range(num_layers):
+        x = block(x, i)
+      return x
+
+    def stacked(x: CustomParam) -> CustomParam:
+      return layer_stack.layer_stack(
+          num_layers=1, transparent=True, transparency_map=TransparencyMap()
+      )(lambda y: block(y, 0))(x)
+
+    looped = transform.transform(looped)
+    stacked = transform.transform(stacked)
+
+    x = CustomParam(jnp.ones((2, 2)), 0.3)
+    rng = jax.random.PRNGKey(0)
+    looped_params = looped.init(rng, x)
+    stacked_params = stacked.init(rng, x)
+
+    self.assertEqual(
+        jax.tree_util.tree_structure(looped_params),
+        jax.tree_util.tree_structure(stacked_params),
+    )
+
+    # Use same set of params for both calls since stacked_params have different
+    # value than looped params because differences in RNG splitting.
+    np.testing.assert_allclose(
+        looped.apply(looped_params, rng, x).param,
+        stacked.apply(looped_params, rng, x).param,
         rtol=1e-6,
     )
 

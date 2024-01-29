@@ -27,12 +27,9 @@ import jax
 import jax.numpy as jnp
 
 
-class LayerStackStateError(Exception):
-  """Raise if trying to use layer_stack with Haiku state."""
-
 LayerStackCarry = collections.namedtuple("LayerStackCarry", ["x"])
-LayerStackScanned = collections.namedtuple("LayerStackScanned",
-                                           ["params", "rng", "args_ys"])
+LayerStackScanned = collections.namedtuple(
+    "LayerStackScanned", ["params", "rng", "state", "args_ys"])
 
 # WrappedFn should take in arbitrarily nested `jax.Array`, and return the
 # exact same type. We cannot express this with `typing`. So we just use it
@@ -151,7 +148,7 @@ class _LayerStack:
 
   def __call__(self, x, *args_ys, reverse=False):
     count = self._count
-    init_fn, apply_fn = transform.transform(self._call_wrapped)
+    init_fn, apply_fn = transform.transform_with_state(self._call_wrapped)
 
     def per_layer_init_fn(c, a):
       c, rng = c
@@ -159,34 +156,29 @@ class _LayerStack:
         rng, next_rng, apply_rng = jax.random.split(rng, 3)
       else:
         rng, next_rng, apply_rng = None, None, None
-      params = init_fn(rng, c, *a)
-      c, _ = apply_fn(params, apply_rng, c, *a)
-      return (c, next_rng), params
+      params, state = init_fn(rng, c, *a)
+      (c, _), state = apply_fn(params, state, apply_rng, c, *a)
+      return (c, next_rng), (params, state)
 
     def scanned_init_fn(x, rng):
-      _, params = jax.lax.scan(per_layer_init_fn, (x, rng), args_ys,
-                               length=self._count)
+      _, (params, state) = jax.lax.scan(per_layer_init_fn, (x, rng), args_ys,
+                                        length=self._count)
       if self._transparency_map is not None:
-        return _split_params(params, self._count, self._transparency_map)
-      else:
-        return params
+        return (_split_params(params, self._count, self._transparency_map),
+                _split_params(state, self._count, self._transparency_map))
+      return params, state
 
     rng = base.maybe_next_rng_key()
 
-    try:
-      if self._transparency_map is not None:
-        lifted_init_fn = lift.transparent_lift(
-            scanned_init_fn, allow_reuse=True
-        )
-      else:
-        lifted_init_fn = lift.lift(
-            scanned_init_fn, allow_reuse=True, name=self._name
-        )
-      params = lifted_init_fn(x, rng)
-    except base.NonEmptyStateError as e:
-      raise LayerStackStateError("LayerStack can only be used on Haiku "
-                                 "functions which do not make use of Haiku "
-                                 "state.") from e
+    if self._transparency_map is not None:
+      params_and_state_fn, updater = lift.transparent_lift_with_state(
+          scanned_init_fn, allow_reuse=True
+      )
+    else:
+      params_and_state_fn, updater = lift.lift_with_state(
+          scanned_init_fn, allow_reuse=True, name=self._name
+      )
+    params, state = params_and_state_fn(x, rng)
 
     # Use scan during apply, threading through random seed so that it's
     # unique for each layer.
@@ -195,26 +187,31 @@ class _LayerStack:
     ) -> tuple[LayerStackCarry, Any]:
       rng = scanned.rng
       params = scanned.params
+      state = scanned.state
 
       kwargs = {}
       if self._pass_reverse_to_layer_fn:
         kwargs["reverse"] = reverse
-      out_x, z = apply_fn(params, rng, carry.x, *scanned.args_ys, **kwargs)
-      return LayerStackCarry(x=out_x), z
+      (out_x, z), state = apply_fn(
+          params, state, rng, carry.x, *scanned.args_ys, **kwargs)
+      return LayerStackCarry(x=out_x), (z, state)
 
     rng = _get_rng_stack(count)
 
     if self._transparency_map is not None:
       params = _stack_params(params, self._count, self._transparency_map)
+      state = _stack_params(state, self._count, self._transparency_map)
 
     carry = LayerStackCarry(x=x)
     scanned = LayerStackScanned(params=params,
+                                state=state,
                                 rng=rng,
                                 args_ys=args_ys)
 
-    carry, zs = jax.lax.scan(
+    carry, (zs, states) = jax.lax.scan(
         layer, carry, scanned, length=count, unroll=self._unroll,
         reverse=reverse)
+    updater.update(states)
     return carry.x, zs
 
   def _call_wrapped(
@@ -301,9 +298,6 @@ def layer_stack(
   arbitrarily nested structures with ``jax.Array`` at the leaf nodes. Note
   that kwargs are not supported, neither are functions with variable number
   of parameters (specified by ``*args``).
-
-  Note that `layer_stack` cannot at the moment be used with functions that build
-  Haiku modules with state.
 
   If ``with_per_layer_inputs=False`` then the new, wrapped function can be
   understood as performing the following:

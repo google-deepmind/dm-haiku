@@ -101,6 +101,16 @@ class Counter(nn.Module):
 
 class TransformFlaxTest(parameterized.TestCase):
 
+  def test_lift_empty_unused(self):
+    def f():
+      # NOTE: Intentionally ignoring returned lifted object.
+      transform_flax.lift(Empty(), name='foo')
+
+    f = transform.transform_with_state(f)
+    params, state = f.init(jax.random.PRNGKey(42))
+    self.assertEmpty(params)
+    self.assertEmpty(state)
+
   def test_lift_empty(self):
     def f():
       mod = transform_flax.lift(Empty(), name='foo')

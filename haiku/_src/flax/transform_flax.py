@@ -185,6 +185,7 @@ def lift(
   """
   mod = _flax_transform_with_state(mod)
   init_fn, updater = hk.lift_with_state(mod.init, name=name, allow_reuse=True)
+  updater._used = True  # pylint: disable=protected-access
 
   def wrapped(*args, **kwargs):
     init_kwargs = dict(kwargs)

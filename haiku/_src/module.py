@@ -134,15 +134,21 @@ class ModuleMetaclass(type(Protocol)):
     # with the new class and not the metaclass.
     module = cls.__new__(cls, *args, **kwargs)  # pytype: disable=wrong-arg-types
 
+    # We populate _auto_repr before `__init__` to allow `repr(self)` during the
+    # constructor of the module.
+    if (config.get_config().module_auto_repr and
+        getattr(module, "AUTO_REPR", True)):
+      module_repr = utils.auto_repr(cls, *args, **kwargs)  # pylint: disable=protected-access
+    else:
+      module_repr = object.__repr__(module)
+
+    # Avoid triggering user defined __setattr__ overrides since we have not yet
+    # run their constructor.
+    object.__setattr__(module, "_auto_repr", module_repr)
+
     # Now attempt to initialize the object.
     init = wrap_method("__init__", cls.__init__, lambda: cls)
     init(module, *args, **kwargs)
-
-    if (config.get_config().module_auto_repr and
-        getattr(module, "AUTO_REPR", True)):
-      module._auto_repr = utils.auto_repr(cls, *args, **kwargs)  # pylint: disable=protected-access
-    else:
-      module._auto_repr = object.__repr__(module)
 
     ran_super_ctor = hasattr(module, "module_name")
     if not ran_super_ctor:

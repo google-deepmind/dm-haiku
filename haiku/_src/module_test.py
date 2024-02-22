@@ -659,6 +659,20 @@ class ModuleTest(parameterized.TestCase):
     m = IdentityModule()
     self.assertEqual(str(m), "IdentityModule()")
 
+  @test_utils.transform_and_run
+  def test_repr_during_ctor(self):
+    # See https://github.com/google-deepmind/dm-haiku/issues/428 for other ways
+    # this can get triggered.
+
+    test = self
+
+    class MyModule(module.Module):
+      def __init__(self):
+        super().__init__()
+        test.assertEqual(repr(self), "MyModule()")
+
+    MyModule()  # Does not fail.
+
   def test_signature(self):
     captures_expected = inspect.Signature(
         parameters=(

@@ -645,7 +645,7 @@ class BaseTest(parameterized.TestCase):
     s = base.PRNGSequence(k)
     s.reserve(10)
     hk_keys = tuple(next(s) for _ in range(10))
-    jax_keys = tuple(jax.random.split(k, num=11)[1:])
+    jax_keys = tuple(jax.random.split(test_utils.clone(k), num=11)[1:])
     jax.tree_util.tree_map(
         np.testing.assert_array_equal, hk_keys, jax_keys)
 
@@ -655,7 +655,7 @@ class BaseTest(parameterized.TestCase):
     s.reserve(2)
     s.reserve(2)
     hk_keys = tuple(next(s) for _ in range(4))
-    k, subkey1, subkey2 = tuple(jax.random.split(k, num=3))
+    k, subkey1, subkey2 = tuple(jax.random.split(test_utils.clone(k), num=3))
     _, subkey3, subkey4 = tuple(jax.random.split(k, num=3))
     jax_keys = (subkey1, subkey2, subkey3, subkey4)
     jax.tree_util.tree_map(
@@ -665,7 +665,7 @@ class BaseTest(parameterized.TestCase):
     k = jax.random.PRNGKey(42)
     s = base.PRNGSequence(k)
     hk_keys = s.take(10)
-    jax_keys = tuple(jax.random.split(k, num=11)[1:])
+    jax_keys = tuple(jax.random.split(test_utils.clone(k), num=11)[1:])
     jax.tree_util.tree_map(
         np.testing.assert_array_equal, hk_keys, jax_keys)
 
@@ -679,8 +679,8 @@ class BaseTest(parameterized.TestCase):
     with base.new_context(rng=ctx_key):
       without_decorator_out = jax.random.uniform(base.next_rng_key(), ()).item()
 
-    with base.new_context(rng=ctx_key):
-      with base.with_rng(key):
+    with base.new_context(rng=test_utils.clone(ctx_key)):
+      with base.with_rng(test_utils.clone(key)):
         with_decorator_out = jax.random.uniform(base.next_rng_key(), ()).item()
 
     self.assertNotEqual(without_decorator_out, expected_output)

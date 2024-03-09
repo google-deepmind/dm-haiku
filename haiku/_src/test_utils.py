@@ -253,3 +253,11 @@ def with_guardrails(f):
     finally:
       config.check_jax_usage(old)
   return wrapper
+
+
+def clone(key):
+  """Call jax.random.clone if it is available."""
+  if hasattr(jax.random, "clone"):
+    # JAX v0.4.26+
+    return jax.random.clone(key)
+  return key

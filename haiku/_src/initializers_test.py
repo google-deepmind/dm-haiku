@@ -103,12 +103,14 @@ class InitializersTest(parameterized.TestCase):
     self.assertEqual(fan_in_out2, (2, 2))
     fan_in_out3 = initializers._compute_fans([3, 4])
     self.assertEqual(fan_in_out3, (3, 4))
-    fan_in_out4 = initializers._compute_fans([1, 2, 3, 4])
-    self.assertEqual(fan_in_out4, (6, 8))
-    fan_in_out5 = initializers._compute_fans([3, 5, 9], fan_in_axes=[0])
-    self.assertEqual(fan_in_out5, (3, 45))
-    fan_in_out6 = initializers._compute_fans([3, 5, 7, 4], fan_in_axes=[0, 1])
-    self.assertEqual(fan_in_out6, (15, 28))
+    fan_in_out4 = initializers._compute_fans([3, 4], fan_in_axes=[1])
+    self.assertEqual(fan_in_out4, (4, 3))
+    fan_in_out5 = initializers._compute_fans([1, 2, 3, 4])
+    self.assertEqual(fan_in_out5, (6, 8))
+    fan_in_out6 = initializers._compute_fans([3, 5, 9], fan_in_axes=[0])
+    self.assertEqual(fan_in_out6, (3, 45))
+    fan_in_out7 = initializers._compute_fans([3, 5, 7, 4], fan_in_axes=[0, 1])
+    self.assertEqual(fan_in_out7, (15, 28))
 
   @test_utils.transform_and_run
   def test_orthogonal_invalid_shape(self):

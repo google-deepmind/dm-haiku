@@ -46,7 +46,7 @@ setup(
     long_description_content_type='text/markdown',
     author_email='haiku-dev-os@google.com',
     # Contained modules and scripts.
-    packages=find_namespace_packages(exclude=['*_test.py', 'examples']),
+    packages=find_namespace_packages(exclude=['examples*', 'docs*']),
     install_requires=_parse_requirements('requirements.txt'),
     extras_require={'jax': _parse_requirements('requirements-jax.txt')},
     tests_require=_parse_requirements('requirements-test.txt'),

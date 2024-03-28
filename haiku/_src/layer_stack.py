@@ -138,6 +138,8 @@ class _LayerStack:
       pass_reverse_to_layer_fn: bool = False,
       transparency_map: Optional[LayerStackTransparencyMapping] = None,
       name: str = "",
+      *,
+      split_transpose: bool = False,
   ):
     """Iterate f count times, with non-shared parameters."""
     self._name = name
@@ -145,6 +147,7 @@ class _LayerStack:
     self._unroll = unroll
     self._pass_reverse_to_layer_fn = pass_reverse_to_layer_fn
     self._transparency_map = transparency_map
+    self._split_transpose = split_transpose
 
   def __call__(self, x, *args_ys, reverse=False):
     count = self._count
@@ -208,9 +211,13 @@ class _LayerStack:
                                 rng=rng,
                                 args_ys=args_ys)
 
-    carry, (zs, states) = jax.lax.scan(
-        layer, carry, scanned, length=count, unroll=self._unroll,
-        reverse=reverse)
+    if jax.version.__version_info__ > (0, 4, 25):
+      carry, (zs, states) = jax.lax.scan(
+          layer, carry, scanned, length=count, unroll=self._unroll,
+          reverse=reverse, _split_transpose=self._split_transpose)
+    else:
+      carry, (zs, states) = jax.lax.scan(
+          layer, carry, scanned, length=count, unroll=self._unroll)
     updater.update(states)
     return carry.x, zs
 
@@ -233,6 +240,8 @@ class _LayerStackNoPerLayer(_LayerStack):
       pass_reverse_to_layer_fn: bool = False,
       transparency_map: Optional[LayerStackTransparencyMapping] = None,
       name: str = "",
+      *,
+      split_transpose: bool = False,
   ):
     super().__init__(
         count=count,
@@ -240,6 +249,7 @@ class _LayerStackNoPerLayer(_LayerStack):
         pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
         transparency_map=transparency_map,
         name=name,
+        split_transpose=split_transpose
     )
     _check_no_varargs(f)
     self._f = f
@@ -265,6 +275,8 @@ class _LayerStackWithPerLayer(_LayerStack):
       pass_reverse_to_layer_fn: bool = False,
       transparency_map: Optional[LayerStackTransparencyMapping] = None,
       name: str = "",
+      *,
+      split_transpose: bool = False,
   ):
     super().__init__(
         count=count,
@@ -272,6 +284,7 @@ class _LayerStackWithPerLayer(_LayerStack):
         pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
         transparency_map=transparency_map,
         name=name,
+        split_transpose=split_transpose
     )
     self._f = f
 
@@ -288,6 +301,8 @@ def layer_stack(
     transparent: bool = False,
     transparency_map: Optional[LayerStackTransparencyMapping] = None,
     name: Optional[str] = None,
+    *,
+    split_transpose: bool = False
 ):
   """Utility to wrap a Haiku function and recursively apply it to an input.
 
@@ -360,6 +375,10 @@ def layer_stack(
       See ``LayerStackTransparencyMapping`` and ``layer_stack_test.py`` for an
       example.
     name: name of the Haiku context.
+    split_transpose: Experimental feature to split the transpose of the
+      underlying scan into two loops, a scan (corresponding to backprop) and a
+      map (corresponding to parameter gradient computation). This is backed up
+      by an *experimental* Jax feature that may evolve or even get removed.
 
   Returns:
     Callable that will produce a layer stack when called with a valid function.
@@ -386,6 +405,7 @@ def layer_stack(
             pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
             transparency_map=transparency_map,
             name=name,
+            split_transpose=split_transpose,
         )
         return mod(x, *args, **kwargs)
     else:
@@ -399,6 +419,7 @@ def layer_stack(
             pass_reverse_to_layer_fn=pass_reverse_to_layer_fn,
             transparency_map=transparency_map,
             name=name,
+            split_transpose=split_transpose
         )
         ret = mod(x=args, **kwargs)[0]
         if len(args) == 1:

@@ -61,7 +61,7 @@ def topk_mask(value: jax.Array, density_fraction: float) -> jax.Array:
   # with a bias to lower indices
   orig_shape = value.shape
   value = jnp.reshape(value, -1)
-  shuffled_indices = jax.random.shuffle(
+  shuffled_indices = jax.random.permutation(
       jax.random.PRNGKey(42), jnp.arange(0, jnp.size(value), dtype=jnp.int32))
 
   shuffled_mask = topk_mask_internal(value[shuffled_indices])

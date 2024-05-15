@@ -214,7 +214,7 @@ class TransformFlaxTest(parameterized.TestCase):
     rng = jax.random.PRNGKey(42)
     params, state = f.init(rng)
     # Modify the parameters from their initial value.
-    params, state = jax.tree_map(lambda x: x + 1, (params, state))
+    params, state = jax.tree.map(lambda x: x + 1, (params, state))
     (w_out, flim_out, flam_out), _ = f.apply(params, state, None)
     w = params['foo/~']['w']
     flim = state['foo/flim_state/~']['s']
@@ -272,7 +272,7 @@ class TransformFlaxTest(parameterized.TestCase):
     rng = jax.random.PRNGKey(42)
     x = jnp.ones([1, 1])
     params = f.init(rng, x)
-    params = jax.tree_map(lambda x: (x.shape, x.dtype), params)
+    params = jax.tree.map(lambda x: (x.shape, x.dtype), params)
     self.assertEqual(
         params,
         {

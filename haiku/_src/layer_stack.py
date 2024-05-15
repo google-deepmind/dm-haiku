@@ -95,7 +95,7 @@ def _split_params(
             f"Found conflicting unstacked module name for {mod_name} at"
             f" {new_mod_name}."
         )
-      params[new_mod_name] = jax.tree_map(lambda x: x[i], mod_params)  # pylint:disable=cell-var-from-loop
+      params[new_mod_name] = jax.tree.map(lambda x: x[i], mod_params)  # pylint:disable=cell-var-from-loop
   return params
 
 
@@ -125,7 +125,7 @@ def _stack_params(
         )
       param_trees[idx][stacked_mod_name][k] = v
 
-  return jax.tree_map(lambda *args: jnp.stack(args, axis=0), *param_trees)
+  return jax.tree.map(lambda *args: jnp.stack(args, axis=0), *param_trees)
 
 
 class _LayerStack:

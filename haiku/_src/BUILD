@@ -1043,3 +1043,19 @@ hk_py_test(
         # pip: jax
     ],
 )
+
+hk_py_library(
+    name = "no_flax",
+    srcs = ["no_flax.py"],
+)
+
+hk_py_test(
+    name = "no_flax_test",
+    srcs = ["no_flax_test.py"],
+    deps = [
+        ":no_flax",
+        # pip: absl/testing:absltest
+        # pip: flax:core
+        "//haiku",
+    ],
+)

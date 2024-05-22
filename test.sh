@@ -33,7 +33,11 @@ python --version
 
 # Install dependencies.
 python -m pip install --upgrade pip setuptools
-pip install -r requirements.txt -r requirements-jax.txt -r requirements-test.txt
+pip install \
+  -r requirements.txt \
+  -r requirements-jax.txt \
+  -r requirements-flax.txt \
+  -r requirements-test.txt
 python -c 'import jax; print(jax.__version__)'
 
 # Run setup.py to install Haiku itself.

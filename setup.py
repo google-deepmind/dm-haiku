@@ -48,7 +48,10 @@ setup(
     # Contained modules and scripts.
     packages=find_namespace_packages(exclude=['*_test.py', 'examples']),
     install_requires=_parse_requirements('requirements.txt'),
-    extras_require={'jax': _parse_requirements('requirements-jax.txt')},
+    extras_require={
+        'jax': _parse_requirements('requirements-jax.txt'),
+        'flax': _parse_requirements('requirements-flax.txt'),
+    },
     tests_require=_parse_requirements('requirements-test.txt'),
     requires_python='>=3.9',
     include_package_data=True,

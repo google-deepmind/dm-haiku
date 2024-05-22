@@ -52,8 +52,19 @@ from haiku._src.summarise import eval_summary
 from haiku._src.summarise import MethodInvocation
 from haiku._src.summarise import ModuleDetails
 from haiku._src.summarise import tabulate
-from haiku.experimental import flax
 from haiku.experimental import jaxpr_info
+
+# pylint: disable=g-import-not-at-top,g-bad-import-order
+try:
+  from haiku.experimental import flax
+except ImportError:
+  # We inject a shim module to provide helpful errors when flax isn't installed.
+  from haiku._src import no_flax
+  no_flax.inject_shim_module()
+  del no_flax
+
+from haiku.experimental import flax
+# pylint: enable=g-import-not-at-top,g-bad-import-order
 
 # TODO(tomhennigan): Remove deprecated alias.
 ParamContext = GetterContext

@@ -699,8 +699,9 @@ def fori_loop(lower, upper, body_fun, init_val):
   return val
 
 
-def maybe_get_axis(axis: int, arrays: Any) -> Optional[int]:
+def maybe_get_axis(axis: Optional[int], arrays: Any) -> Optional[int]:
   """Returns `array.shape[axis]` for one of the arrays in the input."""
+  if axis is None: return None
   shapes = [a.shape for a in jax.tree_util.tree_leaves(arrays)]
   sizes = {s[axis] for s in shapes}
   if len(sizes) != 1:
@@ -715,7 +716,8 @@ uniq = lambda x: tuple({k: None for k in x}.keys())
 
 def get_mapped_axis_size(args: tuple[Any], in_axes: Any) -> int:
   sizes = uniq(jax.tree_util.tree_leaves(
-      jax.tree_util.tree_map(maybe_get_axis, in_axes, args)))
+      jax.tree_util.tree_map(maybe_get_axis, in_axes, args,
+                             is_leaf=lambda x: x is None)))
   assert sizes, "hk.vmap should guarantee non-empty in_axes"
   # NOTE: We use the first in_axes regardless of how many non-unique values
   # there are to allow JAX to handle multiple conflicting sizes.

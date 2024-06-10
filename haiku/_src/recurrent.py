@@ -745,10 +745,16 @@ class _DeepRNN(RNNCore):
     next_states = []
     outputs = []
     state_idx = 0
-    concat = lambda *args: jnp.concatenate(args, axis=-1)
     for idx, layer in enumerate(self.layers):
       if self.skip_connections and idx > 0:
-        current_inputs = jax.tree_util.tree_map(concat, inputs, current_inputs)
+        current_inputs = jax.tree_util.tree_map(
+            lambda x, *args: (
+                None if x is None else jnp.concatenate((x,) + args, axis=-1)
+            ),
+            inputs,
+            current_inputs,
+            is_leaf=lambda x: x is None,
+        )
 
       if isinstance(layer, RNNCore):
         current_inputs, next_state = layer(current_inputs, state[state_idx])
@@ -759,7 +765,8 @@ class _DeepRNN(RNNCore):
         current_inputs = layer(current_inputs)
 
     if self.skip_connections:
-      out = jax.tree_util.tree_map(concat, *outputs)
+      out = jax.tree_util.tree_map(lambda *args: jnp.concatenate(args, axis=-1),
+                                   *outputs)
     else:
       out = current_inputs
 

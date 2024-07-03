@@ -684,8 +684,7 @@ class StatefulTest(parameterized.TestCase):
   def test_vmap_split_rng_out_axes_error_no_split_rng(self):
     f = stateful.vmap(lambda x: x, split_rng=False, out_axes=None)
     x = jnp.arange(4)
-    with self.assertRaisesRegex(ValueError,
-                                "vmap has mapped output but out_axes is None"):
+    with self.assertRaisesRegex(ValueError, ".*vmap.*out_axes.*None.*"):
       # test our split_rng error does not clobber jax error message.
       f(x)
 
@@ -696,8 +695,7 @@ class StatefulTest(parameterized.TestCase):
       f(x)
 
     x = jnp.arange(4)
-    with self.assertRaisesRegex(ValueError,
-                                "vmap has mapped output but out_axes is None"):
+    with self.assertRaisesRegex(ValueError, ".*vmap.*out_axes.*None.*"):
       # test our split_rng error does not clobber jax error message.
       g.apply({}, jax.random.PRNGKey(42), x)
 

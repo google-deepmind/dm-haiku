@@ -106,8 +106,8 @@ class TruncatedNormal(hk.initializers.Initializer):
     """Constructs a :class:`TruncatedNormal` initializer.
 
     Args:
-      stddev: The standard deviation parameter of the truncated
-        normal distribution.
+      stddev: The standard deviation parameter of the untruncated normal
+        distribution.
       mean: The mean of the truncated normal distribution.
       lower: Float or array representing the lower bound for truncation.
       upper: Float or array representing the upper bound for truncation.

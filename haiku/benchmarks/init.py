@@ -58,7 +58,7 @@ def init_benchmark(model):
     while state:
       params, _ = jitted_init(k, x)
       # block on computation to finish
-      jax.tree_util.tree_map(lambda x: x.block_until_ready(), params)
+      jax.tree.map(lambda x: x.block_until_ready(), params)
 
   return trace_bench, compile_bench, run_bench
 

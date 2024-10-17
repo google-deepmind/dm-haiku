@@ -53,12 +53,11 @@ class JaxTransformsTest(parameterized.TestCase):
     assert_allclose = functools.partial(np.testing.assert_allclose, atol=atol)
 
     # Ensure initialization under jit is the same.
-    jax.tree_util.tree_map(
-        assert_allclose, f.init(rng, x), jax.jit(f.init)(rng, x))
+    jax.tree.map(assert_allclose, f.init(rng, x), jax.jit(f.init)(rng, x))
 
     # Ensure application under jit is the same.
     params, state = f.init(rng, x)
-    jax.tree_util.tree_map(
+    jax.tree.map(
         assert_allclose,
         f.apply(params, state, rng, x),
         jax.jit(f.apply)(params, state, rng, x),
@@ -82,9 +81,11 @@ class JaxTransformsTest(parameterized.TestCase):
     # Ensure application under vmap is the same.
     params, state = f.init(rng, sample)
     v_apply = jax.vmap(f.apply, in_axes=(None, None, None, 0))
-    jax.tree_util.tree_map(
+    jax.tree.map(
         lambda a, b: np.testing.assert_allclose(a, b, atol=DEFAULT_ATOL),
-        f.apply(params, state, rng, batch), v_apply(params, state, rng, batch))
+        f.apply(params, state, rng, batch),
+        v_apply(params, state, rng, batch),
+    )
 
 if __name__ == '__main__':
   absltest.main()

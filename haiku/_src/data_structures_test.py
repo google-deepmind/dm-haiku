@@ -202,7 +202,7 @@ class FlatMappingTest(parameterized.TestCase):
     self.assertIsNone(f.get("c"))
     self.assertEqual(f.get("d", f), f)
 
-  @parameterized.parameters(jax.tree_util.tree_map, tree.map_structure)
+  @parameterized.parameters(jax.tree.map, tree.map_structure)
   def test_tree_map(self, tree_map):
     f = FlatMap(dict(a=1, b=dict(c=2)))
     p = tree_map("v: {}".format, f)
@@ -229,7 +229,7 @@ class FlatMappingTest(parameterized.TestCase):
     self.assertEqual(before, after)
     self.assertEqual(after, {"a": {"b": 1, "c": 2}})
     before_dict = data_structures.to_haiku_dict(before)
-    jax.tree_util.tree_map(self.assertEqual, before_dict, after)
+    jax.tree.map(self.assertEqual, before_dict, after)
 
   @all_picklers
   def test_pickle_roundtrip(self, pickler):
@@ -299,7 +299,7 @@ class FlatMappingTest(parameterized.TestCase):
     self.assertEqual(outer, nested_flatmapping)
 
     # Init from flat structures
-    values, treedef = jax.tree_util.tree_flatten(f)
+    values, treedef = jax.tree.flatten(f)
     self.assertEqual(
         FlatMap(data_structures.FlatComponents(values, treedef)), f)
 
@@ -323,17 +323,17 @@ class FlatMappingTest(parameterized.TestCase):
     f = FlatMap(
         {"foo": {"b": {"c": 1}, "d": 2}, "bar": {"c": 1}})
 
-    m = jax.tree_util.tree_map(lambda x: x + 1, f)
+    m = jax.tree.map(lambda x: x + 1, f)
     self.assertEqual(type(m), FlatMap)
     self.assertEqual(m, {"foo": {"b": {"c": 2}, "d": 3}, "bar": {"c": 2}})
 
-    mm = jax.tree_util.tree_map(lambda x, y: x + y, f, f)
+    mm = jax.tree.map(lambda x, y: x + y, f, f)
     self.assertEqual(type(mm), FlatMap)
     self.assertEqual(mm, {"foo": {"b": {"c": 2}, "d": 4}, "bar": {"c": 2}})
 
-    leaves, treedef = jax.tree_util.tree_flatten(f)
+    leaves, treedef = jax.tree.flatten(f)
     self.assertEqual(leaves, [1, 1, 2])
-    uf = jax.tree_util.tree_unflatten(treedef, leaves)
+    uf = jax.tree.unflatten(treedef, leaves)
     self.assertEqual(type(f), FlatMap)
     self.assertEqual(f, uf)
 
@@ -342,16 +342,16 @@ class FlatMappingTest(parameterized.TestCase):
          "baz": {"bat": [4, 5, 6],
                  "qux": [7, [8, 9]]}}
     f = FlatMap(d)
-    leaves, treedef = jax.tree_util.tree_flatten(f)
+    leaves, treedef = jax.tree.flatten(f)
     self.assertEqual([4, 5, 6, 7, 8, 9, 1, 2, 3], leaves)
-    g = jax.tree_util.tree_unflatten(treedef, leaves)
+    g = jax.tree.unflatten(treedef, leaves)
     self.assertEqual(g, f)
     self.assertEqual(g, d)
 
   def test_nested_sequence(self):
     f_map = FlatMap(
         {"foo": [1, 2], "bar": [{"a": 1}, 2]})
-    leaves, _ = jax.tree_util.tree_flatten(f_map)
+    leaves, _ = jax.tree.flatten(f_map)
 
     self.assertEqual(leaves, [1, 2, 1, 2])
     self.assertEqual(f_map["foo"][0], 1)
@@ -361,7 +361,7 @@ class FlatMappingTest(parameterized.TestCase):
     f_map = FlatMap(
         {"foo": type_of_sequence((1, 2)),
          "bar": type_of_sequence((3, {"b": 4}))})
-    leaves, _ = jax.tree_util.tree_flatten(f_map)
+    leaves, _ = jax.tree.flatten(f_map)
 
     self.assertEqual(leaves, [3, 4, 1, 2])
     self.assertEqual(f_map["foo"][0], 1)
@@ -370,26 +370,28 @@ class FlatMappingTest(parameterized.TestCase):
   def test_replace_leaves_with_nodes_in_map(self):
     f = FlatMap({"foo": 1, "bar": 2})
 
-    f_nested = jax.tree_util.tree_map(lambda x: {"a": (x, x)}, f)
-    leaves, _ = jax.tree_util.tree_flatten(f_nested)
+    f_nested = jax.tree.map(lambda x: {"a": (x, x)}, f)
+    leaves, _ = jax.tree.flatten(f_nested)
 
     self.assertEqual(leaves, [2, 2, 1, 1])
 
   def test_frozen_builtins_jax_compatibility(self):
     f = FlatMap({"foo": [3, 2], "bar": {"a": 3}})
-    mapped_frozen_list = jax.tree_util.tree_map(lambda x: x+1, f["foo"])
+    mapped_frozen_list = jax.tree.map(lambda x: x + 1, f["foo"])
     self.assertEqual(mapped_frozen_list[0], 4)
 
-    mapped_frozen_dict = jax.tree_util.tree_map(lambda x: x+1, f["bar"])
+    mapped_frozen_dict = jax.tree.map(lambda x: x + 1, f["bar"])
     self.assertEqual(mapped_frozen_dict["a"], 4)
 
   def test_tree_transpose(self):
-    outerdef = jax.tree_util.tree_structure(FlatMap({"a": 1, "b": 2}))
-    innerdef = jax.tree_util.tree_structure([1, 2])
+    outerdef = jax.tree.structure(FlatMap({"a": 1, "b": 2}))
+    innerdef = jax.tree.structure([1, 2])
     self.assertEqual(
         [FlatMap({"a": 3, "b": 5}), FlatMap({"a": 4, "b": 6})],
-        jax.tree_util.tree_transpose(
-            outerdef, innerdef, FlatMap({"a": [3, 4], "b": [5, 6]})))
+        jax.tree.transpose(
+            outerdef, innerdef, FlatMap({"a": [3, 4], "b": [5, 6]})
+        ),
+    )
 
 
 class DataStructuresTest(parameterized.TestCase):

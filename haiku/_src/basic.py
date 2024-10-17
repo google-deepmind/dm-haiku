@@ -195,10 +195,10 @@ def ndim_at_least(x, num_dims):
 
 
 def arbitrary_mergeable_leaf(min_num_dims, args, kwargs):
-  for a in jax.tree_util.tree_leaves(args):
+  for a in jax.tree.leaves(args):
     if ndim_at_least(a, min_num_dims):
       return a
-  for k in jax.tree_util.tree_leaves(kwargs):
+  for k in jax.tree.leaves(kwargs):
     if ndim_at_least(k, min_num_dims):
       return k
   # Couldn't find a satisfactory leaf.
@@ -258,10 +258,10 @@ class BatchApply:
 
     merge = lambda x: merge_leading_dims(x, self.num_dims)
     split = lambda x: split_leading_dim(x, example.shape[:self.num_dims])
-    args = jax.tree_util.tree_map(merge, args)
-    kwargs = jax.tree_util.tree_map(merge, kwargs)
+    args = jax.tree.map(merge, args)
+    kwargs = jax.tree.map(merge, kwargs)
     outputs = self._f(*args, **kwargs)
-    return jax.tree_util.tree_map(split, outputs)
+    return jax.tree.map(split, outputs)
 
 
 def expand_apply(f, axis=0):
@@ -269,9 +269,9 @@ def expand_apply(f, axis=0):
 
   Syntactic sugar for::
 
-      ins = jax.tree_util.tree_map(lambda t: np.expand_dims(t, axis=axis), ins)
+      ins = jax.tree.map(lambda t: np.expand_dims(t, axis=axis), ins)
       out = f(ins)
-      out = jax.tree_util.tree_map(lambda t: np.squeeze(t, axis=axis), out)
+      out = jax.tree.map(lambda t: np.squeeze(t, axis=axis), out)
 
   This may be useful for applying a function built for ``[Time, Batch, ...]``
   arrays to a single timestep.
@@ -289,10 +289,10 @@ def expand_apply(f, axis=0):
   @functools.wraps(f)
   def wrapper(*args, **kwargs):
     expand = lambda t: jnp.expand_dims(t, axis=axis)
-    args = jax.tree_util.tree_map(expand, args)
-    kwargs = jax.tree_util.tree_map(expand, kwargs)
+    args = jax.tree.map(expand, args)
+    kwargs = jax.tree.map(expand, kwargs)
     outputs = f(*args, **kwargs)
-    return jax.tree_util.tree_map(lambda t: jnp.squeeze(t, axis=axis), outputs)
+    return jax.tree.map(lambda t: jnp.squeeze(t, axis=axis), outputs)
 
   return wrapper
 

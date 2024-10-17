@@ -41,7 +41,7 @@ class RandomTest(absltest.TestCase):
 
     # With optimize_rng_use the keys returned should be equal to split(n).
     f_opt = transform.transform(random.optimize_rng_use(f))
-    jax.tree_util.tree_map(
+    jax.tree.map(
         assert_allclose,
         f_opt.apply({}, key),
         tuple(jax.random.split(key, 3))[1:],
@@ -50,9 +50,7 @@ class RandomTest(absltest.TestCase):
     # Without optimize_rng_use the keys should be equivalent to splitting in a
     # loop.
     f = transform.transform(f)
-    jax.tree_util.tree_map(
-        assert_allclose, f.apply({}, key), tuple(split_for_n(key, 2))
-    )
+    jax.tree.map(assert_allclose, f.apply({}, key), tuple(split_for_n(key, 2)))
 
   def test_rbg_default_impl(self):
     with jax.default_prng_impl("rbg"):

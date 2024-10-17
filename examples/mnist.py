@@ -80,7 +80,8 @@ def main(_):
     labels = jax.nn.one_hot(batch.label, NUM_CLASSES)
 
     l2_regulariser = 0.5 * sum(
-        jnp.sum(jnp.square(p)) for p in jax.tree_util.tree_leaves(params))
+        jnp.sum(jnp.square(p)) for p in jax.tree.leaves(params)
+    )
     log_likelihood = jnp.sum(labels * jax.nn.log_softmax(logits))
 
     return -log_likelihood / batch_size + 1e-4 * l2_regulariser

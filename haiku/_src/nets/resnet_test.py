@@ -97,8 +97,7 @@ class ResnetTest(parameterized.TestCase):
     image = jnp.ones([2, 64, 64, 3])
     rng = jax.random.PRNGKey(0)
     params, _ = model.init(rng, image)
-    num_params = sum(
-        np.prod(p.shape).item() for p in jax.tree_util.tree_leaves(params))
+    num_params = sum(np.prod(p.shape).item() for p in jax.tree.leaves(params))
     self.assertGreater(num_params, int(0.998 * expected_num_params))
     self.assertLess(num_params, int(1.002 * expected_num_params))
 

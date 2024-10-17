@@ -154,7 +154,7 @@ def update_rule(param, update):
 
 for images, labels in input_dataset:
   grads = jax.grad(loss_fn_t.apply)(params, images, labels)
-  params = jax.tree_util.tree_map(update_rule, params, grads)
+  params = jax.tree.map(update_rule, params, grads)
 ```
 
 The core of Haiku is `hk.transform`. The `transform` function allows you to
@@ -218,9 +218,9 @@ grads = jax.grad(loss_fn_t.apply)(params, images, labels)
 ### Training
 
 The training loop in this example is very simple. One detail to note is the use
-of `jax.tree_util.tree_map` to apply the `sgd` function across all matching
-entries in `params` and `grads`. The result has the same structure as the
-previous `params` and can again be used with `apply`.
+of `jax.tree.map` to apply the `sgd` function across all matching entries in
+`params` and `grads`. The result has the same structure as the previous `params`
+and can again be used with `apply`.
 
 
 ## Installation<a id="installation"></a>
@@ -412,7 +412,7 @@ params = loss_fn_t.init(rng, sample_image, sample_label)
 
 # Replicate params onto all devices.
 num_devices = jax.local_device_count()
-params = jax.tree_util.tree_map(lambda x: np.stack([x] * num_devices), params)
+params = jax.tree.map(lambda x: np.stack([x] * num_devices), params)
 
 def make_superbatch():
   """Constructs a superbatch, i.e. one batch of data per device."""

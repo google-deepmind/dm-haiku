@@ -234,12 +234,11 @@ class LiftTest(parameterized.TestCase):
     outer = transform.transform_with_state(outer)
     params, state = outer.init(None)
     self.assertEmpty(params)
-    self.assertEqual(jax.tree_util.tree_map(int, state), {"lifted/~": {"w": 0}})
+    self.assertEqual(jax.tree.map(int, state), {"lifted/~": {"w": 0}})
 
     for expected in (1, 2, 3):
       (w, inner_state), state = outer.apply(params, state, None)
-      self.assertEqual(
-          jax.tree_util.tree_map(int, inner_state), {"~": {"w": expected}})
+      self.assertEqual(jax.tree.map(int, inner_state), {"~": {"w": expected}})
       self.assertEqual(w, expected)
       self.assertEmpty(params)
       self.assertEqual(state, {"lifted/~": {"w": expected}})
@@ -264,13 +263,11 @@ class LiftTest(parameterized.TestCase):
     outer = transform.transform_with_state(lambda: Outer()())  # pylint: disable=unnecessary-lambda
     params, state = outer.init(None)
     self.assertEmpty(params)
-    self.assertEqual(
-        jax.tree_util.tree_map(int, state), {"outer/lifted/~": {"w": 0}})
+    self.assertEqual(jax.tree.map(int, state), {"outer/lifted/~": {"w": 0}})
 
     for expected in (1, 2, 3):
       (w, inner_state), state = outer.apply(params, state, None)
-      self.assertEqual(
-          jax.tree_util.tree_map(int, inner_state), {"~": {"w": expected}})
+      self.assertEqual(jax.tree.map(int, inner_state), {"~": {"w": expected}})
       self.assertEqual(w, expected)
       self.assertEmpty(params)
       self.assertEqual(state, {"outer/lifted/~": {"w": expected}})
@@ -306,12 +303,11 @@ class LiftTest(parameterized.TestCase):
 
     params, state = outer.init(None)
     self.assertEmpty(params)
-    self.assertEqual(jax.tree_util.tree_map(int, state), {"~": {"w": 0}})
+    self.assertEqual(jax.tree.map(int, state), {"~": {"w": 0}})
 
     for expected in (1, 2, 3):
       (w, inner_state), state = outer.apply(params, state, None)
-      self.assertEqual(
-          jax.tree_util.tree_map(int, inner_state), {"~": {"w": expected}})
+      self.assertEqual(jax.tree.map(int, inner_state), {"~": {"w": expected}})
       self.assertEqual(w, expected)
       self.assertEmpty(params)
       self.assertEqual(state, inner_state)
@@ -336,12 +332,11 @@ class LiftTest(parameterized.TestCase):
     outer = transform.transform_with_state(lambda: Outer()())  # pylint: disable=unnecessary-lambda
     params, state = outer.init(None)
     self.assertEmpty(params)
-    self.assertEqual(jax.tree_util.tree_map(int, state), {"outer/~": {"w": 0}})
+    self.assertEqual(jax.tree.map(int, state), {"outer/~": {"w": 0}})
 
     for expected in (1, 2, 3):
       (w, inner_state), state = outer.apply(params, state, None)
-      self.assertEqual(
-          jax.tree_util.tree_map(int, inner_state), {"~": {"w": expected}})
+      self.assertEqual(jax.tree.map(int, inner_state), {"~": {"w": expected}})
       self.assertEqual(w, expected)
       self.assertEmpty(params)
       self.assertEqual(state, {"outer/~": {"w": expected}})
@@ -432,8 +427,7 @@ class LiftTest(parameterized.TestCase):
     x = jnp.ones([10, 10])
     params_with_lift = fn.init(None, x)
     params_without_lift = transform.transform(inner_module).init(None, x)
-    jax.tree_util.tree_map(
-        self.assertAlmostEqual, params_with_lift, params_without_lift)
+    jax.tree.map(self.assertAlmostEqual, params_with_lift, params_without_lift)
 
     fn.apply(params_with_lift, None, x)
 
@@ -488,7 +482,7 @@ class LiftTest(parameterized.TestCase):
 
     params1 = init1(None, 1.)
     params2 = init2(None, 1.)  # does not fail
-    jax.tree_util.tree_map(self.assertAlmostEqual, params1, params2)
+    jax.tree.map(self.assertAlmostEqual, params1, params2)
 
   def test_closed_over_within_transparent_lift_no_closed_error(self):
     # You can close over modules within the boundary of the transparent_lift.

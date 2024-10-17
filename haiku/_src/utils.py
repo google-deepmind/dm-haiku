@@ -202,7 +202,7 @@ def tree_size(tree) -> int:
 
   And compare that with casting our parameters to bf16:
 
-  >>> params = jax.tree_util.tree_map(lambda x: x.astype(jnp.bfloat16), params)
+  >>> params = jax.tree.map(lambda x: x.astype(jnp.bfloat16), params)
   >>> num_params = hk.data_structures.tree_size(params)
   >>> byte_size = hk.data_structures.tree_bytes(params)
   >>> print(f'{num_params} params, size: {byte_size / 1e6:.2f}MB')
@@ -214,7 +214,7 @@ def tree_size(tree) -> int:
   Returns:
     The total size (number of elements) of the array(s) in the input.
   """
-  return sum(x.size for x in jax.tree_util.tree_leaves(tree))
+  return sum(x.size for x in jax.tree.leaves(tree))
 
 
 def tree_bytes(tree) -> int:
@@ -240,7 +240,7 @@ def tree_bytes(tree) -> int:
 
   And compare that with casting our parameters to bf16:
 
-  >>> params = jax.tree_util.tree_map(lambda x: x.astype(jnp.bfloat16), params)
+  >>> params = jax.tree.map(lambda x: x.astype(jnp.bfloat16), params)
   >>> num_params = hk.data_structures.tree_size(params)
   >>> byte_size = hk.data_structures.tree_bytes(params)
   >>> print(f'{num_params} params, size: {byte_size / 1e6:.2f}MB')
@@ -252,7 +252,7 @@ def tree_bytes(tree) -> int:
   Returns:
     The total size in bytes of the array(s) in the input.
   """
-  return sum(x.size * x.dtype.itemsize for x in jax.tree_util.tree_leaves(tree))
+  return sum(x.size * x.dtype.itemsize for x in jax.tree.leaves(tree))
 
 _CAMEL_TO_SNAKE_R = re.compile(r"((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))")
 camel_to_snake = lambda value: _CAMEL_TO_SNAKE_R.sub(r"_\1", value).lower()

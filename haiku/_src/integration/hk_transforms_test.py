@@ -56,15 +56,17 @@ class HaikuTransformsTest(parameterized.TestCase):
     # NOTE: We shard init/apply tests since some modules are expensive to jit
     # (e.g. ResNet50 takes ~60s to compile and we compile it twice per test).
     if init:
-      jax.tree_util.tree_map(
-          assert_allclose, jax.jit(f.init)(rng, x), f.init(rng, x, jit=True))
+      jax.tree.map(
+          assert_allclose, jax.jit(f.init)(rng, x), f.init(rng, x, jit=True)
+      )
 
     else:
       params, state = f.init(rng, x)
-      jax.tree_util.tree_map(
+      jax.tree.map(
           assert_allclose,
           jax.jit(f.apply)(params, state, rng, x),
-          f.apply(params, state, rng, x, jit=True))
+          f.apply(params, state, rng, x, jit=True),
+      )
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES,
                                         test_utils.named_bools('init'))
@@ -96,8 +98,8 @@ class HaikuTransformsTest(parameterized.TestCase):
 
     if init:
       u_params, u_state = u_f.init(rng, xs)
-      jax.tree_util.tree_map(assert_allclose, u_params, params)
-      jax.tree_util.tree_map(assert_allclose, u_state, state)
+      jax.tree.map(assert_allclose, u_params, params)
+      jax.tree.map(assert_allclose, u_state, state)
       return
 
     def fun(state, x):
@@ -106,8 +108,8 @@ class HaikuTransformsTest(parameterized.TestCase):
     s_state, s_ys = jax.lax.scan(fun, state, xs)
     u_ys, u_state = u_f.apply(params, state, rng, xs)
 
-    jax.tree_util.tree_map(assert_allclose, u_ys, s_ys)
-    jax.tree_util.tree_map(assert_allclose, u_state, s_state)
+    jax.tree.map(assert_allclose, u_ys, s_ys)
+    jax.tree.map(assert_allclose, u_state, s_state)
 
   @test_utils.combined_named_parameters(
       # TODO(tomhennigan) Enable once grad for _scan_transpose implemented.
@@ -137,9 +139,11 @@ class HaikuTransformsTest(parameterized.TestCase):
                              has_aux=True)
 
     params, state = f.init(rng, x)
-    jax.tree_util.tree_map(
-        assert_allclose, grad_jax_remat(params, state, rng, x),
-        grad_hk_remat(params, state, rng, x))
+    jax.tree.map(
+        assert_allclose,
+        grad_jax_remat(params, state, rng, x),
+        grad_hk_remat(params, state, rng, x),
+    )
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
   def test_optimize_rng_use_under_jit(self, module_fn: ModuleFn, shape, dtype):
@@ -159,17 +163,18 @@ class HaikuTransformsTest(parameterized.TestCase):
     assert_allclose = functools.partial(np.testing.assert_allclose, atol=atol)
 
     params, state = jax.jit(f.init)(rng, x)
-    jax.tree_util.tree_map(assert_allclose, (params, state), f.init(rng, x))
+    jax.tree.map(assert_allclose, (params, state), f.init(rng, x))
 
     if module_type in (hk.nets.VectorQuantizer, hk.nets.VectorQuantizerEMA):
       # For stochastic modules just test apply runs.
       jax.device_get(jax.jit(f.apply)(params, state, rng, x))
 
     else:
-      jax.tree_util.tree_map(
+      jax.tree.map(
           assert_allclose,
           jax.jit(f.apply)(params, state, rng, x),
-          f.apply(params, state, rng, x))
+          f.apply(params, state, rng, x),
+      )
 
   @test_utils.combined_named_parameters(descriptors.OPTIONAL_BATCH_MODULES)
   def test_vmap(self, module_fn: ModuleFn, shape, dtype):
@@ -198,9 +203,11 @@ class HaikuTransformsTest(parameterized.TestCase):
     module_type = descriptors.module_type(module_fn)
     atol = CUSTOM_ATOL.get(module_type, DEFAULT_ATOL)
     assert_allclose = functools.partial(np.testing.assert_allclose, atol=atol)
-    jax.tree_util.tree_map(
-        assert_allclose, f_mapped.apply(params, state, rng, x),
-        v_apply(params, state, rng, x))
+    jax.tree.map(
+        assert_allclose,
+        f_mapped.apply(params, state, rng, x),
+        v_apply(params, state, rng, x),
+    )
 
   @test_utils.combined_named_parameters(descriptors.ALL_MODULES)
   def test_fast_eval_shape(self, module_fn: ModuleFn, shape, dtype):

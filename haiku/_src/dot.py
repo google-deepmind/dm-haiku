@@ -136,7 +136,7 @@ def to_graph(fun):
   def wrapped_fun(*args):
     """See `fun`."""
     f = lu.wrap_init(fun)
-    args_flat, in_tree = jax.tree_util.tree_flatten((args, {}))
+    args_flat, in_tree = jax.tree.flatten((args, {}))
     flat_fun, out_tree = jax.api_util.flatten_fun(f, in_tree)
     graph = Graph.create(title=name_or_str(fun))
 
@@ -154,7 +154,7 @@ def to_graph(fun):
          module.hook_methods(method_hook), \
          jax.core.new_main(DotTrace) as main:
       out_flat = _interpret_subtrace(flat_fun, main).call_wrapped(*args_flat)
-    out = jax.tree_util.tree_unflatten(out_tree(), out_flat)
+    out = jax.tree.unflatten(out_tree(), out_flat)
 
     return graph, args, out
 
@@ -207,14 +207,14 @@ class DotTrace(jax.core.Trace):
       return self.process_call(primitive, fun, tracers, params)
 
     inputs = [t.val for t in tracers]
-    outputs = list(jax.tree_util.tree_leaves(val_out))
+    outputs = list(jax.tree.leaves(val_out))
 
     graph = graph_stack.peek()
     node = Node(id=outputs[0], title=str(primitive), outputs=outputs)
     graph.nodes.append(node)
     graph.edges.extend([(i, outputs[0]) for i in inputs])
 
-    return jax.tree_util.tree_map(lambda v: DotTracer(self, v), val_out)
+    return jax.tree.map(lambda v: DotTracer(self, v), val_out)
 
   def process_call(self, call_primitive, f, tracers, params):
     assert call_primitive.multiple_results
@@ -291,8 +291,8 @@ def _graph_to_dot(graph: Graph, args, outputs) -> str:
   argid_usecount = collections.Counter()
   op_outids = set()
   captures = []
-  argids = {id(v) for v in jax.tree_util.tree_leaves(args)}
-  outids = {id(v) for v in jax.tree_util.tree_leaves(outputs)}
+  argids = {id(v) for v in jax.tree.leaves(args)}
+  outids = {id(v) for v in jax.tree.leaves(outputs)}
   outname = {id(v): format_path(p) for p, v in tree.flatten_with_path(outputs)}
 
   def render_graph(g: Graph, parent: Optional[Graph] = None, depth: int = 0):

@@ -137,8 +137,7 @@ def apply_mask(params: hk.Params, masks: Sequence[hk.Params],
       module_sparsity, params)
   pruned_params = []
   for value, mask in zip(params_to_prune, masks):
-    pruned_params.append(
-        jax.tree_util.tree_map(lambda x, y: x * y, value, mask))
+    pruned_params.append(jax.tree.map(lambda x, y: x * y, value, mask))
   params = hk.data_structures.merge(*pruned_params, params_no_prune)
   return params
 
@@ -155,7 +154,7 @@ def update_mask(params: hk.Params, sparsity_fraction: float,
 
   for tree, sparsity in zip(params_to_prune, sparsities):
     map_fn_sparsity = functools.partial(map_fn, sparsity=sparsity)
-    mask = jax.tree_util.tree_map(map_fn_sparsity, tree)
+    mask = jax.tree.map(map_fn_sparsity, tree)
     masks.append(mask)
   return masks
 
@@ -163,10 +162,9 @@ def update_mask(params: hk.Params, sparsity_fraction: float,
 @jax.jit
 def get_sparsity(params: hk.Params):
   """Calculate the total sparsity and tensor-wise sparsity of params."""
-  total_params = sum(jnp.size(x) for x in jax.tree_util.tree_leaves(params))
-  total_nnz = sum(jnp.sum(x != 0.) for x in jax.tree_util.tree_leaves(params))
-  leaf_sparsity = jax.tree_util.tree_map(
-      lambda x: jnp.sum(x == 0) / jnp.size(x), params)
+  total_params = sum(jnp.size(x) for x in jax.tree.leaves(params))
+  total_nnz = sum(jnp.sum(x != 0.0) for x in jax.tree.leaves(params))
+  leaf_sparsity = jax.tree.map(lambda x: jnp.sum(x == 0) / jnp.size(x), params)
   return total_params, total_nnz, leaf_sparsity
 
 
@@ -221,8 +219,7 @@ def main(_):
     logits = net.apply(params, batch)
     labels = jax.nn.one_hot(batch["label"], 10)
 
-    l2_loss = 0.5 * sum(
-        jnp.sum(jnp.square(p)) for p in jax.tree_util.tree_leaves(params))
+    l2_loss = 0.5 * sum(jnp.sum(jnp.square(p)) for p in jax.tree.leaves(params))
     softmax_xent = -jnp.sum(labels * jax.nn.log_softmax(logits))
     softmax_xent /= labels.shape[0]
 

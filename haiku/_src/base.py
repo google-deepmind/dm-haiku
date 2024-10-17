@@ -227,7 +227,7 @@ def new_context(
   ...   mod = hk.nets.MLP([300, 100, 10])
   ...   y1 = mod(jnp.ones([1, 1]))
 
-  >>> assert len(jax.tree_util.tree_leaves(ctx.collect_params())) == 6
+  >>> assert len(jax.tree.leaves(ctx.collect_params())) == 6
 
   >>> with ctx:
   ...   y2 = mod(jnp.ones([1, 1]))
@@ -379,7 +379,7 @@ def get_params() -> Params:
   """Returns the parameters for the current :func:`transform`.
 
   >>> def report(when):
-  ...   shapes = jax.tree_util.tree_map(jnp.shape, hk.get_params())
+  ...   shapes = jax.tree.map(jnp.shape, hk.get_params())
   ...   print(f'{when}: {shapes}')
   >>> def f(x):
   ...   report('Before call')
@@ -425,7 +425,7 @@ def get_initial_state() -> State:
   Example:
 
   >>> def report(when):
-  ...   state = jax.tree_util.tree_map(int, hk.get_initial_state())
+  ...   state = jax.tree.map(int, hk.get_initial_state())
   ...   print(f'{when}: {state}')
   >>> def f():
   ...   report('Before get_state')
@@ -471,7 +471,7 @@ def get_current_state() -> State:
   Example:
 
   >>> def report(when):
-  ...   state = jax.tree_util.tree_map(int, hk.get_current_state())
+  ...   state = jax.tree.map(int, hk.get_current_state())
   ...   print(f'{when}: {state}')
   >>> def f():
   ...   report('Before get_state')
@@ -1374,8 +1374,8 @@ def set_state(name: str, value):
   state = frame.state[bundle_name]
 
   if state_setter_stack:
-    shape = jax.tree_util.tree_map(maybe_shape, value)
-    dtype = jax.tree_util.tree_map(maybe_dtype, value)
+    shape = jax.tree.map(maybe_shape, value)
+    dtype = jax.tree.map(maybe_dtype, value)
     fq_name = bundle_name + "/" + name
     context = SetterContext(full_name=fq_name,
                             module=current_module(), original_dtype=dtype,

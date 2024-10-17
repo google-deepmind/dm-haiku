@@ -412,8 +412,7 @@ class StatefulTest(parameterized.TestCase):
   def test_difference_empty(self):
     before = stateful.internal_state()
     after = stateful.internal_state()
-    self.assertEmpty(
-        jax.tree_util.tree_leaves(stateful.difference(before, after)))
+    self.assertEmpty(jax.tree.leaves(stateful.difference(before, after)))
 
   @parameterized.parameters(base.get_parameter, base.get_state)
   @test_utils.transform_and_run(run_apply=False)
@@ -600,7 +599,7 @@ class StatefulTest(parameterized.TestCase):
 
     # State should not be mapped.
     self.assertEmpty(params)
-    cnt, = jax.tree_util.tree_leaves(state)
+    (cnt,) = jax.tree.leaves(state)
     self.assertEqual(cnt.ndim, 0)
     self.assertEqual(cnt, 0)
 
@@ -608,7 +607,7 @@ class StatefulTest(parameterized.TestCase):
     y, state = f.apply(params, state, None, x)
     self.assertEqual(y.shape, (4,))
     np.testing.assert_allclose(y, x ** 2)
-    cnt, = jax.tree_util.tree_leaves(state)
+    (cnt,) = jax.tree.leaves(state)
     self.assertEqual(cnt.ndim, 0)
     self.assertEqual(cnt, 1)
 

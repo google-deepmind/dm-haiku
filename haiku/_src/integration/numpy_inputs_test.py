@@ -30,8 +30,7 @@ ModuleFn = descriptors.ModuleFn
 
 
 def tree_assert_allclose(a, b, *, atol=1e-6):
-  jax.tree_util.tree_map(
-      functools.partial(np.testing.assert_allclose, atol=atol), a, b)
+  jax.tree.map(functools.partial(np.testing.assert_allclose, atol=atol), a, b)
 
 
 def get_module_cls(module_fn: ModuleFn) -> type[hk.Module]:

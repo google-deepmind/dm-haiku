@@ -214,7 +214,7 @@ def lift(
   >>> rng = jax.random.PRNGKey(777)
   >>> x = jnp.ones([32, 128])
   >>> params = f.init(rng, x)
-  >>> jax.tree_util.tree_map(lambda x: x.shape, params)
+  >>> jax.tree.map(lambda x: x.shape, params)
   {'ensemble/mlp/~/linear_0': {'b': (4, 300), 'w': (4, 128, 300)},
    'ensemble/mlp/~/linear_1': {'b': (4, 100), 'w': (4, 300, 100)},
    'ensemble/mlp/~/linear_2': {'b': (4, 10), 'w': (4, 100, 10)}}
@@ -228,8 +228,8 @@ def lift(
 
   Args:
     init_fn: The ``init`` function from an :class:`Transformed`\ .
-    allow_reuse: Allows lifted parameters and state to be reused from the
-      outer :func:`transform`. This can be desirable when using ``lift`` within
+    allow_reuse: Allows lifted parameters and state to be reused from the outer
+      :func:`transform`. This can be desirable when using ``lift`` within
       control flow (e.g. ``hk.scan``).
     name: A string name to prefix parameters with.
 

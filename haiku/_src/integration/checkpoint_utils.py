@@ -47,9 +47,9 @@ def summarize(d: descriptors.ModuleDescriptor) -> Mapping[str, Any]:
   if params:
     out["param_size"] = int(hk.data_structures.tree_size(params))
     out["param_bytes"] = int(hk.data_structures.tree_bytes(params))
-    out["params"] = jax.tree_util.tree_map(format_tensor, params)
+    out["params"] = jax.tree.map(format_tensor, params)
   if state:
     out["state_size"] = int(hk.data_structures.tree_size(state))
     out["state_bytes"] = int(hk.data_structures.tree_bytes(state))
-    out["state"] = jax.tree_util.tree_map(format_tensor, state)
+    out["state"] = jax.tree.map(format_tensor, state)
   return out

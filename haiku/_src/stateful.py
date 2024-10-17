@@ -32,7 +32,7 @@ python_map = map  # pylint: disable=invalid-name
 
 
 def copy_structure(bundle: T) -> T:
-  return jax.tree_util.tree_map(lambda x: x, bundle)
+  return jax.tree.map(lambda x: x, bundle)
 
 
 def internal_state(*, params=True) -> InternalState:
@@ -314,16 +314,18 @@ def difference(before: InternalState, after: InternalState) -> InternalState:
   is_new_param = lambda a, b: a is not b
   params_before, params_after = box_and_fill_missing(before.params,
                                                      after.params)
-  params_after = jax.tree_util.tree_map(
-      functools.partial(if_changed, is_new_param), params_before, params_after)
+  params_after = jax.tree.map(
+      functools.partial(if_changed, is_new_param), params_before, params_after
+  )
 
   # state
   def is_new_state(a: base.StatePair, b: base.StatePair):
     return a.initial is not b.initial or a.current is not b.current
 
   state_before, state_after = box_and_fill_missing(before.state, after.state)
-  state_after = jax.tree_util.tree_map(
-      functools.partial(if_changed, is_new_state), state_before, state_after)
+  state_after = jax.tree.map(
+      functools.partial(if_changed, is_new_state), state_before, state_after
+  )
 
   # rng
   def is_new_rng(a: Optional[base.PRNGSequenceState],
@@ -590,7 +592,7 @@ def scan(f, init, xs, length=None, reverse=False, unroll=1):
                      "Use jax.lax.scan() instead.")
 
   if length is None:
-    length = jax.tree_util.tree_leaves(xs)[0].shape[0]
+    length = jax.tree.leaves(xs)[0].shape[0]
 
   running_init_fn = not base.params_frozen()
 
@@ -599,20 +601,19 @@ def scan(f, init, xs, length=None, reverse=False, unroll=1):
     # carry contains the Haiku state and during `init` this may change structure
     # (e.g. as state is created).
     if not length:
-      x0 = jax.tree_util.tree_map(lambda x: jnp.zeros(x.shape[1:], x.dtype), xs)
+      x0 = jax.tree.map(lambda x: jnp.zeros(x.shape[1:], x.dtype), xs)
       _, y0 = f(init, x0)
-      y0 = jax.tree_util.tree_map(
-          lambda y: jnp.zeros((0,) + y.shape, y.dtype), y0)
+      y0 = jax.tree.map(lambda y: jnp.zeros((0,) + y.shape, y.dtype), y0)
       return init, y0
 
     if reverse:
-      x0 = jax.tree_util.tree_map(lambda x: x[-1], xs)
-      xs = jax.tree_util.tree_map(lambda x: x[:-1], xs)
+      x0 = jax.tree.map(lambda x: x[-1], xs)
+      xs = jax.tree.map(lambda x: x[:-1], xs)
     else:
-      x0 = jax.tree_util.tree_map(lambda x: x[0], xs)
-      xs = jax.tree_util.tree_map(lambda x: x[1:], xs)
+      x0 = jax.tree.map(lambda x: x[0], xs)
+      xs = jax.tree.map(lambda x: x[1:], xs)
     init, y0 = f(init, x0)
-    y0 = jax.tree_util.tree_map(lambda y: jnp.expand_dims(y, 0), y0)
+    y0 = jax.tree.map(lambda y: jnp.expand_dims(y, 0), y0)
     length -= 1
     if not length:
       return init, y0
@@ -646,11 +647,9 @@ def scan(f, init, xs, length=None, reverse=False, unroll=1):
 
   if running_init_fn:
     if reverse:
-      ys = jax.tree_util.tree_map(
-          lambda y0, ys: jnp.concatenate([ys, y0]), y0, ys)
+      ys = jax.tree.map(lambda y0, ys: jnp.concatenate([ys, y0]), y0, ys)
     else:
-      ys = jax.tree_util.tree_map(
-          lambda y0, ys: jnp.concatenate([y0, ys]), y0, ys)
+      ys = jax.tree.map(lambda y0, ys: jnp.concatenate([y0, ys]), y0, ys)
 
   return carry, ys
 
@@ -702,7 +701,7 @@ def fori_loop(lower, upper, body_fun, init_val):
 def maybe_get_axis(axis: Optional[int], arrays: Any) -> Optional[int]:
   """Returns `array.shape[axis]` for one of the arrays in the input."""
   if axis is None: return None
-  shapes = [a.shape for a in jax.tree_util.tree_leaves(arrays)]
+  shapes = [a.shape for a in jax.tree.leaves(arrays)]
   sizes = {s[axis] for s in shapes}
   if len(sizes) != 1:
     raise ValueError("Arrays must have the same mapped axis size, found "
@@ -715,9 +714,13 @@ uniq = lambda x: tuple({k: None for k in x}.keys())
 
 
 def get_mapped_axis_size(args: tuple[Any], in_axes: Any) -> int:
-  sizes = uniq(jax.tree_util.tree_leaves(
-      jax.tree_util.tree_map(maybe_get_axis, in_axes, args,
-                             is_leaf=lambda x: x is None)))
+  sizes = uniq(
+      jax.tree.leaves(
+          jax.tree.map(
+              maybe_get_axis, in_axes, args, is_leaf=lambda x: x is None
+          )
+      )
+  )
   assert sizes, "hk.vmap should guarantee non-empty in_axes"
   # NOTE: We use the first in_axes regardless of how many non-unique values
   # there are to allow JAX to handle multiple conflicting sizes.
@@ -803,7 +806,7 @@ def vmap(
     See :func:`jax.vmap`.
   """
 
-  if not jax.tree_util.tree_leaves(in_axes):
+  if not jax.tree.leaves(in_axes):
     raise ValueError(
         f"{fun.__name__} must have at least one non-None value in in_axes "
         "to use with `hk.vmap`.")

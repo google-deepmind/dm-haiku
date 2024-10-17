@@ -67,8 +67,7 @@ def transform_and_run_once(f, *args, **kwargs):
     params = f.init(rng, *args, **kwargs)
     out = f.apply(params, None, *args, **kwargs)
     return params, out
-  return jax.tree_util.tree_map(
-      lambda x: x.dtype, jax.eval_shape(g, *args, **kwargs))
+  return jax.tree.map(lambda x: x.dtype, jax.eval_shape(g, *args, **kwargs))
 
 
 class MixedPrecisionTest(absltest.TestCase):
@@ -240,7 +239,7 @@ class MixedPrecisionTest(absltest.TestCase):
     params, y = transform_and_run_once(
         lambda: conv_local.ConvND(2, 1, 1)(jnp.ones([1, 1, 1, 1])))
 
-    jax.tree_util.tree_map(lambda p: self.assertEqual(p, jnp.float16), params)
+    jax.tree.map(lambda p: self.assertEqual(p, jnp.float16), params)
     self.assertEqual(y, jnp.float16)
 
   @test_utils.transform_and_run

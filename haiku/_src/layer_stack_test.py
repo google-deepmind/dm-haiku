@@ -236,8 +236,9 @@ class LayerStackTest(parameterized.TestCase):
     assert_fn = functools.partial(
         np.testing.assert_allclose, atol=1e-4, rtol=1e-4)
 
-    jax.tree_util.tree_map(
-        assert_fn, unrolled_grad, _slice_layers_params(layer_stack_grad))
+    jax.tree.map(
+        assert_fn, unrolled_grad, _slice_layers_params(layer_stack_grad)
+    )
 
   def test_random(self):
     """Random numbers should be handled correctly."""
@@ -415,8 +416,7 @@ class LayerStackTest(parameterized.TestCase):
         m_x = m_x[..., None]
       return x * m_x * alpha
 
-    params = jax.tree_util.tree_map(
-        mul_by_m, hk_fn.init(next(key_seq), init_value))
+    params = jax.tree.map(mul_by_m, hk_fn.init(next(key_seq), init_value))
 
     a, b = forward[-1]
     x_n = hk_fn.apply(params, init_value)
@@ -591,8 +591,8 @@ class LayerStackTest(parameterized.TestCase):
     stacked_params = stacked.init(rng, x)
 
     self.assertEqual(
-        jax.tree_util.tree_structure(looped_params),
-        jax.tree_util.tree_structure(stacked_params),
+        jax.tree.structure(looped_params),
+        jax.tree.structure(stacked_params),
     )
 
     # Use same set of params for both calls since stacked_params have different
@@ -668,8 +668,8 @@ class LayerStackTest(parameterized.TestCase):
     stacked_params = stacked.init(rng, x)
 
     self.assertEqual(
-        jax.tree_util.tree_structure(looped_params),
-        jax.tree_util.tree_structure(stacked_params),
+        jax.tree.structure(looped_params),
+        jax.tree.structure(stacked_params),
     )
 
     # Use same set of params for both calls since stacked_params have different

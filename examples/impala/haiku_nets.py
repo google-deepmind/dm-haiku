@@ -144,7 +144,7 @@ class AtariNet(hk.RNNCore):
     return self._core.initial_state(batch_size)
 
   def __call__(self, x: dm_env.TimeStep, state):
-    x = jax.tree_util.tree_map(lambda t: t[None, ...], x)
+    x = jax.tree.map(lambda t: t[None, ...], x)
     return self.unroll(x, state)
 
   def unroll(self, x, state):

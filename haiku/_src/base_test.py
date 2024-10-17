@@ -372,7 +372,7 @@ class BaseTest(parameterized.TestCase):
       with custom_create_x(dtype_cast_creator), \
            custom_get_x(dtype_recast_getter):
         value = get_x("w", [], jnp.bfloat16, jnp.ones)
-        orig_value = jax.tree_util.tree_leaves(getattr(ctx, collect_x)())[0]
+        orig_value = jax.tree.leaves(getattr(ctx, collect_x)())[0]
 
         assert value.dtype == jnp.bfloat16
         assert orig_value.dtype == jnp.float32
@@ -536,7 +536,7 @@ class BaseTest(parameterized.TestCase):
   def test_setter_tree(self):
     witness = []
     x = {"a": jnp.ones([]), "b": jnp.zeros([123])}
-    y = jax.tree_util.tree_map(lambda x: x + 1, x)
+    y = jax.tree.map(lambda x: x + 1, x)
 
     def my_setter(next_setter, value, ctx):
       self.assertIs(value, x)
@@ -646,8 +646,7 @@ class BaseTest(parameterized.TestCase):
     s.reserve(10)
     hk_keys = tuple(next(s) for _ in range(10))
     jax_keys = tuple(jax.random.split(test_utils.clone(k), num=11)[1:])
-    jax.tree_util.tree_map(
-        np.testing.assert_array_equal, hk_keys, jax_keys)
+    jax.tree.map(np.testing.assert_array_equal, hk_keys, jax_keys)
 
   def test_prng_reserve_twice(self):
     k = jax.random.PRNGKey(42)
@@ -658,16 +657,14 @@ class BaseTest(parameterized.TestCase):
     k, subkey1, subkey2 = tuple(jax.random.split(test_utils.clone(k), num=3))
     _, subkey3, subkey4 = tuple(jax.random.split(k, num=3))
     jax_keys = (subkey1, subkey2, subkey3, subkey4)
-    jax.tree_util.tree_map(
-        np.testing.assert_array_equal, hk_keys, jax_keys)
+    jax.tree.map(np.testing.assert_array_equal, hk_keys, jax_keys)
 
   def test_prng_sequence_split(self):
     k = jax.random.PRNGKey(42)
     s = base.PRNGSequence(k)
     hk_keys = s.take(10)
     jax_keys = tuple(jax.random.split(test_utils.clone(k), num=11)[1:])
-    jax.tree_util.tree_map(
-        np.testing.assert_array_equal, hk_keys, jax_keys)
+    jax.tree.map(np.testing.assert_array_equal, hk_keys, jax_keys)
 
   @parameterized.parameters(42, 28)
   def test_with_rng(self, seed):

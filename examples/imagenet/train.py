@@ -227,7 +227,7 @@ def evaluate(
 
   # Params/state are sharded per-device during training. We just need the copy
   # from the first device (since we do not pmap evaluation at the moment).
-  params, state = jax.tree_util.tree_map(lambda x: x[0], (params, state))
+  params, state = jax.tree.map(lambda x: x[0], (params, state))
   test_dataset = dataset.load(split,
                               is_training=False,
                               batch_dims=[FLAGS.eval_batch_size],
@@ -323,8 +323,9 @@ def main(argv):
 
       # Log progress at fixed intervals.
       if step_num and step_num % log_every == 0:
-        train_scalars = jax.tree_util.tree_map(
-            lambda v: np.mean(v).item(), jax.device_get(train_scalars))
+        train_scalars = jax.tree.map(
+            lambda v: np.mean(v).item(), jax.device_get(train_scalars)
+        )
         logging.info('[Train %s/%s] %s',
                      step_num, num_train_steps, train_scalars)
 

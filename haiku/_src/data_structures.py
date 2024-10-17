@@ -140,8 +140,8 @@ def to_haiku_dict(structure: Mapping[K, V]) -> MutableMapping[K, V]:
 
 def _copy_structure(tree):
   """Returns a copy of the given structure."""
-  leaves, treedef = jax.tree_util.tree_flatten(tree)
-  return jax.tree_util.tree_unflatten(treedef, leaves)
+  leaves, treedef = jax.tree.flatten(tree)
+  return jax.tree.unflatten(treedef, leaves)
 
 
 def _to_dict_recurse(value: Any):
@@ -196,14 +196,14 @@ class FlatMap(Mapping[K, V]):
       mapping = None
 
       # When unflattening we cannot assume that the leaves are not pytrees (for
-      # example: `jax.tree_util.tree_map(list, my_map)` would pass a list of
+      # example: `jax.tree.map(list, my_map)` would pass a list of
       # lists in as leaves).
       if not jax.tree_util.all_leaves(leaves):
-        mapping = jax.tree_util.tree_unflatten(structure, leaves)
-        leaves, structure = jax.tree_util.tree_flatten(mapping)
+        mapping = jax.tree.unflatten(structure, leaves)
+        leaves, structure = jax.tree.flatten(mapping)
     else:
       mapping = dict(*args, **kwargs)
-      leaves, structure = jax.tree_util.tree_flatten(mapping)
+      leaves, structure = jax.tree.flatten(mapping)
 
     self._structure = structure
     self._leaves = tuple(leaves)
@@ -211,8 +211,7 @@ class FlatMap(Mapping[K, V]):
 
   def _to_mapping(self) -> Mapping[K, V]:
     if self._mapping is None:
-      self._mapping = jax.tree_util.tree_unflatten(
-          self._structure, self._leaves)
+      self._mapping = jax.tree.unflatten(self._structure, self._leaves)
     return self._mapping
 
   def keys(self):

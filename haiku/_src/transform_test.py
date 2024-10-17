@@ -346,7 +346,7 @@ class TransformTest(parameterized.TestCase):
     obj_out, y = obj.forward.apply(params, None, x)
     self.assertEqual(y, 1)
     self.assertIs(obj, obj_out)
-    params = jax.tree_util.tree_map(lambda v: v + 1, params)
+    params = jax.tree.map(lambda v: v + 1, params)
     obj_out, y = obj.forward.apply(params, None, x)
     self.assertEqual(y, 2)
     self.assertIs(obj, obj_out)

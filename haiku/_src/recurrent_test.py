@@ -140,11 +140,11 @@ class VanillaRNNTest(absltest.TestCase):
   def test_double_bias_length_parameters(self):
     double_bias = recurrent.VanillaRNN(1, double_bias=True)
     double_bias(jnp.zeros([1]), double_bias.initial_state(None))
-    double_bias_params = jax.tree_util.tree_leaves(double_bias.params_dict())
+    double_bias_params = jax.tree.leaves(double_bias.params_dict())
 
     vanilla = recurrent.VanillaRNN(1, double_bias=False)
     vanilla(jnp.zeros([1]), vanilla.initial_state(None))
-    vanilla_params = jax.tree_util.tree_leaves(vanilla.params_dict())
+    vanilla_params = jax.tree.leaves(vanilla.params_dict())
 
     self.assertLen(double_bias_params, len(vanilla_params) + 1)
 
@@ -202,7 +202,7 @@ class _DummyCore(recurrent.RNNCore):
     return inputs, prev_state
 
   def initial_state(self, batch_size):
-    return jax.tree_util.tree_map(jnp.zeros_like, self._state)
+    return jax.tree.map(jnp.zeros_like, self._state)
 
 
 class _IncrementByOneCore(recurrent.RNNCore):
@@ -513,12 +513,16 @@ class BatchMajorUnrollTest(parameterized.TestCase):
     batch_major_outputs, batch_major_unroll_state_out = unroll(
         core, batch_major_inputs, initial_state, time_major=False)
 
-    jax.tree_util.tree_map(
+    jax.tree.map(
         np.testing.assert_array_equal,
-        time_major_unroll_state_out, batch_major_unroll_state_out)
-    jax.tree_util.tree_map(
+        time_major_unroll_state_out,
+        batch_major_unroll_state_out,
+    )
+    jax.tree.map(
         lambda x, y: np.testing.assert_array_equal(x, jnp.swapaxes(y, 0, 1)),
-        time_major_outputs, batch_major_outputs)
+        time_major_outputs,
+        batch_major_outputs,
+    )
 
 
 if __name__ == "__main__":

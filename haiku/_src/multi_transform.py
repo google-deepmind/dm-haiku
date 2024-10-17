@@ -119,7 +119,7 @@ def multi_transform_with_state(
   >>> rng = jax.random.PRNGKey(42)
   >>> x = jnp.ones([1, 1])
   >>> params, state = f.init(rng, x)
-  >>> jax.tree_util.tree_map(jnp.shape, params)
+  >>> jax.tree.map(jnp.shape, params)
   {'decoder': {'b': (1,), 'w': (1, 1)},
    'encoder': {'b': (1,), 'w': (1, 1)}}
 
@@ -128,8 +128,8 @@ def multi_transform_with_state(
   >>> y, state = decode(params, state, None, z)
 
   Args:
-    f: Function returning a "template" function and an arbitrary
-      tree of functions using modules connected in the template function.
+    f: Function returning a "template" function and an arbitrary tree of
+      functions using modules connected in the template function.
 
   Returns:
     An ``init`` function and a tree of pure ``apply`` functions.
@@ -149,7 +149,7 @@ def multi_transform_with_state(
   def apply_fn_i(i):
     def apply_fn(*args, **kwargs):
       """Applies the transformed function at the given inputs."""
-      return jax.tree_util.tree_leaves(f()[1])[i](*args, **kwargs)
+      return jax.tree.leaves(f()[1])[i](*args, **kwargs)
     return apply_fn
 
   # We need to find out the structure of f()[1], including how many
@@ -163,7 +163,7 @@ def multi_transform_with_state(
     rng = jax.random.PRNGKey(42)  # This is fine, see above
     fns = hk.transform_with_state(lambda: f()[1])
     apply_fns, _ = fns.apply(*fns.init(rng), rng)
-    return Box(jax.tree_util.tree_structure(apply_fns))
+    return Box(jax.tree.structure(apply_fns))
 
   output_treedef = jax.eval_shape(get_output_treedef).python_value
   apply_fns = make_tree(lambda i: hk.transform_with_state(apply_fn_i(i)).apply,
@@ -208,7 +208,7 @@ def multi_transform(
   >>> rng = jax.random.PRNGKey(42)
   >>> x = jnp.ones([1, 1])
   >>> params = f.init(rng, x)
-  >>> jax.tree_util.tree_map(jnp.shape, params)
+  >>> jax.tree.map(jnp.shape, params)
   {'decoder': {'b': (1,), 'w': (1, 1)},
    'encoder': {'b': (1,), 'w': (1, 1)}}
 
@@ -256,7 +256,7 @@ def without_state(f: MultiTransformedWithState) -> MultiTransformed:
       return out
     return apply_fn
 
-  apply_fns = jax.tree_util.tree_map(apply_without_state, f.apply)
+  apply_fns = jax.tree.map(apply_without_state, f.apply)
 
   return MultiTransformed(init_fn, apply_fns)
 
@@ -326,16 +326,18 @@ def without_apply_rng(f: TransformedT) -> TransformedT:
     def make_new_apply_fn(apply_fn, params, state, *args, **kwargs):
       check_rng_kwarg(kwargs)
       return apply_fn(params, state, None, *args, **kwargs)
-    apply_fn = jax.tree_util.tree_map(
-        lambda fn: functools.partial(make_new_apply_fn, fn), f.apply)
+    apply_fn = jax.tree.map(
+        lambda fn: functools.partial(make_new_apply_fn, fn), f.apply
+    )
     f_new = MultiTransformedWithState(init=f.init, apply=apply_fn)
 
   elif isinstance(f, MultiTransformed):
     def make_new_apply_fn(apply_fn, params, *args, **kwargs):
       check_rng_kwarg(kwargs)
       return apply_fn(params, None, *args, **kwargs)
-    apply_fn = jax.tree_util.tree_map(
-        lambda fn: functools.partial(make_new_apply_fn, fn), f.apply)
+    apply_fn = jax.tree.map(
+        lambda fn: functools.partial(make_new_apply_fn, fn), f.apply
+    )
     f_new = MultiTransformed(init=f.init, apply=apply_fn)
 
   else:
@@ -349,4 +351,4 @@ def without_apply_rng(f: TransformedT) -> TransformedT:
 
 def make_tree(f: Callable[[int], Any], treedef: jax.tree_util.PyTreeDef):
   leaves = list(map(f, range(treedef.num_leaves)))
-  return jax.tree_util.tree_unflatten(treedef, leaves)
+  return jax.tree.unflatten(treedef, leaves)

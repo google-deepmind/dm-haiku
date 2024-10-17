@@ -15,7 +15,6 @@
 """Depthwise Convolutional Haiku module."""
 
 from collections.abc import Sequence
-from typing import Optional, Union
 
 from haiku._src import base
 from haiku._src import initializers
@@ -56,16 +55,16 @@ class DepthwiseConvND(hk.Module):
   def __init__(
       self,
       channel_multiplier: int,
-      kernel_shape: Union[int, Sequence[int]],
+      kernel_shape: int | Sequence[int],
       num_spatial_dims: int,
       data_format: str,
-      stride: Union[int, Sequence[int]] = 1,
-      rate: Union[int, Sequence[int]] = 1,
-      padding: Union[str, Sequence[tuple[int, int]]] = "SAME",
+      stride: int | Sequence[int] = 1,
+      rate: int | Sequence[int] = 1,
+      padding: str | Sequence[tuple[int, int]] = "SAME",
       with_bias: bool = True,
-      w_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
-      name: Optional[str] = None,
+      w_init: hk.initializers.Initializer | None = None,
+      b_init: hk.initializers.Initializer | None = None,
+      name: str | None = None,
   ):
     """Construct an ND Depthwise Convolution.
 
@@ -150,14 +149,14 @@ class SeparableDepthwiseConv2D(hk.Module):
   def __init__(
       self,
       channel_multiplier: int,
-      kernel_shape: Union[int, Sequence[int]],
-      stride: Union[int, Sequence[int]] = 1,
-      padding: Union[str, Sequence[tuple[int, int]]] = "SAME",
+      kernel_shape: int | Sequence[int],
+      stride: int | Sequence[int] = 1,
+      padding: str | Sequence[tuple[int, int]] = "SAME",
       with_bias: bool = True,
-      w_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
+      w_init: hk.initializers.Initializer | None = None,
+      b_init: hk.initializers.Initializer | None = None,
       data_format: str = "NHWC",
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     """Construct a Separable 2D Depthwise Convolution module.
 
@@ -211,15 +210,15 @@ class DepthwiseConv1D(DepthwiseConvND):
   def __init__(
       self,
       channel_multiplier: int,
-      kernel_shape: Union[int, Sequence[int]],
-      stride: Union[int, Sequence[int]] = 1,
-      rate: Union[int, Sequence[int]] = 1,
-      padding: Union[str, Sequence[tuple[int, int]]] = "SAME",
+      kernel_shape: int | Sequence[int],
+      stride: int | Sequence[int] = 1,
+      rate: int | Sequence[int] = 1,
+      padding: str | Sequence[tuple[int, int]] = "SAME",
       with_bias: bool = True,
-      w_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
+      w_init: hk.initializers.Initializer | None = None,
+      b_init: hk.initializers.Initializer | None = None,
       data_format: str = "NWC",
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     """Construct a 1D Depthwise Convolution.
 
@@ -264,15 +263,15 @@ class DepthwiseConv2D(DepthwiseConvND):
   def __init__(
       self,
       channel_multiplier: int,
-      kernel_shape: Union[int, Sequence[int]],
-      stride: Union[int, Sequence[int]] = 1,
-      rate: Union[int, Sequence[int]] = 1,
-      padding: Union[str, Sequence[tuple[int, int]]] = "SAME",
+      kernel_shape: int | Sequence[int],
+      stride: int | Sequence[int] = 1,
+      rate: int | Sequence[int] = 1,
+      padding: str | Sequence[tuple[int, int]] = "SAME",
       with_bias: bool = True,
-      w_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
+      w_init: hk.initializers.Initializer | None = None,
+      b_init: hk.initializers.Initializer | None = None,
       data_format: str = "NHWC",
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     """Construct a 2D Depthwise Convolution.
 
@@ -317,15 +316,15 @@ class DepthwiseConv3D(DepthwiseConvND):
   def __init__(
       self,
       channel_multiplier: int,
-      kernel_shape: Union[int, Sequence[int]],
-      stride: Union[int, Sequence[int]] = 1,
-      rate: Union[int, Sequence[int]] = 1,
-      padding: Union[str, Sequence[tuple[int, int]]] = "SAME",
+      kernel_shape: int | Sequence[int],
+      stride: int | Sequence[int] = 1,
+      rate: int | Sequence[int] = 1,
+      padding: str | Sequence[tuple[int, int]] = "SAME",
       with_bias: bool = True,
-      w_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
+      w_init: hk.initializers.Initializer | None = None,
+      b_init: hk.initializers.Initializer | None = None,
       data_format: str = "NDHWC",
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     """Construct a 3D Depthwise Convolution.
 

@@ -15,7 +15,7 @@
 """Haiku initializers."""
 
 from collections.abc import Sequence
-from typing import Any, Union
+from typing import Any
 
 from haiku._src import base
 from haiku._src.typing import Initializer
@@ -62,7 +62,7 @@ class Constant(hk.initializers.Initializer):
   """Initializes with a constant."""
 
   def __init__(
-      self, constant: Union[float, int, complex, np.ndarray, jax.Array]
+      self, constant: float | int | complex | np.ndarray | jax.Array
   ):
     """Constructs a Constant initializer.
 
@@ -98,10 +98,10 @@ class TruncatedNormal(hk.initializers.Initializer):
   """Initializes by sampling from a truncated normal distribution."""
 
   def __init__(self,
-               stddev: Union[float, jax.Array] = 1.,
-               mean: Union[float, complex, jax.Array] = 0.0,
-               lower: Union[float, jax.Array] = -2.0,
-               upper: Union[float, jax.Array] = 2.0,
+               stddev: float | jax.Array = 1.,
+               mean: float | complex | jax.Array = 0.0,
+               lower: float | jax.Array = -2.0,
+               upper: float | jax.Array = 2.0,
                ):
     """Constructs a :class:`TruncatedNormal` initializer.
 
@@ -305,7 +305,7 @@ class Identity(hk.initializers.Initializer):
   Constructs a 2D identity matrix or batches of these.
   """
 
-  def __init__(self, gain: Union[float, np.ndarray, jax.Array] = 1.0):
+  def __init__(self, gain: float | np.ndarray | jax.Array = 1.0):
     """Constructs an :class:`Identity` initializer.
 
     Args:

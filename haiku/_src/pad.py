@@ -15,9 +15,9 @@
 """Padding module for Haiku."""
 
 from collections import abc
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 import typing
-from typing import Any, Callable, Union
+from typing import Any
 
 from haiku._src import utils
 
@@ -59,9 +59,9 @@ def reverse_causal(effective_kernel_size: int) -> tuple[int, int]:
 
 
 def create_from_padfn(
-    padding: Union[hk.pad.PadFn, Sequence[hk.pad.PadFn]],
-    kernel: Union[int, Sequence[int]],
-    rate: Union[int, Sequence[int]],
+    padding: hk.pad.PadFn | Sequence[hk.pad.PadFn],  # pylint: disable=g-bare-generic
+    kernel: int | Sequence[int],
+    rate: int | Sequence[int],
     n: int,
 ) -> Sequence[tuple[int, int]]:
   """Generates the padding required for a given padding algorithm.
@@ -97,7 +97,7 @@ def create_from_padfn(
 
 
 def create_from_tuple(
-    padding: Union[tuple[int, int], Sequence[tuple[int, int]]],
+    padding: tuple[int, int] | Sequence[tuple[int, int]],
     n: int,
 ) -> Sequence[tuple[int, int]]:
   """Create a padding tuple using partially specified padding tuple."""
@@ -114,7 +114,7 @@ def create_from_tuple(
   return padding
 
 
-def is_padfn(padding: Union[hk.pad.PadFn, Sequence[hk.pad.PadFn], Any]) -> bool:
+def is_padfn(padding: hk.pad.PadFn | Sequence[hk.pad.PadFn] | Any) -> bool:  # pylint: disable=g-bare-generic
   """Tests whether the given argument is a single or sequence of PadFns."""
   if isinstance(padding, abc.Sequence):
     padding = padding[0]

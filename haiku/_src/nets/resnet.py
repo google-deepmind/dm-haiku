@@ -15,7 +15,7 @@
 """Resnet."""
 
 from collections.abc import Mapping, Sequence
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 from haiku._src import basic
 from haiku._src import batch_norm
@@ -46,11 +46,11 @@ class BlockV1(hk.Module):
   def __init__(
       self,
       channels: int,
-      stride: Union[int, Sequence[int]],
+      stride: int | Sequence[int],
       use_projection: bool,
       bn_config: Mapping[str, FloatStrOrBool],
       bottleneck: bool,
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     super().__init__(name=name)
     self.use_projection = use_projection
@@ -128,11 +128,11 @@ class BlockV2(hk.Module):
   def __init__(
       self,
       channels: int,
-      stride: Union[int, Sequence[int]],
+      stride: int | Sequence[int],
       use_projection: bool,
       bn_config: Mapping[str, FloatStrOrBool],
       bottleneck: bool,
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     super().__init__(name=name)
     self.use_projection = use_projection
@@ -208,12 +208,12 @@ class BlockGroup(hk.Module):
       self,
       channels: int,
       num_blocks: int,
-      stride: Union[int, Sequence[int]],
+      stride: int | Sequence[int],
       bn_config: Mapping[str, FloatStrOrBool],
       resnet_v2: bool,
       bottleneck: bool,
       use_projection: bool,
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     super().__init__(name=name)
 
@@ -291,14 +291,14 @@ class ResNet(hk.Module):
       self,
       blocks_per_group: Sequence[int],
       num_classes: int,
-      bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      bn_config: Mapping[str, FloatStrOrBool] | None = None,
       resnet_v2: bool = False,
       bottleneck: bool = True,
       channels_per_group: Sequence[int] = (256, 512, 1024, 2048),
       use_projection: Sequence[bool] = (True, True, True, True),
-      logits_config: Optional[Mapping[str, Any]] = None,
-      name: Optional[str] = None,
-      initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      logits_config: Mapping[str, Any] | None = None,
+      name: str | None = None,
+      initial_conv_config: Mapping[str, FloatStrOrBool] | None = None,
       strides: Sequence[int] = (1, 2, 2, 2),
   ):
     """Constructs a ResNet model.
@@ -402,11 +402,11 @@ class ResNet18(ResNet):
   def __init__(
       self,
       num_classes: int,
-      bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      bn_config: Mapping[str, FloatStrOrBool] | None = None,
       resnet_v2: bool = False,
-      logits_config: Optional[Mapping[str, Any]] = None,
-      name: Optional[str] = None,
-      initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      logits_config: Mapping[str, Any] | None = None,
+      name: str | None = None,
+      initial_conv_config: Mapping[str, FloatStrOrBool] | None = None,
       strides: Sequence[int] = (1, 2, 2, 2),
   ):
     """Constructs a ResNet model.
@@ -440,11 +440,11 @@ class ResNet34(ResNet):
   def __init__(
       self,
       num_classes: int,
-      bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      bn_config: Mapping[str, FloatStrOrBool] | None = None,
       resnet_v2: bool = False,
-      logits_config: Optional[Mapping[str, Any]] = None,
-      name: Optional[str] = None,
-      initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      logits_config: Mapping[str, Any] | None = None,
+      name: str | None = None,
+      initial_conv_config: Mapping[str, FloatStrOrBool] | None = None,
       strides: Sequence[int] = (1, 2, 2, 2),
   ):
     """Constructs a ResNet model.
@@ -478,11 +478,11 @@ class ResNet50(ResNet):
   def __init__(
       self,
       num_classes: int,
-      bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      bn_config: Mapping[str, FloatStrOrBool] | None = None,
       resnet_v2: bool = False,
-      logits_config: Optional[Mapping[str, Any]] = None,
-      name: Optional[str] = None,
-      initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      logits_config: Mapping[str, Any] | None = None,
+      name: str | None = None,
+      initial_conv_config: Mapping[str, FloatStrOrBool] | None = None,
       strides: Sequence[int] = (1, 2, 2, 2),
   ):
     """Constructs a ResNet model.
@@ -516,11 +516,11 @@ class ResNet101(ResNet):
   def __init__(
       self,
       num_classes: int,
-      bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      bn_config: Mapping[str, FloatStrOrBool] | None = None,
       resnet_v2: bool = False,
-      logits_config: Optional[Mapping[str, Any]] = None,
-      name: Optional[str] = None,
-      initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      logits_config: Mapping[str, Any] | None = None,
+      name: str | None = None,
+      initial_conv_config: Mapping[str, FloatStrOrBool] | None = None,
       strides: Sequence[int] = (1, 2, 2, 2),
   ):
     """Constructs a ResNet model.
@@ -554,11 +554,11 @@ class ResNet152(ResNet):
   def __init__(
       self,
       num_classes: int,
-      bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      bn_config: Mapping[str, FloatStrOrBool] | None = None,
       resnet_v2: bool = False,
-      logits_config: Optional[Mapping[str, Any]] = None,
-      name: Optional[str] = None,
-      initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      logits_config: Mapping[str, Any] | None = None,
+      name: str | None = None,
+      initial_conv_config: Mapping[str, FloatStrOrBool] | None = None,
       strides: Sequence[int] = (1, 2, 2, 2),
   ):
     """Constructs a ResNet model.
@@ -592,11 +592,11 @@ class ResNet200(ResNet):
   def __init__(
       self,
       num_classes: int,
-      bn_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      bn_config: Mapping[str, FloatStrOrBool] | None = None,
       resnet_v2: bool = False,
-      logits_config: Optional[Mapping[str, Any]] = None,
-      name: Optional[str] = None,
-      initial_conv_config: Optional[Mapping[str, FloatStrOrBool]] = None,
+      logits_config: Mapping[str, Any] | None = None,
+      name: str | None = None,
+      initial_conv_config: Mapping[str, FloatStrOrBool] | None = None,
       strides: Sequence[int] = (1, 2, 2, 2),
   ):
     """Constructs a ResNet model.

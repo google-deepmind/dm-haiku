@@ -16,7 +16,6 @@
 
 import collections.abc
 from collections.abc import Sequence
-from typing import Optional, Union
 
 from haiku._src import base
 from haiku._src import initializers
@@ -37,8 +36,8 @@ class hk:
 # pylint: enable=invalid-name
 del base, module, initializers, utils
 
-AxisOrAxes = Union[int, Sequence[int], slice]
-AxesOrSlice = Union[tuple[int, ...], slice]
+AxisOrAxes = int | Sequence[int] | slice
+AxesOrSlice = tuple[int, ...] | slice
 
 # TODO(tomhennigan): Update users to `param_axis=-1` and flip + remove this.
 ERROR_IF_PARAM_AXIS_NOT_EXPLICIT = False
@@ -82,12 +81,12 @@ class LayerNorm(hk.Module):
       create_scale: bool,
       create_offset: bool,
       eps: float = 1e-5,
-      scale_init: Optional[hk.initializers.Initializer] = None,
-      offset_init: Optional[hk.initializers.Initializer] = None,
+      scale_init: hk.initializers.Initializer | None = None,
+      offset_init: hk.initializers.Initializer | None = None,
       use_fast_variance: bool = False,
-      name: Optional[str] = None,
+      name: str | None = None,
       *,
-      param_axis: Optional[AxisOrAxes] = None,
+      param_axis: AxisOrAxes | None = None,
   ):
     """Constructs a LayerNorm module.
 
@@ -131,8 +130,8 @@ class LayerNorm(hk.Module):
   def __call__(
       self,
       inputs: jax.Array,
-      scale: Optional[jax.Array] = None,
-      offset: Optional[jax.Array] = None,
+      scale: jax.Array | None = None,
+      offset: jax.Array | None = None,
   ) -> jax.Array:
     """Connects the layer norm.
 
@@ -219,10 +218,10 @@ class InstanceNorm(LayerNorm):
       create_scale: bool,
       create_offset: bool,
       eps: float = 1e-5,
-      scale_init: Optional[hk.initializers.Initializer] = None,
-      offset_init: Optional[hk.initializers.Initializer] = None,
+      scale_init: hk.initializers.Initializer | None = None,
+      offset_init: hk.initializers.Initializer | None = None,
       data_format: str = "channels_last",
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     """Constructs an :class:`InstanceNorm` module.
 

@@ -15,7 +15,6 @@
 """Reshaping Haiku modules."""
 
 from collections.abc import Sequence
-from typing import Optional
 
 from haiku._src import module
 import jax.numpy as jnp
@@ -95,7 +94,7 @@ class Reshape(hk.Module):
       self,
       output_shape: Sequence[int],
       preserve_dims: int = 1,
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     """Constructs a :class:`Reshape` module.
 
@@ -171,7 +170,7 @@ class Flatten(Reshape):
   def __init__(
       self,
       preserve_dims: int = 1,
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     super().__init__(
         output_shape=(-1,),

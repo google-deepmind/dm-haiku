@@ -15,11 +15,11 @@
 """Base Haiku module."""
 
 import collections
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 import contextlib
 import functools
 import itertools as it
-from typing import Any, Callable, NamedTuple, Optional, TypeVar, Union
+from typing import Any, NamedTuple, Optional, TypeVar
 import warnings
 
 from haiku._src import config
@@ -88,7 +88,7 @@ class Frame(NamedTuple):
 
   # JAX values.
   params: MutableParams
-  state: Optional[MutableState]
+  state: MutableState | None
   rng_stack: Stack[Optional["PRNGSequence"]]
 
   # Pure python values.
@@ -217,9 +217,9 @@ class HaikuContext:
 
 def new_context(
     *,
-    params: Optional[Params] = None,
-    state: Optional[State] = None,
-    rng: Optional[Union[PRNGKey, int]] = None,
+    params: Params | None = None,
+    state: State | None = None,
+    rng: PRNGKey | int | None = None,
 ) -> HaikuContext:
   """Collects the results of hk.{get,set}_{parameter,state} calls.
 
@@ -286,7 +286,7 @@ def safe_get_module_name(module: Module) -> str:
   return module.module_name
 
 
-def current_module_state() -> Optional[ModuleState]:
+def current_module_state() -> ModuleState | None:
   frame = current_frame()
   if frame.module_stack:
     return frame.module_stack.peek()
@@ -295,7 +295,7 @@ def current_module_state() -> Optional[ModuleState]:
 
 
 @contextlib.contextmanager
-def maybe_push_module_state(module_state: Optional[ModuleState]):
+def maybe_push_module_state(module_state: ModuleState | None):
   if module_state is not None:
     frame = current_frame()
     with frame.module_stack(module_state):
@@ -304,7 +304,7 @@ def maybe_push_module_state(module_state: Optional[ModuleState]):
     yield
 
 
-def current_module() -> Optional[Module]:
+def current_module() -> Module | None:
   module_state = current_module_state()
   return module_state.module if module_state is not None else None
 
@@ -346,7 +346,7 @@ def current_name() -> str:
     return "~"
 
 
-def get_lift_prefix() -> Optional[str]:
+def get_lift_prefix() -> str | None:
   """Get full lifted prefix from frame_stack if in lifted init."""
   if params_frozen():
     return None
@@ -589,7 +589,7 @@ class DoNotStore:
 DO_NOT_STORE = DoNotStore()
 
 
-def check_not_none(value: Optional[T], msg: str) -> T:
+def check_not_none(value: T | None, msg: str) -> T:
   if value is None:
     raise ValueError(msg)
   return value
@@ -604,7 +604,7 @@ def get_parameter(
     name: str,
     shape: Sequence[int],
     dtype: Any = jnp.float32,
-    init: Optional[Initializer] = None,
+    init: Initializer | None = None,
 ) -> jax.Array:
   """Creates or reuses a parameter for the given transformed function.
 
@@ -721,11 +721,11 @@ class GetterContext(NamedTuple):
     name: The name of this parameter.
   """
   full_name: str
-  module: Optional[Module]
+  module: Module | None
   original_dtype: Any
   original_shape: Sequence[int]
-  original_init: Optional[Initializer]
-  lifted_prefix_name: Optional[str]
+  original_init: Initializer | None
+  lifted_prefix_name: str | None
 
   @property
   def module_name(self):
@@ -748,7 +748,7 @@ def run_creators(
     context: GetterContext,
     shape: Sequence[int],
     dtype: Any = jnp.float32,
-    init: Optional[Initializer] = None,
+    init: Initializer | None = None,
 ) -> jax.Array:
   """See :func:`custom_creator` for usage."""
   assert stack
@@ -926,10 +926,10 @@ class SetterContext(NamedTuple):
     name: The name of this state.
   """
   full_name: str
-  module: Optional[Module]
+  module: Module | None
   original_dtype: Any
   original_shape: Sequence[int]
-  lifted_prefix_name: Optional[str]
+  lifted_prefix_name: str | None
 
   @property
   def module_name(self):
@@ -1029,7 +1029,7 @@ class PRNGSequence(Iterator[PRNGKey]):
   """
   __slots__ = ("_key", "_subkeys")
 
-  def __init__(self, key_or_seed: Union[PRNGKey, int, PRNGSequenceState]):
+  def __init__(self, key_or_seed: PRNGKey | int | PRNGSequenceState):
     """Creates a new :class:`PRNGSequence`."""
     if isinstance(key_or_seed, tuple):
       key, subkeys = key_or_seed
@@ -1210,7 +1210,7 @@ def next_rng_keys(num: int) -> jax.Array:
   return jnp.stack(rng_seq.take(num))
 
 
-def maybe_next_rng_key() -> Optional[PRNGKey]:
+def maybe_next_rng_key() -> PRNGKey | None:
   """:func:`next_rng_key` if random numbers are available, else ``None``."""
   assert_context("maybe_next_rng_key")
   rng_seq = current_frame().rng_stack.peek()
@@ -1221,7 +1221,7 @@ def maybe_next_rng_key() -> Optional[PRNGKey]:
     return None
 
 
-def maybe_get_rng_sequence_state() -> Optional[PRNGSequenceState]:
+def maybe_get_rng_sequence_state() -> PRNGSequenceState | None:
   """Returns the internal state of the PRNG sequence.
 
   Returns:
@@ -1265,9 +1265,9 @@ def extract_state(state: State, *, initial) -> MutableState:
 
 def get_state(
     name: str,
-    shape: Optional[Sequence[int]] = None,
+    shape: Sequence[int] | None = None,
     dtype: Any = jnp.float32,
-    init: Optional[Initializer] = None,
+    init: Initializer | None = None,
 ) -> jax.Array:
   """Gets the current value for state with an optional initializer.
 

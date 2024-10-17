@@ -25,7 +25,6 @@ If something different is desired, replace with AvgPool.
 """
 
 from collections.abc import Sequence
-from typing import Optional
 
 from haiku._src import basic
 from haiku._src import batch_norm
@@ -58,7 +57,7 @@ class MobileNetV1Block(hk.Module):
       channels: int,
       stride: int,
       use_bn: bool = True,
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     super().__init__(name=name)
     self.channels = channels
@@ -109,7 +108,7 @@ class MobileNetV1(hk.Module):
                                  512, 512, 512, 512, 1024, 1024),
       num_classes: int = 1000,
       use_bn: bool = True,
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     """Constructs a MobileNetV1 model.
 

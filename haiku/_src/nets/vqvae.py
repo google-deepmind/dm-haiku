@@ -14,13 +14,12 @@
 # ==============================================================================
 """Haiku implementation of VQ-VAE https://arxiv.org/abs/1711.00937."""
 
-from typing import Any, Optional
+from typing import Any
 
 from haiku._src import base
 from haiku._src import initializers
 from haiku._src import module
 from haiku._src import moving_averages
-
 import jax
 import jax.numpy as jnp
 
@@ -69,8 +68,8 @@ class VectorQuantizer(hk.Module):
       num_embeddings: int,
       commitment_cost: float,
       dtype: Any = jnp.float32,
-      name: Optional[str] = None,
-      cross_replica_axis: Optional[str] = None,
+      name: str | None = None,
+      cross_replica_axis: str | None = None,
   ):
     """Initializes a VQ-VAE module.
 
@@ -216,8 +215,8 @@ class VectorQuantizerEMA(hk.Module):
       decay,
       epsilon: float = 1e-5,
       dtype: Any = jnp.float32,
-      cross_replica_axis: Optional[str] = None,
-      name: Optional[str] = None,
+      cross_replica_axis: str | None = None,
+      name: str | None = None,
   ):
     """Initializes a VQ-VAE EMA module.
 

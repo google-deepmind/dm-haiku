@@ -14,8 +14,8 @@
 # ==============================================================================
 """Module descriptors programatically describe how to use modules."""
 
-from collections.abc import Sequence
-from typing import Any, Callable, NamedTuple
+from collections.abc import Callable, Sequence
+from typing import Any, NamedTuple
 
 import haiku as hk
 import jax

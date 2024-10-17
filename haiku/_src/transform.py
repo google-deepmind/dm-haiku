@@ -14,9 +14,9 @@
 # ==============================================================================
 """Base Haiku module."""
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 import inspect
-from typing import Any, Callable, NamedTuple, Optional, TypeVar, Union
+from typing import Any, NamedTuple, Optional, TypeVar, Union
 
 from haiku._src import analytics
 from haiku._src import base
@@ -120,7 +120,7 @@ class TransformedWithState(NamedTuple):
   apply: Callable[..., tuple[Any, hk.MutableState]]
 
 
-def to_prng_sequence(rng, err_msg) -> Optional[hk.PRNGSequence]:
+def to_prng_sequence(rng, err_msg) -> hk.PRNGSequence | None:
   if rng is not None:
     try:
       rng = hk.PRNGSequence(rng)
@@ -236,7 +236,7 @@ def with_empty_state(f: Transformed) -> TransformedWithState:
   init_fn.__signature__ = sig_add_state(inspect.signature(f.init))
 
   def apply_fn(
-      params: hk.Params, state: Optional[hk.State], *args, **kwargs
+      params: hk.Params, state: hk.State | None, *args, **kwargs
   ) -> tuple[Any, hk.MutableState]:
     del state
     out = f.apply(params, *args, **kwargs)
@@ -411,7 +411,7 @@ def transform_with_state(f) -> TransformedWithState:
   f_sig = inspect.signature(f)
 
   def init_fn(
-      rng: Optional[Union[PRNGKey, int]],
+      rng: PRNGKey | int | None,
       *args,
       **kwargs,
   ) -> tuple[hk.MutableParams, hk.MutableState]:
@@ -438,9 +438,9 @@ def transform_with_state(f) -> TransformedWithState:
   )
 
   def apply_fn(
-      params: Optional[hk.Params],
-      state: Optional[hk.State],
-      rng: Optional[Union[PRNGKey, int]],
+      params: hk.Params | None,
+      state: hk.State | None,
+      rng: PRNGKey | int | None,
       *args,
       **kwargs,
   ) -> tuple[Any, hk.MutableState]:
@@ -484,14 +484,13 @@ def tie_in_original_fn(f, init_fn, apply_fn):
   apply_fn._original_fn = f  # pylint: disable=protected-access
 
 
-def get_original_fn(f: Union[Transformed, TransformedWithState, Callable[...,
-                                                                         Any]]):
+def get_original_fn(f: Transformed | TransformedWithState | Callable[..., Any]):
   if isinstance(f, (Transformed, TransformedWithState)):
     f = f.init
   return getattr(f, "_original_fn")
 
 
-def check_mapping(name: str, mapping: Optional[T]) -> T:
+def check_mapping(name: str, mapping: T | None) -> T:
   """Cleans inputs to apply_fn, providing better errors."""
   if mapping is None:
     # Convert None to empty dict.

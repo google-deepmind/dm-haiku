@@ -16,10 +16,10 @@
 
 import collections
 import collections.abc
-from collections.abc import Mapping, MutableMapping
+from collections.abc import Callable, Mapping, MutableMapping
 import functools
 import inspect
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, TypeVar
 
 from haiku._src import base
 import jax
@@ -328,8 +328,8 @@ def difference(before: InternalState, after: InternalState) -> InternalState:
   )
 
   # rng
-  def is_new_rng(a: Optional[base.PRNGSequenceState],
-                 b: Optional[base.PRNGSequenceState]):
+  def is_new_rng(a: base.PRNGSequenceState | None,
+                 b: base.PRNGSequenceState | None):
     if a is None:
       return True
     assert len(a) == 2 and len(b) == 2
@@ -698,7 +698,7 @@ def fori_loop(lower, upper, body_fun, init_val):
   return val
 
 
-def maybe_get_axis(axis: Optional[int], arrays: Any) -> Optional[int]:
+def maybe_get_axis(axis: int | None, arrays: Any) -> int | None:
   """Returns `array.shape[axis]` for one of the arrays in the input."""
   if axis is None: return None
   shapes = [a.shape for a in jax.tree.leaves(arrays)]
@@ -758,8 +758,8 @@ def vmap(
     fun: Callable[..., Any],
     in_axes=0,
     out_axes=0,
-    axis_name: Optional[str] = None,
-    axis_size: Optional[int] = None,
+    axis_name: str | None = None,
+    axis_size: int | None = None,
     *,
     split_rng: bool,
 ) -> Callable[..., Any]:

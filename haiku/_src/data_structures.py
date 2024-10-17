@@ -20,12 +20,11 @@
 # for users.
 
 import collections
-from collections.abc import Iterator, Mapping, MutableMapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
 import contextlib
 import pprint
 import threading
-from typing import Any, Callable, Deque, Generic, NamedTuple, Optional, TypeVar, Union
-
+from typing import Any, Deque, Generic, NamedTuple, TypeVar
 from haiku._src import config
 from haiku._src import utils
 import jax
@@ -332,7 +331,7 @@ class frozendict(Mapping[K, V]):  # pylint: disable=invalid-name
     raise AttributeError(
         f"x.{key} is not supported on frozendict, use x['{key}'] instead.")
 
-  def get(self, key: K, default: Optional[T] = None) -> Union[V, Optional[T]]:
+  def get(self, key: K, default: T | None = None) -> V | T | None:
     return self._storage.get(key, default)
 
   def __getitem__(self, key: K) -> V:

@@ -15,7 +15,6 @@
 """Convolutional Haiku modules."""
 
 from collections.abc import Sequence
-from typing import Optional, Union
 
 from haiku._src import base
 from haiku._src import initializers
@@ -71,19 +70,22 @@ class ConvND(hk.Module):
       self,
       num_spatial_dims: int,
       output_channels: int,
-      kernel_shape: Union[int, Sequence[int]],
-      stride: Union[int, Sequence[int]] = 1,
-      rate: Union[int, Sequence[int]] = 1,
-      padding: Union[
-          str, Sequence[tuple[int, int]], hk.pad.PadFn, Sequence[hk.pad.PadFn]
-      ] = "SAME",
+      kernel_shape: int | Sequence[int],
+      stride: int | Sequence[int] = 1,
+      rate: int | Sequence[int] = 1,
+      padding: (
+          str
+          | Sequence[tuple[int, int]]
+          | hk.pad.PadFn
+          | Sequence[hk.pad.PadFn]
+      ) = "SAME",
       with_bias: bool = True,
-      w_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
+      w_init: hk.initializers.Initializer | None = None,
+      b_init: hk.initializers.Initializer | None = None,
       data_format: str = "channels_last",
-      mask: Optional[jax.Array] = None,
+      mask: jax.Array | None = None,
       feature_group_count: int = 1,
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     """Initializes the module.
 
@@ -160,7 +162,7 @@ class ConvND(hk.Module):
       self,
       inputs: jax.Array,
       *,
-      precision: Optional[lax.Precision] = None,
+      precision: lax.Precision | None = None,
   ) -> jax.Array:
     """Connects ``ConvND`` layer.
 
@@ -237,19 +239,22 @@ class Conv1D(ConvND):
   def __init__(
       self,
       output_channels: int,
-      kernel_shape: Union[int, Sequence[int]],
-      stride: Union[int, Sequence[int]] = 1,
-      rate: Union[int, Sequence[int]] = 1,
-      padding: Union[
-          str, Sequence[tuple[int, int]], hk.pad.PadFn, Sequence[hk.pad.PadFn]
-      ] = "SAME",
+      kernel_shape: int | Sequence[int],
+      stride: int | Sequence[int] = 1,
+      rate: int | Sequence[int] = 1,
+      padding: (
+          str
+          | Sequence[tuple[int, int]]
+          | hk.pad.PadFn
+          | Sequence[hk.pad.PadFn]
+      ) = "SAME",
       with_bias: bool = True,
-      w_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
+      w_init: hk.initializers.Initializer | None = None,
+      b_init: hk.initializers.Initializer | None = None,
       data_format: str = "NWC",
-      mask: Optional[jax.Array] = None,
+      mask: jax.Array | None = None,
       feature_group_count: int = 1,
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     """Initializes the module.
 
@@ -305,19 +310,22 @@ class Conv2D(ConvND):
   def __init__(
       self,
       output_channels: int,
-      kernel_shape: Union[int, Sequence[int]],
-      stride: Union[int, Sequence[int]] = 1,
-      rate: Union[int, Sequence[int]] = 1,
-      padding: Union[
-          str, Sequence[tuple[int, int]], hk.pad.PadFn, Sequence[hk.pad.PadFn]
-      ] = "SAME",
+      kernel_shape: int | Sequence[int],
+      stride: int | Sequence[int] = 1,
+      rate: int | Sequence[int] = 1,
+      padding: (
+          str
+          | Sequence[tuple[int, int]]
+          | hk.pad.PadFn
+          | Sequence[hk.pad.PadFn]
+      ) = "SAME",
       with_bias: bool = True,
-      w_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
+      w_init: hk.initializers.Initializer | None = None,
+      b_init: hk.initializers.Initializer | None = None,
       data_format: str = "NHWC",
-      mask: Optional[jax.Array] = None,
+      mask: jax.Array | None = None,
       feature_group_count: int = 1,
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     """Initializes the module.
 
@@ -373,19 +381,22 @@ class Conv3D(ConvND):
   def __init__(
       self,
       output_channels: int,
-      kernel_shape: Union[int, Sequence[int]],
-      stride: Union[int, Sequence[int]] = 1,
-      rate: Union[int, Sequence[int]] = 1,
-      padding: Union[
-          str, Sequence[tuple[int, int]], hk.pad.PadFn, Sequence[hk.pad.PadFn]
-      ] = "SAME",
+      kernel_shape: int | Sequence[int],
+      stride: int | Sequence[int] = 1,
+      rate: int | Sequence[int] = 1,
+      padding: (
+          str
+          | Sequence[tuple[int, int]]
+          | hk.pad.PadFn
+          | Sequence[hk.pad.PadFn]
+      ) = "SAME",
       with_bias: bool = True,
-      w_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
+      w_init: hk.initializers.Initializer | None = None,
+      b_init: hk.initializers.Initializer | None = None,
       data_format: str = "NDHWC",
-      mask: Optional[jax.Array] = None,
+      mask: jax.Array | None = None,
       feature_group_count: int = 1,
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     """Initializes the module.
 
@@ -478,16 +489,16 @@ class ConvNDTranspose(hk.Module):
       self,
       num_spatial_dims: int,
       output_channels: int,
-      kernel_shape: Union[int, Sequence[int]],
-      stride: Union[int, Sequence[int]] = 1,
-      output_shape: Optional[Union[int, Sequence[int]]] = None,
-      padding: Union[str, Sequence[tuple[int, int]]] = "SAME",
+      kernel_shape: int | Sequence[int],
+      stride: int | Sequence[int] = 1,
+      output_shape: int | Sequence[int] | None = None,
+      padding: str | Sequence[tuple[int, int]] = "SAME",
       with_bias: bool = True,
-      w_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
+      w_init: hk.initializers.Initializer | None = None,
+      b_init: hk.initializers.Initializer | None = None,
       data_format: str = "channels_last",
-      mask: Optional[jax.Array] = None,
-      name: Optional[str] = None,
+      mask: jax.Array | None = None,
+      name: str | None = None,
   ):
     """Initializes the module.
 
@@ -548,7 +559,7 @@ class ConvNDTranspose(hk.Module):
       self,
       inputs: jax.Array,
       *,
-      precision: Optional[lax.Precision] = None,
+      precision: lax.Precision | None = None,
   ) -> jax.Array:
     """Computes the transposed convolution of the input.
 
@@ -625,16 +636,16 @@ class Conv1DTranspose(ConvNDTranspose):
   def __init__(
       self,
       output_channels: int,
-      kernel_shape: Union[int, Sequence[int]],
-      stride: Union[int, Sequence[int]] = 1,
-      output_shape: Optional[Union[int, Sequence[int]]] = None,
-      padding: Union[str, Sequence[tuple[int, int]]] = "SAME",
+      kernel_shape: int | Sequence[int],
+      stride: int | Sequence[int] = 1,
+      output_shape: int | Sequence[int] | None = None,
+      padding: str | Sequence[tuple[int, int]] = "SAME",
       with_bias: bool = True,
-      w_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
+      w_init: hk.initializers.Initializer | None = None,
+      b_init: hk.initializers.Initializer | None = None,
       data_format: str = "NWC",
-      mask: Optional[jax.Array] = None,
-      name: Optional[str] = None,
+      mask: jax.Array | None = None,
+      name: str | None = None,
   ):
     """Initializes the module.
 
@@ -679,16 +690,16 @@ class Conv2DTranspose(ConvNDTranspose):
   def __init__(
       self,
       output_channels: int,
-      kernel_shape: Union[int, Sequence[int]],
-      stride: Union[int, Sequence[int]] = 1,
-      output_shape: Optional[Union[int, Sequence[int]]] = None,
-      padding: Union[str, Sequence[tuple[int, int]]] = "SAME",
+      kernel_shape: int | Sequence[int],
+      stride: int | Sequence[int] = 1,
+      output_shape: int | Sequence[int] | None = None,
+      padding: str | Sequence[tuple[int, int]] = "SAME",
       with_bias: bool = True,
-      w_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
+      w_init: hk.initializers.Initializer | None = None,
+      b_init: hk.initializers.Initializer | None = None,
       data_format: str = "NHWC",
-      mask: Optional[jax.Array] = None,
-      name: Optional[str] = None,
+      mask: jax.Array | None = None,
+      name: str | None = None,
   ):
     """Initializes the module.
 
@@ -733,16 +744,16 @@ class Conv3DTranspose(ConvNDTranspose):
   def __init__(
       self,
       output_channels: int,
-      kernel_shape: Union[int, Sequence[int]],
-      stride: Union[int, Sequence[int]] = 1,
-      output_shape: Optional[Union[int, Sequence[int]]] = None,
-      padding: Union[str, Sequence[tuple[int, int]]] = "SAME",
+      kernel_shape: int | Sequence[int],
+      stride: int | Sequence[int] = 1,
+      output_shape: int | Sequence[int] | None = None,
+      padding: str | Sequence[tuple[int, int]] = "SAME",
       with_bias: bool = True,
-      w_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
+      w_init: hk.initializers.Initializer | None = None,
+      b_init: hk.initializers.Initializer | None = None,
       data_format: str = "NDHWC",
-      mask: Optional[jax.Array] = None,
-      name: Optional[str] = None,
+      mask: jax.Array | None = None,
+      name: str | None = None,
   ):
     """Initializes the module.
 

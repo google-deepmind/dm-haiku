@@ -15,11 +15,11 @@
 """Tests for haiku._src.filtering."""
 
 import collections
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 import itertools
 import re
 import types
-from typing import Any, Callable
+from typing import Any
 
 from absl.testing import absltest
 from absl.testing import parameterized

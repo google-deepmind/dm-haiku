@@ -16,7 +16,7 @@
 
 import functools
 import re
-from typing import Optional
+
 from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import base
@@ -565,7 +565,7 @@ class LayerStackTest(parameterized.TestCase):
 
       def flat_to_stacked(
           self, unstacked_module_name: str
-      ) -> Optional[tuple[str, int]]:
+      ) -> tuple[str, int] | None:
         idx = int(re.findall(r"\d+", unstacked_module_name)[0])
         return unstacked_module_name.replace(str(idx), "0"), idx
 
@@ -611,7 +611,7 @@ class LayerStackTest(parameterized.TestCase):
 
       def flat_to_stacked(
           self, unstacked_module_name: str
-      ) -> Optional[tuple[str, int]]:
+      ) -> tuple[str, int] | None:
         idx = int(re.findall(r"\d+", unstacked_module_name)[0])
         return unstacked_module_name.replace(str(idx), "0"), idx
 

@@ -14,13 +14,13 @@
 # ==============================================================================
 """Testing utilities for Haiku."""
 
-from collections.abc import Generator, Sequence
+from collections.abc import Callable, Generator, Sequence
 import functools
 import inspect
 import itertools
 import os
 import types
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, TypeVar
 
 from absl.testing import parameterized
 from haiku._src import config
@@ -33,12 +33,12 @@ Key = Any  # NOTE: jax.random.PRNGKey is not actually a type.
 
 
 def transform_and_run(
-    f: Optional[Fn] = None,
-    seed: Optional[int] = 42,
+    f: Fn | None = None,
+    seed: int | None = 42,
     run_apply: bool = True,
-    jax_transform: Optional[Callable[[Fn], Fn]] = None,
+    jax_transform: Callable[[Fn], Fn] | None = None,
     *,
-    map_rng: Optional[Callable[[Key], Key]] = None,
+    map_rng: Callable[[Key], Key] | None = None,
 ) -> T:
   r"""Transforms the given function and runs init then (optionally) apply.
 
@@ -221,7 +221,7 @@ def named_range(name, stop: int) -> Sequence[tuple[str, int]]:
   return tuple((f"{name}_{i}", i) for i in range(stop))
 
 
-def with_environ(key: str, value: Optional[str]):
+def with_environ(key: str, value: str | None):
   """Runs the given test with envrionment variables set."""
   def set_env(new_value):
     if new_value is None:

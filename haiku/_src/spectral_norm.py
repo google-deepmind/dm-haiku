@@ -21,7 +21,6 @@ This implementation follows the use in:
 """
 
 import re
-from typing import Optional
 
 from haiku._src import base
 from haiku._src import data_structures
@@ -74,7 +73,7 @@ class SpectralNorm(hk.Module):
       self,
       eps: float = 1e-4,
       n_steps: int = 1,
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     """Initializes an SpectralNorm module.
 
@@ -170,7 +169,7 @@ class SNParamsTree(hk.Module):
       eps: float = 1e-4,
       n_steps: int = 1,
       ignore_regex: str = "",
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     """Initializes an SNParamsTree module.
 

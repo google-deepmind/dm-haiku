@@ -17,7 +17,7 @@
 import collections
 import contextlib
 import threading
-from typing import TypeVar, Optional, Union
+from typing import TypeVar, Union
 
 from haiku._src import base
 from haiku._src import data_structures
@@ -89,7 +89,7 @@ class _ThreadState(threading.local):
     key = key_for_module(cls)
     self._cls_policy[key] = policy
 
-  def get_policy(self, cls: type[hk.Module]) -> Optional[jmp.Policy]:
+  def get_policy(self, cls: type[hk.Module]) -> jmp.Policy | None:
     key = key_for_module(cls)
     return self._cls_policy.get(key)
 
@@ -102,7 +102,7 @@ def reset_thread_local_state_for_test():
   _thread_local_state = _ThreadState()
 
 
-def current_policy() -> Optional[jmp.Policy]:
+def current_policy() -> jmp.Policy | None:
   """Retrieves the currently active policy in the current context.
 
   Returns:
@@ -118,7 +118,7 @@ def current_policy() -> Optional[jmp.Policy]:
   return tls.current_policy if tls.has_current_policy else None
 
 
-def get_policy(cls: type[hk.Module]) -> Optional[jmp.Policy]:
+def get_policy(cls: type[hk.Module]) -> jmp.Policy | None:
   """Retrieves the currently active policy for the given class.
 
   Note that policies applied explicitly to a top level class (e.g. ``ResNet``)

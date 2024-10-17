@@ -15,7 +15,7 @@
 
 """Utilities for converting Haiku modules to Flax modules."""
 
-from typing import TypeVar, Union
+from typing import TypeVar
 
 import flax.core
 import flax.linen as nn
@@ -108,7 +108,7 @@ class Module(nn.Module):
   >>> out = mod.apply(variables, x)
   """
 
-  transformed: Union[hk.Transformed, hk.TransformedWithState]
+  transformed: hk.Transformed | hk.TransformedWithState
 
   def __post_init__(self):
     super().__post_init__()

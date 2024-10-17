@@ -14,9 +14,8 @@
 # ==============================================================================
 """Enables module construction to be deferred."""
 
-from collections.abc import Sequence
-from typing import Callable, Generic, TypeVar
-
+from collections.abc import Callable, Sequence
+from typing import Generic, TypeVar
 from haiku._src import base
 from haiku._src import module
 

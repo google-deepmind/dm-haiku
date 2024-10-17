@@ -30,7 +30,7 @@ $ python3 examples/transformer/train.py \
 
 from collections.abc import MutableMapping
 import time
-from typing import Any, NamedTuple, Union
+from typing import Any, NamedTuple
 
 from absl import app
 from absl import flags
@@ -75,7 +75,7 @@ class TrainingState(NamedTuple):
   step: jax.Array  # Tracks the number of training steps.
 
 
-def forward_pass(tokens: Union[np.ndarray, jax.Array]) -> jax.Array:
+def forward_pass(tokens: np.ndarray | jax.Array) -> jax.Array:
   """Defines the forward pass of the language model."""
   lm = model.LanguageModel(
       model_size=MODEL_SIZE,

@@ -14,10 +14,9 @@
 # ==============================================================================
 """Basic Haiku modules and functions."""
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 import functools
-from typing import Any, Callable, Optional
-
+from typing import Any
 from haiku._src import base
 from haiku._src import initializers
 from haiku._src import module
@@ -113,7 +112,7 @@ class Sequential(hk.Module):
   def __init__(
       self,
       layers: Iterable[Callable[..., Any]],
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     super().__init__(name=name)
     self.layers = tuple(layers)
@@ -136,9 +135,9 @@ class Linear(hk.Module):
       self,
       output_size: int,
       with_bias: bool = True,
-      w_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
-      name: Optional[str] = None,
+      w_init: hk.initializers.Initializer | None = None,
+      b_init: hk.initializers.Initializer | None = None,
+      name: str | None = None,
   ):
     """Constructs the Linear module.
 
@@ -162,7 +161,7 @@ class Linear(hk.Module):
       self,
       inputs: jax.Array,
       *,
-      precision: Optional[lax.Precision] = None,
+      precision: lax.Precision | None = None,
   ) -> jax.Array:
     """Computes a linear transform of the input."""
     if not inputs.shape:

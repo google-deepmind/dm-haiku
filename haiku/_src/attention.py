@@ -13,8 +13,6 @@
 # limitations under the License.
 # ==============================================================================
 """(Multi-Head) Attention module for use in Transformer architectures."""
-
-from typing import Optional
 import warnings
 
 from haiku._src import basic
@@ -60,14 +58,14 @@ class MultiHeadAttention(hk.Module):
       num_heads: int,
       key_size: int,
       # TODO(b/240019186): Remove `w_init_scale`.
-      w_init_scale: Optional[float] = None,
+      w_init_scale: float | None = None,
       *,
-      w_init: Optional[hk.initializers.Initializer] = None,
+      w_init: hk.initializers.Initializer | None = None,
       with_bias: bool = True,
-      b_init: Optional[hk.initializers.Initializer] = None,
-      value_size: Optional[int] = None,
-      model_size: Optional[int] = None,
-      name: Optional[str] = None,
+      b_init: hk.initializers.Initializer | None = None,
+      value_size: int | None = None,
+      model_size: int | None = None,
+      name: str | None = None,
   ):
     """Initialises the module.
 
@@ -115,7 +113,7 @@ class MultiHeadAttention(hk.Module):
       query: jax.Array,
       key: jax.Array,
       value: jax.Array,
-      mask: Optional[jax.Array] = None,
+      mask: jax.Array | None = None,
   ) -> jax.Array:
     """Computes (optionally masked) MHA with queries, keys & values.
 
@@ -168,7 +166,7 @@ class MultiHeadAttention(hk.Module):
       self,
       x: jax.Array,
       head_size: int,
-      name: Optional[str] = None,
+      name: str | None = None,
   ) -> jax.Array:
     y = hk.Linear(self.num_heads * head_size, w_init=self.w_init,
                   with_bias=self.with_bias, b_init=self.b_init, name=name)(x)

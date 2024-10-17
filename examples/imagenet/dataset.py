@@ -18,7 +18,6 @@ from collections.abc import Iterable, Iterator, Mapping, Sequence
 import enum
 import itertools as it
 import types
-from typing import Optional
 
 import jax
 import jax.numpy as jnp
@@ -294,7 +293,7 @@ def _decode_and_random_crop(image_bytes: tf.Tensor) -> tf.Tensor:
 
 def _decode_and_center_crop(
     image_bytes: tf.Tensor,
-    jpeg_shape: Optional[tf.Tensor] = None,
+    jpeg_shape: tf.Tensor | None = None,
 ) -> tf.Tensor:
   """Crops to center of image with padding then scales."""
   if jpeg_shape is None:

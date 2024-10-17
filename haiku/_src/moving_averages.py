@@ -15,7 +15,6 @@
 """Moving averages."""
 
 import re
-from typing import Optional, Union
 import warnings
 
 from haiku._src import base
@@ -50,7 +49,7 @@ class ExponentialMovingAverage(hk.Module):
       decay,
       zero_debias: bool = True,
       warmup_length: int = 0,
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     """Initializes an ExponentialMovingAverage module.
 
@@ -93,7 +92,7 @@ class ExponentialMovingAverage(hk.Module):
 
   def __call__(
       self,
-      value: Union[float, jax.Array],
+      value: float | jax.Array,
       update_stats: bool = True,
   ) -> jax.Array:
     """Updates the EMA and returns the new value.
@@ -173,7 +172,7 @@ class EMAParamsTree(hk.Module):
       zero_debias: bool = True,
       warmup_length: int = 0,
       ignore_regex: str = "",
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     """Initializes an EMAParamsTree module.
 

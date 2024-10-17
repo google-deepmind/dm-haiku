@@ -15,11 +15,11 @@
 """Tests for haiku._src.module."""
 
 import abc
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 import contextlib
 import dataclasses
 import inspect
-from typing import Callable, Optional, Protocol, TypeVar, runtime_checkable
+from typing import Optional, Protocol, TypeVar, runtime_checkable
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -923,7 +923,7 @@ class TransparentModule(module.Module):
 class DataLinear(module.Module):
 
   output_size: int
-  name: Optional[str] = None
+  name: str | None = None
 
   def __call__(self, x):
     j, k = x.shape[-1], self.output_size
@@ -937,7 +937,7 @@ class DataMLP(module.Module):
 
   output_sizes: Sequence[int]
   activation: Callable[[jax.Array], jax.Array] = jax.nn.relu
-  name: Optional[str] = None
+  name: str | None = None
 
   def __call__(self, x):
     for i, output_size in enumerate(self.output_sizes):

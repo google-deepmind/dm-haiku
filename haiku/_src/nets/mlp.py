@@ -14,8 +14,7 @@
 # ==============================================================================
 """A minimal interface mlp module."""
 
-from collections.abc import Iterable
-from typing import Callable, Optional
+from collections.abc import Callable, Iterable
 
 from haiku._src import base
 from haiku._src import basic
@@ -43,12 +42,12 @@ class MLP(hk.Module):
   def __init__(
       self,
       output_sizes: Iterable[int],
-      w_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
+      w_init: hk.initializers.Initializer | None = None,
+      b_init: hk.initializers.Initializer | None = None,
       with_bias: bool = True,
       activation: Callable[[jax.Array], jax.Array] = jax.nn.relu,
       activate_final: bool = False,
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     """Constructs an MLP.
 
@@ -89,7 +88,7 @@ class MLP(hk.Module):
   def __call__(
       self,
       inputs: jax.Array,
-      dropout_rate: Optional[float] = None,
+      dropout_rate: float | None = None,
       rng=None,
   ) -> jax.Array:
     """Connects the module to some inputs.
@@ -123,8 +122,8 @@ class MLP(hk.Module):
 
   def reverse(
       self,
-      activate_final: Optional[bool] = None,
-      name: Optional[str] = None,
+      activate_final: bool | None = None,
+      name: str | None = None,
   ) -> "MLP":
     """Returns a new MLP which is the layer-wise reverse of this MLP.
 

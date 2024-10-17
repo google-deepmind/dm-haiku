@@ -15,8 +15,8 @@
 """Functions for filtering parameters and state in Haiku."""
 
 import collections
-from collections.abc import Generator, Mapping, MutableMapping
-from typing import (Any, Callable, TypeVar)
+from collections.abc import Callable, Generator, Mapping, MutableMapping
+from typing import Any, TypeVar
 
 from haiku._src import data_structures
 from haiku._src import utils

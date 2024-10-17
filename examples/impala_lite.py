@@ -20,10 +20,11 @@ For a more full-fledged implementation, see examples/impala/README.md.
 See: https://arxiv.org/abs/1802.01561
 """
 
+from collections.abc import Callable
 import functools
 import queue
 import threading
-from typing import Any, Callable, NamedTuple
+from typing import Any, NamedTuple
 
 from absl import app
 from absl import logging

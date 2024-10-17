@@ -15,7 +15,6 @@
 """Tests for haiku._src.mixed_precision."""
 
 import importlib
-from typing import Optional
 
 from absl.testing import absltest
 from haiku._src import base
@@ -29,7 +28,7 @@ import jax.numpy as jnp
 import jmp
 
 
-def with_policy(cls: type[module.Module], policy: Optional[jmp.Policy]):
+def with_policy(cls: type[module.Module], policy: jmp.Policy | None):
   def decorator(f):
     def wrapper(*args, **kwargs):
       with mixed_precision.push_policy(cls, policy):

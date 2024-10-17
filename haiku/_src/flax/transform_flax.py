@@ -15,8 +15,8 @@
 
 """Utilities for converting Flax modules to use with Haiku."""
 
-from collections.abc import Mapping
-from typing import Any, Callable
+from collections.abc import Callable, Mapping
+from typing import Any
 
 import flax.errors
 import flax.linen as nn

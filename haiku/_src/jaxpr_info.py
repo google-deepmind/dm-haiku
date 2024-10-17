@@ -27,13 +27,13 @@ Example usage:
     print(jaxpr_info.format_module(mod))
 
 """
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 import dataclasses
 import itertools
 import logging
 import os
 import sys
-from typing import Any, Callable, NamedTuple, Optional
+from typing import Any, NamedTuple
 
 from haiku._src import summarise
 import jax
@@ -49,7 +49,7 @@ class Module:
   # How many flops it takes to compute this module, including all operations
   # contained by sub-modules.
   # Only populated if `compute_flops` was passed to `make_model_info`.
-  flops: Optional[int] = None
+  flops: int | None = None
 
   # Expressions that are directly part of this module, e.g. in the __call__
   # function.
@@ -78,7 +78,7 @@ class Expression:
 
   # Estimated number of flops required to compute this expression.
   # Only populated if `compute_flops` was passed to `make_model_info`.
-  flops: Optional[int] = None
+  flops: int | None = None
 
   # Additional details, e.g. input/output shapes.
   details: str = ''
@@ -89,7 +89,7 @@ class Expression:
 
   # Some expressions, such as named_call, contain a whole subtree of modules
   # and expressions.
-  submodule: Optional[Module] = None
+  submodule: Module | None = None
 
   # For internal use only, the first variable in outvars.
   first_outvar: str = ''
@@ -103,10 +103,10 @@ ComputeFlopsFn = Callable[[jax.core.JaxprEqn, Expression], int]
 
 def make_model_info(
     f: Callable[..., Any],
-    name: Optional[str] = None,
+    name: str | None = None,
     include_module_info: bool = True,
-    compute_flops: Optional[ComputeFlopsFn] = None,
-    axis_env: Optional[Sequence[tuple[Any, int]]] = None,
+    compute_flops: ComputeFlopsFn | None = None,
+    axis_env: Sequence[tuple[Any, int]] | None = None,
 ) -> Callable[..., Module]:
   """Creates a function that computes flop, param and state information.
 
@@ -270,16 +270,16 @@ def _process_eqn(
     eqn: jax.core.JaxprEqn,
     seen: set[str],
     eqns_by_output: Mapping[str, jax.core.JaxprEqn],
-    compute_flops: Optional[ComputeFlopsFn],
+    compute_flops: ComputeFlopsFn | None,
     scope: _ModuleScope,
     module: Module,
     binder_idx: dict[jax.core.Var, int],
-) -> Optional[int]:
+) -> int | None:
   """Recursive walks the JaxprEqn to compute the flops it takes."""
   for out_var in eqn.outvars:
     _mark_seen(binder_idx, seen, out_var, scope)
 
-  outvars = sorted([_var_to_str(binder_idx, e) for e in eqn.outvars],
+  outvars = sorted((_var_to_str(binder_idx, e) for e in eqn.outvars),
                    key=_var_sort_key)
   name_stack = str(eqn.source_info.name_stack)
   expression = Expression(
@@ -392,11 +392,11 @@ def _process_eqn(
 
 def _process_jaxpr(
     jaxpr: jax.core.Jaxpr,
-    compute_flops: Optional[ComputeFlopsFn],
+    compute_flops: ComputeFlopsFn | None,
     scope: _ModuleScope,
     seen: set[str],
     module: Module,
-) -> Optional[int]:
+) -> int | None:
   """Computes the flops used for a JAX expression, tracking module scope."""
   if isinstance(jaxpr, jax.core.ClosedJaxpr):
     return _process_jaxpr(jaxpr.jaxpr, compute_flops, scope, seen, module)

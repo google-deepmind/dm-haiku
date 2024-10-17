@@ -14,9 +14,9 @@
 # ==============================================================================
 """Lifting parameters in Haiku."""
 
-from collections.abc import Mapping, MutableMapping
+from collections.abc import Callable, Mapping, MutableMapping
 import functools
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, TypeVar
 
 from haiku._src import base
 from haiku._src import data_structures
@@ -325,7 +325,7 @@ class LiftWithStateUpdater:
 
   __slots__ = ("_used", "_name", "_context_id")
 
-  def __init__(self, name: Optional[str]):
+  def __init__(self, name: str | None):
     self._used = False
     self._name = name
     ctx = base.current_context()

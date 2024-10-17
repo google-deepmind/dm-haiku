@@ -15,7 +15,6 @@
 """Bias module."""
 
 from collections.abc import Sequence
-from typing import Optional, Union
 
 from haiku._src import base
 from haiku._src import initializers
@@ -76,10 +75,10 @@ class Bias(hk.Module):
 
   def __init__(
       self,
-      output_size: Optional[Sequence[int]] = None,
-      bias_dims: Optional[Sequence[int]] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
-      name: Optional[str] = None,
+      output_size: Sequence[int] | None = None,
+      bias_dims: Sequence[int] | None = None,
+      b_init: hk.initializers.Initializer | None = None,
+      name: str | None = None,
   ):
     """Constructs a ``Bias`` module that supports broadcasting.
 
@@ -103,7 +102,7 @@ class Bias(hk.Module):
   def __call__(
       self,
       inputs: jax.Array,
-      multiplier: Optional[Union[float, jax.Array]] = None,
+      multiplier: float | jax.Array | None = None,
   ) -> jax.Array:
     """Adds bias to ``inputs`` and optionally multiplies by ``multiplier``.
 

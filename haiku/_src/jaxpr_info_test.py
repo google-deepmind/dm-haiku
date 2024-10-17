@@ -13,7 +13,6 @@
 # limitations under the License.
 # ==============================================================================
 """Tests for jaxpr_info."""
-from typing import Optional
 
 from absl import logging
 from absl.testing import absltest
@@ -28,7 +27,7 @@ import numpy as np
 
 class MyModel(module.Module):
 
-  def __init__(self, name: Optional[str] = None):
+  def __init__(self, name: str | None = None):
     super().__init__(name=name)
 
   def __call__(self, x: jax.Array):

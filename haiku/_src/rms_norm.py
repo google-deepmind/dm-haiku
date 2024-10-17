@@ -19,7 +19,7 @@ Reference: https://arxiv.org/abs/1910.07467
 
 from collections import abc
 from collections.abc import Sequence
-from typing import Optional, Union
+from typing import Union
 
 from haiku._src import base
 from haiku._src import initializers
@@ -55,11 +55,11 @@ class RMSNorm(hk.Module):
       self,
       axis: AxisOrAxes,
       eps: float = 1e-5,
-      scale_init: Optional[hk.initializers.Initializer] = None,
-      name: Optional[str] = None,
+      scale_init: hk.initializers.Initializer | None = None,
+      name: str | None = None,
       create_scale: bool = True,
       *,
-      param_axis: Optional[AxisOrAxes] = None,
+      param_axis: AxisOrAxes | None = None,
       ):
     """Constructs a RMSNorm module.
 

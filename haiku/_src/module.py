@@ -14,12 +14,12 @@
 # ==============================================================================
 """Base Haiku module."""
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 import contextlib
 import functools
 import inspect
 import re
-from typing import Any, Callable, ContextManager, NamedTuple, Optional, Protocol, TypeVar
+from typing import Any, ContextManager, NamedTuple, Protocol, TypeVar
 
 from haiku._src import base
 from haiku._src import config
@@ -484,7 +484,7 @@ _VALID_IDENTIFIER_R = re.compile(r"^[a-zA-Z_]([a-zA-Z0-9_])*$")
 valid_identifier = lambda name: bool(_VALID_IDENTIFIER_R.match(name))
 
 
-def name_and_number(name: str) -> tuple[str, Optional[int]]:
+def name_and_number(name: str) -> tuple[str, int | None]:
   splits = re.split(r"_(0|[1-9]\d*)$", name, 3)
   if len(splits) > 1:
     return splits[0], int(splits[1])
@@ -635,7 +635,7 @@ class Module(metaclass=ModuleMetaclass):
   2.0
   """
 
-  def __init__(self, name: Optional[str] = None):
+  def __init__(self, name: str | None = None):
     """Initializes the current module with the given name.
 
     Subclasses should call this constructor before creating other modules or

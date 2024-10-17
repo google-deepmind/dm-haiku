@@ -16,10 +16,11 @@
 
 # pylint: disable=unnecessary-lambda
 
+from collections.abc import Callable
 import dataclasses
 import functools
 import inspect
-from typing import Any, Callable, NamedTuple, Optional, TypeVar
+from typing import Any, NamedTuple, Optional, TypeVar
 
 from haiku._src import analytics
 from haiku._src import transform

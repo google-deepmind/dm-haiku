@@ -15,10 +15,11 @@
 """Converts Haiku functions to dot."""
 
 import collections
+from collections.abc import Callable
 import contextlib
 import functools
 import html
-from typing import Any, Callable, NamedTuple, Optional
+from typing import Any, NamedTuple
 
 from haiku._src import data_structures
 from haiku._src import module
@@ -51,7 +52,7 @@ class Graph(NamedTuple):
   subgraphs: list['Graph']
 
   @classmethod
-  def create(cls, title: Optional[str] = None):
+  def create(cls, title: str | None = None):
     return Graph(title=title, nodes=[], edges=[], subgraphs=[])
 
   def evolve(self, **kwargs) -> 'Graph':
@@ -295,7 +296,7 @@ def _graph_to_dot(graph: Graph, args, outputs) -> str:
   outids = {id(v) for v in jax.tree.leaves(outputs)}
   outname = {id(v): format_path(p) for p, v in tree.flatten_with_path(outputs)}
 
-  def render_graph(g: Graph, parent: Optional[Graph] = None, depth: int = 0):
+  def render_graph(g: Graph, parent: Graph | None = None, depth: int = 0):
     """Renders a given graph by appending 'dot' format lines."""
 
     if parent:

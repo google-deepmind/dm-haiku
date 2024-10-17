@@ -16,7 +16,7 @@
 
 import abc
 from collections.abc import Sequence
-from typing import Any, NamedTuple, Optional, Union
+from typing import Any, NamedTuple
 
 from haiku._src import base
 from haiku._src import basic
@@ -71,7 +71,7 @@ class RNNCore(abc.ABC, hk.Module):
     """
 
   @abc.abstractmethod
-  def initial_state(self, batch_size: Optional[int]):
+  def initial_state(self, batch_size: int | None):
     """Constructs an initial state for this core.
 
     Args:
@@ -218,7 +218,7 @@ def dynamic_unroll(core,
   return output_sequence, last_state
 
 
-def add_batch(nest, batch_size: Optional[int]):
+def add_batch(nest, batch_size: int | None):
   """Adds a batch dimension at axis 0 to the leaves of a nested structure."""
   broadcast = lambda x: jnp.broadcast_to(x, (batch_size,) + x.shape)
   return jax.tree.map(broadcast, nest)
@@ -241,7 +241,7 @@ class VanillaRNN(RNNCore):
       self,
       hidden_size: int,
       double_bias: bool = True,
-      name: Optional[str] = None
+      name: str | None = None
   ):
     """Constructs a vanilla RNN core.
 
@@ -263,7 +263,7 @@ class VanillaRNN(RNNCore):
     out = jax.nn.relu(input_to_hidden(inputs) + hidden_to_hidden(prev_state))
     return out, out
 
-  def initial_state(self, batch_size: Optional[int]):
+  def initial_state(self, batch_size: int | None):
     state = jnp.zeros([self.hidden_size])
     if batch_size is not None:
       state = add_batch(state, batch_size)
@@ -311,7 +311,7 @@ class LSTM(RNNCore):
       the beginning of the training.
   """
 
-  def __init__(self, hidden_size: int, name: Optional[str] = None):
+  def __init__(self, hidden_size: int, name: str | None = None):
     """Constructs an LSTM.
 
     Args:
@@ -338,7 +338,7 @@ class LSTM(RNNCore):
     h = jax.nn.sigmoid(o) * jnp.tanh(c)
     return h, LSTMState(h, c)
 
-  def initial_state(self, batch_size: Optional[int]) -> LSTMState:
+  def initial_state(self, batch_size: int | None) -> LSTMState:
     state = LSTMState(hidden=jnp.zeros([self.hidden_size]),
                       cell=jnp.zeros([self.hidden_size]))
     if batch_size is not None:
@@ -382,8 +382,8 @@ class ConvNDLSTM(RNNCore):
       num_spatial_dims: int,
       input_shape: Sequence[int],
       output_channels: int,
-      kernel_shape: Union[int, Sequence[int]],
-      name: Optional[str] = None,
+      kernel_shape: int | Sequence[int],
+      name: str | None = None,
   ):
     """Constructs a convolutional LSTM.
 
@@ -427,7 +427,7 @@ class ConvNDLSTM(RNNCore):
     h = jax.nn.sigmoid(o) * jnp.tanh(c)
     return h, LSTMState(h, c)
 
-  def initial_state(self, batch_size: Optional[int]) -> LSTMState:
+  def initial_state(self, batch_size: int | None) -> LSTMState:
     shape = self.input_shape + (self.output_channels,)
     state = LSTMState(jnp.zeros(shape), jnp.zeros(shape))
     if batch_size is not None:
@@ -442,8 +442,8 @@ class Conv1DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
       self,
       input_shape: Sequence[int],
       output_channels: int,
-      kernel_shape: Union[int, Sequence[int]],
-      name: Optional[str] = None,
+      kernel_shape: int | Sequence[int],
+      name: str | None = None,
   ):
     """Constructs a 1-D convolutional LSTM.
 
@@ -470,8 +470,8 @@ class Conv2DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
       self,
       input_shape: Sequence[int],
       output_channels: int,
-      kernel_shape: Union[int, Sequence[int]],
-      name: Optional[str] = None,
+      kernel_shape: int | Sequence[int],
+      name: str | None = None,
   ):
     """Constructs a 2-D convolutional LSTM.
 
@@ -498,8 +498,8 @@ class Conv3DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
       self,
       input_shape: Sequence[int],
       output_channels: int,
-      kernel_shape: Union[int, Sequence[int]],
-      name: Optional[str] = None,
+      kernel_shape: int | Sequence[int],
+      name: str | None = None,
   ):
     """Constructs a 3-D convolutional LSTM.
 
@@ -544,10 +544,10 @@ class GRU(RNNCore):
   def __init__(
       self,
       hidden_size: int,
-      w_i_init: Optional[hk.initializers.Initializer] = None,
-      w_h_init: Optional[hk.initializers.Initializer] = None,
-      b_init: Optional[hk.initializers.Initializer] = None,
-      name: Optional[str] = None,
+      w_i_init: hk.initializers.Initializer | None = None,
+      w_h_init: hk.initializers.Initializer | None = None,
+      b_init: hk.initializers.Initializer | None = None,
+      name: str | None = None,
   ):
     super().__init__(name=name)
     self.hidden_size = hidden_size
@@ -582,7 +582,7 @@ class GRU(RNNCore):
     next_state = (1 - z) * state + z * a
     return next_state, next_state
 
-  def initial_state(self, batch_size: Optional[int]):
+  def initial_state(self, batch_size: int | None):
     state = jnp.zeros([self.hidden_size])
     if batch_size is not None:
       state = add_batch(state, batch_size)
@@ -599,7 +599,7 @@ class IdentityCore(RNNCore):
   def __call__(self, inputs, state):
     return inputs, state
 
-  def initial_state(self, batch_size: Optional[int]):
+  def initial_state(self, batch_size: int | None):
     return ()
 
 
@@ -626,7 +626,7 @@ class ResetCore(RNNCore):
   ``should_reset`` nest compatible with the state structure.
   """
 
-  def __init__(self, core: RNNCore, name: Optional[str] = None):
+  def __init__(self, core: RNNCore, name: str | None = None):
     super().__init__(name=name)
     self.core = core
 
@@ -709,7 +709,7 @@ class ResetCore(RNNCore):
     state = jax.tree.map(jnp.where, should_reset, initial_state, state)
     return self.core(inputs, state)
 
-  def initial_state(self, batch_size: Optional[int]):
+  def initial_state(self, batch_size: int | None):
     return self.core.initial_state(batch_size)
 
   def _is_batched(self, state):
@@ -727,7 +727,7 @@ class _DeepRNN(RNNCore):
       self,
       layers: Sequence[Any],
       skip_connections: bool,
-      name: Optional[str] = None
+      name: str | None = None
   ):
     super().__init__(name=name)
     self.layers = layers
@@ -770,7 +770,7 @@ class _DeepRNN(RNNCore):
 
     return out, tuple(next_states)
 
-  def initial_state(self, batch_size: Optional[int]):
+  def initial_state(self, batch_size: int | None):
     return tuple(
         layer.initial_state(batch_size)
         for layer in self.layers
@@ -791,12 +791,12 @@ class DeepRNN(_DeepRNN):
   tuple.
   """
 
-  def __init__(self, layers: Sequence[Any], name: Optional[str] = None):
+  def __init__(self, layers: Sequence[Any], name: str | None = None):
     super().__init__(layers, skip_connections=False, name=name)
 
 
 def deep_rnn_with_skip_connections(layers: Sequence[RNNCore],
-                                   name: Optional[str] = None) -> RNNCore:
+                                   name: str | None = None) -> RNNCore:
   r"""Constructs a :class:`DeepRNN` with skip connections.
 
   Skip connections alter the dependency structure within a :class:`DeepRNN`.

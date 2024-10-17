@@ -14,9 +14,8 @@
 # ==============================================================================
 """MNIST classifier with pruning as in https://arxiv.org/abs/1710.01878 ."""
 
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 import functools
-from typing import Callable
 
 from absl import app
 import haiku as hk

@@ -14,8 +14,9 @@
 # ==============================================================================
 """A stateless agent interface."""
 import collections
+from collections.abc import Callable
 import functools
-from typing import Any, Callable, Optional
+from typing import Any
 
 import dm_env
 import haiku as hk
@@ -69,7 +70,7 @@ class Agent:
     return self._init_fn(rng_key, dummy_inputs, self.initial_state(1))
 
   @functools.partial(jax.jit, static_argnums=(0, 1))
-  def initial_state(self, batch_size: Optional[int]):
+  def initial_state(self, batch_size: int | None):
     """Returns agent initial state."""
     # We expect that generating the initial_state does not require parameters.
     return self._initial_state_apply_fn(None, batch_size)

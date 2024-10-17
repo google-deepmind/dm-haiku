@@ -16,7 +16,6 @@
 
 from collections.abc import Sequence
 import enum
-from typing import Optional, Union
 
 from haiku._src import base
 from haiku._src import initializers
@@ -62,12 +61,12 @@ class Embed(hk.Module):
 
   def __init__(
       self,
-      vocab_size: Optional[int] = None,
-      embed_dim: Optional[int] = None,
-      embedding_matrix: Optional[Union[np.ndarray, jax.Array]] = None,
-      w_init: Optional[hk.initializers.Initializer] = None,
-      lookup_style: Union[str, EmbedLookupStyle] = "ARRAY_INDEX",
-      name: Optional[str] = None,
+      vocab_size: int | None = None,
+      embed_dim: int | None = None,
+      embedding_matrix: np.ndarray | jax.Array | None = None,
+      w_init: hk.initializers.Initializer | None = None,
+      lookup_style: str | EmbedLookupStyle = "ARRAY_INDEX",
+      name: str | None = None,
       precision: jax.lax.Precision = jax.lax.Precision.HIGHEST,
   ):
     """Constructs an Embed module.
@@ -141,9 +140,9 @@ class Embed(hk.Module):
 
   def __call__(
       self,
-      ids: Union[jax.Array, Sequence[int]],
-      lookup_style: Optional[Union[str, hk.EmbedLookupStyle]] = None,
-      precision: Optional[jax.lax.Precision] = None,
+      ids: jax.Array | Sequence[int],
+      lookup_style: str | hk.EmbedLookupStyle | None = None,
+      precision: jax.lax.Precision | None = None,
   ) -> jax.Array:
     r"""Lookup embeddings.
 

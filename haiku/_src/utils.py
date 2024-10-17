@@ -20,7 +20,7 @@ import decimal
 import inspect
 import pprint
 import re
-from typing import Any, TypeVar, Union
+from typing import Any, TypeVar
 
 import jax
 
@@ -114,7 +114,7 @@ def indent(amount: int, s: str) -> str:
 
 
 def replicate(
-    element: Union[T, Sequence[T]],
+    element: T | Sequence[T],
     num_times: int,
     name: str,
 ) -> tuple[T, ...]:

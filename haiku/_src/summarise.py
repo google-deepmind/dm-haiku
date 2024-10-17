@@ -14,11 +14,11 @@
 # ==============================================================================
 """Summarises Haiku modules."""
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 import dataclasses
 import functools
 import pprint
-from typing import Any, Callable, Optional, TypeVar, Union
+from typing import Any, TypeVar
 
 from haiku._src import base
 from haiku._src import data_structures
@@ -165,7 +165,7 @@ def make_hk_transform_ignore_jax_transforms(f):
 
 
 def eval_summary(
-    f: Union[Callable[..., Any], hk.Transformed, hk.TransformedWithState],
+    f: Callable[..., Any] | hk.Transformed | hk.TransformedWithState,
 ) -> Callable[..., Sequence[MethodInvocation]]:
   """Records module method calls performed by ``f``.
 
@@ -314,10 +314,10 @@ DEFAULT_FILTERS = ("has_output",)
 
 
 def tabulate(
-    f: Union[Callable[..., Any], hk.Transformed, hk.TransformedWithState],
+    f: Callable[..., Any] | hk.Transformed | hk.TransformedWithState,
     *,
-    columns: Optional[Sequence[str]] = DEFAULT_COLUMNS,
-    filters: Optional[Sequence[str]] = DEFAULT_FILTERS,
+    columns: Sequence[str] | None = DEFAULT_COLUMNS,
+    filters: Sequence[str] | None = DEFAULT_FILTERS,
     tabulate_kwargs={"tablefmt": "grid"},
 ) -> Callable[..., str]:
   # pylint: disable=line-too-long

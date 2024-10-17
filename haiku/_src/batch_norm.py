@@ -15,7 +15,6 @@
 """Batch Norm."""
 
 from collections.abc import Sequence
-from typing import Optional, Union
 
 from haiku._src import base
 from haiku._src import initializers
@@ -68,13 +67,13 @@ class BatchNorm(hk.Module):
       create_offset: bool,
       decay_rate: float,
       eps: float = 1e-5,
-      scale_init: Optional[hk.initializers.Initializer] = None,
-      offset_init: Optional[hk.initializers.Initializer] = None,
-      axis: Optional[Sequence[int]] = None,
-      cross_replica_axis: Optional[Union[str, Sequence[str]]] = None,
-      cross_replica_axis_index_groups: Optional[Sequence[Sequence[int]]] = None,
+      scale_init: hk.initializers.Initializer | None = None,
+      offset_init: hk.initializers.Initializer | None = None,
+      axis: Sequence[int] | None = None,
+      cross_replica_axis: str | Sequence[str] | None = None,
+      cross_replica_axis_index_groups: Sequence[Sequence[int]] | None = None,
       data_format: str = "channels_last",
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     """Constructs a BatchNorm module.
 
@@ -130,8 +129,8 @@ class BatchNorm(hk.Module):
       inputs: jax.Array,
       is_training: bool,
       test_local_stats: bool = False,
-      scale: Optional[jax.Array] = None,
-      offset: Optional[jax.Array] = None,
+      scale: jax.Array | None = None,
+      offset: jax.Array | None = None,
   ) -> jax.Array:
     """Computes the normalized version of the input.
 

@@ -16,7 +16,6 @@
 
 import collections
 from collections.abc import Sequence
-from typing import Optional, Union
 
 from haiku._src import base
 from haiku._src import initializers
@@ -73,14 +72,14 @@ class GroupNorm(hk.Module):
   def __init__(
       self,
       groups: int,
-      axis: Union[int, slice, Sequence[int]] = slice(1, None),
+      axis: int | slice | Sequence[int] = slice(1, None),
       create_scale: bool = True,
       create_offset: bool = True,
       eps: float = 1e-5,
-      scale_init: Optional[hk.initializers.Initializer] = None,
-      offset_init: Optional[hk.initializers.Initializer] = None,
+      scale_init: hk.initializers.Initializer | None = None,
+      offset_init: hk.initializers.Initializer | None = None,
       data_format: str = "channels_last",
-      name: Optional[str] = None,
+      name: str | None = None,
   ):
     """Constructs a ``GroupNorm`` module.
 
@@ -144,8 +143,8 @@ class GroupNorm(hk.Module):
   def __call__(
       self,
       x: jax.Array,
-      scale: Optional[jax.Array] = None,
-      offset: Optional[jax.Array] = None,
+      scale: jax.Array | None = None,
+      offset: jax.Array | None = None,
   ) -> jax.Array:
     """Returns normalized inputs.
 

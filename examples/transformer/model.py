@@ -23,7 +23,6 @@ Glossary of shapes:
 """
 
 import dataclasses
-from typing import Optional
 
 import haiku as hk
 import jax
@@ -45,7 +44,7 @@ class Transformer(hk.Module):
   attn_size: int  # Size of the attention (key, query, value) vectors.
   dropout_rate: float  # Probability with which to apply dropout.
   widening_factor: int = 4  # Factor by which the MLP hidden layer widens.
-  name: Optional[str] = None  # Optional identifier for the module.
+  name: str | None = None  # Optional identifier for the module.
 
   def __call__(
       self,
@@ -98,7 +97,7 @@ class LanguageModel(hk.Module):
   model_size: int  # Embedding size.
   vocab_size: int  # Size of the vocabulary.
   pad_token: int  # Identity of the padding token (used for masking inputs).
-  name: Optional[str] = None  # Optional identifier for the module.
+  name: str | None = None  # Optional identifier for the module.
 
   def __call__(
       self,

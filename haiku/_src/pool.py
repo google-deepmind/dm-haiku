@@ -15,7 +15,6 @@
 """Pooling Haiku modules."""
 
 from collections.abc import Sequence
-from typing import Optional, Union
 import warnings
 
 from haiku._src import module
@@ -35,8 +34,8 @@ del module
 
 def _infer_shape(
     x: jax.Array,
-    size: Union[int, Sequence[int]],
-    channel_axis: Optional[int] = -1,
+    size: int | Sequence[int],
+    channel_axis: int | None = -1,
 ) -> tuple[int, ...]:
   """Infer shape for pooling window or strides."""
   if isinstance(size, int):
@@ -75,10 +74,10 @@ def _warn_if_unsafe(window_shape, strides):
 
 def max_pool(
     value: jax.Array,
-    window_shape: Union[int, Sequence[int]],
-    strides: Union[int, Sequence[int]],
+    window_shape: int | Sequence[int],
+    strides: int | Sequence[int],
     padding: str,
-    channel_axis: Optional[int] = -1,
+    channel_axis: int | None = -1,
 ) -> jax.Array:
   """Max pool.
 
@@ -105,10 +104,10 @@ def max_pool(
 
 def avg_pool(
     value: jax.Array,
-    window_shape: Union[int, Sequence[int]],
-    strides: Union[int, Sequence[int]],
+    window_shape: int | Sequence[int],
+    strides: int | Sequence[int],
     padding: str,
-    channel_axis: Optional[int] = -1,
+    channel_axis: int | None = -1,
 ) -> jax.Array:
   """Average pool.
 
@@ -155,11 +154,11 @@ class MaxPool(hk.Module):
 
   def __init__(
       self,
-      window_shape: Union[int, Sequence[int]],
-      strides: Union[int, Sequence[int]],
+      window_shape: int | Sequence[int],
+      strides: int | Sequence[int],
       padding: str,
-      channel_axis: Optional[int] = -1,
-      name: Optional[str] = None,
+      channel_axis: int | None = -1,
+      name: str | None = None,
   ):
     """Max pool.
 
@@ -189,11 +188,11 @@ class AvgPool(hk.Module):
 
   def __init__(
       self,
-      window_shape: Union[int, Sequence[int]],
-      strides: Union[int, Sequence[int]],
+      window_shape: int | Sequence[int],
+      strides: int | Sequence[int],
       padding: str,
-      channel_axis: Optional[int] = -1,
-      name: Optional[str] = None,
+      channel_axis: int | None = -1,
+      name: str | None = None,
   ):
     """Average pool.
 

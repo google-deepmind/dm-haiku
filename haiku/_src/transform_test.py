@@ -16,7 +16,6 @@
 
 from collections.abc import Mapping
 import inspect
-from typing import Optional, Union
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -592,15 +591,15 @@ class TransformTest(parameterized.TestCase):
       return 2
 
     def expected_f_init(
-        rng: Optional[Union[PRNGKey, int]], pos, key=37
+        rng: PRNGKey | int | None, pos, key=37
     ) -> tuple[Params, State]:
       del rng, pos, key
       raise NotImplementedError
 
     def expected_f_apply(
-        params: Optional[Params],
-        state: Optional[State],
-        rng: Optional[Union[PRNGKey, int]],
+        params: Params | None,
+        state: State | None,
+        rng: PRNGKey | int | None,
         pos,
         key=37,
     ) -> tuple[int, State]:
@@ -617,12 +616,12 @@ class TransformTest(parameterized.TestCase):
     def f(pos, *, key: int = 37) -> int:
       del pos, key
       return 2
-    def expected_f_init(rng: Optional[Union[PRNGKey, int]],
+    def expected_f_init(rng: PRNGKey | int | None,
                         pos, *, key: int = 37) -> Params:
       del rng, pos, key
       raise NotImplementedError
     def expected_f_apply(
-        params: Optional[Params], rng: Optional[Union[PRNGKey, int]],
+        params: Params | None, rng: PRNGKey | int | None,
         pos, *, key: int = 37) -> int:
       del params, rng, pos, key
       raise NotImplementedError

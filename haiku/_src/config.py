@@ -17,7 +17,6 @@
 import contextlib
 import dataclasses
 import threading
-from typing import Optional
 
 
 @dataclasses.dataclass
@@ -48,10 +47,10 @@ filter_none_values = lambda d: {k: v for k, v in d.items() if v is not None}
 # pylint: disable=redefined-outer-name,unused-argument
 def context(
     *,
-    check_jax_usage: Optional[bool] = None,
-    module_auto_repr: Optional[bool] = None,
-    restore_flatmap: Optional[bool] = None,
-    rng_reserve_size: Optional[int] = None,
+    check_jax_usage: bool | None = None,
+    module_auto_repr: bool | None = None,
+    restore_flatmap: bool | None = None,
+    rng_reserve_size: int | None = None,
 ):
   """Context manager for setting config options.
 
@@ -86,10 +85,10 @@ def context(
 # pylint: disable=redefined-outer-name,unused-argument,redefined-builtin
 def set(
     *,
-    check_jax_usage: Optional[bool] = None,
-    module_auto_repr: Optional[bool] = None,
-    restore_flatmap: Optional[bool] = None,
-    rng_reserve_size: Optional[int] = None,
+    check_jax_usage: bool | None = None,
+    module_auto_repr: bool | None = None,
+    restore_flatmap: bool | None = None,
+    rng_reserve_size: int | None = None,
 ):
   """Sets the given config option(s).
 

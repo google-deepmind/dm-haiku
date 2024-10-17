@@ -15,9 +15,10 @@
 """Function to stack repeats of a layer function without shared parameters."""
 
 import collections
+from collections.abc import Callable
 import functools
 import inspect
-from typing import Any, Callable, Optional, Protocol, Union
+from typing import Any, Protocol, Union
 
 from haiku._src import base
 from haiku._src import lift
@@ -47,7 +48,7 @@ def _check_no_varargs(f):
         "arguments")
 
 
-def _get_rng_stack(count: int) -> Optional[jax.Array]:
+def _get_rng_stack(count: int) -> jax.Array | None:
   rng = base.maybe_next_rng_key()
   if rng is None:
     return None
@@ -63,7 +64,7 @@ class LayerStackTransparencyMapping(Protocol):
 
   def flat_to_stacked(
       self, unstacked_module_name: str
-  ) -> Optional[tuple[str, int]]:
+  ) -> tuple[str, int] | None:
     """Creates stacked module name and scan index from flat name.
 
     Returns None when the module is not a part of layer_stack.  This happens
@@ -136,7 +137,7 @@ class _LayerStack:
       count: int,
       unroll: int,
       pass_reverse_to_layer_fn: bool = False,
-      transparency_map: Optional[LayerStackTransparencyMapping] = None,
+      transparency_map: LayerStackTransparencyMapping | None = None,
       name: str = "",
   ):
     """Iterate f count times, with non-shared parameters."""
@@ -218,7 +219,7 @@ class _LayerStack:
       self,
       x: jax.Array,
       *args,
-  ) -> tuple[jax.Array, Optional[jax.Array]]:
+  ) -> tuple[jax.Array, jax.Array | None]:
     raise NotImplementedError()
 
 
@@ -231,7 +232,7 @@ class _LayerStackNoPerLayer(_LayerStack):
       count: int,
       unroll: int,
       pass_reverse_to_layer_fn: bool = False,
-      transparency_map: Optional[LayerStackTransparencyMapping] = None,
+      transparency_map: LayerStackTransparencyMapping | None = None,
       name: str = "",
   ):
     super().__init__(
@@ -263,7 +264,7 @@ class _LayerStackWithPerLayer(_LayerStack):
       count: int,
       unroll: int,
       pass_reverse_to_layer_fn: bool = False,
-      transparency_map: Optional[LayerStackTransparencyMapping] = None,
+      transparency_map: LayerStackTransparencyMapping | None = None,
       name: str = "",
   ):
     super().__init__(
@@ -286,8 +287,8 @@ def layer_stack(
     unroll: int = 1,
     pass_reverse_to_layer_fn: bool = False,
     transparent: bool = False,
-    transparency_map: Optional[LayerStackTransparencyMapping] = None,
-    name: Optional[str] = None,
+    transparency_map: LayerStackTransparencyMapping | None = None,
+    name: str | None = None,
 ):
   """Utility to wrap a Haiku function and recursively apply it to an input.
 

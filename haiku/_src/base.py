@@ -71,11 +71,11 @@ class JaxTraceLevel(NamedTuple):
   @classmethod
   def current(cls):
     if jax.__version_info__ <= (0, 4, 33):
-      trace_stack = jax_core.thread_local_state.trace_state.trace_stack.stack
+      trace_stack = jax_core.thread_local_state.trace_state.trace_stack.stack  # type: ignore
       top_type = trace_stack[0].trace_type
       level = trace_stack[-1].level
-      sublevel = jax_core.cur_sublevel()
-      return JaxTraceLevel(opaque=(top_type, level, sublevel))
+      sublevel = jax_core.cur_sublevel()  # type: ignore
+      return JaxTraceLevel(opaque=(top_type, level, sublevel))  # type: ignore
 
     ts = jax_core.get_opaque_trace_state(convention="haiku")
     return JaxTraceLevel(opaque=ts)

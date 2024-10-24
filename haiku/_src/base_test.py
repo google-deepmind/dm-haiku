@@ -106,6 +106,12 @@ JAX_PURE_EXPECTING_FNS = (
 
 class BaseTest(parameterized.TestCase):
 
+  def assert_keys_equal(self, a, b):
+    self.assertEqual(jax.random.key_impl(a), jax.random.key_impl(b))
+    np.testing.assert_array_equal(
+        jax.random.key_data(a), jax.random.key_data(b)
+    )
+
   @test_utils.transform_and_run
   def test_parameter_reuse(self):
     w1 = base.get_parameter("w", [], init=jnp.zeros)
@@ -646,7 +652,7 @@ class BaseTest(parameterized.TestCase):
     s.reserve(10)
     hk_keys = tuple(next(s) for _ in range(10))
     jax_keys = tuple(jax.random.split(test_utils.clone(k), num=11)[1:])
-    jax.tree.map(np.testing.assert_array_equal, hk_keys, jax_keys)
+    jax.tree.map(self.assert_keys_equal, hk_keys, jax_keys)
 
   def test_prng_reserve_twice(self):
     k = jax.random.PRNGKey(42)
@@ -657,14 +663,14 @@ class BaseTest(parameterized.TestCase):
     k, subkey1, subkey2 = tuple(jax.random.split(test_utils.clone(k), num=3))
     _, subkey3, subkey4 = tuple(jax.random.split(k, num=3))
     jax_keys = (subkey1, subkey2, subkey3, subkey4)
-    jax.tree.map(np.testing.assert_array_equal, hk_keys, jax_keys)
+    jax.tree.map(self.assert_keys_equal, hk_keys, jax_keys)
 
   def test_prng_sequence_split(self):
     k = jax.random.PRNGKey(42)
     s = base.PRNGSequence(k)
     hk_keys = s.take(10)
     jax_keys = tuple(jax.random.split(test_utils.clone(k), num=11)[1:])
-    jax.tree.map(np.testing.assert_array_equal, hk_keys, jax_keys)
+    jax.tree.map(self.assert_keys_equal, hk_keys, jax_keys)
 
   @parameterized.parameters(42, 28)
   def test_with_rng(self, seed):
@@ -782,7 +788,7 @@ class BaseTest(parameterized.TestCase):
       for _ in range(2):
         split_key, *expected_keys = jax.random.split(split_key, size+1)
         hk_keys = hk.next_rng_keys(size)
-        np.testing.assert_array_equal(hk_keys, expected_keys)
+        jax.tree.map(self.assert_keys_equal, list(hk_keys), expected_keys)
 
   @parameterized.parameters(
       base.get_params, base.get_current_state, base.get_initial_state

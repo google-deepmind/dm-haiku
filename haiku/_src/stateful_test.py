@@ -87,26 +87,37 @@ def with_rng_reserve_size(f):
 
 class StatefulTest(parameterized.TestCase):
 
+  def assert_keys_equal(self, a, b):
+    self.assertEqual(jax.random.key_impl(a), jax.random.key_impl(b))
+    np.testing.assert_array_equal(
+        jax.random.key_data(a), jax.random.key_data(b)
+    )
+
+  def assert_keys_not_equal(self, a, b):
+    self.assertFalse(
+        (jax.random.key_impl(a) == jax.random.key_impl(b)) and
+        (jnp.all(jax.random.key_data(a) == jax.random.key_data(b))))
+
   @test_utils.transform_and_run
   def test_grad(self):
-    x = jnp.array(3.)
+    x = jnp.array(3.0)
     g = stateful.grad(SquareModule())(x)
     np.testing.assert_allclose(g, 2 * x, rtol=1e-4)
 
   def test_grad_no_transform(self):
-    x = jnp.array(3.)
+    x = jnp.array(3.0)
     with self.assertRaises(ValueError, msg="Use jax.grad() instead"):
       stateful.grad(jnp.square)(x)
 
   @test_utils.transform_and_run
   def test_value_and_grad(self):
-    x = jnp.array(2.)
+    x = jnp.array(2.0)
     y, g = stateful.value_and_grad(SquareModule())(x)
-    self.assertEqual(y, x ** 2)
+    self.assertEqual(y, x**2)
     np.testing.assert_allclose(g, 2 * x, rtol=1e-4)
 
   def test_value_and_grad_no_transform(self):
-    x = jnp.array(3.)
+    x = jnp.array(3.0)
     with self.assertRaises(ValueError, msg="Use jax.grad() instead"):
       stateful.value_and_grad(jnp.square)(x)
 
@@ -645,12 +656,12 @@ class StatefulTest(parameterized.TestCase):
     x = jnp.arange(4)
     k1, k2, k3, k4 = f(x)
     key_after = base.next_rng_key()
-    np.testing.assert_array_equal(k1, k2)
-    np.testing.assert_array_equal(k2, k3)
-    np.testing.assert_array_equal(k3, k4)
-    self.assertFalse(np.array_equal(key_before, k1))
-    self.assertFalse(np.array_equal(key_after, k1))
-    self.assertFalse(np.array_equal(key_before, key_after))
+    self.assert_keys_equal(k1, k2)
+    self.assert_keys_equal(k2, k3)
+    self.assert_keys_equal(k3, k4)
+    self.assert_keys_not_equal(key_before, k1)
+    self.assert_keys_not_equal(key_after, k1)
+    self.assert_keys_not_equal(key_before, key_after)
 
   @test_utils.transform_and_run
   def test_vmap_split_rng(self):

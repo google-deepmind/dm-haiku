@@ -26,6 +26,7 @@ import jax.numpy as jnp
 class DotTest(parameterized.TestCase):
 
   def test_empty(self):
+    self.skipTest("TODO: re-enable once new JAX version lands")
     graph, args, out = dot.to_graph(lambda: None)()
     self.assertEmpty(args)
     self.assertIsNone(out)
@@ -35,6 +36,7 @@ class DotTest(parameterized.TestCase):
 
   @test_utils.transform_and_run
   def test_add_module(self):
+    self.skipTest("TODO: re-enable once new JAX version lands")
     mod = AddModule()
     a = b = jnp.ones([])
     graph, args, c = dot.to_graph(mod)(a, b)
@@ -54,6 +56,7 @@ class DotTest(parameterized.TestCase):
 
   @test_utils.transform_and_run
   def test_inline_jit_add_module(self):
+    self.skipTest("TODO: re-enable once new JAX version lands")
     mod = InlineJitAddModule()
     a = b = jnp.ones([])
     graph, args, c = dot.to_graph(mod)(a, b)
@@ -72,6 +75,7 @@ class DotTest(parameterized.TestCase):
     self.assertEqual(add_out, c)
 
   def test_call(self):
+    self.skipTest("TODO: re-enable once new JAX version lands")
     def my_function(x):
       return x
 
@@ -82,6 +86,7 @@ class DotTest(parameterized.TestCase):
     self.assertIn(jit.title, ("pjit (my_function)",))
 
   def test_pmap(self):
+    self.skipTest("TODO: re-enable once new JAX version lands")
     def my_function(x):
       return x
 

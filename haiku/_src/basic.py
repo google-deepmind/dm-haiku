@@ -176,6 +176,7 @@ class Linear(hk.Module):
       stddev = 1. / np.sqrt(self.input_size)
       w_init = hk.initializers.TruncatedNormal(stddev=stddev)
     w = hk.get_parameter("w", [input_size, output_size], dtype, init=w_init)
+    w = w[None]
 
     out = jnp.dot(inputs, w, precision=precision)
 

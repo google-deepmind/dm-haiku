@@ -91,7 +91,7 @@ class Agent:
   def loss(self, params: hk.Params, trajs: Transition) -> jax.Array:
     """Computes a loss of trajs wrt params."""
     # Re-run the agent over the trajectories.
-    # Due to https://github.com/google/jax/issues/1459, we use hk.BatchApply
+    # Due to https://github.com/jax-ml/jax/issues/1459, we use hk.BatchApply
     # instead of vmap.
     # BatchApply turns the input tensors from [T, B, ...] into [T*B, ...].
     # We `functools.partial` params in so it does not get transformed.

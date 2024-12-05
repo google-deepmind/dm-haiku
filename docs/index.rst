@@ -26,7 +26,7 @@ abstractions for machine learning research.
 Installation
 ------------
 
-See https://github.com/google/jax#pip-installation for instructions on
+See https://github.com/jax-ml/jax#pip-installation for instructions on
 installing JAX.
 
 We suggest installing the latest version of Haiku by running::

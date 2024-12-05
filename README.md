@@ -230,7 +230,7 @@ Haiku is written in pure Python, but depends on C++ code via JAX.
 Because JAX installation is different depending on your CUDA version, Haiku does
 not list JAX as a dependency in `requirements.txt`.
 
-First, follow [these instructions](https://github.com/google/jax#installation)
+First, follow [these instructions](https://github.com/jax-ml/jax#installation)
 to install JAX with the relevant accelerator support.
 
 Then, install Haiku using pip:
@@ -462,7 +462,7 @@ In this bibtex entry, the version number is intended to be from
 [`haiku/__init__.py`](https://github.com/deepmind/dm-haiku/blob/main/haiku/__init__.py),
 and the year corresponds to the project's open-source release.
 
-[JAX]: https://github.com/google/jax
+[JAX]: https://github.com/jax-ml/jax
 [Sonnet]: https://github.com/deepmind/sonnet
 [Tensorflow]: https://github.com/tensorflow/tensorflow
 [Flax]: https://github.com/google/flax

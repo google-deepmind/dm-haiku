@@ -177,7 +177,7 @@ class Embed(hk.Module):
       # it along the row dimension and treat each row as a separate index into
       # one of the dimensions of the array. The error only surfaces when
       # indexing with DeviceArray, while indexing with numpy.ndarray works fine.
-      # See https://github.com/google/jax/issues/620 for more details.
+      # See https://github.com/jax-ml/jax/issues/620 for more details.
       # Cast to a jnp array in case `ids` is a tracer (eg un a dynamic_unroll).
       return jnp.asarray(self.embeddings)[(ids,)]
 

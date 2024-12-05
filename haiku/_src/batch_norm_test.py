@@ -174,7 +174,7 @@ class BatchNormTest(absltest.TestCase):
           offset_init=jnp.zeros)
 
   def test_eps_cast_to_var_dtype(self):
-    # See https://github.com/google/jax/issues/4718 for more info. In the
+    # See https://github.com/jax-ml/jax/issues/4718 for more info. In the
     # context of this test we need to assert NumPy bf16 params/state and a
     # Python float for eps preserve bf16 output.
 

@@ -28,6 +28,7 @@ from haiku._src import test_utils
 from haiku._src import transform
 
 import jax
+from jax.extend import core as jax_core
 import jax.numpy as jnp
 import numpy as np
 
@@ -876,7 +877,7 @@ def _callback_prim(forward, backward):
     backward()
     return (x,)
 
-  prim = jax.core.Primitive("hk_callback")
+  prim = jax_core.Primitive("hk_callback")
   prim.def_impl(f_impl)
   prim.def_abstract_eval(f_impl)
   jax.interpreters.ad.deflinear(prim, b_impl)

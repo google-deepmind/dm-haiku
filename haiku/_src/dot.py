@@ -27,6 +27,7 @@ from haiku._src import utils
 import jax
 import jax.core
 from jax.experimental import pjit
+from jax.extend import core as jax_core
 from jax.extend import linear_util as lu
 
 
@@ -204,7 +205,7 @@ class DotTrace(jax.core.Trace):
     vals = [self.to_val(t) for t in tracers]
     val_out = primitive.bind_with_trace(self.parent_trace, vals, params)
     if primitive is pjit.pjit_p:
-      f = jax.core.jaxpr_as_fun(params['jaxpr'])
+      f = jax_core.jaxpr_as_fun(params['jaxpr'])
       f.__name__ = params['name']
       fun = lu.wrap_init(f)
       return self.process_call(primitive, fun, tracers, params)

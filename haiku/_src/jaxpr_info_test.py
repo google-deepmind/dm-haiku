@@ -21,6 +21,7 @@ from haiku._src import jaxpr_info
 from haiku._src import module
 from haiku._src import transform
 import jax
+from jax.extend import core as jax_core
 import jax.numpy as jnp
 import numpy as np
 
@@ -62,7 +63,7 @@ add
 
   def test_compute_flops(self):
 
-    def _compute_flops(eqn: jax.core.JaxprEqn,
+    def _compute_flops(eqn: jax_core.JaxprEqn,
                        expression: jaxpr_info.Expression) -> int:
       del expression
       return max(np.prod(var.aval.shape) for var in eqn.invars)  # pytype: disable=attribute-error

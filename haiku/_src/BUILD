@@ -342,13 +342,13 @@ hk_py_library(
     name = "dot",
     srcs = ["dot.py"],
     deps = [
-        ":config",
         ":data_structures",
         ":module",
         ":utils",
         # pip: jax
         # pip: jax:extend
-        # pip: tree
+        # pip: jax/extend:core
+        # pip: tree  # build_cleaner: keep
     ],
 )
 
@@ -579,7 +579,6 @@ hk_py_test(
     name = "jaxpr_info_test",
     srcs = ["jaxpr_info_test.py"],
     deps = [
-        ":config",
         ":conv",
         ":jaxpr_info",
         ":module",
@@ -587,6 +586,7 @@ hk_py_test(
         # pip: absl/logging
         # pip: absl/testing:absltest
         # pip: jax
+        # pip: jax/extend:core
         # pip: numpy
     ],
 )
@@ -870,6 +870,7 @@ hk_py_test(
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
+        # pip: jax/extend:core
         # pip: numpy
     ],
 )
@@ -894,6 +895,7 @@ hk_py_test(
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
+        # pip: jax/extend:core
         # pip: numpy
     ],
 )

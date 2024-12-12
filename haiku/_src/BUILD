@@ -571,6 +571,7 @@ hk_py_library(
     deps = [
         ":summarise",
         # pip: jax
+        # pip: jax/extend:core
     ],
 )
 

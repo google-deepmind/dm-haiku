@@ -87,7 +87,7 @@ class ReshapeTest(parameterized.TestCase):
     # We convert `f` using `jax2tf` with undefined shape
     converted_f = jax2tf.convert(
         apply_fn,
-        polymorphic_shapes=[None, None, jax2tf.PolyShape("_", "T", ...)],  # pytype: disable=wrong-arg-count
+        polymorphic_shapes=[None, None, "_, T, ..."],  # pytype: disable=wrong-arg-count
         with_gradient=True,
     )
 

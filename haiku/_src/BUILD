@@ -622,7 +622,6 @@ hk_py_library(
 hk_py_library(
     name = "layer_stack",
     srcs = ["layer_stack.py"],
-    srcs_version = "PY3",
     deps = [
         ":base",
         ":lift",
@@ -972,7 +971,6 @@ hk_py_test(
 hk_py_library(
     name = "rms_norm",
     srcs = ["rms_norm.py"],
-    srcs_version = "PY3",
     deps = [
         ":base",
         ":initializers",
@@ -985,8 +983,6 @@ hk_py_library(
 hk_py_test(
     name = "rms_norm_test",
     srcs = ["rms_norm_test.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         ":initializers",
         ":rms_norm",

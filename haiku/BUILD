@@ -34,7 +34,6 @@ py_library(
         "pad.py",
         "testing.py",
     ],
-    srcs_version = "PY3",
     visibility = ["//visibility:public"],
     deps = [
         "//haiku/_src:attention",

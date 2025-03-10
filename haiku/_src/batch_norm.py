@@ -56,9 +56,9 @@ class BatchNorm(hk.Module):
       normalization, in which case ``create_*`` should be set to ``False`` and
       then the values fed in at call time.
 
-  NOTE: ``jax.vmap(hk.transform(BatchNorm))`` will update summary statistics and
-  normalize values on a per-batch basis; we currently do *not* support
-  normalizing across a batch axis introduced by vmap.
+  The module supports both distributed computation methods:
+    - For ``pmap``, provide a string as ``cross_replica_axis`` matching the axis name
+    - For ``vmap``, provide an integer as ``cross_replica_axis`` matching the axis to normalize across
   """
 
   def __init__(
@@ -70,7 +70,7 @@ class BatchNorm(hk.Module):
       scale_init: hk.initializers.Initializer | None = None,
       offset_init: hk.initializers.Initializer | None = None,
       axis: Sequence[int] | None = None,
-      cross_replica_axis: str | Sequence[str] | None = None,
+      cross_replica_axis: str | int | Sequence[str] | None = None,
       cross_replica_axis_index_groups: Sequence[Sequence[int]] | None = None,
       data_format: str = "channels_last",
       name: str | None = None,
@@ -90,11 +90,13 @@ class BatchNorm(hk.Module):
       axis: Which axes to reduce over. The default (``None``) signifies that all
         but the channel axis should be normalized. Otherwise this is a list of
         axis indices which will have normalization statistics calculated.
-      cross_replica_axis: If not ``None``, it should be a string (or sequence of
-        strings) representing the axis name(s) over which this module is being
-        run within a jax map (e.g. ``jax.pmap`` or ``jax.vmap``). Supplying this
-        argument means that batch statistics are calculated across all replicas
-        on the named axes.
+      cross_replica_axis: If not ``None``, it can be either:
+        - A string (or sequence of strings) representing the axis name(s) over 
+          which this module is being run within jax.pmap
+        - An integer representing the axis over which this module is being run
+          within jax.vmap
+        Supplying this argument means that batch statistics are calculated 
+        across all replicas on the specified axis.
       cross_replica_axis_index_groups: Specifies how devices are grouped. Valid
         only within ``jax.pmap`` collectives.
       data_format: The data format of the input. Can be either
@@ -167,9 +169,10 @@ class BatchNorm(hk.Module):
       axis = [i for i in range(inputs.ndim) if i != channel_index]
 
     if is_training or test_local_stats:
-      mean = jnp.mean(inputs, axis, keepdims=True)
-      mean_of_squares = jnp.mean(jnp.square(inputs), axis, keepdims=True)
-      if self.cross_replica_axis:
+      if isinstance(self.cross_replica_axis, (str, tuple, list)):
+        # Standard per-device statistics first, then pmean for pmap
+        mean = jnp.mean(inputs, axis, keepdims=True)
+        mean_of_squares = jnp.mean(jnp.square(inputs), axis, keepdims=True)
         mean = jax.lax.pmean(
             mean,
             axis_name=self.cross_replica_axis,
@@ -178,6 +181,12 @@ class BatchNorm(hk.Module):
             mean_of_squares,
             axis_name=self.cross_replica_axis,
             axis_index_groups=self.cross_replica_axis_index_groups)
+      else:
+        # For vmap, include the vmap axis in the reduction
+        vmap_axis = self.cross_replica_axis
+        reduce_axes = tuple(sorted(list(axis) + [vmap_axis]))
+        mean = jnp.mean(inputs, axis=reduce_axes, keepdims=True)
+        mean_of_squares = jnp.mean(jnp.square(inputs), axis=reduce_axes, keepdims=True)
       var = mean_of_squares - jnp.square(mean)
     else:
       mean = self.mean_ema.average.astype(inputs.dtype)

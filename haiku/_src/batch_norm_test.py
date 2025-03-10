@@ -144,6 +144,58 @@ class BatchNormTest(absltest.TestCase):
 
     np.testing.assert_array_almost_equal(result, expected)
 
+  def test_vmap_cross_replica_axis(self):
+    """Tests that BatchNorm works correctly with vmap and cross_replica_axis."""
+    batch_size = 4
+    height = 32
+    width = 32
+    channels = 3
+    
+    def f(x, is_training=True):
+      return batch_norm.BatchNorm(
+          create_scale=True,
+          create_offset=True,
+          decay_rate=0.9,
+          cross_replica_axis=0,  # Normalize across batch dimension
+      )(x, is_training=is_training)
+
+    f = transform.transform_with_state(f)
+
+    # Test with 4D input (batch, height, width, channels)
+    rng = jax.random.PRNGKey(42)
+    inputs = jax.random.normal(rng, (batch_size, height, width, channels))
+    
+    # Initialize with first example
+    params, state = f.init(rng, inputs[0])
+    
+    # Test training mode
+    batch_f = jax.vmap(f.apply, in_axes=(None, None, None, 0))
+    result, new_state = batch_f(params, state, None, inputs)
+
+    # Calculate expected output (normalized across batch dimension)
+    spatial_axes = (0, 1, 2)  # batch, height, width
+    mean = jnp.mean(inputs, axis=spatial_axes, keepdims=True)
+    var = jnp.var(inputs, axis=spatial_axes, keepdims=True)
+    expected = (inputs - mean) / jnp.sqrt(var + 1e-5)
+    
+    # Scale and offset should be applied
+    scale = params['batch_norm']['scale']
+    offset = params['batch_norm']['offset']
+    expected = expected * scale + offset
+
+    # Test results match
+    np.testing.assert_array_almost_equal(result, expected, decimal=4)
+    
+    # Test inference mode
+    result_eval, _ = batch_f(params, new_state, None, inputs)
+    
+    # In eval mode, should use accumulated statistics
+    mean_ema = new_state['batch_norm/~/mean_ema']['average']
+    var_ema = new_state['batch_norm/~/var_ema']['average']
+    expected_eval = ((inputs - mean_ema) / jnp.sqrt(var_ema + 1e-5)) * scale + offset
+    
+    np.testing.assert_array_almost_equal(result_eval, expected_eval, decimal=4)
+
   @test_utils.transform_and_run
   def test_no_scale_and_offset(self):
     layer = batch_norm.BatchNorm(

@@ -192,6 +192,7 @@ class DotTrace(jax.core.Trace):
   """Traces a JAX function to dot."""
 
   def __init__(self, parent_trace, tag):
+    super().__init__()
     self.parent_trace = parent_trace
     self.tag = tag
 

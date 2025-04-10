@@ -374,7 +374,9 @@ class StatefulTest(parameterized.TestCase):
   def test_cond_branch_structure_error(self):
     true_fn = lambda x: base.get_parameter("w", x.shape, x.dtype, init=jnp.ones)
     false_fn = lambda x: x
-    with self.assertRaisesRegex(TypeError, "Hint: A common mistake"):
+    with self.assertRaisesRegex(
+        TypeError, "cond branch outputs must have the same pytree structure"
+    ):
       stateful.cond(False, true_fn, false_fn, 0)
 
   @test_utils.transform_and_run(run_apply=False)
@@ -383,7 +385,9 @@ class StatefulTest(parameterized.TestCase):
         lambda x: base.get_parameter("w", x.shape, x.dtype, init=jnp.ones),
         lambda x: x,
     ]
-    with self.assertRaisesRegex(TypeError, "Hint: A common mistake"):
+    with self.assertRaisesRegex(
+        TypeError, "switch branch outputs must have the same pytree structure"
+    ):
       stateful.switch(0, branches, 0)
 
   @parameterized.parameters(1, 2, 4, 8)

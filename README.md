@@ -453,7 +453,7 @@ To cite this repository:
   author = {Tom Hennigan and Trevor Cai and Tamara Norman and Lena Martens and Igor Babuschkin},
   title = {{H}aiku: {S}onnet for {JAX}},
   url = {http://github.com/deepmind/dm-haiku},
-  version = {0.0.13},
+  version = {0.0.14},
   year = {2020},
 }
 ```

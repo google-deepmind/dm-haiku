@@ -53,7 +53,7 @@ setup(
         'flax': _parse_requirements('requirements-flax.txt'),
     },
     tests_require=_parse_requirements('requirements-test.txt'),
-    requires_python='>=3.10',
+    python_requires='>=3.10',
     include_package_data=True,
     zip_safe=False,
     # PyPI package information.

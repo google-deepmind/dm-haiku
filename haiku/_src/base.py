@@ -1257,7 +1257,7 @@ def replace_rng_sequence_state(state: PRNGSequenceState):
 
 
 def extract_state(state: State, *, initial) -> MutableState:
-  state = {m: {k: (v.initial if initial else v.current) for k, v in p.items()}
+  state = {m: {k: (v.initial if initial else v.current) for k, v in p.items()}  # pytype: disable=attribute-error
            for m, p in state.items()}
   state = data_structures.to_haiku_dict(state)
   return state

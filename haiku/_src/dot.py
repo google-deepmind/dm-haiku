@@ -212,11 +212,11 @@ class DotTrace(jax.core.Trace):
       return self.process_call(primitive, fun, tracers, params)
 
     outputs = list(jax.tree.leaves(val_out))
-
-    graph = graph_stack.peek()
-    node = Node(id=outputs[0], title=str(primitive), outputs=outputs)
-    graph.nodes.append(node)
-    graph.edges.extend([(i, outputs[0]) for i in vals])
+    if outputs:
+      graph = graph_stack.peek()
+      node = Node(id=outputs[0], title=str(primitive), outputs=outputs)
+      graph.nodes.append(node)
+      graph.edges.extend([(i, outputs[0]) for i in vals])
 
     return jax.tree.map(lambda v: DotTracer(self, v), val_out)
 

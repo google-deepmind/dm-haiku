@@ -216,7 +216,14 @@ class StatefulTest(parameterized.TestCase):
     # least one more time with remat than without it.
     num_forward_remat, num_backward_remat = test(remat=True)
     num_forward_no_remat, num_backward_no_remat = test(remat=False)
-    self.assertGreater(num_forward_remat, num_forward_no_remat)
+
+    # TODO(tomhennigan, phawkins): it appears that this test was depending on
+    # the number of times the abstract_eval rule was called, which it should
+    # not. This test was disabled in preparation for a JAX change that caches
+    # abstract eval rule invocations.
+    # self.assertGreater(num_forward_remat, num_forward_no_remat)
+    del num_forward_remat, num_forward_no_remat
+
     self.assertEqual(num_backward_remat, num_backward_no_remat)
 
   def test_remat_no_transform(self):
@@ -883,7 +890,7 @@ def _callback_prim(forward, backward):
 
   prim = jax_core.Primitive("hk_callback")
   prim.def_impl(f_impl)
-  prim.def_abstract_eval(f_impl)
+  prim.def_abstract_eval(lambda x: x)
   jax.interpreters.ad.deflinear(prim, b_impl)
   return prim.bind
 

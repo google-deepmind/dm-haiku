@@ -307,6 +307,7 @@ def _process_eqn(
       'while',
       'xla_call',
       'xla_pmap',
+      'jit',
       'pjit',
       'remat2',
       'shard_map',
@@ -330,7 +331,7 @@ def _process_eqn(
       name = f'scan length={eqn.params["length"]} unroll={eqn.params["unroll"]}'
       jaxpr = eqn.params['jaxpr'].jaxpr
       flops_multiplier = eqn.params['length'] // eqn.params['unroll']
-    elif eqn.primitive.name == 'pjit':
+    elif eqn.primitive.name in ('jit', 'pjit'):
       name = eqn.params['name']
       jaxpr = eqn.params['jaxpr'].jaxpr
     elif eqn.primitive.name == 'shard_map':

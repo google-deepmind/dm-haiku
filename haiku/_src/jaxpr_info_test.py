@@ -137,8 +137,27 @@ apply_fn
                                           "conv2_d").replace(
                                               "jvp(conv2_d)", "conv2_d")
 
-    self.assertContentsEqual(
-        formatted_mod, """
+    if jax.version.__version_info__ >= (0, 7):
+      self.assertContentsEqual(
+          formatted_mod, """
+loss
+  jvp(my_model)
+    conv2_d
+      conv_general_dilated in f32[16,8,8,32], f32[3,3,32,16], out f32[16,8,8,16]
+      broadcast_in_dim in f32[16], out f32[16,8,8,16]
+      add in f32[16,8,8,16], f32[16,8,8,16], out f32[16,8,8,16]
+  jvp()
+    reduce_sum in f32[16,8,8,16], out f32[]
+  transpose(jvp())
+    broadcast_in_dim in f32[], out f32[16,8,8,16]
+  transpose(jvp(my_model))
+    conv2_d
+      reduce_sum in f32[16,8,8,16], out f32[16]
+      conv_general_dilated in f32[16,8,8,32], f32[16,8,8,16], out f32[3,3,32,16]
+""".strip())
+    else:
+      self.assertContentsEqual(
+          formatted_mod, """
 loss
   jvp(my_model)
     conv2_d

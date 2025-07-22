@@ -23,6 +23,7 @@ from haiku._src import base
 from haiku._src import data_structures
 from haiku._src import typing
 import jax
+import jax.extend.core as jax_core
 
 
 # If you are forking replace this with `import haiku as hk`.
@@ -338,13 +339,10 @@ def transform(f, *, apply_rng=True) -> Transformed:
 
   return without_state(transform_with_state(f))
 
-COMPILED_FN_TYPES = (jax.lib.xla_extension.PjitFunction,
-                     jax.lib.xla_extension.PmapFunction)  # pytype: disable=name-error
-
 
 def check_not_jax_transformed(f):
   # TODO(tomhennigan): Consider `CompiledFunction = type(jax.jit(lambda: 0))`.
-  if isinstance(f, COMPILED_FN_TYPES):
+  if jax_core.is_pjit_function(f) or jax_core.is_pmap_function(f):
     raise ValueError("A common error with Haiku is to pass an already jit "
                      "(or pmap) decorated function into hk.transform (e.g. "
                      "`hk.transform(jax.jit(f)))`. You should instead jit/pmap "

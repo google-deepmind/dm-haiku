@@ -338,13 +338,15 @@ def transform(f, *, apply_rng=True) -> Transformed:
 
   return without_state(transform_with_state(f))
 
-COMPILED_FN_TYPES = (jax.lib.xla_extension.PjitFunction,
-                     jax.lib.xla_extension.PmapFunction)  # pytype: disable=name-error
-
 
 def check_not_jax_transformed(f):
   # TODO(tomhennigan): Consider `CompiledFunction = type(jax.jit(lambda: 0))`.
-  if isinstance(f, COMPILED_FN_TYPES):
+  fn_type_tokens = (
+      "PmapFunction",
+      "PjitFunction",
+  )
+  fn_type = str(type(f))
+  if any(t in fn_type for t in fn_type_tokens):
     raise ValueError("A common error with Haiku is to pass an already jit "
                      "(or pmap) decorated function into hk.transform (e.g. "
                      "`hk.transform(jax.jit(f)))`. You should instead jit/pmap "

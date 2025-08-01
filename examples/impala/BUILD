@@ -84,7 +84,7 @@ hk_py_library(
         # pip: dm_env
         "//haiku",
         # pip: jax
-        # pip: jax:optimizers
+        # pip: jax/example_libraries:optimizers
         # pip: numpy
         # pip: optax
         # pip: rlax

@@ -68,8 +68,6 @@ class ReshapeTest(parameterized.TestCase):
     with self.assertRaises(TypeError):
       init_fn(None)
 
-  # TODO(b/436246242): Fix and re-enable.
-  @unittest.skip("b/436246242")
   def test_reshape_convert(self):
     if jax.default_backend() in {"tpu"}:
       raise unittest.SkipTest(

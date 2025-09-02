@@ -603,7 +603,7 @@ def throw_if_run(shape, dtype):
 def get_parameter(
     name: str,
     shape: Sequence[int],
-    dtype: Any = jnp.float32,
+    dtype: Any = None,
     init: Initializer | None = None,
 ) -> jax.Array:
   """Creates or reuses a parameter for the given transformed function.
@@ -633,6 +633,9 @@ def get_parameter(
 
   if init is None:
     init = throw_if_run
+
+  if dtype is None:
+    dtype = jnp.float32
 
   bundle_name = current_name()
   frame = current_frame()

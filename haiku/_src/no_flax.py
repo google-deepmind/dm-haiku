@@ -15,17 +15,22 @@
 """Module for when flax is missing."""
 
 import sys
+import types
 
 
-class FlaxNotInstalled:
+class FlaxNotInstalled(types.ModuleType):
+  """A module that raises an ImportError when Flax features are used."""
   __slots__ = ()
 
   def __getattr__(self, name: str) -> None:
     raise ImportError(
-        '`haiku.experimental.flax` features require `flax` to be installed.'
+        f'`haiku.experimental.flax.{name}` features require `flax` to be'
+        ' installed.'
     )
 
 
 def inject_shim_module():
   # c.f. https://mail.python.org/pipermail/python-ideas/2012-May/014969.html
-  sys.modules['haiku.experimental.flax'] = FlaxNotInstalled()
+  sys.modules['haiku.experimental.flax'] = FlaxNotInstalled(
+      'haiku.experimental.flax'
+  )

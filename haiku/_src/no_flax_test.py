@@ -23,7 +23,7 @@ def setUpModule():
   for name in list(sys.modules):
     if name.startswith("flax"):
       # Trigger import errors when someone tries to use flax.
-      sys.modules[name] = no_flax.FlaxNotInstalled()
+      sys.modules[name] = no_flax.FlaxNotInstalled("haiku.experimental.flax")
     elif name.startswith("haiku"):
       # Unload any imported haiku modules so we can reload it.
       del sys.modules[name]
@@ -42,7 +42,7 @@ class NoFlaxTest(absltest.TestCase):
     import haiku as hk  # pylint: disable=g-bad-import-order,g-import-not-at-top
 
     # Errors are only thrown when users try to use flax.
-    with self.assertRaisesRegex(ImportError, "require `flax`"):
+    with self.assertRaisesRegex(ImportError, "lift.*require `flax`"):
       hk.experimental.flax.lift  # pylint: disable=pointless-statement
 
 

@@ -32,6 +32,9 @@ jobs:
     - name: Print installed dependencies
       run: |
         pip freeze
+    - name: Import attempt
+      run: |
+        python -c 'import haiku as hk'
     - name: Test coverage
       run: |
         cd docs

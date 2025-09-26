@@ -538,6 +538,12 @@ class TransformTest(parameterized.TestCase):
       (("transform", transform.transform),
        ("transform_with_state", transform.transform_with_state)))
   def test_passing_function_to_transform(self, jax_transform, hk_transform):
+    if jax.config.jax_pmap_shmap_merge and jax_transform == jax.pmap:
+      self.skipTest(
+          "`jax.jit` under `jax_pmap_shmap_merge=True` is implemented using"
+          " `jax.shard_map` and does not have the type `PmapFunction`."
+      )
+
     f = jax_transform(lambda: 0)
     with self.assertRaisesRegex(
         ValueError,

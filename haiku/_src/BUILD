@@ -346,8 +346,9 @@ hk_py_library(
         ":module",
         ":utils",
         # pip: jax
-        # pip: jax:extend
+        # pip: jax/extend
         # pip: jax/extend:core
+        # pip: jax/extend:linear_util
         # pip: tree  # build_cleaner: keep
     ],
 )
@@ -963,7 +964,7 @@ hk_py_test(
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         # pip: jax
-        # pip: jax:extend
+        # pip: jax/extend
         # pip: numpy
     ],
 )

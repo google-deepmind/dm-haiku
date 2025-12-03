@@ -231,10 +231,6 @@ class TabulateTest(parameterized.TestCase):
     rows = tabulate_to_list(f)
     self.assertNotEmpty(rows)
     self.assertEqual(rows, tabulate_to_list(f_transform))
-    if not jax.config.jax_pmap_shmap_merge and jax_transform == jax.pmap:
-      # NOTE(dsuo): jax.pmap without args will raise now.
-      self.assertEqual(rows, tabulate_to_list(jax_transform(f_transform.init)))
-      self.assertEqual(rows, tabulate_to_list(jax_transform(f_transform.apply)))
 
 
 class MultipleParametersModule(module_lib.Module):

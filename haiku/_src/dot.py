@@ -181,7 +181,7 @@ class DotTracer(jax.core.Tracer):
 
   @property
   def aval(self):
-    return jax.core.get_aval(self.val)
+    return jax.typeof(self.val)
 
   def full_lower(self):
     return self

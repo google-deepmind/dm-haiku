@@ -145,6 +145,28 @@ def avg_pool(
         jnp.ones(shape, value.dtype), *reduce_window_args)
     return pooled / window_counts
 
+def adaptive_avg_pool2d(
+    value: jnp.ndarray,
+    out_size: Union[int, Sequence[int]],
+    channel_axis: Optional[int] = -1,
+) -> jnp.ndarray:
+  """
+    Args:
+      value: Value to pool.
+      out_size: Shape of the output, an int or same rank as value.
+      channel_axis: Axis of the spatial channels for which pooling is skipped,
+        used to infer ``window_shape`` or ``strides`` if they are an integer.
+
+    Returns:
+      Pooled result. Same shape as out_size"""
+
+  out_size = np.array(_infer_shape(value, out_size, channel_axis))
+  input_size = value.shape[-2:]
+  strides = (np.array(input_size) // np.array(out_size[-2:]))
+  out_size = (input_size - (out_size[-2:] -1) * strides)
+  return avg_pool(value, out_size[-2:], strides, padding="VALID")
+
+
 
 class MaxPool(hk.Module):
   """Max pool.
@@ -212,3 +234,28 @@ class AvgPool(hk.Module):
   def __call__(self, value: jax.Array) -> jax.Array:
     return avg_pool(value, self.window_shape, self.strides,
                     self.padding, self.channel_axis)
+
+class AdaptiveAvgPool2D(hk.Module):
+  """Adaptive Average pool.
+
+  Equivalent to partial application of :func:`adaptive_avg_pool`.
+  """
+  def __init__(
+      self,
+      out_size: Union[int, Sequence[int]],
+      channel_axis: Optional[int] = -1,
+      name: Optional[str] = None,
+  ):
+    """Average pool.
+
+    Args:
+      out_shape: Shape of window to pool over. Same rank as value or ``int``.
+      channel_axis: Axis of the spatial channels for which pooling is skipped.
+      name: String name for the module.
+    """
+    super().__init__(name=name)
+    self.out_shape = out_size
+    self.channel_axis = channel_axis
+
+  def __call__(self, value: jnp.ndarray) -> jnp.ndarray:
+    return adaptive_avg_pool2d(value, self.out_size, self.channel_axis)

@@ -13,6 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
+import inspect
 import sys
 
 from absl.testing import absltest
@@ -45,6 +46,8 @@ class NoFlaxTest(absltest.TestCase):
     with self.assertRaisesRegex(ImportError, "lift.*require `flax`"):
       hk.experimental.flax.lift  # pylint: disable=pointless-statement
 
+  def test_inspect_stack_does_not_fail(self):
+    self.assertNotEmpty(inspect.stack())
 
 if __name__ == "__main__":
   absltest.main()

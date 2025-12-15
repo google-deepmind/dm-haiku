@@ -23,6 +23,8 @@ class FlaxNotInstalled(types.ModuleType):
   __slots__ = ()
 
   def __getattr__(self, name: str) -> None:
+    if name == '__file__':
+      return None
     raise ImportError(
         f'`haiku.experimental.flax.{name}` features require `flax` to be'
         ' installed.'

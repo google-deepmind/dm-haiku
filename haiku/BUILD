@@ -4,7 +4,7 @@
 load("//tools/build_defs/license:license.bzl", "license")
 
 package(
-    default_applicable_licenses = ["//haiku:license"],
+    default_applicable_licenses = [":license"],
     default_visibility = ["//visibility:private"],
 )
 

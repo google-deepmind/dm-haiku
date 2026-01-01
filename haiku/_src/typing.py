@@ -20,6 +20,7 @@ import typing
 from typing import Any, Protocol, runtime_checkable
 
 import jax
+from jax import random
 
 # pytype: disable=module-attr
 try:
@@ -36,7 +37,12 @@ State = Mapping[str, Mapping[str, jax.Array]]
 MutableState = MutableMapping[str, MutableMapping[str, jax.Array]]
 
 # Missing JAX types.
-PRNGKey = jax.Array  # pylint: disable=invalid-name
+if hasattr(random, "PRNGKeyArray"):
+  PRNGKey = random.PRNGKeyArray  # pylint: disable=invalid-name
+elif hasattr(random, "KeyArray"):
+  PRNGKey = random.KeyArray  # pylint: disable=invalid-name
+else:
+  PRNGKey = jax.Array  # pylint: disable=invalid-name
 
 
 class LiftingModuleType:

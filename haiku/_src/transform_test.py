@@ -28,7 +28,6 @@ import jax
 import jax.numpy as jnp
 import tensorflow as tf
 
-PRNGKey = typing.PRNGKey
 State = typing.State
 Params = typing.Params
 
@@ -597,7 +596,7 @@ class TransformTest(parameterized.TestCase):
       return 2
 
     def expected_f_init(
-        rng: PRNGKey | int | None, pos, key=37
+        rng: jax.Array | int | None, pos, key=37
     ) -> tuple[Params, State]:
       del rng, pos, key
       raise NotImplementedError
@@ -605,7 +604,7 @@ class TransformTest(parameterized.TestCase):
     def expected_f_apply(
         params: Params | None,
         state: State | None,
-        rng: PRNGKey | int | None,
+        rng: jax.Array | int | None,
         pos,
         key=37,
     ) -> tuple[int, State]:
@@ -622,12 +621,12 @@ class TransformTest(parameterized.TestCase):
     def f(pos, *, key: int = 37) -> int:
       del pos, key
       return 2
-    def expected_f_init(rng: PRNGKey | int | None,
+    def expected_f_init(rng: jax.Array | int | None,
                         pos, *, key: int = 37) -> Params:
       del rng, pos, key
       raise NotImplementedError
     def expected_f_apply(
-        params: Params | None, rng: PRNGKey | int | None,
+        params: Params | None, rng: jax.Array | int | None,
         pos, *, key: int = 37) -> int:
       del params, rng, pos, key
       raise NotImplementedError

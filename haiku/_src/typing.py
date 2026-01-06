@@ -35,9 +35,6 @@ MutableParams = MutableMapping[str, MutableMapping[str, jax.Array]]
 State = Mapping[str, Mapping[str, jax.Array]]
 MutableState = MutableMapping[str, MutableMapping[str, jax.Array]]
 
-# Missing JAX types.
-PRNGKey = jax.Array  # pylint: disable=invalid-name
-
 
 class LiftingModuleType:
   """Parent type of lift.LiftingModule, added here to solve circular dependency."""

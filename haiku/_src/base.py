@@ -30,7 +30,6 @@ from haiku._src.typing import (  # pylint: disable=g-multiple-import
     Module,
     MutableParams,
     MutableState,
-    PRNGKey,
     Params,
     State,
 )
@@ -219,7 +218,7 @@ def new_context(
     *,
     params: Params | None = None,
     state: State | None = None,
-    rng: PRNGKey | int | None = None,
+    rng: jax.Array | int | None = None,
 ) -> HaikuContext:
   """Collects the results of hk.{get,set}_{parameter,state} calls.
 
@@ -972,7 +971,7 @@ def custom_setter(setter: Setter) -> contextlib.AbstractContextManager:
   return state_setter_stack(setter)
 
 
-def assert_is_prng_key(key: PRNGKey):
+def assert_is_prng_key(key: jax.Array):
   """Asserts that the given input looks like a `jax.random.PRNGKey`."""
   # The error message has to be constructed lazily to avoid an extra
   # device-to-host copy.
@@ -1013,10 +1012,10 @@ def assert_is_prng_key(key: PRNGKey):
           f"actual=(shape={key.shape}, dtype={key.dtype}){config_hint}")
 
 
-PRNGSequenceState = tuple[PRNGKey, Iterable[PRNGKey]]
+PRNGSequenceState = tuple[jax.Array, Iterable[jax.Array]]
 
 
-class PRNGSequence(Iterator[PRNGKey]):
+class PRNGSequence(Iterator[jax.Array]):
   """Iterator of JAX random keys.
 
   >>> seq = hk.PRNGSequence(42)  # OR pass a jax.random.PRNGKey
@@ -1032,7 +1031,7 @@ class PRNGSequence(Iterator[PRNGKey]):
   """
   __slots__ = ("_key", "_subkeys")
 
-  def __init__(self, key_or_seed: PRNGKey | int | PRNGSequenceState):
+  def __init__(self, key_or_seed: jax.Array | int | PRNGSequenceState):
     """Creates a new :class:`PRNGSequence`."""
     if isinstance(key_or_seed, tuple):
       key, subkeys = key_or_seed
@@ -1089,14 +1088,14 @@ class PRNGSequence(Iterator[PRNGKey]):
     self._key = key
     self._subkeys = collections.deque(subkeys)
 
-  def __next__(self) -> PRNGKey:
+  def __next__(self) -> jax.Array:
     if not self._subkeys:
       self.reserve(config.get_config().rng_reserve_size)
     return self._subkeys.popleft()
 
   next = __next__
 
-  def take(self, num) -> tuple[PRNGKey, ...]:
+  def take(self, num) -> tuple[jax.Array, ...]:
     self.reserve(max(num - len(self._subkeys), 0))
     return tuple(next(self) for _ in range(num))
 
@@ -1137,7 +1136,7 @@ def reserve_rng_keys(num: int):
   rng_seq.reserve(num)
 
 
-def next_rng_key() -> PRNGKey:
+def next_rng_key() -> jax.Array:
   """Returns a unique JAX random key split from the current global key.
 
   >>> key = hk.next_rng_key()
@@ -1186,7 +1185,7 @@ def assert_jax_usage(public_symbol_name: str):
 
 
 # NOTE: Split for monkey patching in random.py.
-def next_rng_key_internal() -> PRNGKey:
+def next_rng_key_internal() -> jax.Array:
   rng_seq = rng_seq_or_fail()
   return next(rng_seq)
 
@@ -1213,7 +1212,7 @@ def next_rng_keys(num: int) -> jax.Array:
   return jnp.stack(rng_seq.take(num))
 
 
-def maybe_next_rng_key() -> PRNGKey | None:
+def maybe_next_rng_key() -> jax.Array | None:
   """:func:`next_rng_key` if random numbers are available, else ``None``."""
   assert_context("maybe_next_rng_key")
   rng_seq = current_frame().rng_stack.peek()
@@ -1398,7 +1397,7 @@ def set_state(name: str, value):
   state[name] = StatePair(initial, current)
 
 
-def with_rng(key: PRNGKey):
+def with_rng(key: jax.Array):
   """Provides a new sequence for :func:`next_rng_key` to draw from.
 
   When :func:`next_rng_key` is called, it draws a new key from the

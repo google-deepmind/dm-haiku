@@ -25,7 +25,6 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-PRNGKey = typing.PRNGKey
 State = typing.State
 Params = typing.Params
 
@@ -136,7 +135,7 @@ class MultiTransformTest(parameterized.TestCase):
       return 2
 
     def expected_f_init(
-        rng: PRNGKey | int | None, pos, key=37
+        rng: jax.Array | int | None, pos, key=37
     ) -> tuple[Params, State]:
       del rng, pos, key
       raise NotImplementedError
@@ -158,7 +157,7 @@ class MultiTransformTest(parameterized.TestCase):
     def f(pos, *, key: int = 37) -> int:
       del pos, key
       return 2
-    def expected_f_init(rng: PRNGKey | int | None,
+    def expected_f_init(rng: jax.Array | int | None,
                         pos, *, key: int = 37) -> Params:
       del rng, pos, key
       raise NotImplementedError

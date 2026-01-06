@@ -34,8 +34,6 @@ class hk:
   MutableParams = typing.MutableParams
   MutableState = typing.MutableState
 # pylint: enable=invalid-name
-# TODO(slebedev): This makes the module non-forkable.
-PRNGKey = typing.PRNGKey
 del typing
 
 T = TypeVar("T")
@@ -413,7 +411,7 @@ def transform_with_state(f) -> TransformedWithState:
   f_sig = inspect.signature(f)
 
   def init_fn(
-      rng: PRNGKey | int | None,
+      rng: jax.Array | int | None,
       *args,
       **kwargs,
   ) -> tuple[hk.MutableParams, hk.MutableState]:
@@ -431,7 +429,7 @@ def transform_with_state(f) -> TransformedWithState:
           inspect.Parameter(
               "rng",
               inspect.Parameter.POSITIONAL_OR_KEYWORD,
-              annotation=Optional[Union[PRNGKey, int]],
+              annotation=Optional[Union[jax.Array, int]],
           ),
       ]
       + list(f_sig.parameters.values()),
@@ -442,7 +440,7 @@ def transform_with_state(f) -> TransformedWithState:
   def apply_fn(
       params: hk.Params | None,
       state: hk.State | None,
-      rng: PRNGKey | int | None,
+      rng: jax.Array | int | None,
       *args,
       **kwargs,
   ) -> tuple[Any, hk.MutableState]:
@@ -467,7 +465,7 @@ def transform_with_state(f) -> TransformedWithState:
           inspect.Parameter("state", inspect.Parameter.POSITIONAL_OR_KEYWORD,
                             annotation=Optional[hk.State]),
           inspect.Parameter("rng", inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                            annotation=Optional[Union[PRNGKey, int]]),
+                            annotation=Optional[Union[jax.Array, int]]),
       ] + list(f_sig.parameters.values()),
       return_annotation=f_sig.return_annotation,
       __validate_parameters__=False

@@ -21,7 +21,6 @@ from haiku._src import base
 from haiku._src import initializers
 from haiku._src import module
 from haiku._src import typing
-from haiku._src.typing import PRNGKey
 import jax
 from jax import lax
 import jax.numpy as jnp
@@ -297,7 +296,10 @@ def expand_apply(f, axis=0):
 
 
 def dropout(
-    rng: PRNGKey, rate: float, x: jax.Array, broadcast_dims: Sequence[int] = ()
+    rng: jax.Array,
+    rate: float,
+    x: jax.Array,
+    broadcast_dims: Sequence[int] = (),
 ) -> jax.Array:
   """Randomly drop units in the input at a given rate.
 
@@ -325,7 +327,10 @@ def dropout(
 
 # Separated out to support monkey patching.
 def dropout_impl(
-    rng: PRNGKey, rate: float, x: jax.Array, broadcast_dims: Sequence[int] = ()
+    rng: jax.Array,
+    rate: float,
+    x: jax.Array,
+    broadcast_dims: Sequence[int] = (),
 ) -> jax.Array:
   """See dropout."""
   try:

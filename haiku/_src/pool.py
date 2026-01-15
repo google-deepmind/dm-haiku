@@ -144,6 +144,27 @@ def avg_pool(
     window_counts = lax.reduce_window(
         jnp.ones(shape, value.dtype), *reduce_window_args)
     return pooled / window_counts
+  
+  #new pooling function
+def min_pool(
+    value: jax.Array,
+
+    window_shape: int | Sequence[int],
+    strides: int | Sequence[int],
+    padding: str,
+    channel_axis: int | None = -1,
+) -> jax.Array:
+  if padding not in ("SAME", "VALID"):
+    raise ValueError(f"Invalid padding '{padding}', must be 'SAME' or 'VALID'.")
+
+  _warn_if_unsafe(window_shape, strides)
+  window_shape = _infer_shape(value, window_shape, channel_axis)
+  strides = _infer_shape(value, strides, channel_axis)
+
+  return lax.reduce_window(value, jnp.inf, lax.min, window_shape, strides, padding)
+
+
+  
 
 
 class MaxPool(hk.Module):
@@ -208,7 +229,33 @@ class AvgPool(hk.Module):
     self.strides = strides
     self.padding = padding
     self.channel_axis = channel_axis
-
   def __call__(self, value: jax.Array) -> jax.Array:
     return avg_pool(value, self.window_shape, self.strides,
+                    self.padding, self.channel_axis)  
+
+class MinPool(hk.Module):
+  """ Min pool. Equivalent to partial application of :func:'min_pool'."""
+
+  def __init__(
+      self,
+      window_shape: int | Sequence[int],
+      strides: int | Sequence[int],
+      padding: str,
+      channel_axis: int | None = -1,
+      name: str | None = None,
+  ):
+    super().__init__(name=name)
+    self.window_shape = window_shape
+    self.strides = strides
+    self.padding = padding
+    self.channel_axis = channel_axis
+
+  def __call__(self, value: jax.Array) -> jax.Array:
+    return min_pool(value, self.window_shape, self.strides,
                     self.padding, self.channel_axis)
+  
+  
+
+
+  
+  

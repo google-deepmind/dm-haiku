@@ -34,6 +34,7 @@ py_library(
         "pad.py",
         "testing.py",
     ],
+    strict_deps = False,
     visibility = ["//visibility:public"],
     deps = [
         "//haiku/_src:attention",

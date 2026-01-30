@@ -262,7 +262,7 @@ def main(argv):
 
   # The total batch size is the batch size accross all hosts and devices. In a
   # multi-host training setup each host will only see a batch size of
-  # `total_train_batch_size / jax.host_count()`.
+  # `total_train_batch_size / jax.process_count()`.
   total_train_batch_size = FLAGS.train_device_batch_size * jax.device_count()
   num_train_steps = (
       (train_split.num_examples * FLAGS.train_epochs) // total_train_batch_size)

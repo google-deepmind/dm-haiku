@@ -109,42 +109,54 @@ def avg_pool(
     padding: str,
     channel_axis: int | None = -1,
 ) -> jax.Array:
-  """Average pool.
+  if padding not in ("VALID", "SAME"):
+    raise ValueError(f"Invalid padding: {padding}")
 
-  Args:
-    value: Value to pool.
-    window_shape: Shape of the pooling window, same rank as value.
-    strides: Strides of the pooling window, same rank as value.
-    padding: Padding algorithm. Either ``VALID`` or ``SAME``.
-    channel_axis: Axis of the spatial channels for which pooling is skipped.
+  # Handle negative axis
+  if channel_axis < 0:
+    channel_axis += value.ndim
 
-  Returns:
-    Pooled result. Same rank as value.
-
-  Raises:
-    ValueError: If the padding is not valid.
-  """
-  if padding not in ("SAME", "VALID"):
-    raise ValueError(f"Invalid padding '{padding}', must be 'SAME' or 'VALID'.")
-
-  _warn_if_unsafe(window_shape, strides)
-  window_shape = _infer_shape(value, window_shape, channel_axis)
-  strides = _infer_shape(value, strides, channel_axis)
-
-  reduce_window_args = (0., lax.add, window_shape, strides, padding)
-  pooled = lax.reduce_window(value, *reduce_window_args)
-  if padding == "VALID":
-    # Avoid the extra reduce_window.
-    return pooled / np.prod(window_shape)
+  # Move channel_axis to the end (required for NHWC pooling)
+  if channel_axis != value.ndim - 1:
+    perm = [i for i in range(value.ndim) if i != channel_axis] + [channel_axis]
+    value = jnp.transpose(value, perm)
+    undo_perm = list(np.argsort(perm))
   else:
-    # Count the number of valid entries at each input point, then use that for
-    # computing average. Assumes that any two arrays of same shape will be
-    # padded the same. Avoid broadcasting on axis where pooling is skipped.
-    shape = [(v if w != 1 else 1) for (v, w) in zip(value.shape, window_shape)]
-    window_counts = lax.reduce_window(
-        jnp.ones(shape, value.dtype), *reduce_window_args)
-    return pooled / window_counts
+    undo_perm = None
 
+  # Insert channel dimension = 1 in window/stride
+  full_window = list(window_shape) + [1]
+  full_stride = list(strides) + [1]
+
+  result = lax.reduce_window(
+      value,
+      0.0,
+      lax.add,
+      window_dimensions=full_window,
+      window_strides=full_stride,
+      padding=padding,
+  )
+
+  # Count the elements (for SAME padding normalization)
+  if padding == "SAME":
+    ones = jnp.ones_like(value)
+    window_counts = lax.reduce_window(
+        ones,
+        0.0,
+        lax.add,
+        window_dimensions=full_window,
+        window_strides=full_stride,
+        padding=padding,
+    )
+    result = result / window_counts
+  else:
+    result = result / np.prod(window_shape)
+
+  # Revert channel axis
+  if undo_perm:
+    result = jnp.transpose(result, undo_perm)
+
+  return result
 
 class MaxPool(hk.Module):
   """Max pool.

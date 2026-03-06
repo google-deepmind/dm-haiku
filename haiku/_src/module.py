@@ -485,7 +485,7 @@ valid_identifier = lambda name: bool(_VALID_IDENTIFIER_R.match(name))
 
 
 def name_and_number(name: str) -> tuple[str, int | None]:
-  splits = re.split(r"_(0|[1-9]\d*)$", name, 3)
+  splits = re.split(r"_(0|[1-9]\d*)$", name, maxsplit=3)
   if len(splits) > 1:
     return splits[0], int(splits[1])
   else:

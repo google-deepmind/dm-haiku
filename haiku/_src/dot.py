@@ -203,7 +203,12 @@ class DotTrace(jax.core.Trace):
 
   def process_primitive(self, primitive, tracers, params):
     vals = [self.to_val(t) for t in tracers]
-    val_out = primitive.bind_with_trace(self.parent_trace, vals, params)
+    if jax.__version_info__ >= (0, 9, 2):
+      avals = [jax.typeof(t) for t in tracers]
+      val_out = primitive.bind_with_trace(
+          self.parent_trace, vals, avals, params)
+    else:
+      val_out = primitive.bind_with_trace(self.parent_trace, vals, params)
     if primitive is jax_core.primitives.jit_p:
       f = jax_core.jaxpr_as_fun(params['jaxpr'])
       f.__name__ = params['name']

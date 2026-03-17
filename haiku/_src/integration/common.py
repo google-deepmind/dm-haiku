@@ -22,7 +22,7 @@ import jax.numpy as jnp
 import numpy as np
 import tree
 
-ModuleFn = descriptors.ModuleFn
+type ModuleFn = descriptors.ModuleFn
 
 
 class DTypeTestCase(parameterized.TestCase):

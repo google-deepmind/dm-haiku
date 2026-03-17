@@ -16,7 +16,7 @@
 
 from collections.abc import Callable, Mapping, MutableMapping
 import functools
-from typing import Any, TypeVar
+from typing import Any
 
 from haiku._src import base
 from haiku._src import data_structures
@@ -36,8 +36,7 @@ class hk:
 # pylint: enable=invalid-name
 del module, data_structures, transform
 
-T = TypeVar("T")
-MutableBundle = MutableMapping[str, MutableMapping[str, Any]]
+type MutableBundle = MutableMapping[str, MutableMapping[str, Any]]
 
 
 def pack_into_dict(src: hk.Params,
@@ -358,7 +357,7 @@ class LiftWithStateUpdater:
         frame.state[mod_name][name] = base.StatePair(initial, value)
 
 
-def _to_callable(f: Callable[..., T]) -> Callable[..., T]:
+def _to_callable[T](f: Callable[..., T]) -> Callable[..., T]:
   """Enapsulates the given callable inside a lambda."""
   # Prevents us from leaking methods other than __call__ on `f`.
   return lambda *a, **k: f(*a, **k)  # pylint: disable=unnecessary-lambda

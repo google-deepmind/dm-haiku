@@ -19,19 +19,18 @@ import collections.abc
 from collections.abc import Callable, Mapping, MutableMapping
 import functools
 import inspect
-from typing import Any, TypeVar
+from typing import Any
 
 from haiku._src import base
 import jax
 import jax.numpy as jnp
 
-InternalState = collections.namedtuple("InternalState", "params,state,rng")
-Bundle = Mapping[str, Mapping[str, Any]]
-T = TypeVar("T")
-python_map = map  # pylint: disable=invalid-name
+type InternalState = collections.namedtuple("InternalState", "params,state,rng")
+type Bundle = Mapping[str, Mapping[str, Any]]
+type python_map = map  # pylint: disable=invalid-name
 
 
-def copy_structure(bundle: T) -> T:
+def copy_structure[T](bundle: T) -> T:
   return jax.tree.map(lambda x: x, bundle)
 
 

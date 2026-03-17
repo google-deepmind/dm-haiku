@@ -25,8 +25,8 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-State = typing.State
-Params = typing.Params
+type State = typing.State
+type Params = typing.Params
 
 
 def _assert_arrays_equal(x: jax.Array, y: jax.Array) -> None:

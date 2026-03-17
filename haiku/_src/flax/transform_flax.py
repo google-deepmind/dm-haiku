@@ -46,9 +46,9 @@ class hkds:
 del typing, filtering, lift_lib
 
 
-FlaxCollection = utils.FlaxCollection
-FlaxVariables = utils.FlaxVariables
-MutableFlaxVariables = utils.MutableFlaxVariables
+type FlaxCollection = utils.FlaxCollection
+type FlaxVariables = utils.FlaxVariables
+type MutableFlaxVariables = utils.MutableFlaxVariables
 
 
 def _from_haiku_params(params: hk.Params) -> FlaxCollection:

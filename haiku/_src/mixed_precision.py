@@ -17,14 +17,11 @@
 import collections
 import contextlib
 import threading
-from typing import TypeVar, Union
 
 from haiku._src import base
 from haiku._src import data_structures
 from haiku._src import module
 import jmp
-
-T = TypeVar('T')
 
 
 # If you are forking replace this block with `import haiku as hk`.
@@ -36,11 +33,11 @@ class hk:
   Module = module.Module
 # pylint: enable=invalid-name
 # TODO(slebedev): This make the module non-forkable.
-Stack = data_structures.Stack[T]
+Stack = data_structures.Stack
 del data_structures
 
-ClassInfo = collections.namedtuple('ClassInfo', 'module,qualname')
-ClassInfoOrType = Union[ClassInfo, type[hk.Module]]
+type ClassInfo = collections.namedtuple('ClassInfo', 'module,qualname')
+type ClassInfoOrType = ClassInfo | type[hk.Module]
 
 
 def key_for_module(cls: type[hk.Module]) -> ClassInfoOrType:

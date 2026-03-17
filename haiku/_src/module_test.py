@@ -19,7 +19,7 @@ from collections.abc import Callable, Sequence
 import contextlib
 import dataclasses
 import inspect
-from typing import Optional, Protocol, TypeVar, runtime_checkable
+from typing import Optional, Protocol, runtime_checkable
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -30,8 +30,6 @@ from haiku._src import test_utils
 from haiku._src import transform
 import jax
 import jax.numpy as jnp
-
-ModuleT = TypeVar("ModuleT", bound=module.Module)
 
 
 # TODO(tomhennigan) Improve test coverage.
@@ -1041,7 +1039,7 @@ class ModuleWithDoubleCall(module.Module):
     self.call_module = module.Module(name="child")
 
 
-def create_module_from_qualified_name(
+def create_module_from_qualified_name[ModuleT: module.Module](
     name: str,
     *,
     cls: type[ModuleT] = module.Module,

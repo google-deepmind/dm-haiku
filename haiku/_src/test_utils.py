@@ -20,23 +20,21 @@ import inspect
 import itertools
 import os
 import types
-from typing import Any, TypeVar
+from typing import Any
 
 from absl.testing import parameterized
 from haiku._src import config
 from haiku._src import transform
 import jax
 
-T = TypeVar("T")
-Fn = Callable[..., T]
 Key = Any  # NOTE: jax.random.PRNGKey is not actually a type.
 
 
-def transform_and_run(
-    f: Fn | None = None,
+def transform_and_run[T](
+    f: Callable[..., T] | None = None,
     seed: int | None = 42,
     run_apply: bool = True,
-    jax_transform: Callable[[Fn], Fn] | None = None,
+    jax_transform: Callable[[Callable[..., T]], Callable[..., T]] | None = None,
     *,
     map_rng: Callable[[Key], Key] | None = None,
 ) -> T:
@@ -169,7 +167,7 @@ def find_internal_python_modules(
   return sorted(modules)
 
 
-def find_subclasses(
+def find_subclasses[T](
     root_python_module: types.ModuleType,
     base_class: T,
 ) -> Generator[T, None, None]:

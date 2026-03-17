@@ -17,14 +17,12 @@
 from collections.abc import Iterable, Iterator
 import itertools
 import random
-from typing import NamedTuple, TypeVar
+from typing import NamedTuple
 
 import numpy as np
 
 VOCAB_SIZE = 128  # Number of ASCII code points.
 PAD_TOKEN = 0
-
-_T = TypeVar('_T')
 
 
 class Batch(NamedTuple):
@@ -32,11 +30,11 @@ class Batch(NamedTuple):
   targets: np.ndarray  # Integer tokens, shape [B, T].
 
 
-def repeat(dataset: Iterable[_T]) -> Iterator[_T]:
+def repeat[T](dataset: Iterable[T]) -> Iterator[T]:
   return itertools.cycle(dataset)
 
 
-def shuffle(dataset: Iterator[_T], buffer_size: int) -> Iterator[_T]:
+def shuffle[T](dataset: Iterator[T], buffer_size: int) -> Iterator[T]:
   buffer = [next(dataset) for _ in range(buffer_size)]
   random.shuffle(buffer)
   for item in dataset:

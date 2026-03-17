@@ -27,7 +27,7 @@ import jax.numpy as jnp
 import numpy as np
 import tensorflow as tf
 
-ModuleFn = descriptors.ModuleFn
+type ModuleFn = descriptors.ModuleFn
 
 DEFAULT_ATOL = 1e-2
 CUSTOM_ATOL = {hk.nets.ResNet: 0.1}

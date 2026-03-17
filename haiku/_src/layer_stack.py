@@ -28,15 +28,16 @@ import jax
 import jax.numpy as jnp
 
 
-LayerStackCarry = collections.namedtuple("LayerStackCarry", ["x"])
-LayerStackScanned = collections.namedtuple(
-    "LayerStackScanned", ["params", "rng", "state", "args_ys"])
+type LayerStackCarry = collections.namedtuple("LayerStackCarry", ["x"])
+type LayerStackScanned = collections.namedtuple(
+    "LayerStackScanned", ["params", "rng", "state", "args_ys"]
+)
 
 # WrappedFn should take in arbitrarily nested `jax.Array`, and return the
 # exact same type. We cannot express this with `typing`. So we just use it
 # to inform the user. In reality, the typing below will accept anything.
-NestedArray = Any
-WrappedFn = Callable[..., Union[NestedArray, tuple[NestedArray]]]
+type NestedArray = Any
+type WrappedFn = Callable[..., Union[NestedArray, tuple[NestedArray]]]
 
 
 def _check_no_varargs(f):

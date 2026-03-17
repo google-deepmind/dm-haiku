@@ -19,7 +19,7 @@ from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 import contextlib
 import functools
 import itertools as it
-from typing import Any, NamedTuple, Optional, TypeVar
+from typing import Any, NamedTuple, Optional
 import warnings
 
 from haiku._src import config
@@ -44,13 +44,13 @@ except ImportError:
   # Pre Python 3.8.
   final = lambda cls: cls
 
-T = TypeVar("T")
+type Stack = data_structures.Stack
+type ThreadLocalStack = data_structures.ThreadLocalStack
 
-Stack = data_structures.Stack[T]
-ThreadLocalStack = data_structures.ThreadLocalStack[T]
-
-ModuleState = collections.namedtuple("ModuleState", ("module", "method_name"))
-StatePair = collections.namedtuple("StatePair", ("initial", "current"))
+type ModuleState = collections.namedtuple(
+    "ModuleState", ("module", "method_name")
+)
+type StatePair = collections.namedtuple("StatePair", ("initial", "current"))
 
 # TODO(tomhennigan) Should creator_stack be part of frame?
 frame_stack: ThreadLocalStack["Frame"] = ThreadLocalStack()
@@ -588,7 +588,7 @@ class DoNotStore:
 DO_NOT_STORE = DoNotStore()
 
 
-def check_not_none(value: T | None, msg: str) -> T:
+def check_not_none[T](value: T | None, msg: str) -> T:
   if value is None:
     raise ValueError(msg)
   return value
@@ -883,17 +883,15 @@ def custom_getter(
     stack.enter_context(state_getter_stack(getter))
   return stack
 
-T = TypeVar("T")
-U = TypeVar("U")
-NextSetter = Callable[[str, T], U]
-Setter = Callable[[NextSetter, T, "SetterContext"], U]
+type NextSetter[A, B] = Callable[[str, A], B]
+type Setter[A, B] = Callable[[NextSetter[A, B], A, "SetterContext"], B]
 
 
 def run_setters(
-    stack: Stack[Setter],
+    stack: Stack[Setter[Any, Any]],
     context: "SetterContext",
-    value: T,
-) -> U:
+    value: Any,
+) -> Any:
   """See :func:`custom_setter` for usage."""
   assert stack
   stack_copy = stack.clone()

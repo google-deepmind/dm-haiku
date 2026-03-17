@@ -15,7 +15,8 @@
 """Enables module construction to be deferred."""
 
 from collections.abc import Callable, Sequence
-from typing import Generic, TypeVar
+from typing import Any
+
 from haiku._src import base
 from haiku._src import module
 
@@ -27,11 +28,9 @@ class hk:
 # pylint: enable=invalid-name
 del module
 
-# TODO(tomhennigan): Should be CallableModule.
-T = TypeVar("T", bound=hk.Module)
 
-
-class Deferred(Generic[T]):
+# TODO(tomhennigan): T should be CallableModule.
+class Deferred[T: hk.Module]:
   """Defers the construction of another module until the first call.
 
   Deferred can be used to declare modules that depend on computed properties of
@@ -143,7 +142,9 @@ class Deferred(Generic[T]):
     super().__delattr__(name)
 
 
-def _materialize_then_call(deferred: Deferred, method_name: str):
+def _materialize_then_call[T: hk.Module](
+    deferred: Deferred[T], method_name: str
+) -> Callable[..., Any]:
 
   def wrapped(*args, **kwargs):
     return getattr(deferred.target, method_name)(*args, **kwargs)

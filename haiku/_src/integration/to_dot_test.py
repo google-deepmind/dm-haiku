@@ -22,7 +22,7 @@ from haiku._src.integration import descriptors
 import jax
 import numpy as np
 
-ModuleFn = descriptors.ModuleFn
+type ModuleFn = descriptors.ModuleFn
 
 
 class DotTest(parameterized.TestCase):

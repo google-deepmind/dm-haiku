@@ -16,18 +16,14 @@
 
 import collections
 from collections.abc import Callable, Generator, Mapping, MutableMapping
-from typing import Any, TypeVar
+from typing import Any
 
 from haiku._src import data_structures
 from haiku._src import utils
 import jax
 
-T = TypeVar("T")
-InT = TypeVar("InT")
-OutT = TypeVar("OutT")
 
-
-def traverse(
+def traverse[T](
     structure: Mapping[str, Mapping[str, T]],
 ) -> Generator[tuple[str, str, T], None, None]:
   """Iterates over a structure yielding module names, names and values.
@@ -47,7 +43,7 @@ def traverse(
       yield module_name, name, value
 
 
-def partition(
+def partition[T](
     predicate: Callable[[str, str, jax.Array], bool],
     structure: Mapping[str, Mapping[str, T]],
 ) -> tuple[Mapping[str, Mapping[str, T]], Mapping[str, Mapping[str, T]]]:
@@ -81,7 +77,7 @@ def partition(
   return partition_n(f, structure, 2)
 
 
-def partition_n(
+def partition_n[T](
     fn: Callable[[str, str, T], int],
     structure: Mapping[str, Mapping[str, T]],
     n: int,
@@ -123,7 +119,7 @@ def partition_n(
   return tuple(data_structures.to_haiku_dict(o) for o in  out)
 
 
-def filter(  # pylint: disable=redefined-builtin
+def filter[T](  # pylint: disable=redefined-builtin
     predicate: Callable[[str, str, T], bool],
     structure: Mapping[str, Mapping[str, T]],
 ) -> Mapping[str, Mapping[str, T]]:
@@ -155,10 +151,10 @@ def filter(  # pylint: disable=redefined-builtin
   return data_structures.to_haiku_dict(out)
 
 
-def map(  # pylint: disable=redefined-builtin
-    fn: Callable[[str, str, InT], OutT],
-    structure: Mapping[str, Mapping[str, InT]],
-) -> Mapping[str, Mapping[str, OutT]]:
+def map[T, U](  # pylint: disable=redefined-builtin
+    fn: Callable[[str, str, T], U],
+    structure: Mapping[str, Mapping[str, T]],
+) -> Mapping[str, Mapping[str, U]]:
   """Maps a function to an input structure accordingly.
 
   >>> params = {'linear': {'w': 1.0, 'b': 2.0}}

@@ -19,7 +19,7 @@ import contextlib
 import functools
 import inspect
 import re
-from typing import Any, ContextManager, NamedTuple, Protocol, TypeVar
+from typing import Any, ContextManager, NamedTuple, Protocol
 
 from haiku._src import base
 from haiku._src import config
@@ -28,10 +28,7 @@ from haiku._src import utils
 import jax
 import jax.numpy as jnp
 
-
-T = TypeVar("T")
-
-ThreadLocalStack = data_structures.ThreadLocalStack[T]
+type ThreadLocalStack = data_structures.ThreadLocalStack
 
 _APPLY_NAME_SCOPE = "__haiku_name_scope"
 _CUSTOM_NAME = "__haiku_custom_name"
@@ -63,11 +60,11 @@ class ModuleMetaclass(type(Protocol)):
   """Metaclass for `Module`."""
 
   def __new__(  # pylint: disable=bad-classmethod-argument
-      mcs: type[type[T]],
+      mcs: type[type[Any]],
       name: str,
       bases: tuple[type[Any], ...],
       clsdict: dict[str, Any],
-  ) -> type[T]:
+  ) -> type[Any]:
     method_names = []
     cls_fut = Future()
 
@@ -706,7 +703,7 @@ def params_or_state_dict(
   return out
 
 
-def transparent(method: T) -> T:
+def transparent[T](method: T) -> T:
   """Decorator to wrap a method, preventing automatic variable scope wrapping.
 
   By default, all variables and modules created in a method are scoped by the
@@ -724,7 +721,7 @@ def transparent(method: T) -> T:
   return method
 
 
-def name_like(method_name: str) -> Callable[[T], T]:
+def name_like[T](method_name: str) -> Callable[[T], T]:
   """Allows a method to be named like some other method.
 
   In Haiku submodules are named based on the name of their parent module and the

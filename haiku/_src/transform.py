@@ -16,7 +16,7 @@
 
 from collections.abc import Callable, Mapping
 import inspect
-from typing import Any, NamedTuple, Optional, TypeVar, Union
+from typing import Any, NamedTuple, Optional, Union
 
 from haiku._src import analytics
 from haiku._src import base
@@ -35,8 +35,6 @@ class hk:
   MutableState = typing.MutableState
 # pylint: enable=invalid-name
 del typing
-
-T = TypeVar("T")
 
 # TODO(b/161684853): Use protocols for transform if/when PEP-612 is implemented.
 # https://www.python.org/dev/peps/pep-0612/
@@ -490,7 +488,7 @@ def get_original_fn(f: Transformed | TransformedWithState | Callable[..., Any]):
   return getattr(f, "_original_fn")
 
 
-def check_mapping(name: str, mapping: T | None) -> T:
+def check_mapping[T](name: str, mapping: T | None) -> T:
   """Cleans inputs to apply_fn, providing better errors."""
   if mapping is None:
     # Convert None to empty dict.

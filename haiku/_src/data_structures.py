@@ -24,18 +24,13 @@ from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequenc
 import contextlib
 import pprint
 import threading
-from typing import Any, Deque, Generic, NamedTuple, TypeVar
+from typing import Any, Deque, NamedTuple
 from haiku._src import config
 from haiku._src import utils
 import jax
 
-K = TypeVar("K")
-V = TypeVar("V")
-T = TypeVar("T")
-U = TypeVar("U")
 
-
-class Stack(Generic[T]):
+class Stack[T, U]:
   """Stack supporting push/pop/peek."""
 
   def __init__(self):
@@ -80,7 +75,7 @@ class Stack(Generic[T]):
       assert self.pop() is elem
 
 
-class ThreadLocalStack(Stack[T], threading.local):
+class ThreadLocalStack[T](Stack[T], threading.local):
   """Thread-local stack."""
 
 
@@ -97,7 +92,7 @@ class KeysOnlyKeysView(collections.abc.KeysView):
   __str__ = __repr__
 
 
-def to_immutable_dict(mapping: Mapping[K, V]) -> Mapping[K, V]:
+def to_immutable_dict[K, V](mapping: Mapping[K, V]) -> Mapping[K, V]:
   """Returns an immutable copy of the given mapping."""
   if type(mapping) is FlatMap:
     return mapping
@@ -122,7 +117,7 @@ def to_mutable_dict(mapping):
   return out
 
 
-def to_haiku_dict(structure: Mapping[K, V]) -> MutableMapping[K, V]:
+def to_haiku_dict[K, V](structure: Mapping[K, V]) -> MutableMapping[K, V]:
   """Returns a copy of the given two level structure.
 
   Uses the same mapping type as Haiku will return from ``init`` or ``apply``
@@ -150,7 +145,9 @@ def _to_dict_recurse(value: Any):
     return _copy_structure(value)
 
 
-def to_dict(mapping: Mapping[str, Mapping[str, T]]) -> dict[str, dict[str, T]]:
+def to_dict[T](
+    mapping: Mapping[str, Mapping[str, T]],
+) -> dict[str, dict[str, T]]:
   """Returns a ``dict`` copy of the given two level structure.
 
   This method is guaranteed to return a copy of the input structure (e.g. even
@@ -177,7 +174,7 @@ class FlatComponents(NamedTuple):
   structure: jax.tree_util.PyTreeDef
 
 
-class FlatMap(Mapping[K, V]):
+class FlatMap[K, V](Mapping[K, V]):
   """Immutable mapping with O(1) flatten and O(n) unflatten operation.
 
   Warning: this type is only efficient when used with ``jax.tree_util.tree_*``.
@@ -308,7 +305,7 @@ class FlatMapping(FlatMap, metaclass=FlatMappingMeta):
 # old checkpoints.
 
 
-class frozendict(Mapping[K, V]):  # pylint: disable=invalid-name
+class frozendict[K, V](Mapping[K, V]):  # pylint: disable=invalid-name
   """Immutable mapping from keys to values."""
   __slots__ = ("_storage", "_keys", "_hash")
 
@@ -331,7 +328,7 @@ class frozendict(Mapping[K, V]):  # pylint: disable=invalid-name
     raise AttributeError(
         f"x.{key} is not supported on frozendict, use x['{key}'] instead.")
 
-  def get(self, key: K, default: T | None = None) -> V | T | None:
+  def get[T](self, key: K, default: T | None = None) -> V | T | None:
     return self._storage.get(key, default)
 
   def __getitem__(self, key: K) -> V:

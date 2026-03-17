@@ -20,12 +20,9 @@ import decimal
 import inspect
 import pprint
 import re
-from typing import Any, TypeVar
+from typing import Any
 
 import jax
-
-
-T = TypeVar("T")
 
 
 def compare_or_false(a, b) -> bool:
@@ -113,7 +110,7 @@ def indent(amount: int, s: str) -> str:
   return "\n".join(prefix + line for line in s.splitlines())
 
 
-def replicate(
+def replicate[T](
     element: T | Sequence[T],
     num_times: int,
     name: str,

@@ -20,7 +20,7 @@ from haiku._src.integration import common
 from haiku._src.integration import descriptors
 import jax.numpy as jnp
 
-ModuleFn = descriptors.ModuleFn
+type ModuleFn = descriptors.ModuleFn
 
 
 class Bfloat16Test(common.DTypeTestCase):

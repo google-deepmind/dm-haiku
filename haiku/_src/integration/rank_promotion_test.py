@@ -23,7 +23,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-ModuleFn = descriptors.ModuleFn
+type ModuleFn = descriptors.ModuleFn
 
 
 class RankPromotionTest(parameterized.TestCase):

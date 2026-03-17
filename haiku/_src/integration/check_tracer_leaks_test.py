@@ -22,7 +22,7 @@ from haiku._src.integration import descriptors
 import jax
 import jax.numpy as jnp
 
-ModuleFn = descriptors.ModuleFn
+type ModuleFn = descriptors.ModuleFn
 
 
 def get_module_cls(module_fn: ModuleFn) -> type[hk.Module]:

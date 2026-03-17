@@ -23,7 +23,7 @@ from haiku._src import test_utils
 from haiku._src.integration import checkpoint_utils
 from haiku._src.integration import descriptors
 
-ModuleFn = descriptors.ModuleFn
+type ModuleFn = descriptors.ModuleFn
 HOW_TO_REGENERATE = """
 You can regenerate checkpoints using the checkpoint_generate utility in this
 folder. Set the --base_path flag to the checkpoint folder.

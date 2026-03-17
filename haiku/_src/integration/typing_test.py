@@ -20,7 +20,7 @@ import haiku as hk
 from haiku._src import test_utils
 from haiku._src.integration import descriptors
 
-ModuleFn = descriptors.ModuleFn
+type ModuleFn = descriptors.ModuleFn
 
 
 class TypingTest(parameterized.TestCase):

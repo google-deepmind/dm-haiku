@@ -20,7 +20,7 @@ from collections.abc import Callable
 import dataclasses
 import functools
 import inspect
-from typing import Any, NamedTuple, Optional, TypeVar
+from typing import Any, NamedTuple, Optional
 
 from haiku._src import analytics
 from haiku._src import transform
@@ -261,14 +261,17 @@ def without_state(f: MultiTransformedWithState) -> MultiTransformed:
 
   return MultiTransformed(init_fn, apply_fns)
 
-TransformedT = TypeVar('TransformedT',
-                       hk.Transformed,
-                       hk.TransformedWithState,
-                       MultiTransformed,
-                       MultiTransformedWithState)
 
-
-def without_apply_rng(f: TransformedT) -> TransformedT:
+def without_apply_rng[
+    TransformedT: (
+        hk.Transformed
+        | hk.TransformedWithState
+        | MultiTransformed
+        | MultiTransformedWithState
+    )
+](
+    f: TransformedT,
+) -> TransformedT:
   """Removes the rng argument from the apply function.
 
   This is a convenience wrapper that makes the ``rng`` argument to

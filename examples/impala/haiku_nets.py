@@ -20,7 +20,7 @@ import haiku as hk
 import jax.nn
 import jax.numpy as jnp
 
-NetOutput = collections.namedtuple('NetOutput', ['policy_logits', 'value'])
+type NetOutput = collections.namedtuple('NetOutput', ['policy_logits', 'value'])
 
 
 class CatchNet(hk.RNNCore):

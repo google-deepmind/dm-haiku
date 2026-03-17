@@ -25,7 +25,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-ModuleFn = descriptors.ModuleFn
+type ModuleFn = descriptors.ModuleFn
 
 
 DEFAULT_ATOL = 1e-5

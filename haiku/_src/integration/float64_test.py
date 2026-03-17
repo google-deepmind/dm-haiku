@@ -25,7 +25,7 @@ from haiku._src.integration import descriptors
 from jax import config
 import jax.numpy as jnp
 
-ModuleFn = descriptors.ModuleFn
+type ModuleFn = descriptors.ModuleFn
 
 
 class Float64Test(common.DTypeTestCase):

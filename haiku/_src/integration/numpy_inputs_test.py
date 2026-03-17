@@ -26,7 +26,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-ModuleFn = descriptors.ModuleFn
+type ModuleFn = descriptors.ModuleFn
 
 
 def tree_assert_allclose(a, b, *, atol=1e-6):

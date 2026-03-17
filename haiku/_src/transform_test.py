@@ -28,8 +28,8 @@ import jax
 import jax.numpy as jnp
 import tensorflow as tf
 
-State = typing.State
-Params = typing.Params
+type State = typing.State
+type Params = typing.Params
 
 # TODO(tomhennigan) Improve test coverage.
 

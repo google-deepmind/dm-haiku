@@ -22,8 +22,9 @@ import tree
 
 # Can represent either a single transition, a trajectory, or a batch of
 # trajectories.
-Transition = collections.namedtuple('Transition',
-                                    ['timestep', 'agent_out', 'agent_state'])
+type Transition = collections.namedtuple(
+    'Transition', ['timestep', 'agent_out', 'agent_state']
+)
 
 
 def _preprocess_none(t) -> np.ndarray:

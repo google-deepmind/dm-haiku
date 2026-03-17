@@ -39,8 +39,8 @@ except ImportError:
 
 
 graph_stack = data_structures.ThreadLocalStack['Graph']()
-Node = collections.namedtuple('Node', 'id,title,outputs')
-Edge = collections.namedtuple('Edge', 'a,b')
+type Node = collections.namedtuple('Node', 'id,title,outputs')
+type Edge = collections.namedtuple('Edge', 'a,b')
 
 
 class Graph(NamedTuple):

@@ -25,12 +25,13 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-AgentOutput = collections.namedtuple("AgentOutput",
-                                     ["policy_logits", "values", "action"])
+type AgentOutput = collections.namedtuple(
+    "AgentOutput", ["policy_logits", "values", "action"]
+)
 
-Action = int
-Nest = Any
-NetFactory = Callable[[int], hk.RNNCore]
+type Action = int
+type Nest = Any
+type NetFactory = Callable[[int], hk.RNNCore]
 
 
 class Agent:

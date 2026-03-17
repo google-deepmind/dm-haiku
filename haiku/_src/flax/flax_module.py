@@ -15,8 +15,6 @@
 
 """Utilities for converting Haiku modules to Flax modules."""
 
-from typing import TypeVar
-
 import flax.core
 import flax.linen as nn
 from haiku._src import filtering
@@ -44,12 +42,10 @@ class hkds:
 # pylint: enable=invalid-name
 del filtering, transform_lib, typing
 
-T = TypeVar('T')
-
-FlaxCollection = utils.FlaxCollection
-FlaxVariables = utils.FlaxVariables
-HaikuParamsOrState = utils.HaikuParamsOrState
-MutableHaikuParamsOrState = utils.MutableHaikuParamsOrState
+type FlaxCollection = utils.FlaxCollection
+type FlaxVariables = utils.FlaxVariables
+type HaikuParamsOrState = utils.HaikuParamsOrState
+type MutableHaikuParamsOrState = utils.MutableHaikuParamsOrState
 
 
 def store_haiku_collections(

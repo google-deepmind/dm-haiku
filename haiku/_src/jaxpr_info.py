@@ -33,7 +33,7 @@ import itertools
 import logging
 import os
 import sys
-from typing import Any, NamedTuple, TypeAlias
+from typing import Any, NamedTuple
 
 from haiku._src import summarise
 import jax
@@ -41,8 +41,8 @@ import jax.core
 from jax.extend import core as jax_core
 
 # TODO(tomhennigan): Update to use symbols from jax.extend.core when available.
-Atom: TypeAlias = jax.core.Atom
-DropVar: TypeAlias = jax.core.DropVar
+type Atom = jax.core.Atom
+type DropVar = jax.core.DropVar
 
 
 @dataclasses.dataclass

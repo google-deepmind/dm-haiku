@@ -27,8 +27,8 @@ from haiku._src import data_structures
 import jax
 import tree
 
-frozendict = data_structures.frozendict
-FlatMap = data_structures.FlatMap
+type frozendict = data_structures.frozendict  # pylint: disable=invalid-name
+type FlatMap = data_structures.FlatMap
 all_picklers = parameterized.parameters(cloudpickle, dill, pickle)
 
 

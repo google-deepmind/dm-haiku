@@ -18,7 +18,7 @@ from collections.abc import Callable, Mapping, Sequence
 import dataclasses
 import functools
 import pprint
-from typing import Any, TypeVar
+from typing import Any
 
 from haiku._src import base
 from haiku._src import data_structures
@@ -42,8 +42,6 @@ class hk:
   TransformedWithState = transform.TransformedWithState
 # pylint: enable=invalid-name
 del module_lib
-
-T = TypeVar("T")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -135,7 +133,7 @@ def to_spec(tree):
 IGNORED_METHODS = ("__init__", "params_dict", "state_dict")
 
 
-def log_used_modules(
+def log_used_modules[T](
     used_modules: list[MethodInvocation],
     next_f: Callable[..., T],
     args: tuple[Any, ...],

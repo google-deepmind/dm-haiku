@@ -2,6 +2,8 @@
 
 load("//haiku/_src:build_defs.bzl", "hk_py_binary")
 
+package(default_applicable_licenses = ["//haiku:license"])
+
 licenses(["notice"])
 
 hk_py_binary(

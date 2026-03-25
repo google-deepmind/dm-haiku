@@ -155,9 +155,13 @@ def load(
 def _device_put_sharded(sharded_tree, devices):
   leaves, treedef = jax.tree.flatten(sharded_tree)
   n = leaves[0].shape[0]
-  return jax.device_put_sharded(
-      [jax.tree.unflatten(treedef, [l[i] for l in leaves]) for i in range(n)],
-      devices,
+  mesh = jax.sharding.Mesh(np.array(devices), ('_device_put_sharded',))
+  sharding = jax.NamedSharding(mesh, jax.P('_device_put_sharded'))
+  unflattened = [
+      jax.tree.unflatten(treedef, [l[i] for l in leaves]) for i in range(n)
+  ]
+  return jax.tree_util.tree_map(
+      lambda *xs: jax.device_put(np.stack(xs), sharding), *unflattened
   )
 
 

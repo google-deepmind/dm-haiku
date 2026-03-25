@@ -176,12 +176,8 @@ class DotTracer(jax.core.Tracer):
   """JAX tracer used in DotTrace."""
 
   def __init__(self, trace, val):
-    self._trace = trace
+    super().__init__(trace, jax.typeof(val))
     self.val = val
-
-  @property
-  def aval(self):
-    return jax.typeof(self.val)
 
   def full_lower(self):
     return self

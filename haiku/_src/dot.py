@@ -153,7 +153,11 @@ def to_graph(fun):
 
     with graph_stack(graph), \
          module.hook_methods(method_hook):
-      tag = jax.core.TraceTag()
+      # TraceTag is in jax.extend.core starting in JAX v0.10.0.
+      if hasattr(jax_core, 'TraceTag'):
+        tag = jax_core.TraceTag()
+      else:
+        tag = jax.core.TraceTag()
       out_flat = _interpret_subtrace(flat_fun, tag).call_wrapped(*args_flat)
     out = jax.tree.unflatten(out_tree(), out_flat)
 
@@ -164,9 +168,19 @@ def to_graph(fun):
 
 @lu.transformation
 def _interpret_subtrace(tag, *in_vals):
-  with jax.core.take_current_trace() as parent_trace:
+  # take/set_current_trace are in jax.extend.core starting in JAX v0.10.0.
+  if hasattr(jax_core, 'take_current_trace'):
+    take_current_trace = jax_core.take_current_trace
+  else:
+    take_current_trace = jax.core.take_current_trace
+  if hasattr(jax_core, 'set_current_trace'):
+    set_current_trace = jax_core.set_current_trace
+  else:
+    set_current_trace = jax.core.set_current_trace
+
+  with take_current_trace() as parent_trace:
     trace = DotTrace(parent_trace, tag)
-    with jax.core.set_current_trace(trace):
+    with set_current_trace(trace):
       in_tracers = [DotTracer(trace, val) for val in in_vals]
       outs = yield in_tracers, {}
       yield [trace.to_val(t) for t in outs]

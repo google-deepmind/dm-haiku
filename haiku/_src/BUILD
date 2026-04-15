@@ -49,6 +49,7 @@ hk_py_library(
         ":data_structures",
         ":typing",
         # pip: jax
+        # pip: jax/extend
     ],
 )
 

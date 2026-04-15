@@ -42,7 +42,7 @@ from jax.extend import core as jax_core
 
 # TODO(tomhennigan): Update to use symbols from jax.extend.core when available.
 Atom: TypeAlias = jax.core.Atom
-DropVar: TypeAlias = jax.core.DropVar
+DropVar: TypeAlias = jax_core.DropVar
 
 
 @dataclasses.dataclass

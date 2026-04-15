@@ -77,6 +77,7 @@ py_library(
         "//haiku/_src:utils",
         "//haiku/_src/flax:flax_module",
         "//haiku/_src/flax:transform_flax",
+        "//haiku/_src/flax:utils",
         "//haiku/_src/nets:mlp",
         "//haiku/_src/nets:mobilenetv1",
         "//haiku/_src/nets:resnet",

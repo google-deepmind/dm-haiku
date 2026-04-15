@@ -36,6 +36,7 @@ from haiku._src.typing import (  # pylint: disable=g-multiple-import
 import jax
 from jax import config as jax_config
 from jax import core as jax_core
+import jax.extend as jex
 import jax.numpy as jnp
 
 try:
@@ -76,7 +77,7 @@ class JaxTraceLevel(NamedTuple):
       sublevel = jax_core.cur_sublevel()  # type: ignore
       return JaxTraceLevel(opaque=(top_type, level, sublevel))  # type: ignore
 
-    ts = jax_core.get_opaque_trace_state(convention="haiku")
+    ts = jex.core.get_opaque_trace_state(convention="haiku")
     return JaxTraceLevel(opaque=ts)
 
 frame_ids = it.count()

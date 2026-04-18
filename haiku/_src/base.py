@@ -36,6 +36,7 @@ from haiku._src.typing import (  # pylint: disable=g-multiple-import
 import jax
 from jax import config as jax_config
 from jax import core as jax_core
+import jax.extend.core as jex_core
 import jax.numpy as jnp
 
 try:
@@ -68,16 +69,19 @@ class JaxTraceLevel(NamedTuple):
   opaque: Any
 
   @classmethod
-  def current(cls):
+  def current(cls):  # pylint: disable=missing-function-docstring
     if jax.__version_info__ <= (0, 4, 33):
       trace_stack = jax_core.thread_local_state.trace_state.trace_stack.stack  # type: ignore
       top_type = trace_stack[0].trace_type
       level = trace_stack[-1].level
       sublevel = jax_core.cur_sublevel()  # type: ignore
       return JaxTraceLevel(opaque=(top_type, level, sublevel))  # type: ignore
-
-    ts = jax_core.get_opaque_trace_state(convention="haiku")
-    return JaxTraceLevel(opaque=ts)
+    elif jax.__version_info__ < (0, 10, 0):
+      ts = jax_core.get_opaque_trace_state(convention="haiku")
+      return JaxTraceLevel(opaque=ts)
+    else:
+      ts = jex_core.get_opaque_trace_state(convention="haiku")
+      return JaxTraceLevel(opaque=ts)
 
 frame_ids = it.count()
 

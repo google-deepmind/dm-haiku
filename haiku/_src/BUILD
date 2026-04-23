@@ -927,7 +927,6 @@ hk_py_library(
     deps = [
         ":data_structures",
         ":utils",
-        # pip: jax
     ],
 )
 

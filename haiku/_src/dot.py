@@ -210,6 +210,10 @@ class DotTrace(jax.core.Trace):
     else:
       return val
 
+  def stage_value(self, val):
+    val_out = self.parent_trace.stage_value(val)
+    return DotTracer(self, val_out)
+
   def process_primitive(self, primitive, tracers, params):
     vals = [self.to_val(t) for t in tracers]
     if jax.__version_info__ >= (0, 9, 2):

@@ -762,6 +762,7 @@ def vmap(
     axis_size: int | None = None,
     *,
     split_rng: bool,
+    spmd_axis_name: Any | None = None,
 ) -> Callable[..., Any]:
   """Equivalent to :func:`jax.vmap` with module parameters/state not mapped.
 
@@ -801,6 +802,7 @@ def vmap(
       before calling your mapped function) or the same (aka. the internal key
       is broadcast before calling your mapped fucntion) key. See the docstring
       for examples.
+    spmd_axis_name: See :func:`jax.vmap`.
 
   Returns:
     See :func:`jax.vmap`.
@@ -836,7 +838,8 @@ def vmap(
     base.assert_context("vmap")
 
     mapped_pure_fun = jax.vmap(pure_fun, in_axes=in_axes, out_axes=out_axes,
-                               axis_name=axis_name, axis_size=axis_size)
+                               axis_name=axis_name, axis_size=axis_size,
+                               spmd_axis_name=spmd_axis_name)
     state = internal_state()
 
     if split_rng:

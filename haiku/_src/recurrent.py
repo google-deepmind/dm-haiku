@@ -124,11 +124,14 @@ def static_unroll(core, input_sequence, initial_state, time_major=True):
   time_axis = 0 if time_major else 1
   num_steps = jax.tree.leaves(input_sequence)[0].shape[time_axis]
   state = initial_state
+
+  # Using jnp.unstack allows JAX to use an efficient VJP rule for the slicing.
+  input_sequence, treedef = jax.tree.flatten(input_sequence)
+  input_sequence = [jnp.unstack(x, axis=time_axis) for x in input_sequence]
+
   for t in range(num_steps):
-    if time_major:
-      inputs = jax.tree.map(lambda x, _t=t: x[_t], input_sequence)
-    else:
-      inputs = jax.tree.map(lambda x, _t=t: x[:, _t], input_sequence)
+    inputs = [x[t] for x in input_sequence]
+    inputs = jax.tree.unflatten(treedef, inputs)
     outputs, state = core(inputs, state)
     output_sequence.append(outputs)
 

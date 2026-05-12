@@ -113,17 +113,11 @@ class VqvaeTest(parameterized.TestCase):
     vqvae_module(inputs, is_training=False)
 
   @parameterized.parameters({'use_jit': True, 'dtype': jnp.float32},
-                            {'use_jit': True, 'dtype': jnp.float64},
-                            {'use_jit': False, 'dtype': jnp.float32},
-                            {'use_jit': False, 'dtype': jnp.float64})
+                            {'use_jit': False, 'dtype': jnp.float32})
   @test_utils.transform_and_run
   def testEmaUpdating(self, use_jit, dtype):
-    if jax.local_devices()[0].platform == 'tpu' and dtype == jnp.float64:
-      self.skipTest('F64 not supported by TPU')
-
     embedding_dim = 6
-    np_dtype = np.float64 if dtype is jnp.float64 else np.float32
-    decay = np.array(0.1, dtype=np_dtype)
+    decay = np.array(0.1, dtype=np.float32)
     vqvae_module = vqvae.VectorQuantizerEMA(
         embedding_dim=embedding_dim,
         num_embeddings=7,

@@ -149,6 +149,7 @@ class LayerNorm(hk.Module):
     Returns:
       The array, normalized.
     """
+    inputs = jnp.asarray(inputs)
     if self.create_scale and  scale is not None:
       raise ValueError(
           "Cannot pass `scale` at call time if `create_scale=True`.")

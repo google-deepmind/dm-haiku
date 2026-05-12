@@ -94,6 +94,7 @@ def max_pool(
   if padding not in ("SAME", "VALID"):
     raise ValueError(f"Invalid padding '{padding}', must be 'SAME' or 'VALID'.")
 
+  value = jnp.asarray(value)
   _warn_if_unsafe(window_shape, strides)
   window_shape = _infer_shape(value, window_shape, channel_axis)
   strides = _infer_shape(value, strides, channel_axis)
@@ -127,6 +128,7 @@ def avg_pool(
   if padding not in ("SAME", "VALID"):
     raise ValueError(f"Invalid padding '{padding}', must be 'SAME' or 'VALID'.")
 
+  value = jnp.asarray(value)
   _warn_if_unsafe(window_shape, strides)
   window_shape = _infer_shape(value, window_shape, channel_axis)
   strides = _infer_shape(value, strides, channel_axis)

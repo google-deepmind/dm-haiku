@@ -260,6 +260,8 @@ class VanillaRNN(RNNCore):
     self.double_bias = double_bias
 
   def __call__(self, inputs, prev_state):
+    inputs = jnp.asarray(inputs)
+    prev_state = jnp.asarray(prev_state)
     input_to_hidden = hk.Linear(self.hidden_size)
     # TODO(b/173771088): Consider changing default to double_bias=False.
     hidden_to_hidden = hk.Linear(self.hidden_size, with_bias=self.double_bias)
@@ -329,6 +331,8 @@ class LSTM(RNNCore):
       inputs: jax.Array,
       prev_state: LSTMState,
   ) -> tuple[jax.Array, LSTMState]:
+    inputs = jnp.asarray(inputs)
+    prev_state = jax.tree.map(jnp.asarray, prev_state)
     if len(inputs.shape) > 2 or not inputs.shape:
       raise ValueError("LSTM input must be rank-1 or rank-2.")
     x_and_h = jnp.concatenate([inputs, prev_state.hidden], axis=-1)
@@ -410,6 +414,8 @@ class ConvNDLSTM(RNNCore):
       inputs,
       state: LSTMState,
   ) -> tuple[jax.Array, LSTMState]:
+    inputs = jnp.asarray(inputs)
+    state = jax.tree.map(jnp.asarray, state)
     input_to_hidden = hk.ConvND(
         num_spatial_dims=self.num_spatial_dims,
         output_channels=4 * self.output_channels,
@@ -559,6 +565,8 @@ class GRU(RNNCore):
     self.b_init = b_init or jnp.zeros
 
   def __call__(self, inputs, state):
+    inputs = jnp.asarray(inputs)
+    state = jnp.asarray(state)
     if inputs.ndim not in (1, 2):
       raise ValueError("GRU input must be rank-1 or rank-2.")
 
@@ -650,6 +658,9 @@ class ResetCore(RNNCore):
       Tuple of the wrapped core's ``output, next_state``.
     """
     inputs, should_reset = inputs
+    inputs = jax.tree.map(jnp.asarray, inputs)
+    should_reset = jax.tree.map(jnp.asarray, should_reset)
+    state = jax.tree.map(jnp.asarray, state)
     if jax.tree_util.treedef_is_leaf(jax.tree.structure(should_reset)):
       # Equivalent to not tree.is_nested, but with support for Jax extensible
       # pytrees.

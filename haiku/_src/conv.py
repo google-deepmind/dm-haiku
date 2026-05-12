@@ -177,6 +177,7 @@ class ConvND(hk.Module):
         unbatched, or an array of shape ``[N, spatial_dims, output_channels]``
         and rank-N+2 if batched.
     """
+    inputs = jnp.asarray(inputs)
     unbatched_rank = self.num_spatial_dims + 1
     allowed_ranks = [unbatched_rank, unbatched_rank + 1]
     if inputs.ndim not in allowed_ranks:
@@ -574,6 +575,7 @@ class ConvNDTranspose(hk.Module):
         unbatched, or an array of shape ``[N, spatial_dims, output_channels]``
         and rank-N+2 if batched.
     """
+    inputs = jnp.asarray(inputs)
     unbatched_rank = self.num_spatial_dims + 1
     allowed_ranks = [unbatched_rank, unbatched_rank + 1]
     if inputs.ndim not in allowed_ranks:

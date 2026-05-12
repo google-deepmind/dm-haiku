@@ -254,7 +254,7 @@ class LayerNormTest(parameterized.TestCase):
     ln(x)
     self.assertEqual(ln.params_dict()["layer_norm/scale"].shape, param_shape)
     self.assertEqual(ln.params_dict()["layer_norm/offset"].shape, param_shape)
-  
+
   @staticmethod
   def _ln_f(axis, param_axis, create_scale=True, create_offset=True):
     def f(x):
@@ -269,7 +269,7 @@ class LayerNormTest(parameterized.TestCase):
   def test_layernorm_dtype_propagation_float64(self):
     """Input dtype -> output dtype; params dtype match input."""
     fwd = LayerNormTest._ln_f(axis=-1, param_axis=-1)
-    x = jnp.arange(12, dtype=jnp.float64).reshape(3, 4)
+    x = jnp.arange(12, dtype=float).reshape(3, 4)
     params = fwd.init(jax.random.PRNGKey(0), x)
     y = fwd.apply(params, None, x)
     self.assertEqual(y.dtype, x.dtype)

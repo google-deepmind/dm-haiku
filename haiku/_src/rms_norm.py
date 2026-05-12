@@ -106,6 +106,7 @@ class RMSNorm(hk.Module):
     Returns:
       The normalized array, of the same shape as the inputs.
     """
+    inputs = jnp.asarray(inputs)
     axis = self.axis
     if isinstance(axis, slice):
       axis = tuple(range(inputs.ndim)[axis])

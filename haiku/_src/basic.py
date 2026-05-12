@@ -166,6 +166,7 @@ class Linear(hk.Module):
     if not inputs.shape:
       raise ValueError("Input must not be scalar.")
 
+    inputs = jnp.asarray(inputs)
     input_size = self.input_size = inputs.shape[-1]
     output_size = self.output_size
     dtype = inputs.dtype

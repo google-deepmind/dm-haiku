@@ -20,7 +20,6 @@ from typing import Any, TypeVar
 
 from haiku._src import data_structures
 from haiku._src import utils
-import jax
 
 T = TypeVar("T")
 InT = TypeVar("InT")
@@ -48,7 +47,7 @@ def traverse(
 
 
 def partition(
-    predicate: Callable[[str, str, jax.Array], bool],
+    predicate: Callable[[str, str, T], bool],
     structure: Mapping[str, Mapping[str, T]],
 ) -> tuple[Mapping[str, Mapping[str, T]], Mapping[str, Mapping[str, T]]]:
   """Partitions the input structure in two according to a given predicate.
@@ -77,7 +76,7 @@ def partition(
       predicate. Entries matching the predicate will be in the first structure,
       and the rest will be in the second.
   """
-  f = lambda m, n, v: int(not predicate(m, n, v))
+  f: Callable[[str, str, T], int] = lambda m, n, v: int(not predicate(m, n, v))
   return partition_n(f, structure, 2)
 
 

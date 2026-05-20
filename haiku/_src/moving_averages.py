@@ -23,6 +23,7 @@ from haiku._src import initializers
 from haiku._src import module
 import jax
 import jax.numpy as jnp
+import haiku as hk
 
 
 # If you are forking replace this block with `import haiku as hk`.
@@ -149,7 +150,8 @@ class EMAParamsTree(hk.Module):
 
   >>> network_fn = lambda x: hk.Linear(10)(x)
   >>> x = jnp.ones([1, 1])
-  >>> params = hk.transform(network_fn).init(jax.random.PRNGKey(428), x)
+  >>> rng = jax.random.PRNGKey(428)
+  >>> params = hk.transform(network_fn).init(rng, x)
 
   You might use the EMAParamsTree like follows:
 

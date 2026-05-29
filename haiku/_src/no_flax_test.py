@@ -44,7 +44,7 @@ class NoFlaxTest(absltest.TestCase):
 
     # Errors are only thrown when users try to use flax.
     with self.assertRaisesRegex(ImportError, "lift.*require `flax`"):
-      hk.experimental.flax.lift  # pylint: disable=pointless-statement
+      print(hk.experimental.flax.lift)
 
   def test_inspect_stack_does_not_fail(self):
     self.assertNotEmpty(inspect.stack())

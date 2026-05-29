@@ -19,6 +19,10 @@ import haiku as hk
 from haiku._src import test_utils
 from haiku._src.integration import descriptors
 
+# Explicitly import all modules to ensure they are loaded for the test.
+for _ in test_utils.find_internal_python_modules(hk):
+  pass
+
 ALL_MODULES = descriptors.ALL_MODULES
 IGNORED_MODULES = descriptors.IGNORED_MODULES
 

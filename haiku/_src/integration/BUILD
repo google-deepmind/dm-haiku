@@ -3,6 +3,7 @@ load("//haiku/_src:build_defs.bzl", "hk_py_binary", "hk_py_library", "hk_py_test
 package(
     default_applicable_licenses = ["//haiku:license"],
     default_visibility = ["//visibility:private"],
+    features = ["-py_lazy_imports"],
 )
 
 licenses(["notice"])
@@ -260,6 +261,7 @@ hk_py_test(
         # pip: absl/testing:absltest
         # pip: absl/testing:parameterized
         "//haiku",
+        "//haiku/_src:test_utils",
     ],
 )
 

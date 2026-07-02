@@ -35,7 +35,7 @@ class JaxprInfoTest(parameterized.TestCase):
     rng = jax.random.PRNGKey(42)
     params, state = f.init(rng)
     info = jaxpr_info.make_model_info(f.apply)(params, state, rng)
-    if descriptors.module_type(module_fn).__name__ != 'Sequential':
+    if descriptors.module_type(module_fn).__name__ != 'Sequential':  # pyrefly: ignore[missing-attribute]
       self.assertNotEmpty(info.expressions)
     self.assertIsNotNone(jaxpr_info.as_html_page(info))
 

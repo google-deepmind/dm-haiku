@@ -239,7 +239,7 @@ def main(_):
     """Learning rule (stochastic gradient descent)."""
     grads = jax.grad(loss)(params, batch)
     updates, opt_state = opt.update(grads, opt_state)
-    return updates, opt_state
+    return updates, opt_state  # pyrefly: ignore[bad-return]
 
   # We maintain avg_params, the exponential moving average of the "live" params.
   # avg_params is used only for evaluation (cf. https://doi.org/10.1137/0330046)
@@ -295,7 +295,7 @@ def main(_):
       sparsity_fraction = zhugupta_func(progress)
       masks = update_mask(params, sparsity_fraction, module_sparsity)
     avg_params = ema_update(params, avg_params)
-  print(per_layer_sparsities)
+  print(per_layer_sparsities)  # pyrefly: ignore[unbound-name]
 
 
 if __name__ == "__main__":

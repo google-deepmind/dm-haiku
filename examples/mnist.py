@@ -103,7 +103,7 @@ def main(_):
     # We use this only for evaluation (cf. https://doi.org/10.1137/0330046).
     avg_params = optax.incremental_update(
         params, state.avg_params, step_size=0.001)
-    return TrainingState(params, avg_params, opt_state)
+    return TrainingState(params, avg_params, opt_state)  # pyrefly: ignore[bad-argument-type]
 
   # Make datasets.
   train_dataset = load_dataset("train", shuffle=True, batch_size=1_000)

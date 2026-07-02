@@ -138,7 +138,7 @@ def _flax_transform_with_state(mod: nn.Module) -> hk.TransformedWithState:
 
     variables = _from_haiku_state(state)
     mutable = set(variables)
-    variables['params'] = _from_haiku_params(params)
+    variables['params'] = _from_haiku_params(params)  # pyrefly: ignore[unsupported-operation]
     out, variables = mod.apply(variables, *args, **kwargs, mutable=mutable)
     state = _to_haiku_state(variables)
     return out, state
@@ -183,8 +183,8 @@ def lift(
     and returns its output. As a side effect of calling the module any module
     parameters and state variables are registered with Haiku.
   """
-  mod = _flax_transform_with_state(mod)
-  init_fn, updater = hk.lift_with_state(mod.init, name=name, allow_reuse=True)
+  mod = _flax_transform_with_state(mod)  # pyrefly: ignore[bad-assignment]
+  init_fn, updater = hk.lift_with_state(mod.init, name=name, allow_reuse=True)  # pyrefly: ignore[bad-argument-type]
   updater._used = True  # pylint: disable=protected-access
 
   def wrapped(*args, **kwargs):

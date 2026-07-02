@@ -120,11 +120,11 @@ def make_optimizer() -> optax.GradientTransformation:
       optax.trace(
           decay=FLAGS.optimizer_momentum,
           nesterov=FLAGS.optimizer_use_nesterov),
-      optax.scale_by_schedule(lr_schedule), optax.scale(-1))
+      optax.scale_by_schedule(lr_schedule), optax.scale(-1))  # pyrefly: ignore[bad-argument-type]
 
 
 def l2_loss(params: Iterable[jax.Array]) -> jax.Array:
-  return 0.5 * sum(jnp.sum(jnp.square(p)) for p in params)
+  return 0.5 * sum(jnp.sum(jnp.square(p)) for p in params)  # pyrefly: ignore[bad-return]
 
 
 def loss_fn(
@@ -184,10 +184,10 @@ def train_step(
   # Scalars to log (note: we log the mean across all hosts/devices).
   scalars = {'train_loss': loss, 'loss_scale': loss_scale.loss_scale}
   if FLAGS.mp_skip_nonfinite:
-    scalars['grads_finite'] = grads_finite
+    scalars['grads_finite'] = grads_finite  # pyrefly: ignore[unbound-name]
   new_state, scalars = jmp.cast_to_full((new_state, scalars))
   scalars = jax.lax.pmean(scalars, axis_name='i')
-  train_state = TrainState(new_params, new_state, new_opt_state, loss_scale)
+  train_state = TrainState(new_params, new_state, new_opt_state, loss_scale)  # pyrefly: ignore[bad-argument-type]
   return train_state, scalars
 
 

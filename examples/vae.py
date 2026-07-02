@@ -169,7 +169,7 @@ def main(_):
     gradients = jax.grad(loss_fn)(state.params, rng_key, batch)
     updates, new_opt_state = optimizer.update(gradients, state.opt_state)
     new_params = optax.apply_updates(state.params, updates)
-    return TrainingState(new_params, new_opt_state, next_rng_key)
+    return TrainingState(new_params, new_opt_state, next_rng_key)  # pyrefly: ignore[bad-argument-type]
 
   # Load datasets.
   train_dataset = load_dataset("train", config.batch_size, config.seed)

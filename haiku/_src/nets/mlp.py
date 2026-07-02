@@ -115,7 +115,7 @@ class MLP(hk.Module):
       if i < (num_layers - 1) or self.activate_final:
         # Only perform dropout if we are activating the output.
         if dropout_rate is not None:
-          out = hk.dropout(next(rng), dropout_rate, out)
+          out = hk.dropout(next(rng), dropout_rate, out)  # pyrefly: ignore[bad-argument-type]
         out = self.activation(out)
 
     return out

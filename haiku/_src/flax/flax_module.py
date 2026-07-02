@@ -161,7 +161,7 @@ class Module(nn.Module):
     if self.is_initializing():
       rng = self.make_rng('params')
       params, state = self.transformed.init(rng, *args, **kwargs)
-      store_haiku_collections(self.scope, params=params, state=state)
+      store_haiku_collections(self.scope, params=params, state=state)  # pyrefly: ignore[bad-argument-type]
     else:
       params = utils.flatten_flax_to_haiku(self.variables.get('params', {}))
       state = utils.flatten_flax_to_haiku(self.variables.get('state', {}))
@@ -169,7 +169,7 @@ class Module(nn.Module):
     rng = self.make_rng('apply') if self.has_rng('apply') else None
     out, state_out = self.transformed.apply(params, state, rng, *args, **kwargs)
     if not self.is_initializing():
-      updated_state = only_changed_state(state, state_out)
-      store_haiku_collections(self.scope, state=updated_state)
+      updated_state = only_changed_state(state, state_out)  # pyrefly: ignore[bad-argument-type]
+      store_haiku_collections(self.scope, state=updated_state)  # pyrefly: ignore[bad-argument-type]
 
     return out

@@ -62,14 +62,14 @@ def load_ascii_dataset(
     raise ValueError('Corpus must not contain the null byte.')
 
   # Naively tokenise by taking ASCII codepoints.
-  corpus = np.array([ord(c) for c in corpus]).astype(np.int32)
+  corpus = np.array([ord(c) for c in corpus]).astype(np.int32)  # pyrefly: ignore[bad-assignment]
   assert np.max(corpus) < VOCAB_SIZE
 
   crop_len = sequence_length + 1
-  num_batches, remainder = divmod(corpus.size, batch_size * crop_len)
+  num_batches, remainder = divmod(corpus.size, batch_size * crop_len)  # pyrefly: ignore[missing-attribute]
   if remainder:
     corpus = corpus[:-remainder]  # Drop remainder (incomplete) batch.
-  ds = corpus.reshape([-1, crop_len])
+  ds = corpus.reshape([-1, crop_len])  # pyrefly: ignore[missing-attribute]
 
   if num_batches < num_shuffle_batches:
     raise ValueError(

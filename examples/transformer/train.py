@@ -138,7 +138,7 @@ def update(
   new_params = optax.apply_updates(state.params, updates)
 
   new_state = TrainingState(
-      params=new_params,
+      params=new_params,  # pyrefly: ignore[bad-argument-type]
       opt_state=new_opt_state,
       rng_key=rng,
       step=state.step + 1,

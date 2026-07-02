@@ -431,7 +431,7 @@ class ResNet18(ResNet):
                      strides=strides,
                      logits_config=logits_config,
                      name=name,
-                     **ResNet.CONFIGS[18])
+                     **ResNet.CONFIGS[18])  # pyrefly: ignore[bad-argument-type]
 
 
 class ResNet34(ResNet):
@@ -469,7 +469,7 @@ class ResNet34(ResNet):
                      strides=strides,
                      logits_config=logits_config,
                      name=name,
-                     **ResNet.CONFIGS[34])
+                     **ResNet.CONFIGS[34])  # pyrefly: ignore[bad-argument-type]
 
 
 class ResNet50(ResNet):
@@ -507,7 +507,7 @@ class ResNet50(ResNet):
                      strides=strides,
                      logits_config=logits_config,
                      name=name,
-                     **ResNet.CONFIGS[50])
+                     **ResNet.CONFIGS[50])  # pyrefly: ignore[bad-argument-type]
 
 
 class ResNet101(ResNet):
@@ -545,7 +545,7 @@ class ResNet101(ResNet):
                      strides=strides,
                      logits_config=logits_config,
                      name=name,
-                     **ResNet.CONFIGS[101])
+                     **ResNet.CONFIGS[101])  # pyrefly: ignore[bad-argument-type]
 
 
 class ResNet152(ResNet):
@@ -583,7 +583,7 @@ class ResNet152(ResNet):
                      strides=strides,
                      logits_config=logits_config,
                      name=name,
-                     **ResNet.CONFIGS[152])
+                     **ResNet.CONFIGS[152])  # pyrefly: ignore[bad-argument-type]
 
 
 class ResNet200(ResNet):
@@ -621,4 +621,4 @@ class ResNet200(ResNet):
                      strides=strides,
                      logits_config=logits_config,
                      name=name,
-                     **ResNet.CONFIGS[200])
+                     **ResNet.CONFIGS[200])  # pyrefly: ignore[bad-argument-type]

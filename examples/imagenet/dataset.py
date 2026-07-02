@@ -203,10 +203,10 @@ def _to_tfds_split(split: Split) -> tfds.Split:
   # competition, so it has been typical at DeepMind to consider the VALID
   # split the TEST split and to reserve 10k images from TRAIN for VALID.
   if split in (Split.TRAIN, Split.TRAIN_AND_VALID, Split.VALID):
-    return tfds.Split.TRAIN
+    return tfds.Split.TRAIN  # pyrefly: ignore[missing-attribute]
   else:
     assert split == Split.TEST
-    return tfds.Split.VALIDATION
+    return tfds.Split.VALIDATION  # pyrefly: ignore[missing-attribute]
 
 
 def _shard(split: Split, shard_index: int, num_shards: int) -> tuple[int, int]:

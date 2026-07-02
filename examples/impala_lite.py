@@ -202,7 +202,7 @@ class Learner:
   ) -> tuple[hk.Params, optax.OptState]:
     g = jax.grad(self._agent.loss)(params, trajs)
     updates, new_opt_state = self._opt_update(g, opt_state)
-    return optax.apply_updates(params, updates), new_opt_state
+    return optax.apply_updates(params, updates), new_opt_state  # pyrefly: ignore[bad-return]
 
 
 def run(*, trajectories_per_actor, num_actors, unroll_len):

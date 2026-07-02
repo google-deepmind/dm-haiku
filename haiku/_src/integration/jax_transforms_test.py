@@ -49,7 +49,7 @@ class JaxTransformsTest(parameterized.TestCase):
 
     f = hk.transform_with_state(g)
 
-    atol = CUSTOM_ATOL.get(descriptors.module_type(module_fn), DEFAULT_ATOL)
+    atol = CUSTOM_ATOL.get(descriptors.module_type(module_fn), DEFAULT_ATOL)  # pyrefly: ignore[no-matching-overload]
     assert_allclose = functools.partial(np.testing.assert_allclose, atol=atol)
 
     # Ensure initialization under jit is the same.

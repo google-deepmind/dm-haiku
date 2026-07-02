@@ -95,7 +95,7 @@ class FlaxModuleTest(parameterized.TestCase):
     self.assertIs(s2, variables['state']['~']['s2'])
 
   def test_stateful_module(self):
-    c = flax_module.Module.create(Counter)
+    c = flax_module.Module.create(Counter)  # pyrefly: ignore[bad-argument-type]
     rng = jax.random.PRNGKey(42)
     variables = c.init(rng)
     self.assertEqual(variables, {'state': {'counter': {'c': 0}}})
@@ -106,7 +106,7 @@ class FlaxModuleTest(parameterized.TestCase):
       self.assertEqual(variables, {'state': {'counter': {'c': i + 1}}})
 
   def test_resnet_50_init_equivalence_to_flax(self):
-    mod = flax_module.Module.create(resnet.ResNet50, 10)
+    mod = flax_module.Module.create(resnet.ResNet50, 10)  # pyrefly: ignore[bad-argument-type]
     rng = jax.random.PRNGKey(42)
     x = jnp.ones([1, 224, 224, 3])
     f_haiku = transform.transform_with_state(
@@ -122,7 +122,7 @@ class FlaxModuleTest(parameterized.TestCase):
     assert_matches(variables['state'], hk_state)
 
   def test_resnet_50_apply_equivalence(self):
-    mod = flax_module.Module.create(resnet.ResNet50, 10)
+    mod = flax_module.Module.create(resnet.ResNet50, 10)  # pyrefly: ignore[bad-argument-type]
     rng = jax.random.PRNGKey(42)
     x = jnp.ones([1, 224, 224, 3])
     f_haiku = transform.transform_with_state(
@@ -166,7 +166,7 @@ class ParamsRngModule(nn.Module):
 
 def flax_init_rng(rng: jax.Array) -> jax.Array:
   """Returns the rng key that Flax will pass to the Haiku init function."""
-  return ParamsRngModule().apply({}, rngs={'params': rng})
+  return ParamsRngModule().apply({}, rngs={'params': rng})  # pyrefly: ignore[bad-return]
 
 
 if __name__ == '__main__':

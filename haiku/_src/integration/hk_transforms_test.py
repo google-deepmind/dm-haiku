@@ -159,7 +159,7 @@ class HaikuTransformsTest(parameterized.TestCase):
     f = hk.transform_with_state(hk.experimental.optimize_rng_use(g))
 
     module_type = descriptors.module_type(module_fn)
-    atol = CUSTOM_ATOL.get(module_type, DEFAULT_ATOL)
+    atol = CUSTOM_ATOL.get(module_type, DEFAULT_ATOL)  # pyrefly: ignore[no-matching-overload]
     assert_allclose = functools.partial(np.testing.assert_allclose, atol=atol)
 
     params, state = jax.jit(f.init)(rng, x)
@@ -201,7 +201,7 @@ class HaikuTransformsTest(parameterized.TestCase):
                        out_axes=(0, None))
 
     module_type = descriptors.module_type(module_fn)
-    atol = CUSTOM_ATOL.get(module_type, DEFAULT_ATOL)
+    atol = CUSTOM_ATOL.get(module_type, DEFAULT_ATOL)  # pyrefly: ignore[no-matching-overload]
     assert_allclose = functools.partial(np.testing.assert_allclose, atol=atol)
     jax.tree.map(
         assert_allclose,

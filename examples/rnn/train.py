@@ -89,7 +89,7 @@ def update(state: TrainingState, batch: dataset.Batch) -> TrainingState:
   gradients = jax.grad(loss_fn)(state.params, batch)
   updates, new_opt_state = optimizer(gradients, state.opt_state)
   new_params = optax.apply_updates(state.params, updates)
-  return TrainingState(params=new_params, opt_state=new_opt_state)
+  return TrainingState(params=new_params, opt_state=new_opt_state)  # pyrefly: ignore[bad-argument-type]
 
 
 def sample(
@@ -126,7 +126,7 @@ def main(_):
 
   # Make training dataset.
   train_data = dataset.load(
-      tfds.Split.TRAIN,
+      tfds.Split.TRAIN,  # pyrefly: ignore[missing-attribute]
       batch_size=TRAIN_BATCH_SIZE.value,
       sequence_length=SEQUENCE_LENGTH.value)
 
@@ -136,7 +136,7 @@ def main(_):
           split,
           batch_size=EVAL_BATCH_SIZE.value,
           sequence_length=SEQUENCE_LENGTH.value)
-      for split in [tfds.Split.TRAIN, tfds.Split.TEST]
+      for split in [tfds.Split.TRAIN, tfds.Split.TEST]  # pyrefly: ignore[missing-attribute]
   }
 
   # Make loss, sampler, and optimizer.

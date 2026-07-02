@@ -62,7 +62,7 @@ class Recurrent(Wrapped):
         self.wrapped.initial_state(batch_size=x.shape[0]),
     )
     x = jnp.expand_dims(x, axis=0)
-    return self.unroller(self.wrapped, x, initial_state)
+    return self.unroller(self.wrapped, x, initial_state)  # pyrefly: ignore[not-callable]
 
 
 def unwrap(module):

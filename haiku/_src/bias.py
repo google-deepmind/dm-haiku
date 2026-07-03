@@ -124,7 +124,7 @@ class Bias(hk.Module):
           f" {inputs.shape}"
       )
 
-    self.bias_shape = calculate_bias_shape(inputs.shape, self.bias_dims)
+    self.bias_shape = calculate_bias_shape(inputs.shape, self.bias_dims)  # pyrefly: ignore[bad-argument-type]
     self.input_size = inputs.shape[1:]
 
     b = hk.get_parameter("b", self.bias_shape, inputs.dtype, init=self.b_init)

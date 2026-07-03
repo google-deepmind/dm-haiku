@@ -103,7 +103,7 @@ class Deferred(Generic[T]):
     if self._target is None:
       with base.maybe_push_module_state(self.__constructor_state):
         self._target = self._factory()
-      self._factory = None
+      self._factory = None  # pyrefly: ignore[bad-assignment]
     return self._target
 
   def __call__(self, *args, **kwargs):

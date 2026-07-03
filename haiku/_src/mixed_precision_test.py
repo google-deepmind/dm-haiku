@@ -31,7 +31,7 @@ import jmp
 def with_policy(cls: type[module.Module], policy: jmp.Policy | None):
   def decorator(f):
     def wrapper(*args, **kwargs):
-      with mixed_precision.push_policy(cls, policy):
+      with mixed_precision.push_policy(cls, policy):  # pyrefly: ignore[bad-argument-type]
         return f(*args, **kwargs)
     return wrapper
   return decorator

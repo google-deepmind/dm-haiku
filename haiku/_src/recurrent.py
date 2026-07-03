@@ -214,11 +214,11 @@ def dynamic_unroll(core,
   if not time_major:
     output_sequence = _swap_batch_time(output_sequence)
     if return_all_states:
-      state_sequence = _swap_batch_time(state_sequence)
+      state_sequence = _swap_batch_time(state_sequence)  # pyrefly: ignore[unbound-name]
 
   if return_all_states:
-    return output_sequence, state_sequence
-  return output_sequence, last_state
+    return output_sequence, state_sequence  # pyrefly: ignore[unbound-name]
+  return output_sequence, last_state  # pyrefly: ignore[unbound-name]
 
 
 def add_batch(nest, batch_size: int | None):
@@ -445,7 +445,7 @@ class ConvNDLSTM(RNNCore):
 
 
 class Conv1DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
-  __doc__ = ConvNDLSTM.__doc__.replace("``num_spatial_dims``", "1")
+  __doc__ = ConvNDLSTM.__doc__.replace("``num_spatial_dims``", "1")  # pyrefly: ignore[missing-attribute]
 
   def __init__(
       self,
@@ -473,7 +473,7 @@ class Conv1DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
 
 
 class Conv2DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
-  __doc__ = ConvNDLSTM.__doc__.replace("``num_spatial_dims``", "2")
+  __doc__ = ConvNDLSTM.__doc__.replace("``num_spatial_dims``", "2")  # pyrefly: ignore[missing-attribute]
 
   def __init__(
       self,
@@ -501,7 +501,7 @@ class Conv2DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
 
 
 class Conv3DLSTM(ConvNDLSTM):  # pylint: disable=empty-docstring
-  __doc__ = ConvNDLSTM.__doc__.replace("``num_spatial_dims``", "3")
+  __doc__ = ConvNDLSTM.__doc__.replace("``num_spatial_dims``", "3")  # pyrefly: ignore[missing-attribute]
 
   def __init__(
       self,

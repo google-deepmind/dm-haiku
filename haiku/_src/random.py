@@ -98,7 +98,7 @@ def optimize_rng_use(fun):
     rng_count = rng_count_f()
 
     if rng_count:
-      base.current_frame().rng_stack.peek().reserve(rng_count)
+      base.current_frame().rng_stack.peek().reserve(rng_count)  # pyrefly: ignore[missing-attribute]
     return fun(*args, **kwargs)
 
   return wrapper

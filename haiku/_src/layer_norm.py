@@ -187,25 +187,25 @@ class LayerNorm(hk.Module):
       scale = hk.get_parameter("scale", param_shape, inputs.dtype,
                                init=self.scale_init)
     elif scale is None:
-      scale = np.array(1., dtype=inputs.dtype)
+      scale = np.array(1., dtype=inputs.dtype)  # pyrefly: ignore[bad-assignment]
 
     if self.create_offset:
       offset = hk.get_parameter("offset", param_shape, inputs.dtype,
                                 init=self.offset_init)
     elif offset is None:
-      offset = np.array(0., dtype=inputs.dtype)
+      offset = np.array(0., dtype=inputs.dtype)  # pyrefly: ignore[bad-assignment]
 
     if jax.config.jax_numpy_rank_promotion != "allow":
       # TODO(b/234327547): Explicit bcast triggers excessive mem usage on TPU.
       # We should remove the conditional (and always broadcast) when the
       # referenced bug is fixed.
-      scale = jnp.broadcast_to(scale, inputs.shape)
-      offset = jnp.broadcast_to(offset, inputs.shape)
+      scale = jnp.broadcast_to(scale, inputs.shape)  # pyrefly: ignore[bad-argument-type]
+      offset = jnp.broadcast_to(offset, inputs.shape)  # pyrefly: ignore[bad-argument-type]
       mean = jnp.broadcast_to(mean, inputs.shape)
 
     eps = jax.lax.convert_element_type(self.eps, variance.dtype)
-    inv = scale * jax.lax.rsqrt(variance + eps)
-    return inv * (inputs - mean) + offset
+    inv = scale * jax.lax.rsqrt(variance + eps)  # pyrefly: ignore[unsupported-operation]
+    return inv * (inputs - mean) + offset  # pyrefly: ignore[unsupported-operation]
 
 
 class InstanceNorm(LayerNorm):

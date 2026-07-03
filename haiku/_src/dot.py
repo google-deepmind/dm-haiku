@@ -41,13 +41,13 @@ except ImportError:
 if hasattr(jax_core, 'take_current_trace'):
   take_current_trace = jax_core.take_current_trace
 else:
-  take_current_trace = jax.core.take_current_trace
+  take_current_trace = jax.core.take_current_trace  # pyrefly: ignore[missing-attribute]
 if hasattr(jax_core, 'set_current_trace'):
   set_current_trace = jax_core.set_current_trace
 else:
-  set_current_trace = jax.core.set_current_trace
+  set_current_trace = jax.core.set_current_trace  # pyrefly: ignore[missing-attribute]
 
-graph_stack = data_structures.ThreadLocalStack['Graph']()
+graph_stack = data_structures.ThreadLocalStack['Graph']()  # pyrefly: ignore[not-a-type]
 Node = collections.namedtuple('Node', 'id,title,outputs')
 Edge = collections.namedtuple('Edge', 'a,b')
 
@@ -62,7 +62,7 @@ class Graph(NamedTuple):
 
   @classmethod
   def create(cls, title: str | None = None):
-    return Graph(title=title, nodes=[], edges=[], subgraphs=[])
+    return Graph(title=title, nodes=[], edges=[], subgraphs=[])  # pyrefly: ignore[bad-argument-type]
 
   def evolve(self, **kwargs) -> 'Graph':
     return Graph(**{**self._asdict(), **kwargs})
@@ -166,7 +166,7 @@ def to_graph(fun):
       if hasattr(jax_core, 'TraceTag'):
         tag = jax_core.TraceTag()
       else:
-        tag = jax.core.TraceTag()
+        tag = jax.core.TraceTag()  # pyrefly: ignore[missing-attribute]
       out_flat = _interpret_subtrace(flat_fun, tag).call_wrapped(*args_flat)
     out = jax.tree.unflatten(out_tree(), out_flat)
 

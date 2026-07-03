@@ -246,7 +246,7 @@ class _LayerStackNoPerLayer(_LayerStack):
     self._f = f
 
   @module.transparent
-  def _call_wrapped(self, x, **kwargs):
+  def _call_wrapped(self, x, **kwargs):  # pyrefly: ignore[bad-override]
     ret = self._f(*x, **kwargs)
     if len(x) == 1:
       # If the function takes a single argument, the wrapped function receives

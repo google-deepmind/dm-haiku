@@ -33,7 +33,7 @@ class MaxPoolTest(absltest.TestCase):
 
     window_shape = [1, 2, 2, 1]
     result = pool.max_pool(
-        x, window_shape=window_shape, strides=window_shape, padding="VALID")
+        x, window_shape=window_shape, strides=window_shape, padding="VALID")  # pyrefly: ignore[bad-argument-type]
 
     ground_truth = np.asarray([1., 3., 5.]).reshape([3, 1])
     ground_truth = np.broadcast_to(ground_truth, (2, 5, 3, 2))
@@ -47,7 +47,7 @@ class MaxPoolTest(absltest.TestCase):
 
     window_shape = [2, 2, 1]
     result = pool.max_pool(
-        x, window_shape=window_shape, strides=window_shape, padding="VALID")
+        x, window_shape=window_shape, strides=window_shape, padding="VALID")  # pyrefly: ignore[bad-argument-type]
 
     ground_truth = np.asarray([1., 3., 5.]).reshape([3, 1])
     ground_truth = np.broadcast_to(ground_truth, leading_dims + (5, 3, 2))
@@ -86,7 +86,7 @@ class MaxPoolTest(absltest.TestCase):
     window_shape = [1, 5, 3, 2]
     strides = [1, 1, 3, 2]
     result = pool.max_pool(
-        x, window_shape=window_shape, strides=strides, padding="VALID")
+        x, window_shape=window_shape, strides=strides, padding="VALID")  # pyrefly: ignore[bad-argument-type]
 
     ground_truth = np.asarray([5., 11.,]).reshape([2, 1])
     ground_truth = np.broadcast_to(ground_truth, (2, 6, 2, 1))
@@ -100,7 +100,7 @@ class MaxPoolTest(absltest.TestCase):
     window_shape = [1, 3, 3]
     strides = [1, 1, 1]
     result = pool.max_pool(
-        x, window_shape=window_shape, strides=strides, padding="SAME")
+        x, window_shape=window_shape, strides=strides, padding="SAME")  # pyrefly: ignore[bad-argument-type]
 
     np.testing.assert_equal(result.shape, x.shape)
 
@@ -121,7 +121,7 @@ class MaxPoolTest(absltest.TestCase):
     x = np.arange(6, dtype=jnp.float32).reshape([6, 1])
     x = np.broadcast_to(x, (2, 10, 6, 2))
 
-    result = pool.max_pool(x, 2, 2, padding="VALID")
+    result = pool.max_pool(x, 2, 2, padding="VALID")  # pyrefly: ignore[bad-argument-type]
 
     ground_truth = np.asarray([1., 3., 5.]).reshape([3, 1])
     ground_truth = np.broadcast_to(ground_truth, (2, 5, 3, 2))
@@ -132,7 +132,7 @@ class MaxPoolTest(absltest.TestCase):
     x = np.arange(6, dtype=jnp.float32)
     x = np.broadcast_to(x, (2, 3, 6))
 
-    result = pool.max_pool(x, 3, 1, padding="SAME", channel_axis=None)
+    result = pool.max_pool(x, 3, 1, padding="SAME", channel_axis=None)  # pyrefly: ignore[bad-argument-type]
 
     np.testing.assert_equal(result.shape, x.shape)
 
@@ -155,7 +155,7 @@ class AvgPoolTest(absltest.TestCase):
 
     window_shape = [1, 2, 2, 1]
     result = pool.avg_pool(
-        x, window_shape=window_shape, strides=window_shape, padding="VALID")
+        x, window_shape=window_shape, strides=window_shape, padding="VALID")  # pyrefly: ignore[bad-argument-type]
 
     ground_truth = np.asarray([0.5, 2.5, 4.5]).reshape([3, 1])
     ground_truth = np.broadcast_to(ground_truth, (2, 5, 3, 2))
@@ -169,7 +169,7 @@ class AvgPoolTest(absltest.TestCase):
 
     window_shape = [2, 2, 1]
     result = pool.avg_pool(
-        x, window_shape=window_shape, strides=window_shape, padding="VALID")
+        x, window_shape=window_shape, strides=window_shape, padding="VALID")  # pyrefly: ignore[bad-argument-type]
 
     ground_truth = np.asarray([0.5, 2.5, 4.5]).reshape([3, 1])
     ground_truth = np.broadcast_to(ground_truth, leading_dims + (5, 3, 2))
@@ -208,7 +208,7 @@ class AvgPoolTest(absltest.TestCase):
     window_shape = [1, 5, 3, 2]
     strides = [1, 1, 3, 2]
     result = pool.avg_pool(
-        x, window_shape=window_shape, strides=strides, padding="VALID")
+        x, window_shape=window_shape, strides=strides, padding="VALID")  # pyrefly: ignore[bad-argument-type]
 
     ground_truth = np.asarray([
         2.5,
@@ -224,7 +224,7 @@ class AvgPoolTest(absltest.TestCase):
     window_shape = [1, 3, 3]
     strides = [1, 1, 1]
     result = pool.avg_pool(
-        x, window_shape=window_shape, strides=strides, padding="SAME")
+        x, window_shape=window_shape, strides=strides, padding="SAME")  # pyrefly: ignore[bad-argument-type]
 
     np.testing.assert_equal(result.shape, x.shape)
     # Since x is constant, its avg value should be itself.
@@ -248,7 +248,7 @@ class AvgPoolTest(absltest.TestCase):
     x = np.arange(6, dtype=jnp.float32).reshape([6, 1])
     x = np.broadcast_to(x, (2, 10, 6, 2))
 
-    result = pool.avg_pool(x, 2, 2, padding="VALID")
+    result = pool.avg_pool(x, 2, 2, padding="VALID")  # pyrefly: ignore[bad-argument-type]
 
     ground_truth = np.asarray([0.5, 2.5, 4.5]).reshape([3, 1])
     ground_truth = np.broadcast_to(ground_truth, (2, 5, 3, 2))
@@ -258,7 +258,7 @@ class AvgPoolTest(absltest.TestCase):
   def test_avg_pool_same_padding_with_inferred_shapes(self):
     x = np.ones((2, 3, 6))
 
-    result = pool.avg_pool(x, 3, 1, padding="SAME", channel_axis=None)
+    result = pool.avg_pool(x, 3, 1, padding="SAME", channel_axis=None)  # pyrefly: ignore[bad-argument-type]
 
     np.testing.assert_equal(result.shape, x.shape)
     # Since x is constant, its avg value should be itself.

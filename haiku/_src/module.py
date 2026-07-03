@@ -53,16 +53,16 @@ class Future:
   def result(self) -> type["Module"]:
     if not self._result_set:
       raise ValueError("Result not set.")
-    return self._result
+    return self._result  # pyrefly: ignore[bad-return]
 
 
 # We subclass `type(Protocol)` in order to avoid metaclass conflicts when
 # defining modules that also inherit from `Protocol`. Note that `type(Protocol)`
 # already inherits from `abc.ABCMeta`.
-class ModuleMetaclass(type(Protocol)):
+class ModuleMetaclass(type(Protocol)):  # pyrefly: ignore[invalid-inheritance]
   """Metaclass for `Module`."""
 
-  def __new__(  # pylint: disable=bad-classmethod-argument
+  def __new__(  # pylint: disable=bad-classmethod-argument  # pyrefly: ignore[invalid-annotation]
       mcs: type[type[T]],
       name: str,
       bases: tuple[type[Any], ...],
@@ -238,7 +238,7 @@ Args = tuple[Any]
 Kwargs = dict[str, Any]
 NextGetter = Callable[..., Any]
 MethodGetter = Callable[[NextGetter, Args, Kwargs, MethodContext], Any]
-interceptor_stack: ThreadLocalStack[MethodGetter] = ThreadLocalStack()
+interceptor_stack: ThreadLocalStack[MethodGetter] = ThreadLocalStack()  # pyrefly: ignore[bad-assignment]
 
 
 def intercept_methods(interceptor: MethodGetter):
@@ -361,7 +361,7 @@ class NameScope:
       return self.__stack.__exit__(exc_type, exc_value, traceback)
     finally:
       self.__entered = False
-      self.__stack = None
+      self.__stack = None  # pyrefly: ignore[bad-assignment]
 
 
 def name_scope(
@@ -651,7 +651,7 @@ class Module(metaclass=ModuleMetaclass):
         # Attribute assigned by @dataclass constructor.
         name = self.name
       else:
-        name = utils.camel_to_snake(type(self).__name__)
+        name = utils.camel_to_snake(type(self).__name__)  # pyrefly: ignore[missing-attribute]
 
     if name.startswith(OVERRIDE_PREFIX):
       name = name[len(OVERRIDE_PREFIX):]
@@ -807,7 +807,7 @@ def name_like(method_name: str) -> Callable[[T], T]:
   return decorator
 
 MethodHook = Callable[[Module, str], ContextManager[None]]
-method_hook_stack: ThreadLocalStack[MethodHook] = ThreadLocalStack()
+method_hook_stack: ThreadLocalStack[MethodHook] = ThreadLocalStack()  # pyrefly: ignore[bad-assignment]
 
 
 def hook_methods(method_hook: MethodHook) -> ContextManager[None]:

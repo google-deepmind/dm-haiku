@@ -285,7 +285,7 @@ class LinearTest(parameterized.TestCase):
         .lower(x)
         .compiler_ir(dialect="hlo")
     )
-    hlo = c.as_hlo_text()
+    hlo = c.as_hlo_text()  # pyrefly: ignore[missing-attribute]
     op_line = next(l for l in hlo.split("\n") if "dot(" in l)
     if precision is not None and precision != jax.lax.Precision.DEFAULT:
       name = str(precision).lower()

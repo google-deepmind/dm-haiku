@@ -274,7 +274,7 @@ def format_output(invocation: MethodInvocation) -> str:
 def format_call_stack(invocation: MethodInvocation) -> str:
   """Formats the name and call_stack of a given module as a string."""
   def format_entry(state: ModuleDetails) -> str:
-    class_name = type(state.module).__name__
+    class_name = type(state.module).__name__  # pyrefly: ignore[missing-attribute]
     module_name = state.module.module_name
     method_name = state.method_name
     if method_name == "__call__":
@@ -391,22 +391,22 @@ def tabulate(
       raise ValueError(
           f"Invalid filter(s) {invalid}, valid filters {list(all_filters)}")
 
-  columns = [all_columns[c] for c in columns]
-  filters = [all_filters[f] for f in filters]
+  columns = [all_columns[c] for c in columns]  # pyrefly: ignore[bad-assignment]
+  filters = [all_filters[f] for f in filters]  # pyrefly: ignore[bad-assignment]
 
   def generate_summary(*args, **kwargs) -> str:
     """Generates a string summary of the given Haiku function."""
     rows = []
     for method_invocation in f(*args, **kwargs):
-      if not all(filter.f(method_invocation) for filter in filters):
+      if not all(filter.f(method_invocation) for filter in filters):  # pyrefly: ignore[missing-attribute, not-iterable]
         continue
 
-      row = [column.f(method_invocation) for column in columns]
+      row = [column.f(method_invocation) for column in columns]  # pyrefly: ignore[missing-attribute, not-iterable]
       rows.append(row)
 
     if rows:
-      headers = [col.header for col in columns]
-      colalign = [col.align for col in columns]
+      headers = [col.header for col in columns]  # pyrefly: ignore[missing-attribute, not-iterable]
+      colalign = [col.align for col in columns]  # pyrefly: ignore[missing-attribute, not-iterable]
       return tabulate_lib.tabulate(
           rows, headers=headers, colalign=colalign, **tabulate_kwargs)
     else:

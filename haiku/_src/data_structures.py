@@ -105,7 +105,7 @@ def to_immutable_dict(mapping: Mapping[K, V]) -> Mapping[K, V]:
   for key, value in mapping.items():
     value_type = type(value)
     if value_type is dict:
-      value = to_immutable_dict(value)
+      value = to_immutable_dict(value)  # pyrefly: ignore[bad-argument-type]
     items.append((key, value))
   return FlatMap(items)
 
@@ -134,7 +134,7 @@ def to_haiku_dict(structure: Mapping[K, V]) -> MutableMapping[K, V]:
   Returns:
     A new two level mapping with the same contents as the input.
   """
-  return to_dict(structure)
+  return to_dict(structure)  # pyrefly: ignore[bad-argument-type, bad-return]
 
 
 def _copy_structure(tree):
@@ -211,7 +211,7 @@ class FlatMap(Mapping[K, V]):
   def _to_mapping(self) -> Mapping[K, V]:
     if self._mapping is None:
       self._mapping = jax.tree.unflatten(self._structure, self._leaves)
-    return self._mapping
+    return self._mapping  # pyrefly: ignore[bad-return]
 
   def keys(self):
     return KeysOnlyKeysView(self._to_mapping())
@@ -331,11 +331,11 @@ class frozendict(Mapping[K, V]):  # pylint: disable=invalid-name
     raise AttributeError(
         f"x.{key} is not supported on frozendict, use x['{key}'] instead.")
 
-  def get(self, key: K, default: T | None = None) -> V | T | None:
-    return self._storage.get(key, default)
+  def get(self, key: K, default: T | None = None) -> V | T | None:  # pyrefly: ignore[bad-override]
+    return self._storage.get(key, default)  # pyrefly: ignore[no-matching-overload]
 
   def __getitem__(self, key: K) -> V:
-    return self._storage[key]
+    return self._storage[key]  # pyrefly: ignore[bad-index]
 
   def __repr__(self):
     single_line = "{}({{{}}})".format(

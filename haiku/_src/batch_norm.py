@@ -193,13 +193,13 @@ class BatchNorm(hk.Module):
     if self.create_scale:
       scale = hk.get_parameter("scale", w_shape, w_dtype, self.scale_init)
     elif scale is None:
-      scale = np.ones([], dtype=w_dtype)
+      scale = np.ones([], dtype=w_dtype)  # pyrefly: ignore[bad-assignment]
 
     if self.create_offset:
       offset = hk.get_parameter("offset", w_shape, w_dtype, self.offset_init)
     elif offset is None:
-      offset = np.zeros([], dtype=w_dtype)
+      offset = np.zeros([], dtype=w_dtype)  # pyrefly: ignore[bad-assignment]
 
     eps = jax.lax.convert_element_type(self.eps, var.dtype)
-    inv = scale * jax.lax.rsqrt(var + eps)
-    return (inputs - mean) * inv + offset
+    inv = scale * jax.lax.rsqrt(var + eps)  # pyrefly: ignore[unsupported-operation]
+    return (inputs - mean) * inv + offset  # pyrefly: ignore[unsupported-operation]

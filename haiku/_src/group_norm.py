@@ -191,7 +191,7 @@ class GroupNorm(hk.Module):
       params_shape = (x.shape[-1],)
     else:
       assert self.channel_index == 1
-      params_shape = (x.shape[1],) + (1,) * (self.rank - 2)
+      params_shape = (x.shape[1],) + (1,) * (self.rank - 2)  # pyrefly: ignore[unsupported-operation]
 
     if self.create_scale:
       scale = hk.get_parameter("scale", params_shape, dtype, self.scale_init)
@@ -200,9 +200,9 @@ class GroupNorm(hk.Module):
       offset = hk.get_parameter("offset", params_shape, dtype, self.offset_init)
 
     x = x.reshape(self.group_shape)
-    mean = jnp.mean(x, self.axis, keepdims=True)
+    mean = jnp.mean(x, self.axis, keepdims=True)  # pyrefly: ignore[bad-argument-type]
     # TODO(tycai): Consider faster but less precise variance formulation.
-    var = jnp.var(x, self.axis, keepdims=True)
+    var = jnp.var(x, self.axis, keepdims=True)  # pyrefly: ignore[bad-argument-type]
     x = (x - mean) * jax.lax.rsqrt(var + self.eps)
     x = x.reshape(self.first_input_shape)
 

@@ -232,9 +232,9 @@ def multi_transform(
   """
   analytics.log_once('multi_transform')
 
-  f = multi_transform_with_state(f)
-  f = without_state(f)
-  return f
+  f = multi_transform_with_state(f)  # pyrefly: ignore[bad-assignment]
+  f = without_state(f)  # pyrefly: ignore[bad-argument-type, bad-assignment]
+  return f  # pyrefly: ignore[bad-return]
 
 
 def without_state(f: MultiTransformedWithState) -> MultiTransformed:
@@ -295,7 +295,7 @@ def without_apply_rng(f: TransformedT) -> TransformedT:
     def apply_fn(params, state, *args, **kwargs):
       check_rng_kwarg(kwargs)
       return f.apply(params, state, None, *args, **kwargs)
-    apply_fn.__signature__ = _transform.sig_replace_leading_parameters(
+    apply_fn.__signature__ = _transform.sig_replace_leading_parameters(  # pyrefly: ignore[missing-attribute]
         inspect.signature(f.apply), 3, [
             inspect.Parameter(
                 'params',
@@ -313,7 +313,7 @@ def without_apply_rng(f: TransformedT) -> TransformedT:
     def apply_fn(params, *args, **kwargs):
       check_rng_kwarg(kwargs)
       return f.apply(params, None, *args, **kwargs)
-    apply_fn.__signature__ = _transform.sig_replace_leading_parameters(
+    apply_fn.__signature__ = _transform.sig_replace_leading_parameters(  # pyrefly: ignore[missing-attribute]
         inspect.signature(f.apply), 2, [
             inspect.Parameter(
                 'params',
@@ -347,7 +347,7 @@ def without_apply_rng(f: TransformedT) -> TransformedT:
                      '`hk.multi_transform_with_state`, '
                      f'actually called with {type(f)}')
 
-  return f_new
+  return f_new  # pyrefly: ignore[bad-return]
 
 
 def make_tree(f: Callable[[int], Any], treedef: jax.tree_util.PyTreeDef):

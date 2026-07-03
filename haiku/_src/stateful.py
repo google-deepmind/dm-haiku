@@ -61,10 +61,10 @@ def update_internal_state(state: InternalState):
   frame = base.current_frame()
   if not frame.params_frozen and state.params is not None:
     update_recursive(frame.params, state.params)
-  update_recursive(frame.state, state.state)
+  update_recursive(frame.state, state.state)  # pyrefly: ignore[bad-argument-type]
   rng = state.rng
   if rng is not None:
-    frame.rng_stack.peek().replace_internal_state(rng)
+    frame.rng_stack.peek().replace_internal_state(rng)  # pyrefly: ignore[missing-attribute]
 
 
 def temporary_internal_state(state: InternalState, *, share_python_state=False):
@@ -332,8 +332,8 @@ def difference(before: InternalState, after: InternalState) -> InternalState:
                  b: base.PRNGSequenceState | None):
     if a is None:
       return True
-    assert len(a) == 2 and len(b) == 2
-    return a[0] is not b[0] or a[1] is not b[1]
+    assert len(a) == 2 and len(b) == 2  # pyrefly: ignore[bad-argument-type]
+    return a[0] is not b[0] or a[1] is not b[1]  # pyrefly: ignore[unsupported-operation]
 
   rng = after.rng if is_new_rng(before.rng, after.rng) else None
 
@@ -647,9 +647,9 @@ def scan(f, init, xs, length=None, reverse=False, unroll=1):
 
   if running_init_fn:
     if reverse:
-      ys = jax.tree.map(lambda y0, ys: jnp.concatenate([ys, y0]), y0, ys)
+      ys = jax.tree.map(lambda y0, ys: jnp.concatenate([ys, y0]), y0, ys)  # pyrefly: ignore[unbound-name]
     else:
-      ys = jax.tree.map(lambda y0, ys: jnp.concatenate([y0, ys]), y0, ys)
+      ys = jax.tree.map(lambda y0, ys: jnp.concatenate([y0, ys]), y0, ys)  # pyrefly: ignore[unbound-name]
 
   return carry, ys
 
@@ -732,7 +732,7 @@ def add_split_rng_error(f):
 
   @functools.wraps(f)
   def wrapper(*args, **kwargs):
-    if "split_rng" not in kwargs and not wrapper.require_split_rng:
+    if "split_rng" not in kwargs and not wrapper.require_split_rng:  # pyrefly: ignore[missing-attribute]
       kwargs["split_rng"] = False
 
     if "split_rng" not in kwargs:
@@ -747,7 +747,7 @@ def add_split_rng_error(f):
 
     return f(*args, **kwargs)
 
-  wrapper.require_split_rng = True
+  wrapper.require_split_rng = True  # pyrefly: ignore[missing-attribute]
   return wrapper
 
 list_to_tuple = lambda x: tuple(x) if isinstance(x, list) else x
@@ -866,7 +866,7 @@ def vmap(
         raise err
 
     if split_rng:
-      state = InternalState(state.params, state.state, saved_rng)
+      state = InternalState(state.params, state.state, saved_rng)  # pyrefly: ignore[unbound-name]
 
     update_internal_state(state)
 

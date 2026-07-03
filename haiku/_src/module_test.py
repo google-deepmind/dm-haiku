@@ -772,7 +772,7 @@ class ModuleTest(parameterized.TestCase):
   def test_force_name_intercept_methods(self):
     def change_prefix(old, new):
       def my_interceptor(next_f, args, kwargs, context: module.MethodContext):
-        if type(context.module).__name__ == "NameScopeModule":
+        if type(context.module).__name__ == "NameScopeModule":  # pyrefly: ignore[missing-attribute]
           # Avoid infinite recursion for modules introduced by name_scope.
           return next_f(*args, **kwargs)
 

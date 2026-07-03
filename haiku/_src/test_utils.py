@@ -119,7 +119,7 @@ def transform_and_run(
     optionally ``apply``.
   """
   if f is None:
-    return functools.partial(
+    return functools.partial(  # pyrefly: ignore[bad-return]
         transform_and_run,
         seed=seed,
         run_apply=run_apply,
@@ -136,7 +136,7 @@ def transform_and_run(
         init_rng, apply_rng = map(map_rng, (init_rng, apply_rng))
     else:
       init_rng, apply_rng = None, None
-    init, apply = transform.transform_with_state(lambda: f(*a, **k))
+    init, apply = transform.transform_with_state(lambda: f(*a, **k))  # pyrefly: ignore[not-callable]
     if jax_transform:
       init, apply = map(jax_transform, (init, apply))
     params, state = init(init_rng)
@@ -144,7 +144,7 @@ def transform_and_run(
       out, state = apply(params, state, apply_rng)
       return out
 
-  return wrapper
+  return wrapper  # pyrefly: ignore[bad-return]
 
 
 def find_internal_python_modules(
@@ -179,9 +179,9 @@ def find_subclasses(
     for _, value in module.__dict__.items():
       if not inspect.isclass(value) or isinstance(value, types.GenericAlias):
         continue
-      if issubclass(value, base_class) and value not in seen:
+      if issubclass(value, base_class) and value not in seen:  # pyrefly: ignore[invalid-argument]
         seen.add(value)
-        yield value
+        yield value  # pyrefly: ignore[invalid-yield]
 
 
 def combined_named_parameters(*parameters):

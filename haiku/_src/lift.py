@@ -113,7 +113,7 @@ class LiftingModule(hk.Module, LiftingModuleType):
           check_param_reuse=check_param_reuse)
       pack_into_dict(
           inner_state,
-          outer_state,
+          outer_state,  # pyrefly: ignore[bad-argument-type]
           self.prefix_name,
           state=True,
           check_param_reuse=check_param_reuse)
@@ -124,7 +124,7 @@ class LiftingModule(hk.Module, LiftingModuleType):
       else:
         prefix = ""
       inner_params = unpack_from_dict(outer_params, prefix)
-      inner_state = unpack_from_dict(outer_state, prefix)
+      inner_state = unpack_from_dict(outer_state, prefix)  # pyrefly: ignore[bad-argument-type]
       inner_state = base.extract_state(inner_state, initial=False)
       inner_params = hk.data_structures.to_haiku_dict(inner_params)
       return inner_params, inner_state
@@ -247,9 +247,9 @@ def lift(
       an outer transform without a namespace.
   """
   base.assert_context("lift")
-  init_fn = add_state_to_init_fn(init_fn)
+  init_fn = add_state_to_init_fn(init_fn)  # pyrefly: ignore[bad-assignment]
   params_and_state_fn, updater = lift_with_state(
-      init_fn, allow_reuse=allow_reuse, name=name)
+      init_fn, allow_reuse=allow_reuse, name=name)  # pyrefly: ignore[bad-argument-type]
   updater.ignore_update()
   return lambda *a, **k: params_and_state_fn(*a, **k)[0]
 
@@ -286,7 +286,7 @@ def transparent_lift(
   """
 
   base.assert_context("transparent_lift")
-  init_fn = add_state_to_init_fn(init_fn)
+  init_fn = add_state_to_init_fn(init_fn)  # pyrefly: ignore[bad-assignment]
   lifted = LiftingModule(
       init_fn, transparent=True, allow_reuse=allow_reuse)
   def fn(*a, **k):
@@ -354,8 +354,8 @@ class LiftWithStateUpdater:
         mod_name = f"{self._name}/{mod_name}"
       for name, value in bundle.items():
         initial_pair = base.StatePair(value, value)
-        initial = frame.state[mod_name].get(name, initial_pair).initial
-        frame.state[mod_name][name] = base.StatePair(initial, value)
+        initial = frame.state[mod_name].get(name, initial_pair).initial  # pyrefly: ignore[missing-attribute, unsupported-operation]
+        frame.state[mod_name][name] = base.StatePair(initial, value)  # pyrefly: ignore[unsupported-operation]
 
 
 def _to_callable(f: Callable[..., T]) -> Callable[..., T]:

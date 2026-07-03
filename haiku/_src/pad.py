@@ -103,7 +103,7 @@ def create_from_tuple(
   """Create a padding tuple using partially specified padding tuple."""
   assert padding, "Padding must not be empty."
   if isinstance(padding[0], int):
-    padding = (padding,) * n
+    padding = (padding,) * n  # pyrefly: ignore[bad-assignment]
   elif len(padding) == 1:
     padding = tuple(padding) * n
   elif len(padding) != n:

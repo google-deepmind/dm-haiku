@@ -37,7 +37,7 @@ def tabulate_to_list(
     filters=None,
 ) -> Sequence[Sequence[str]]:
   old_tabulate = summarise.tabulate_lib.tabulate
-  summarise.tabulate_lib.tabulate = lambda rows, **_: rows
+  summarise.tabulate_lib.tabulate = lambda rows, **_: rows  # pyrefly: ignore[bad-assignment]
   try:
     out = summarise.tabulate(f, columns=columns, filters=filters)(*args)
   finally:

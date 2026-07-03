@@ -78,7 +78,7 @@ def partition(
       and the rest will be in the second.
   """
   f = lambda m, n, v: int(not predicate(m, n, v))
-  return partition_n(f, structure, 2)
+  return partition_n(f, structure, 2)  # pyrefly: ignore[bad-return]
 
 
 def partition_n(
@@ -252,6 +252,6 @@ def is_subset(
     A boolean indicating whether all elements in subset are contained in
     superset.
   """
-  subset = {(m, n) for m, n, _ in traverse(subset)}
-  superset = {(m, n) for m, n, _ in traverse(superset)}
-  return subset.issubset(superset)
+  subset = {(m, n) for m, n, _ in traverse(subset)}  # pyrefly: ignore[bad-assignment]
+  superset = {(m, n) for m, n, _ in traverse(superset)}  # pyrefly: ignore[bad-assignment]
+  return subset.issubset(superset)  # pyrefly: ignore[missing-attribute]

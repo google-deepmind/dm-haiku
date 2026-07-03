@@ -32,7 +32,7 @@ def with_param_axis_error(f):
   @functools.wraps(f)
   def wrapper(*a, **k):
     old = layer_norm.ERROR_IF_PARAM_AXIS_NOT_EXPLICIT
-    layer_norm.ERROR_IF_PARAM_AXIS_NOT_EXPLICIT = True
+    layer_norm.ERROR_IF_PARAM_AXIS_NOT_EXPLICIT = True  # pyrefly: ignore[bad-assignment]
     try:
       return f(*a, **k)
     finally:

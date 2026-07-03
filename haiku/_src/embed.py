@@ -135,13 +135,13 @@ class Embed(hk.Module):
 
   @property
   def embeddings(self):
-    return hk.get_parameter("embeddings", [self.vocab_size, self.embed_dim],
+    return hk.get_parameter("embeddings", [self.vocab_size, self.embed_dim],  # pyrefly: ignore[bad-argument-type]
                             init=self.w_init)
 
   def __call__(
       self,
       ids: jax.Array | Sequence[int],
-      lookup_style: str | hk.EmbedLookupStyle | None = None,
+      lookup_style: str | hk.EmbedLookupStyle | None = None,  # pyrefly: ignore[missing-attribute]
       precision: jax.lax.Precision | None = None,
   ) -> jax.Array:
     r"""Lookup embeddings.
@@ -170,9 +170,9 @@ class Embed(hk.Module):
 
     lookup_style = lookup_style or self.lookup_style
     if isinstance(lookup_style, str):
-      lookup_style = getattr(hk.EmbedLookupStyle, lookup_style.upper())
+      lookup_style = getattr(hk.EmbedLookupStyle, lookup_style.upper())  # pyrefly: ignore[missing-attribute]
 
-    if lookup_style == hk.EmbedLookupStyle.ARRAY_INDEX:
+    if lookup_style == hk.EmbedLookupStyle.ARRAY_INDEX:  # pyrefly: ignore[missing-attribute]
       # If you don't wrap ids in a singleton tuple then JAX will try to unpack
       # it along the row dimension and treat each row as a separate index into
       # one of the dimensions of the array. The error only surfaces when
@@ -181,8 +181,8 @@ class Embed(hk.Module):
       # Cast to a jnp array in case `ids` is a tracer (eg un a dynamic_unroll).
       return jnp.asarray(self.embeddings)[(ids,)]
 
-    elif lookup_style == hk.EmbedLookupStyle.ONE_HOT:
-      one_hot_ids = jax.nn.one_hot(ids, self.vocab_size)
+    elif lookup_style == hk.EmbedLookupStyle.ONE_HOT:  # pyrefly: ignore[missing-attribute]
+      one_hot_ids = jax.nn.one_hot(ids, self.vocab_size)  # pyrefly: ignore[bad-argument-type]
       precision = self.precision if precision is None else precision
       return jnp.dot(one_hot_ids, self.embeddings, precision=precision)
 

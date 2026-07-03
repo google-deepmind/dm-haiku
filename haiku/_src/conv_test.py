@@ -640,7 +640,7 @@ class ConvTransposeTest(parameterized.TestCase):
         stride=stride,
         padding=padding,
         data_format=data_format)
-    out = net(data)
+    out = net(data)  # pyrefly: ignore[unbound-name]
 
     if output_shape is None:
       output_shape = [
@@ -651,7 +651,7 @@ class ConvTransposeTest(parameterized.TestCase):
       expected_shape = tuple([batch_dim, num_channels] + output_shape)
     if data_format == "channels_last":
       expected_shape = tuple([batch_dim] + output_shape + [num_channels])
-    self.assertEqual(out.shape, expected_shape)
+    self.assertEqual(out.shape, expected_shape)  # pyrefly: ignore[unbound-name]
 
 
 class Conv1DTransposeTest(parameterized.TestCase):
@@ -844,7 +844,7 @@ class PrecisionTest(parameterized.TestCase):
         .lower(x)
         .compiler_ir(dialect="hlo")
     )
-    hlo = c.as_hlo_text()
+    hlo = c.as_hlo_text()  # pyrefly: ignore[missing-attribute]
     op_line = next(l for l in hlo.split("\n") if "convolution(" in l)
     if precision is not None and precision != jax.lax.Precision.DEFAULT:
       name = str(precision).lower()

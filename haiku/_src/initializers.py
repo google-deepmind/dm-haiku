@@ -58,7 +58,7 @@ def _compute_fans(shape, fan_in_axes=None):
   return fan_in, fan_out
 
 
-class Constant(hk.initializers.Initializer):
+class Constant(hk.initializers.Initializer):  # pyrefly: ignore[invalid-inheritance]
   """Initializes with a constant."""
 
   def __init__(
@@ -75,7 +75,7 @@ class Constant(hk.initializers.Initializer):
     return jnp.broadcast_to(jnp.asarray(self.constant), shape).astype(dtype)
 
 
-class RandomNormal(hk.initializers.Initializer):
+class RandomNormal(hk.initializers.Initializer):  # pyrefly: ignore[invalid-inheritance]
   """Initializes by sampling from a normal distribution."""
 
   def __init__(self, stddev=1., mean=0.):
@@ -94,7 +94,7 @@ class RandomNormal(hk.initializers.Initializer):
     return m + s * jax.random.normal(hk.next_rng_key(), shape, dtype)
 
 
-class TruncatedNormal(hk.initializers.Initializer):
+class TruncatedNormal(hk.initializers.Initializer):  # pyrefly: ignore[invalid-inheritance]
   """Initializes by sampling from a truncated normal distribution."""
 
   def __init__(self,
@@ -131,7 +131,7 @@ class TruncatedNormal(hk.initializers.Initializer):
     return s * unscaled + m
 
 
-class RandomUniform(hk.initializers.Initializer):
+class RandomUniform(hk.initializers.Initializer):  # pyrefly: ignore[invalid-inheritance]
   """Initializes by sampling from a uniform distribution."""
 
   def __init__(self, minval=0., maxval=1.):
@@ -149,7 +149,7 @@ class RandomUniform(hk.initializers.Initializer):
                               self.maxval)
 
 
-class VarianceScaling(hk.initializers.Initializer):
+class VarianceScaling(hk.initializers.Initializer):  # pyrefly: ignore[invalid-inheritance]
   """Initializer which adapts its scale to the shape of the initialized array.
 
   The initializer first computes the scaling factor ``s = scale / n``, where n
@@ -234,7 +234,7 @@ class VarianceScaling(hk.initializers.Initializer):
       return RandomUniform(minval=-limit, maxval=limit)(shape, dtype)
 
 
-class UniformScaling(hk.initializers.Initializer):
+class UniformScaling(hk.initializers.Initializer):  # pyrefly: ignore[invalid-inheritance]
   """Uniform scaling initializer.
 
   Initializes by sampling from a uniform distribution, but with the variance
@@ -256,7 +256,7 @@ class UniformScaling(hk.initializers.Initializer):
     return RandomUniform(-max_val, max_val)(shape, dtype)
 
 
-class Orthogonal(hk.initializers.Initializer):
+class Orthogonal(hk.initializers.Initializer):  # pyrefly: ignore[invalid-inheritance]
   """Uniform scaling initializer."""
 
   def __init__(self, scale=1.0, axis=-1):
@@ -288,7 +288,7 @@ class Orthogonal(hk.initializers.Initializer):
     n_rows = shape[self.axis]
     n_cols = np.prod(shape) // n_rows
     matrix_shape = (n_rows, n_cols) if n_rows > n_cols else (n_cols, n_rows)
-    norm_dst = jax.random.normal(hk.next_rng_key(), matrix_shape, dtype)
+    norm_dst = jax.random.normal(hk.next_rng_key(), matrix_shape, dtype)  # pyrefly: ignore[bad-argument-type]
     q_mat, r_mat = jnp.linalg.qr(norm_dst)
     # Enforce Q is uniformly distributed
     q_mat *= jnp.sign(jnp.diag(r_mat))
@@ -299,7 +299,7 @@ class Orthogonal(hk.initializers.Initializer):
     return jax.lax.convert_element_type(self.scale, dtype) * q_mat
 
 
-class Identity(hk.initializers.Initializer):
+class Identity(hk.initializers.Initializer):  # pyrefly: ignore[invalid-inheritance]
   """Initializer that generates the identity matrix.
 
   Constructs a 2D identity matrix or batches of these.

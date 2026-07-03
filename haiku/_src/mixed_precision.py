@@ -45,7 +45,7 @@ ClassInfoOrType = Union[ClassInfo, type[hk.Module]]
 
 def key_for_module(cls: type[hk.Module]) -> ClassInfoOrType:
   """Returns a suitable key for the given module class."""
-  if '<locals>' in cls.__qualname__:
+  if '<locals>' in cls.__qualname__:  # pyrefly: ignore[missing-attribute]
     # Some APIs (e.g. `hk.to_module`) are factory functions that create modules.
     # It is not desirable for us to use the qualname in this case since that
     # would associate all class instances created by the factory with a single

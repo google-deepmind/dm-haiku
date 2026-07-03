@@ -140,7 +140,7 @@ class ThreadLocalStackTest(StackTest):
       self.assertEmpty(s)
       s.push(666)
       s.push(777)
-      s_len_second_thread[0] = len(s)
+      s_len_second_thread[0] = len(s)  # pyrefly: ignore[unsupported-operation]
 
     t = threading.Thread(target=second_thread)
     t.start()

@@ -257,7 +257,7 @@ class BaseTest(parameterized.TestCase):
     def get_state_three():
       rng_state = base.maybe_get_rng_sequence_state()
       for _ in range(3):
-        seq = hk.PRNGSequence(rng_state)
+        seq = hk.PRNGSequence(rng_state)  # pyrefly: ignore[bad-argument-type]
         rng = next(seq)
         rng_state = seq.internal_state
         rngs_state.append(rng)
@@ -810,7 +810,7 @@ class BaseTest(parameterized.TestCase):
     sidechannel = [({}, {}, {}), ({}, {}, {})]
 
     def f():
-      sidechannel[0] = (
+      sidechannel[0] = (  # pyrefly: ignore[unsupported-operation]
           base.get_params(),
           base.get_initial_state(),
           base.get_current_state(),
@@ -818,7 +818,7 @@ class BaseTest(parameterized.TestCase):
       base.get_parameter("w", [], init=jnp.ones)
       x = base.get_state("x", [], init=jnp.zeros)
       base.set_state("x", x + 1)
-      sidechannel[1] = (
+      sidechannel[1] = (  # pyrefly: ignore[unsupported-operation]
           base.get_params(),
           base.get_initial_state(),
           base.get_current_state(),

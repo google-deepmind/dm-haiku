@@ -100,7 +100,7 @@ class CustomRNGTest(parameterized.TestCase):
     if hasattr(jex.random, "define_prng_impl"):
       def_prng_impl = jex.random.define_prng_impl
     else:
-      def_prng_impl = jex.random.PRNGImpl
+      def_prng_impl = jex.random.PRNGImpl  # pyrefly: ignore[missing-attribute]
 
     differently_shaped_prng_impl = def_prng_impl(
         # Testing a different key shape to make sure it's accepted by Haiku

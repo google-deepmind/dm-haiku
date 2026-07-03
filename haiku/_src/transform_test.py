@@ -634,7 +634,7 @@ class TransformTest(parameterized.TestCase):
   def test_init_return_type_is_mutable(self):
     init, _ = transform.transform(lambda: None)
     params = init(None)
-    params["a"] = None  # Check type-checker does not complain.
+    params["a"] = None  # Check type-checker does not complain.  # pyrefly: ignore[unsupported-operation]
 
 
 class ObjectWithTransform:

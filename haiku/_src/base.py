@@ -54,14 +54,14 @@ ModuleState = collections.namedtuple("ModuleState", ("module", "method_name"))
 StatePair = collections.namedtuple("StatePair", ("initial", "current"))
 
 # TODO(tomhennigan) Should creator_stack be part of frame?
-frame_stack: ThreadLocalStack["Frame"] = ThreadLocalStack()
-context_stack: ThreadLocalStack["HaikuContext"] = ThreadLocalStack()
-param_creator_stack: ThreadLocalStack["Creator"] = ThreadLocalStack()
-state_creator_stack: ThreadLocalStack["Creator"] = ThreadLocalStack()
-param_getter_stack: ThreadLocalStack["Getter"] = ThreadLocalStack()
-state_getter_stack: ThreadLocalStack["Getter"] = ThreadLocalStack()
-state_setter_stack: ThreadLocalStack["Setter"] = ThreadLocalStack()
-closure_boundary_stack: ThreadLocalStack[int] = ThreadLocalStack()
+frame_stack: ThreadLocalStack["Frame"] = ThreadLocalStack()  # pyrefly: ignore[bad-assignment]
+context_stack: ThreadLocalStack["HaikuContext"] = ThreadLocalStack()  # pyrefly: ignore[bad-assignment]
+param_creator_stack: ThreadLocalStack["Creator"] = ThreadLocalStack()  # pyrefly: ignore[bad-assignment]
+state_creator_stack: ThreadLocalStack["Creator"] = ThreadLocalStack()  # pyrefly: ignore[bad-assignment]
+param_getter_stack: ThreadLocalStack["Getter"] = ThreadLocalStack()  # pyrefly: ignore[bad-assignment]
+state_getter_stack: ThreadLocalStack["Getter"] = ThreadLocalStack()  # pyrefly: ignore[bad-assignment]
+state_setter_stack: ThreadLocalStack["Setter"] = ThreadLocalStack()  # pyrefly: ignore[bad-assignment]
+closure_boundary_stack: ThreadLocalStack[int] = ThreadLocalStack()  # pyrefly: ignore[bad-assignment]
 
 
 class JaxTraceLevel(NamedTuple):
@@ -112,12 +112,12 @@ class Frame(NamedTuple):
     """Creates a new frame."""
     frame = Frame(params=params,
                   state=state,
-                  rng_stack=Stack(),
+                  rng_stack=Stack(),  # pyrefly: ignore[bad-argument-type]
                   freeze_params=freeze_params,
-                  module_stack=Stack(),
-                  counter_stack=Stack(),
-                  used_names_stack=Stack(),
-                  jax_trace_stack=Stack(),
+                  module_stack=Stack(),  # pyrefly: ignore[bad-argument-type]
+                  counter_stack=Stack(),  # pyrefly: ignore[bad-argument-type]
+                  used_names_stack=Stack(),  # pyrefly: ignore[bad-argument-type]
+                  jax_trace_stack=Stack(),  # pyrefly: ignore[bad-argument-type]
                   frame_id=next(frame_ids))
     frame.rng_stack.push(rng)
     frame.counter_stack.push(collections.Counter())
@@ -181,7 +181,7 @@ class HaikuContext:
     self.__state = state
     self.__rng = rng
     self.__freeze_params = freeze_params
-    self.__expected_stack = ThreadLocalStack()
+    self.__expected_stack = ThreadLocalStack()  # pyrefly: ignore[invalid-type-var]
     self.__names = set()
     self.__counter = collections.Counter()
     self.__teardown_callbacks = []
@@ -263,9 +263,9 @@ def new_context(
                    for m, p in state.items()})
 
   if rng is not None and not isinstance(rng, PRNGSequence):
-    rng = PRNGSequence(rng)
+    rng = PRNGSequence(rng)  # pyrefly: ignore[bad-assignment]
 
-  return HaikuContext(params, state, rng, freeze_params)
+  return HaikuContext(params, state, rng, freeze_params)  # pyrefly: ignore[bad-argument-type]
 
 
 def inside_transform():
@@ -358,7 +358,7 @@ def get_lift_prefix() -> str | None:
   for frame in frame_stack:
     if frame.module_stack:
       module = frame.module_stack.peek().module
-      if isinstance(module, LiftingModuleType) and module.prefix_name:
+      if isinstance(module, LiftingModuleType) and module.prefix_name:  # pyrefly: ignore[missing-attribute]
         prefixes.append(module.prefix_name)
 
   prefix = "/".join(prefixes[::-1])
@@ -686,7 +686,7 @@ def get_parameter(
   # Custom getters allow a hook for users to customize the value returned by
   # get_parameter. For example casting values to some dtype.
   if param_getter_stack:
-    param = run_getters(param_getter_stack, context, param)
+    param = run_getters(param_getter_stack, context, param)  # pyrefly: ignore[bad-argument-type]
 
   param = check_not_none(param, "Parameters cannot be `None`.")
 
@@ -695,7 +695,7 @@ def get_parameter(
         f"{fq_name!r} with retrieved shape {param.shape!r} does not match "
         f"shape={shape!r} dtype={dtype!r}")
 
-  return param
+  return param  # pyrefly: ignore[bad-return]
 
 
 def remove_if_empty(bundle, key):
@@ -1266,7 +1266,7 @@ def extract_state(state: State, *, initial) -> MutableState:
   state = {m: {k: (v.initial if initial else v.current) for k, v in p.items()}  # pytype: disable=attribute-error
            for m, p in state.items()}
   state = data_structures.to_haiku_dict(state)
-  return state
+  return state  # pyrefly: ignore[bad-return]
 
 
 def get_state(
@@ -1312,10 +1312,10 @@ def get_state(
   assert_context("get_state")
   assert_jax_usage("get_state")
   bundle_name = current_name()
-  state = current_frame().state[bundle_name]
+  state = current_frame().state[bundle_name]  # pyrefly: ignore[unsupported-operation]
   fq_name = f"{bundle_name}/{name}"
   context = GetterContext(fq_name, current_module(),
-                          dtype, shape, init, get_lift_prefix())
+                          dtype, shape, init, get_lift_prefix())  # pyrefly: ignore[bad-argument-type]
 
   value = state.get(name, None)
   if value is None:
@@ -1332,9 +1332,9 @@ def get_state(
       value = init(shape, dtype)
 
     if value is not DO_NOT_STORE:
-      state[name] = StatePair(value, value)
+      state[name] = StatePair(value, value)  # pyrefly: ignore[unsupported-operation]
   else:
-    value = value.current
+    value = value.current  # pyrefly: ignore[missing-attribute]
 
   # Custom getters allow a hook for users to customize the value returned by
   # get_state. For example casting values to some dtype.
@@ -1377,7 +1377,7 @@ def set_state(name: str, value):
   assert_jax_usage("set_state")
   frame = current_frame()
   bundle_name = current_name()
-  state = frame.state[bundle_name]
+  state = frame.state[bundle_name]  # pyrefly: ignore[unsupported-operation]
 
   if state_setter_stack:
     shape = jax.tree.map(maybe_shape, value)
@@ -1398,7 +1398,7 @@ def set_state(name: str, value):
     current = value
   else:
     initial = current = value
-  state[name] = StatePair(initial, current)
+  state[name] = StatePair(initial, current)  # pyrefly: ignore[unsupported-operation]
 
 
 def with_rng(key: jax.Array):

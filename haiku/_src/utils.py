@@ -123,7 +123,7 @@ def replicate(
       not isinstance(element, collections.abc.Sequence)):
     return (element,) * num_times
   elif len(element) == 1:
-    return tuple(element * num_times)
+    return tuple(element * num_times)  # pyrefly: ignore[bad-argument-type, unsupported-operation]
   elif len(element) == num_times:
     return tuple(element)
   raise TypeError(

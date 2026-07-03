@@ -359,11 +359,11 @@ def _process_eqn(
     flops = _process_jaxpr(jaxpr, compute_flops, scope.join(eqn), seen,
                            expression.submodule)
     if compute_flops is not None:
-      flops *= flops_multiplier
+      flops *= flops_multiplier  # pyrefly: ignore[unsupported-operation]
 
     expression.submodule.flops = flops
     expression.flops = flops
-    if compute_flops is None or flops > 0:
+    if compute_flops is None or flops > 0:  # pyrefly: ignore[unsupported-operation]
       module.expressions.append(expression)
   else:
     details = []
@@ -396,7 +396,7 @@ def _process_eqn(
     f = _process_eqn(eqns_by_output[key], seen, eqns_by_output, compute_flops,
                      scope, module, binder_idx)
     if compute_flops is not None:
-      flops += f
+      flops += f  # pyrefly: ignore[unsupported-operation]
 
   return flops
 
@@ -436,7 +436,7 @@ def _process_jaxpr(
       f = _process_eqn(eqns_by_output[_var_to_str(binder_idx, var)], seen,
                        eqns_by_output, compute_flops, scope, module, binder_idx)
       if compute_flops is not None:
-        flops += f
+        flops += f  # pyrefly: ignore[unsupported-operation]
 
   module.expressions.sort(key=lambda e: _var_sort_key(e.first_outvar))
   module.flops = flops

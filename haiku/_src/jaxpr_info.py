@@ -47,7 +47,7 @@ try:
   DropVar: TypeAlias = jax_core.DropVar
 except AttributeError:
   # JAX v0.9.2 and older.
-  DropVar = jax.core.DropVar
+  DropVar = jax.core.DropVar  # type: ignore
 
 
 @dataclasses.dataclass

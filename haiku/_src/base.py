@@ -77,7 +77,7 @@ class JaxTraceLevel(NamedTuple):
       sublevel = jax_core.cur_sublevel()  # type: ignore
       return JaxTraceLevel(opaque=(top_type, level, sublevel))  # type: ignore
     elif jax.__version_info__ < (0, 10, 0):
-      ts = jax_core.get_opaque_trace_state(convention="haiku")
+      ts = jax_core.get_opaque_trace_state(convention="haiku")  # type: ignore
       return JaxTraceLevel(opaque=ts)
     else:
       ts = jex_core.get_opaque_trace_state(convention="haiku")

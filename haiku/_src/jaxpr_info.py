@@ -409,6 +409,9 @@ def _process_jaxpr(
     module: Module,
 ) -> int | None:
   """Computes the flops used for a JAX expression, tracking module scope."""
+  if isinstance(jaxpr, jax_core.ClosedJaxpr):
+    return _process_jaxpr(jaxpr.jaxpr, compute_flops, scope, seen, module)
+
   # Label variables by the order in which they're introduced.
   lam_binders = itertools.chain(jaxpr.constvars, jaxpr.invars)
   let_binders = itertools.chain.from_iterable(e.outvars for e in jaxpr.eqns)

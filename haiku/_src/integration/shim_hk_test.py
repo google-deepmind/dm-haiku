@@ -20,6 +20,11 @@ import types
 from absl.testing import absltest
 from absl.testing import parameterized
 import haiku as hk
+from haiku._src import test_utils
+
+# Explicitly import all modules to ensure they are loaded for the test.
+for _ in test_utils.find_internal_python_modules(hk):
+  pass
 
 
 def named_internal_modules():

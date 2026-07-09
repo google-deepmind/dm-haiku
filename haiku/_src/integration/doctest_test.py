@@ -70,7 +70,7 @@ class DoctestTest(parameterized.TestCase):
     # Many tests expect to be run as part of an `hk.transform`. We loop over all
     # exported symbols and run them in their own `hk.transform` so parameter and
     # module names don't clash.
-    for name in module.__all__:
+    for name in dir(module):
       test_names = []
 
       value = getattr(module, name)

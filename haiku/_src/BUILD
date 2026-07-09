@@ -6,6 +6,7 @@ package(
         "//learning/deepmind/jax/haiku/metadata:__subpackages__",
         "//haiku:__subpackages__",
     ],
+    features = ["-py_lazy_imports"],
 )
 
 licenses(["notice"])

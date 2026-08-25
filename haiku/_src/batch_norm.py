@@ -170,14 +170,19 @@ class BatchNorm(hk.Module):
       mean = jnp.mean(inputs, axis, keepdims=True)
       mean_of_squares = jnp.mean(jnp.square(inputs), axis, keepdims=True)
       if self.cross_replica_axis:
-        mean = jax.lax.pmean(
-            mean,
-            axis_name=self.cross_replica_axis,
-            axis_index_groups=self.cross_replica_axis_index_groups)
-        mean_of_squares = jax.lax.pmean(
-            mean_of_squares,
-            axis_name=self.cross_replica_axis,
-            axis_index_groups=self.cross_replica_axis_index_groups)
+        try:
+          mean = jax.lax.pmean(
+              mean,
+              axis_name=self.cross_replica_axis,
+              axis_index_groups=self.cross_replica_axis_index_groups)
+          mean_of_squares = jax.lax.pmean(
+              mean_of_squares,
+              axis_name=self.cross_replica_axis,
+              axis_index_groups=self.cross_replica_axis_index_groups)
+        except NameError:
+          # If the axis is not bound (e.g. during init or non-mapped execution), 
+          # we skip the sync and fall back to local statistics.
+          pass
       var = mean_of_squares - jnp.square(mean)
     else:
       mean = self.mean_ema.average.astype(inputs.dtype)

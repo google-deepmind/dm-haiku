@@ -5,3 +5,5 @@ include requirements-jax.txt
 include requirements-flax.txt
 include requirements-test.txt
 include haiku/py.typed
+
+global-exclude *_test.py

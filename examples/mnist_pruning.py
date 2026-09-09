@@ -152,7 +152,7 @@ def update_mask(params: hk.Params, sparsity_fraction: float,
     return topk_mask(jnp.abs(x), 1. - sparsity * sparsity_fraction)
 
   for tree, sparsity in zip(params_to_prune, sparsities):
-    map_fn_sparsity = functools.partial(map_fn, sparsity=sparsity)
+    map_fn_sparsity = functools.partial(map_fn, sparsity=sparsity)  # pyrefly: ignore[bad-argument-type]
     mask = jax.tree.map(map_fn_sparsity, tree)
     masks.append(mask)
   return masks

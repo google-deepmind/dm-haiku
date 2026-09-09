@@ -227,7 +227,7 @@ class FilteringTest(parameterized.TestCase):
 
     second_layer_params = filtering.filter(
         lambda module_name, *_: module_name == "second_layer",
-        params)
+        params)  # pyrefly: ignore[bad-argument-type]
     self.assertEqual(
         get_names(second_layer_params), {"second_layer/w", "second_layer/b"}
     )

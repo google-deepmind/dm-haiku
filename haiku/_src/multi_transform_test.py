@@ -177,7 +177,7 @@ class AttrMap(dict):
   __setattr__ = dict.__setitem__
   __delattr__ = dict.__delitem__
 
-jax.tree_util.register_pytree_node(AttrMap,
+jax.tree_util.register_pytree_node(AttrMap,  # pyrefly: ignore[bad-specialization]
                                    lambda d: (list(d.values()), d.keys()),
                                    lambda k, v: AttrMap(zip(k, v)))
 

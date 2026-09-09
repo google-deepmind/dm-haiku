@@ -65,7 +65,7 @@ class MaxPoolTest(absltest.TestCase):
         window_shape=window_shape,
         strides=window_shape,
         padding="VALID")
-    result = jax.vmap(jax.vmap(max_pool_fn))(x)
+    result = jax.vmap(jax.vmap(max_pool_fn))(x)  # pyrefly: ignore[bad-argument-type]
 
     ground_truth = np.asarray([1., 3., 5.]).reshape([3, 1])
     ground_truth = np.broadcast_to(ground_truth, leading_dims + (5, 3, 2))
@@ -187,7 +187,7 @@ class AvgPoolTest(absltest.TestCase):
         window_shape=window_shape,
         strides=window_shape,
         padding="VALID")
-    result = jax.vmap(jax.vmap(avg_pool_fn))(x)
+    result = jax.vmap(jax.vmap(avg_pool_fn))(x)  # pyrefly: ignore[bad-argument-type]
 
     ground_truth = np.asarray([0.5, 2.5, 4.5]).reshape([3, 1])
     ground_truth = np.broadcast_to(ground_truth, leading_dims + (5, 3, 2))

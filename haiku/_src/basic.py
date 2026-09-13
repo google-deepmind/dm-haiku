@@ -17,6 +17,7 @@
 from collections.abc import Callable, Iterable, Sequence
 import functools
 from typing import Any
+import warnings
 from haiku._src import base
 from haiku._src import initializers
 from haiku._src import module
@@ -53,6 +54,12 @@ def one_hot(x, num_classes, dtype=jnp.float32):
     The one-hot tensor. If indices' shape is [A, B, ...], shape is
       [A, B, ... num_classes].
   """
+  warnings.warn(
+      "hk.one_hot is deprecated. Use jax.nn.one_hot(x, num_classes).astype(dtype) "
+      "instead.",
+      DeprecationWarning,
+      stacklevel=2
+  )
   return jax.nn.one_hot(x, num_classes).astype(dtype)
 
 
@@ -69,6 +76,11 @@ def multinomial(rng, logits, num_samples):
   Returns:
     Chosen categories, of shape ``logits.shape[:-1] + (num_samples,)``.
   """
+  warnings.warn(
+      "hk.multinomial is deprecated. Use jax.random.categorical instead.",
+      DeprecationWarning,
+      stacklevel=2
+  )
   if num_samples != 1:
     shape = (num_samples,) + logits.shape[:-1]
   else:

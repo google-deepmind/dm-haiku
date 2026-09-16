@@ -67,7 +67,7 @@ def load(
     *,
     is_training: bool,
     batch_dims: Sequence[int],
-    dtype: jnp.dtype = jnp.float32,
+    dtype: jnp.dtype = jnp.float32,  # pyrefly: ignore[bad-function-definition]
     transpose: bool = False,
     zeros: bool = False,
 ) -> Iterator[Batch]:

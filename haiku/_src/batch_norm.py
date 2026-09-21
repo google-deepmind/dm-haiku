@@ -187,7 +187,8 @@ class BatchNorm(hk.Module):
       self.mean_ema(mean)
       self.var_ema(var)
 
-    w_shape = [1 if i in axis else inputs.shape[i] for i in range(inputs.ndim)]
+    w_shape = [1 if i in axis or i - inputs.ndim in axis else inputs.shape[i]
+               for i in range(inputs.ndim)]
     w_dtype = inputs.dtype
 
     if self.create_scale:

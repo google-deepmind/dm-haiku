@@ -20,6 +20,7 @@ from absl.testing import absltest
 from absl.testing import parameterized
 from haiku._src import initializers
 from haiku._src import test_utils
+from haiku._src import transform
 import jax
 from jax import config
 import jax.numpy as jnp
@@ -109,6 +110,36 @@ class InitializersTest(parameterized.TestCase):
     self.assertEqual(fan_in_out5, (3, 45))
     fan_in_out6 = initializers._compute_fans([3, 5, 7, 4], fan_in_axes=[0, 1])
     self.assertEqual(fan_in_out6, (15, 28))
+
+  @parameterized.named_parameters(
+      ("last_axis", (-1,), (9, 15)),
+      ("mixed_axes", (0, -1), (27, 5)),
+      ("negative_axes", (-3, -1), (27, 5)),
+  )
+  def test_compute_fans_negative_axes(self, fan_in_axes, expected):
+    # pylint: disable=protected-access
+    self.assertEqual(
+        initializers._compute_fans((3, 5, 9), fan_in_axes), expected)
+
+  @parameterized.product(
+      mode=("fan_in", "fan_out", "fan_avg"),
+      distribution=("normal", "truncated_normal", "uniform"),
+      use_jit=(False, True),
+  )
+  def test_variance_scaling_negative_axes(self, mode, distribution, use_jit):
+    def sample(fan_in_axes):
+      def f():
+        initializer = initializers.VarianceScaling(
+            mode=mode, distribution=distribution, fan_in_axes=fan_in_axes)
+        return initializer((3, 5, 9), jnp.float32)
+
+      f = transform.transform(f)
+      key = jax.random.PRNGKey(42)
+      params = f.init(key)
+      apply = jax.jit(f.apply) if use_jit else f.apply
+      return apply(params, key)
+
+    np.testing.assert_array_equal(sample((0, -1)), sample((0, 2)))
 
   @test_utils.transform_and_run
   def test_orthogonal_invalid_shape(self):

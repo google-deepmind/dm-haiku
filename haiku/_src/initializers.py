@@ -47,6 +47,7 @@ def _compute_fans(shape, fan_in_axes=None):
     if fan_in_axes is not None:
       # Compute fan-in using user-specified fan-in axes.
       fan_in = np.prod([shape[i] for i in fan_in_axes])
+      fan_in_axes = [i % len(shape) for i in fan_in_axes]
       fan_out = np.prod([s for i, s in enumerate(shape)
                          if i not in fan_in_axes])
     else:

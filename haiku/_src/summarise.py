@@ -202,7 +202,7 @@ def eval_summary(
     logging_interceptor = functools.partial(log_used_modules, used_modules)
 
     with hk.intercept_methods(logging_interceptor):
-      f(*args, **kwargs)
+      f(*args, **kwargs)  # pyrefly: ignore[not-callable]
 
   # We know that we will only evaluate this function once and that inside
   # eval_shape we will re-trace any jitted/pmap-ed code. This allows users to

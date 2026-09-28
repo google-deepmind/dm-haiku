@@ -246,31 +246,31 @@ RNN_CORES = (
         shape=(BATCH_SIZE, 128)),
     ModuleDescriptor(
         name="GRU",
-        create=lambda: hk.GRU(1),
+        create=lambda: hk.GRU(1),  # pyrefly: ignore[bad-argument-type]
         shape=(BATCH_SIZE, 128)),
     ModuleDescriptor(
         name="IdentityCore",
-        create=lambda: hk.IdentityCore(),
+        create=lambda: hk.IdentityCore(),  # pyrefly: ignore[bad-argument-type]
         shape=(BATCH_SIZE, 128)),
     ModuleDescriptor(
         name="LSTM",
-        create=lambda: hk.LSTM(1),
+        create=lambda: hk.LSTM(1),  # pyrefly: ignore[bad-argument-type]
         shape=(BATCH_SIZE, 128)),
     ModuleDescriptor(
         name="Conv1DLSTM",
-        create=lambda: hk.Conv1DLSTM([2], 3, 3),
+        create=lambda: hk.Conv1DLSTM([2], 3, 3),  # pyrefly: ignore[bad-argument-type]
         shape=(BATCH_SIZE, 2, 2)),
     ModuleDescriptor(
         name="Conv2DLSTM",
-        create=lambda: hk.Conv2DLSTM([2, 2], 3, 3),
+        create=lambda: hk.Conv2DLSTM([2, 2], 3, 3),  # pyrefly: ignore[bad-argument-type]
         shape=(BATCH_SIZE, 2, 2, 2)),
     ModuleDescriptor(
         name="Conv3DLSTM",
-        create=lambda: hk.Conv3DLSTM([2, 2, 2], 3, 3),
+        create=lambda: hk.Conv3DLSTM([2, 2, 2], 3, 3),  # pyrefly: ignore[bad-argument-type]
         shape=(BATCH_SIZE, 2, 2, 2, 2)),
     ModuleDescriptor(
         name="VanillaRNN",
-        create=lambda: hk.VanillaRNN(8),
+        create=lambda: hk.VanillaRNN(8),  # pyrefly: ignore[bad-argument-type]
         shape=(BATCH_SIZE, 128)),
 )
 

@@ -37,7 +37,7 @@ def load(
     x = tf.strings.unicode_split(x, 'UTF-8')
     x = tf.squeeze(tf.io.decode_raw(x, tf.uint8), axis=-1)
     x = tf.cast(x, tf.int32)
-    return {'input': x[:-1], 'target': x[1:]}
+    return {'input': x[:-1], 'target': x[1:]}  # pyrefly: ignore[bad-index]
 
   ds = tfds.load(name='tiny_shakespeare', split=split)
   ds = ds.map(preprocess_fn)

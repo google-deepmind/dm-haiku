@@ -86,6 +86,58 @@ class MultiHeadAttentionTest(parameterized.TestCase):
     self.assertEqual(mha.value_size, mha.key_size)
     self.assertEqual(mha.model_size, mha.key_size * mha.num_heads)
 
+  @parameterized.named_parameters(
+      ("unbatched_queries", (), (2,), (2,), False),
+      ("singleton_queries", (1,), (2,), (2,), False),
+      ("value_batch", (1,), (1,), (2,), False),
+      ("multiple_batch_axes", (2, 1), (1, 3), (2, 3), False),
+      ("masked_batch_axes", (2, 1), (1, 3), (2, 3), True),
+      ("broadcast_keys_and_values", (2,), (1,), (1,), True),
+  )
+  def test_broadcast_batch_dims(
+      self, query_batch, key_batch, value_batch, use_mask
+  ):
+    def f(query, key, value, mask):
+      return attention.MultiHeadAttention(
+          key_size=3,
+          num_heads=2,
+          value_size=4,
+          model_size=5,
+          w_init=initializers.VarianceScaling(1.0),
+      )(query, key, value, mask)
+
+    init, apply = transform.transform(f)
+    keys = jax.random.split(jax.random.PRNGKey(42), 4)
+    query = jax.random.normal(keys[0], query_batch + (3, 6))
+    key = jax.random.normal(keys[1], key_batch + (4, 6))
+    value = jax.random.normal(keys[2], value_batch + (4, 7))
+    batch_shape = jnp.broadcast_shapes(query_batch, key_batch, value_batch)
+    expanded = tuple(
+        jnp.broadcast_to(x, batch_shape + x.shape[-2:])
+        for x in (query, key, value)
+    )
+    mask = None
+    if use_mask:
+      mask = jnp.broadcast_to(
+          jnp.tril(jnp.ones((3, 4), dtype=bool)), batch_shape + (1, 3, 4)
+      )
+    params = init(keys[3], *expanded, mask)
+    expected = apply(params, None, *expanded, mask)
+    self.assertEqual(expected.shape, batch_shape + (3, 5))
+    for apply_fn in (apply, jax.jit(apply)):
+      actual = apply_fn(params, None, query, key, value, mask)
+      self.assertEqual(actual.shape, expected.shape)
+      self.assertTrue(jnp.allclose(actual, expected, atol=1e-6))
+
+    # Initializing with broadcast inputs must produce the same parameter shapes.
+    broadcast_params = init(keys[3], query, key, value, mask)
+    for actual, expected_param in zip(
+        jax.tree_util.tree_leaves(broadcast_params),
+        jax.tree_util.tree_leaves(params),
+    ):
+      self.assertEqual(actual.shape, expected_param.shape)
+      self.assertTrue(jnp.array_equal(actual, expected_param))
+
   def test_vmap(self):
     def f(query, key, value):
       return attention.MultiHeadAttention(

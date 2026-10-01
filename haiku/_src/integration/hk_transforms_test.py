@@ -51,7 +51,11 @@ class HaikuTransformsTest(parameterized.TestCase):
 
     f = hk.transform_with_state(g)
 
-    assert_allclose = functools.partial(np.testing.assert_allclose, atol=1e-4)
+    # On GPU, the two jit variants compile to different XLA programs, so ResNet
+    # results (e.g. BatchNorm statistics) can differ by up to ~1.2e-4.
+    module_type = descriptors.module_type(module_fn)
+    atol = 5e-4 if module_type is hk.nets.ResNet else 1e-4
+    assert_allclose = functools.partial(np.testing.assert_allclose, atol=atol)
 
     # NOTE: We shard init/apply tests since some modules are expensive to jit
     # (e.g. ResNet50 takes ~60s to compile and we compile it twice per test).
@@ -132,7 +136,11 @@ class HaikuTransformsTest(parameterized.TestCase):
 
     f = hk.transform_with_state(g)
 
-    assert_allclose = functools.partial(np.testing.assert_allclose, atol=1e-5)
+    # On GPU, XLA may pick different cuDNN convolution fusions for the two remat
+    # variants, so ResNet gradients can differ by up to ~3e-5.
+    module_type = descriptors.module_type(module_fn)
+    atol = 1e-4 if module_type is hk.nets.ResNet else 1e-5
+    assert_allclose = functools.partial(np.testing.assert_allclose, atol=atol)
 
     grad_jax_remat = jax.grad(jax.remat(f.apply), has_aux=True)
     grad_hk_remat = jax.grad(functools.partial(f.apply, remat=True),

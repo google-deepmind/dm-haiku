@@ -127,7 +127,12 @@ class RMSNorm(hk.Module):
     else:
       scale = 1.
 
+    # Accumulate before squaring in at least float32. Casting only the
+    # reduction would retain overflow and underflow from low-precision squares.
+    output_dtype = jnp.result_type(inputs, scale, 0.)
+    inputs = inputs.astype(jnp.promote_types(output_dtype, jnp.float32))
     mean_squared = jnp.mean(jnp.square(inputs), axis=axis, keepdims=True)
     mean_squared = jnp.broadcast_to(mean_squared, inputs.shape)
 
-    return inputs * scale * jax.lax.rsqrt(mean_squared + self.eps)
+    outputs = inputs * scale * jax.lax.rsqrt(mean_squared + self.eps)
+    return outputs.astype(output_dtype)

@@ -132,7 +132,6 @@ class MultiHeadAttention(hk.Module):
 
     # In shape hints below, we suppress the leading dims [...] for brevity.
     # Hence e.g. [A, B] should be read in every case as [..., A, B].
-    *leading_dims, sequence_length, _ = query.shape
     projection = self._linear_projection
 
     # Compute key/query/values (overload K/Q/V to denote the respective sizes).
@@ -154,7 +153,7 @@ class MultiHeadAttention(hk.Module):
 
     # Weight the values by the attention and flatten the head vectors.
     attn = jnp.einsum("...htT,...Thd->...thd", attn_weights, value_heads)
-    attn = jnp.reshape(attn, (*leading_dims, sequence_length, -1))  # [T', H*V]
+    attn = jnp.reshape(attn, (*attn.shape[:-2], -1))  # [..., T', H*V]
 
     # Apply another projection to get the final embeddings.
     final_projection = hk.Linear(self.model_size, w_init=self.w_init,

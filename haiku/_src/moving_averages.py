@@ -114,21 +114,28 @@ class ExponentialMovingAverage(hk.Module):
                            init=hk.initializers.Constant(-self.warmup_length))
     counter = counter + 1
 
-    decay = jax.lax.convert_element_type(self.decay, value.dtype)
+    hidden = hk.get_state("hidden", value.shape, value.dtype, init=jnp.zeros)
+    result_dtype = jnp.result_type(hidden, value)
+    # A decay close to one must retain its complement in low precision.
+    compute_dtype = (
+        jnp.promote_types(result_dtype, jnp.float32)
+        if jnp.issubdtype(value.dtype, jnp.inexact) else value.dtype)
+    decay = jax.lax.convert_element_type(self.decay, compute_dtype)
     if self.warmup_length > 0:
       decay = jax.lax.select(counter <= 0, 0.0, decay)
 
-    one = jnp.ones([], value.dtype)
-    hidden = hk.get_state("hidden", value.shape, value.dtype, init=jnp.zeros)
+    one = jnp.ones([], compute_dtype)
     hidden = hidden * decay + value * (one - decay)
 
     average = hidden
     if self.zero_debias:
       average /= (one - jnp.power(decay, counter))
 
+    if jnp.issubdtype(result_dtype, jnp.inexact):
+      average = average.astype(result_dtype)
     if update_stats:
       hk.set_state("counter", counter)
-      hk.set_state("hidden", hidden)
+      hk.set_state("hidden", hidden.astype(result_dtype))
       hk.set_state("average", average)
 
     return average

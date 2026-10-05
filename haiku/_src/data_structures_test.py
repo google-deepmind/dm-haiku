@@ -170,10 +170,10 @@ class FlatMappingTest(parameterized.TestCase):
     f = FlatMap(dict(a=1))
     with self.assertRaises(AttributeError):
       # Existing attr.
-      f.a = 4  # pytype: disable=not-writable
+      f.a = 4  # pyrefly: ignore[missing-attribute]
     with self.assertRaises(AttributeError):
       # New attr.
-      f.c = 4  # pytype: disable=not-writable
+      f.c = 4  # pyrefly: ignore[missing-attribute]
 
   def test_getitem(self):
     f = FlatMap(dict(a=1, b=2))
@@ -273,7 +273,7 @@ class FlatMappingTest(parameterized.TestCase):
     before = FlatMap(dict(a=[1, 2, 3]))
     after = copy.deepcopy(before)
     with self.assertRaises(TypeError):
-      before["a"] = [3, 2, 1]  # pytype: disable=unsupported-operands
+      before["a"] = [3, 2, 1]
     self.assertEqual(before["a"], [1, 2, 3])
     self.assertEqual(after["a"], [1, 2, 3])
 

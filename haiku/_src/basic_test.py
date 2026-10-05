@@ -198,7 +198,7 @@ class BasicTest(parameterized.TestCase):
     garbage = object()
     with self.assertRaisesRegex(TypeError,
                                 f"Expected a string name .* got: {garbage}"):
-      cls(garbage)  # pytype: disable=wrong-arg-types
+      cls(garbage)
 
   @test_utils.transform_and_run
   def test_to_module_error_docs(self):

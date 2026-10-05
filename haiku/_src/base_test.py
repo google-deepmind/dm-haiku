@@ -770,9 +770,9 @@ class BaseTest(parameterized.TestCase):
 
   def test_do_not_store_array_like(self):
     with self.assertRaises(ValueError):
-      base.DO_NOT_STORE.shape  # pylint: disable=pointless-statement # pytype: disable=attribute-error
+      base.DO_NOT_STORE.shape  # pylint: disable=pointless-statement
     with self.assertRaises(ValueError):
-      base.DO_NOT_STORE.dtype  # pylint: disable=pointless-statement # pytype: disable=attribute-error
+      base.DO_NOT_STORE.dtype  # pylint: disable=pointless-statement
 
   def test_current_name_no_transform(self):
     with self.assertRaisesRegex(ValueError,

@@ -66,7 +66,7 @@ add
     def _compute_flops(eqn: jax_core.JaxprEqn,
                        expression: jaxpr_info.Expression) -> int:
       del expression
-      return max(np.prod(var.aval.shape) for var in eqn.invars)  # pytype: disable=attribute-error
+      return max(np.prod(var.aval.shape) for var in eqn.invars)  # pyrefly: ignore[missing-attribute]
 
     def add(x, y):
       return jnp.sign(x) + jnp.cos(y)

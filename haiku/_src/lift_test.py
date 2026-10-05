@@ -210,7 +210,7 @@ class LiftTest(parameterized.TestCase):
   def test_lift_raises_with_state(self):
     f = transform.transform_with_state(
         lambda: base.get_state("w", [], init=jnp.zeros))
-    lifted = lift.lift(f.init)  # pytype: disable=wrong-arg-types
+    lifted = lift.lift(f.init)  # pyrefly: ignore[bad-argument-type]
     with self.assertRaisesRegex(base.NonEmptyStateError,
                                 "use.*lift_with_state"):
       lifted(None)

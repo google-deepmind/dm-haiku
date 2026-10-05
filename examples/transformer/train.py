@@ -177,7 +177,7 @@ def main(_):
     if step % LOG_EVERY == 0:
       steps_per_sec = LOG_EVERY / (time.time() - prev_time)
       prev_time = time.time()
-      metrics |= {'steps_per_sec': steps_per_sec}  # pyrefly: ignore[unsupported-operation]
+      metrics |= {'steps_per_sec': steps_per_sec}
       logging.info({k: float(v) for k, v in metrics.items()})
 
 

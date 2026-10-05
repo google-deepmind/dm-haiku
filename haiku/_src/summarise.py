@@ -147,7 +147,7 @@ def log_used_modules(
     return next_f(*args, **kwargs)
 
   idx = len(used_modules)
-  used_modules.append(None)  # pytype: disable=container-type-mismatch
+  used_modules.append(None)  # pyrefly: ignore[bad-argument-type]
   out = next_f(*args, **kwargs)
   used_modules[idx] = MethodInvocation(
       module_details=ModuleDetails.of(context.module, context.method_name),

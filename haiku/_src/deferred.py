@@ -107,10 +107,8 @@ class Deferred(Generic[T]):
     return self._target
 
   def __call__(self, *args, **kwargs):
-    # pytype: disable=not-callable
     # pylint: disable=not-callable
-    return self.target(*args, **kwargs)
-    # pytype: enable=not-callable
+    return self.target(*args, **kwargs)  # pyrefly: ignore[not-callable]
     # pylint: enable=not-callable
 
   def __str__(self):

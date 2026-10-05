@@ -493,7 +493,7 @@ class DeepRNNTest(parameterized.TestCase):
   @test_utils.transform_and_run
   def test_skip_validation(self):
     with self.assertRaisesRegex(ValueError, "skip_connections requires"):
-      recurrent.deep_rnn_with_skip_connections([jax.nn.relu])  # pytype: disable=wrong-arg-types
+      recurrent.deep_rnn_with_skip_connections([jax.nn.relu])  # pyrefly: ignore[bad-argument-type]
 
 
 class BatchMajorUnrollTest(parameterized.TestCase):

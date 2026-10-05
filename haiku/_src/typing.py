@@ -21,13 +21,11 @@ from typing import Any, Protocol, runtime_checkable
 
 import jax
 
-# pytype: disable=module-attr
 try:
   # Using PyType's experimental support for forward references.
-  Module = typing._ForwardRef("haiku.Module")  # pylint: disable=protected-access
+  Module = typing._ForwardRef("haiku.Module")  # pylint: disable=protected-access  # pyrefly: ignore[missing-attribute]
 except AttributeError:
   Module = Any
-# pytype: enable=module-attr
 
 Initializer = Callable[[Sequence[int], Any], jax.Array]
 Params = Mapping[str, Mapping[str, jax.Array]]

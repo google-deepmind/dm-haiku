@@ -448,7 +448,7 @@ class TransformTest(parameterized.TestCase):
     f = transform.transform(lambda: l.append(transform.running_init()))
     f.init(None)
     f.apply({}, None)
-    init_value, apply_value = l  # pylint: disable=unbalanced-tuple-unpacking  # pytype: disable=bad-unpacking
+    init_value, apply_value = l  # pylint: disable=unbalanced-tuple-unpacking
     self.assertEqual(init_value, True)
     self.assertEqual(apply_value, False)
 

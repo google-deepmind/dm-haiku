@@ -120,7 +120,7 @@ class FilteringTest(parameterized.TestCase):
     # parse by variable type
     weights, biases = filtering.partition(
         lambda module_name, name, _: name == "w",
-        params)  # pytype: disable=wrong-arg-types
+        params)
     self.assertEqual(get_names(weights), {"first_layer/w", "second_layer/w"})
     self.assertEqual(get_names(biases), {"first_layer/b", "second_layer/b"})
 
@@ -227,14 +227,14 @@ class FilteringTest(parameterized.TestCase):
 
     second_layer_params = filtering.filter(
         lambda module_name, *_: module_name == "second_layer",
-        params)  # pyrefly: ignore[bad-argument-type]
+        params)
     self.assertEqual(
         get_names(second_layer_params), {"second_layer/w", "second_layer/b"}
     )
 
     biases = filtering.filter(
         lambda module_name, name, _: name == "b",
-        params)  # pytype: disable=wrong-arg-types
+        params)
     self.assertEqual(get_names(biases), {"first_layer/b", "second_layer/b"})
 
   def test_transforms_with_filter(self):

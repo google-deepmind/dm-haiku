@@ -132,7 +132,7 @@ class ModuleMetaclass(type(Protocol)):  # pyrefly: ignore[invalid-inheritance]
 
     # NOTE: We disable pytype since (somewhat surprisingly) this method is bound
     # with the new class and not the metaclass.
-    module = cls.__new__(cls, *args, **kwargs)  # pytype: disable=wrong-arg-types
+    module = cls.__new__(cls, *args, **kwargs)
 
     # We populate _auto_repr before `__init__` to allow `repr(self)` during the
     # constructor of the module.

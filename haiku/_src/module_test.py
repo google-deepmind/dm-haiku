@@ -617,7 +617,7 @@ class ModuleTest(parameterized.TestCase):
   def test_name_like_aliasing(self):
     m = ModuleWithDoubleCall(name="parent")
     m()
-    self.assertEqual(m.foo_module.module_name, "parent/child")  # pytype: disable=attribute-error
+    self.assertEqual(m.foo_module.module_name, "parent/child")
     self.assertEqual(m.call_module.module_name, "parent/child")
 
   @test_utils.transform_and_run

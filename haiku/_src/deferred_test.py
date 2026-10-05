@@ -34,7 +34,7 @@ class DeferredTest(parameterized.TestCase):
   def test_only_computes_target_once(self):
     target = ExampleModule()
     targets = [target]
-    mod = deferred.Deferred(targets.pop)  # pytype: disable=wrong-arg-types
+    mod = deferred.Deferred(targets.pop)
     for _ in range(10):
       # If target was recomputed more than once pop should fail.
       self.assertIs(mod.target, target)
@@ -50,7 +50,7 @@ class DeferredTest(parameterized.TestCase):
   def test_getattr(self):
     mod = deferred.Deferred(ExampleModule)
     mod()
-    self.assertIs(mod.w, mod.target.w)  # pytype: disable=attribute-error
+    self.assertIs(mod.w, mod.target.w)
 
   @test_utils.transform_and_run
   def test_setattr(self):
@@ -59,7 +59,7 @@ class DeferredTest(parameterized.TestCase):
     new_w = jnp.ones_like(mod.w)
     mod.w = new_w
     self.assertIs(mod.w, new_w)
-    self.assertIs(mod.target.w, new_w)  # pytype: disable=attribute-error
+    self.assertIs(mod.target.w, new_w)
 
   @test_utils.transform_and_run
   def test_setattr_on_target(self):

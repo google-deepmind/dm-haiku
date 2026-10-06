@@ -129,6 +129,10 @@ def avg_pool(
     raise ValueError(f"Invalid padding '{padding}', must be 'SAME' or 'VALID'.")
 
   value = jnp.asarray(value)
+  value_dtype = value.dtype
+  if value_dtype in (jnp.float16, jnp.bfloat16):
+    # Accumulate small floating-point dtypes in float32 before averaging.
+    value = value.astype(jnp.float32)
   _warn_if_unsafe(window_shape, strides)
   window_shape = _infer_shape(value, window_shape, channel_axis)
   strides = _infer_shape(value, strides, channel_axis)
@@ -137,7 +141,7 @@ def avg_pool(
   pooled = lax.reduce_window(value, *reduce_window_args)
   if padding == "VALID":
     # Avoid the extra reduce_window.
-    return pooled / np.prod(window_shape)
+    return (pooled / np.prod(window_shape)).astype(value_dtype)
   else:
     # Count the number of valid entries at each input point, then use that for
     # computing average. Assumes that any two arrays of same shape will be
@@ -145,7 +149,7 @@ def avg_pool(
     shape = [(v if w != 1 else 1) for (v, w) in zip(value.shape, window_shape)]
     window_counts = lax.reduce_window(
         jnp.ones(shape, value.dtype), *reduce_window_args)
-    return pooled / window_counts
+    return (pooled / window_counts).astype(value_dtype)
 
 
 class MaxPool(hk.Module):

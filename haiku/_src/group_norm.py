@@ -184,7 +184,7 @@ class GroupNorm(hk.Module):
           f"was channels={channels}, groups={self.groups}")
 
     if self.rank is None:
-      self._initialize(x, channels)
+      self._initialize(x)
 
     dtype = x.dtype
     if self.channel_index == -1:
@@ -199,12 +199,18 @@ class GroupNorm(hk.Module):
     if self.create_offset:
       offset = hk.get_parameter("offset", params_shape, dtype, self.offset_init)
 
-    x = x.reshape(self.group_shape)
+    input_shape = x.shape
+    if self.channel_index == -1:
+      group_shape = x.shape[:-1] + (self.groups, channels // self.groups)
+    else:
+      group_shape = (
+          x.shape[0], self.groups, channels // self.groups) + x.shape[2:]
+    x = x.reshape(group_shape)
     mean = jnp.mean(x, self.axis, keepdims=True)  # pyrefly: ignore[bad-argument-type]
     # TODO(tycai): Consider faster but less precise variance formulation.
     var = jnp.var(x, self.axis, keepdims=True)  # pyrefly: ignore[bad-argument-type]
     x = (x - mean) * jax.lax.rsqrt(var + self.eps)
-    x = x.reshape(self.first_input_shape)
+    x = x.reshape(input_shape)
 
     if scale is not None:
       scale = jax.lax.broadcast_to_rank(scale, x.ndim)
@@ -216,7 +222,7 @@ class GroupNorm(hk.Module):
 
     return x
 
-  def _initialize(self, x: jax.Array, channels: int):
+  def _initialize(self, x: jax.Array):
     assert self.rank is None
     self.rank = x.ndim
 
@@ -227,12 +233,6 @@ class GroupNorm(hk.Module):
 
     if self.channel_index == -1:
       self.axis = tuple(a if a != self.rank - 1 else a + 1 for a in self.axis)
-      self.group_shape = (
-          (-1,) + x.shape[1:-1] + (self.groups, channels // self.groups))
     else:
       assert self.channel_index == 1
       self.axis = tuple(a if a == 0 else a + 1 for a in self.axis)
-      self.group_shape = (
-          (-1, self.groups, channels // self.groups) + x.shape[2:])
-
-    self.first_input_shape = (-1,) + x.shape[1:]

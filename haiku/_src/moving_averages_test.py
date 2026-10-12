@@ -108,6 +108,37 @@ class MovingAveragesTest(parameterized.TestCase):
       # Floating point error creeps up to 1e-7 (the default).
       np.testing.assert_allclose(inp_value, value, rtol=1e-6)
 
+  def test_ema_preserves_dtype(self):
+    def f(x):
+      return moving_averages.ExponentialMovingAverage(0.5)(x)
+
+    inp_value = jnp.array(1.0, dtype=jnp.float32)
+
+    init_fn, apply_fn = multi_transform.without_apply_rng(
+        transform.transform_with_state(f))
+    _, params_state = init_fn(None, inp_value)
+
+    value = inp_value
+    for _ in range(5):
+      value, params_state = apply_fn(None, params_state, value)
+      self.assertEqual(value.dtype, jnp.float32)
+
+  def test_ema_stability_on_constant_input(self):
+    def f(x):
+      return moving_averages.ExponentialMovingAverage(0.5)(x)
+
+    inp_value = jnp.array(10.0, dtype=jnp.float32)
+
+    init_fn, apply_fn = multi_transform.without_apply_rng(
+        transform.transform_with_state(f))
+    _, params_state = init_fn(None, inp_value)
+
+    value = inp_value
+    for _ in range(50):
+      value, params_state = apply_fn(None, params_state, inp_value)
+      self.assertTrue(jnp.isfinite(value))
+      self.assertLess(abs(value), 1000.0)
+
   @parameterized.parameters(True, False)
   @test_utils.transform_and_run
   def test_initialize(self, legacy_initialize):

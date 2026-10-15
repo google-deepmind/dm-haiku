@@ -118,7 +118,8 @@ class Bias(hk.Module):
       A Tensor of size ``[batch_size, input_size1, ...]``.
     """
     utils.assert_minimum_rank(inputs, 2)
-    if self.output_size is not None and self.output_size != inputs.shape[1:]:
+    if (self.output_size is not None
+        and tuple(self.output_size) != inputs.shape[1:]):
       raise ValueError(
           f"Input shape must be {(-1,) + tuple(self.output_size)} not"
           f" {inputs.shape}"

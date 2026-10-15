@@ -15,25 +15,41 @@
 """Tests for haiku._src.bias."""
 
 from absl.testing import absltest
+from absl.testing import parameterized
 from haiku._src import bias
 from haiku._src import test_utils
 from haiku._src import transform
+import jax
 import jax.numpy as jnp
 import numpy as np
 
 
-class BiasTest(absltest.TestCase):
+class BiasTest(parameterized.TestCase):
 
+  @parameterized.parameters(
+      {"output_size": [4]}, {"output_size": (4,)})
   @test_utils.transform_and_run
-  def test_output_shape(self):
-    mod = bias.Bias(output_size=(2 * 2,))
+  def test_output_shape(self, output_size):
+    mod = bias.Bias(output_size=output_size)
     with self.assertRaisesRegex(ValueError, "Input shape must be [(]-1, 4[)]"):
       mod(jnp.ones([2, 2, 2]))
 
-  @test_utils.transform_and_run
-  def test_output_size_valid(self):
-    mod = bias.Bias(output_size=(2 * 2,))
-    mod(jnp.ones([2, 2 * 2]))
+  @parameterized.product(
+      output_size=([4], (4,), [2, 3], (2, 3)),
+      use_jit=(False, True),
+  )
+  def test_output_size_valid(self, output_size, use_jit):
+    def f(x):
+      return bias.Bias(output_size=output_size, b_init=jnp.ones)(x)
+
+    f = transform.transform(f)
+    apply = jax.jit(f.apply) if use_jit else f.apply
+    x = jnp.arange(2 * np.prod(output_size), dtype=jnp.float32)
+    x = x.reshape((2, *output_size))
+    params = f.init(None, x)
+    self.assertEqual(params["bias"]["b"].shape, tuple(output_size))
+    np.testing.assert_array_equal(apply(params, None, x), x + 1)
+    np.testing.assert_array_equal(apply(params, None, x[:1]), x[:1] + 1)
 
   def test_bias_dims_scalar(self):
     def f():

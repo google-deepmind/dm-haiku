@@ -31,7 +31,6 @@ from collections.abc import Callable, Mapping, Sequence
 import dataclasses
 import itertools
 import logging
-import os
 import sys
 from typing import Any, NamedTuple, TypeAlias
 
@@ -458,7 +457,7 @@ def _add_param_counts(model_info: Module, prefix: str,
     submodule = expr.submodule
     if submodule:
       _add_param_counts(
-          submodule, os.path.join(prefix, submodule.name), invocations
+          submodule, f'{prefix}/{submodule.name}', invocations
       )
 
 

@@ -59,7 +59,11 @@ def _l2_normalize(x, axis=None, eps=1e-12):
   Returns:
     An array of the same shape as 'x' L2-normalized along 'axis'.
   """
-  return x * jax.lax.rsqrt((x * x).sum(axis=axis, keepdims=True) + eps)
+  dtype = x.dtype
+  # Squaring finite float16 values can overflow before normalization.
+  x = x.astype(jnp.promote_types(dtype, jnp.float32))
+  normalized = x * jax.lax.rsqrt((x * x).sum(axis=axis, keepdims=True) + eps)
+  return normalized.astype(dtype)
 
 
 class SpectralNorm(hk.Module):
@@ -140,7 +144,11 @@ class SpectralNorm(hk.Module):
 
     sigma = jnp.matmul(jnp.matmul(v0, value), jnp.transpose(u0))[0, 0]
 
-    value /= sigma
+    # Keep the division gradient from overflowing sigma**2 in float16.
+    dtype = value.dtype
+    value = (
+        value.astype(jnp.promote_types(dtype, jnp.float32)) / sigma
+    ).astype(dtype)
     value_bar = value.reshape(value_shape)
 
     if update_stats:

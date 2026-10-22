@@ -1,5 +1,9 @@
 # Haiku: [Sonnet] for [JAX]
 
+<p align="center">
+  <b>English</b> · <a href="https://github.com/google-deepmind/dm-haiku/blob/main/README.zh.md">简体中文</a>
+</p>
+
 [**Overview**](#overview)
 | [**Why Haiku?**](#why-haiku)
 | [**Quickstart**](#quickstart)

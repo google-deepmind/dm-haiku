@@ -30,6 +30,76 @@ import numpy as np
 
 class VqvaeTest(parameterized.TestCase):
 
+  @parameterized.product(
+      constructor=(vqvae.VectorQuantizer, vqvae.VectorQuantizerEMA),
+      dtype=(jnp.float16, jnp.bfloat16, jnp.float32, jnp.float64),
+      use_jit=(False, True),
+  )
+  def testPerplexityWithUnusedEmbeddings(self, constructor, dtype, use_jit):
+    with jax.enable_x64():
+      embeddings = jnp.arange(4, dtype=dtype)[None, :]
+      for is_training in (False, True):
+
+        def forward(inputs):
+          kwargs = (
+              {'decay': 0.9} if constructor is vqvae.VectorQuantizerEMA else {}
+          )
+          return constructor(1, 4, 0.25, dtype=dtype, **kwargs)(
+              inputs, is_training=is_training
+          )
+
+        model = transform.transform_with_state(forward)
+        inputs = jnp.zeros((4, 1), dtype=dtype)
+        params, state = model.init(jax.random.PRNGKey(42), inputs)
+        if constructor is vqvae.VectorQuantizerEMA:
+          state['vector_quantizer_ema']['embeddings'] = embeddings
+        else:
+          params['vector_quantizer']['embeddings'] = embeddings
+        apply = jax.jit(model.apply) if use_jit else model.apply
+
+        # One, two and four occupied codes have perplexities 1, 2 and 4.
+        for indices in ([0, 0, 0, 0], [0, 0, 1, 1], [0, 1, 2, 3]):
+          inputs = jnp.asarray(indices, dtype=dtype)[:, None]
+          outputs, _ = apply(params, state, None, inputs)
+          self.assertEqual(
+              outputs['perplexity'].dtype, jnp.promote_types(dtype, jnp.float32)
+          )
+          np.testing.assert_allclose(
+              outputs['perplexity'], len(set(indices)), rtol=1e-6
+          )
+          np.testing.assert_array_equal(outputs['encoding_indices'], indices)
+          np.testing.assert_array_equal(outputs['quantize'], inputs)
+          self.assertEqual(outputs['quantize'].dtype, dtype)
+          self.assertEqual(outputs['loss'], 0)
+
+  @parameterized.product(
+      constructor=(vqvae.VectorQuantizer, vqvae.VectorQuantizerEMA),
+      dtype=(jnp.float16, jnp.bfloat16),
+  )
+  def testPerplexityAcrossMappedReplicas(self, constructor, dtype):
+    def forward(inputs):
+      kwargs = {'decay': 0.9} if constructor is vqvae.VectorQuantizerEMA else {}
+      return constructor(
+          1, 4, 0.25, dtype=dtype, cross_replica_axis='i', **kwargs
+      )(inputs, is_training=False)
+
+    model = transform.transform_with_state(forward)
+    inputs = jnp.arange(4, dtype=dtype).reshape(2, 2, 1)
+    params, state = jax.vmap(model.init, in_axes=(None, 0), axis_name='i')(
+        jax.random.PRNGKey(42), inputs
+    )
+    embeddings = jnp.broadcast_to(jnp.arange(4, dtype=dtype), (2, 1, 4))
+    if constructor is vqvae.VectorQuantizerEMA:
+      state['vector_quantizer_ema']['embeddings'] = embeddings
+    else:
+      params['vector_quantizer']['embeddings'] = embeddings
+    apply = jax.jit(
+        jax.vmap(model.apply, in_axes=(0, 0, None, 0), axis_name='i')
+    )
+    outputs, _ = apply(params, state, None, inputs)
+    # Each replica uses two codes, but together they use all four equally.
+    np.testing.assert_allclose(outputs['perplexity'], [4, 4], rtol=1e-6)
+
   @parameterized.parameters((vqvae.VectorQuantizer, {
       'embedding_dim': 4,
       'num_embeddings': 8,

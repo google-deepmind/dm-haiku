@@ -47,7 +47,6 @@ hk_py_test(
         # pip: bsuite/environments:catch
         # pip: dm_env
         # pip: jax
-        # pip: mock
         # pip: numpy
         # pip: tree
     ],

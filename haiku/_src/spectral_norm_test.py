@@ -15,17 +15,53 @@
 """Tests for haiku._src.spectral_norm."""
 
 from absl.testing import absltest
+from absl.testing import parameterized
 from haiku._src import basic
 from haiku._src import spectral_norm
 from haiku._src import test_utils
 from haiku._src import transform
 
+import jax
 import jax.numpy as jnp
 import jax.random as random
 import numpy as np
 
 
-class SpectralNormTest(absltest.TestCase):
+class SpectralNormTest(parameterized.TestCase):
+
+  @parameterized.product(
+      dtype=(jnp.float16, jnp.bfloat16, jnp.float32), use_jit=(False, True)
+  )
+  def test_large_matrix(self, dtype, use_jit):
+    f = transform.transform_with_state(
+        lambda x: spectral_norm.SpectralNorm(n_steps=3)(x)
+    )
+    x = 1000 * jnp.eye(2, dtype=dtype)
+    params, state = f.init(random.PRNGKey(42), x)
+    apply = jax.jit(f.apply) if use_jit else f.apply
+    out, new_state = apply(params, state, None, x)
+
+    self.assertEqual(out.dtype, x.dtype)
+    self.assertEqual(new_state["spectral_norm"]["u0"].dtype, x.dtype)
+    self.assertEqual(new_state["spectral_norm"]["sigma"].dtype, x.dtype)
+    np.testing.assert_allclose(out.astype(jnp.float32), np.eye(2), atol=0.015)
+    np.testing.assert_allclose(
+        new_state["spectral_norm"]["sigma"].astype(jnp.float32),
+        1000,
+        rtol=0.015,
+    )
+
+    # Compare gradients using the same saved power-iteration state.
+    def loss(value, saved_state):
+      normalized, _ = apply(params, saved_state, None, value)
+      return jnp.sum(normalized)
+
+    grad = jax.grad(loss)(x, state)
+    reference_state = jax.tree.map(lambda v: v.astype(jnp.float32), state)
+    reference = jax.grad(loss)(x.astype(jnp.float32), reference_state)
+    np.testing.assert_allclose(
+        grad.astype(jnp.float32), reference, rtol=0.05, atol=1e-5
+    )
 
   @test_utils.transform_and_run
   def test_scalar(self):

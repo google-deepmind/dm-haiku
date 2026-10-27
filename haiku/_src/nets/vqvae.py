@@ -116,7 +116,8 @@ class VectorQuantizer(hk.Module):
       dict: Dictionary containing the following keys and values:
         * ``quantize``: Tensor containing the quantized version of the input.
         * ``loss``: Tensor containing the loss to optimize.
-        * ``perplexity``: Tensor containing the perplexity of the encodings.
+        * ``perplexity``: Tensor containing the perplexity of the encodings,
+          computed in at least ``float32`` precision.
         * ``encodings``: Tensor containing the discrete encodings, ie which
           element of the quantized space each input element was mapped to.
         * ``encoding_indices``: Tensor containing the discrete encoding indices,
@@ -151,7 +152,8 @@ class VectorQuantizer(hk.Module):
 
     # Straight Through Estimator
     quantized = inputs + jax.lax.stop_gradient(quantized - inputs)
-    avg_probs = jnp.mean(encodings, 0)
+    avg_probs = jnp.mean(
+        encodings, 0, dtype=jnp.promote_types(encodings.dtype, jnp.float32))
     if self.cross_replica_axis:
       avg_probs = jax.lax.pmean(avg_probs, axis_name=self.cross_replica_axis)
     perplexity = jnp.exp(-jnp.sum(avg_probs * jnp.log(avg_probs + 1e-10)))
@@ -285,7 +287,8 @@ class VectorQuantizerEMA(hk.Module):
       dict: Dictionary containing the following keys and values:
         * ``quantize``: Tensor containing the quantized version of the input.
         * ``loss``: Tensor containing the loss to optimize.
-        * ``perplexity``: Tensor containing the perplexity of the encodings.
+        * ``perplexity``: Tensor containing the perplexity of the encodings,
+          computed in at least ``float32`` precision.
         * ``encodings``: Tensor containing the discrete encodings, ie which
           element of the quantized space each input element was mapped to.
         * ``encoding_indices``: Tensor containing the discrete encoding indices,
@@ -342,7 +345,8 @@ class VectorQuantizerEMA(hk.Module):
 
     # Straight Through Estimator
     quantized = inputs + jax.lax.stop_gradient(quantized - inputs)
-    avg_probs = jnp.mean(encodings, 0)
+    avg_probs = jnp.mean(
+        encodings, 0, dtype=jnp.promote_types(encodings.dtype, jnp.float32))
     if self.cross_replica_axis:
       avg_probs = jax.lax.pmean(avg_probs, axis_name=self.cross_replica_axis)
     perplexity = jnp.exp(-jnp.sum(avg_probs * jnp.log(avg_probs + 1e-10)))

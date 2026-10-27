@@ -21,7 +21,9 @@ from absl.testing import parameterized
 
 from haiku._src import embed
 from haiku._src import test_utils
+from haiku._src import transform
 
+import jax
 import jax.numpy as jnp
 import numpy as np
 
@@ -53,6 +55,65 @@ class EmbedTest(parameterized.TestCase):
     self.assertEqual(
         list(emb(inp_ids).shape),
         list(jnp.asarray(_EMBEDDING_MATRIX)[jnp.asarray(inp_ids)].shape))
+
+  @parameterized.product(
+      dtype=(jnp.float16, jnp.bfloat16, jnp.float32),
+      use_jit=(False, True),
+      inp_ids=(2, [[0, 2], [2, 1]]))
+  def test_lookup_dtype_values_and_gradients(self, dtype, use_jit, inp_ids):
+    matrix = jnp.arange(12, dtype=dtype).reshape(3, 4) / 4
+    ids = jnp.asarray(inp_ids)
+    expected_grad = np.zeros(matrix.shape, dtype=np.float32)
+    np.add.at(expected_grad, np.asarray(ids), 1)
+
+    for lookup_style in ("ARRAY_INDEX", "ONE_HOT"):
+      with self.subTest(lookup_style=lookup_style):
+        def forward(ids):
+          return embed.Embed(
+              embedding_matrix=matrix, lookup_style=lookup_style)(ids)
+
+        f = transform.transform(forward)
+        params = f.init(jax.random.PRNGKey(42), ids)
+
+        def apply(p):
+          return f.apply(p, None, ids)
+
+        if use_jit:
+          apply = jax.jit(apply)
+        output = apply(params)
+        self.assertEqual(output.dtype, matrix.dtype)
+        np.testing.assert_array_equal(output, matrix[ids])
+        grads = jax.grad(lambda p: apply(p).astype(jnp.float32).sum())(params)
+        np.testing.assert_array_equal(
+            grads["embed"]["embeddings"].astype(jnp.float32), expected_grad)
+
+  @parameterized.product(
+      dtype=(jnp.float16, jnp.bfloat16, jnp.float32),
+      use_jit=(False, True))
+  def test_lookup_in_scan_preserves_carry_dtype(self, dtype, use_jit):
+    matrix = jnp.arange(12, dtype=dtype).reshape(3, 4) / 4
+    ids = jnp.asarray([0, 2, 2, 1])
+
+    for lookup_style in ("ARRAY_INDEX", "ONE_HOT"):
+      with self.subTest(lookup_style=lookup_style):
+        def forward(ids):
+          return embed.Embed(
+              embedding_matrix=matrix, lookup_style=lookup_style)(ids)
+
+        f = transform.transform(forward)
+        params = f.init(jax.random.PRNGKey(42), ids[0])
+
+        def scan(ids):
+          def step(carry, token):
+            return carry + f.apply(params, None, token), None
+
+          return jax.lax.scan(step, jnp.zeros(4, dtype=dtype), ids)[0]
+
+        if use_jit:
+          scan = jax.jit(scan)
+        output = scan(ids)
+        self.assertEqual(output.dtype, matrix.dtype)
+        np.testing.assert_array_equal(output, matrix[ids].sum(axis=0))
 
   @parameterized.parameters("ARRAY_INDEX", "ONE_HOT")
   @test_utils.transform_and_run

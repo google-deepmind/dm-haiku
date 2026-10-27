@@ -155,7 +155,8 @@ class Embed(hk.Module):
       precision: Overrides the ``precision`` given in the constructor.
 
     Returns:
-      Tensor of ``ids.shape + [embedding_dim]``.
+      Tensor of ``ids.shape + [embedding_dim]`` with the embedding dtype,
+      unless overridden by a mixed precision policy.
 
     Raises:
       AttributeError: If ``lookup_style`` is not valid.
@@ -182,9 +183,11 @@ class Embed(hk.Module):
       return jnp.asarray(self.embeddings)[(ids,)]
 
     elif lookup_style == hk.EmbedLookupStyle.ONE_HOT:  # pyrefly: ignore[missing-attribute]
-      one_hot_ids = jax.nn.one_hot(ids, self.vocab_size)  # pyrefly: ignore[bad-argument-type]
+      embeddings = self.embeddings
+      one_hot_ids = jax.nn.one_hot(
+          ids, self.vocab_size, dtype=embeddings.dtype)  # pyrefly: ignore[bad-argument-type]
       precision = self.precision if precision is None else precision
-      return jnp.dot(one_hot_ids, self.embeddings, precision=precision)
+      return jnp.dot(one_hot_ids, embeddings, precision=precision)
 
     else:
       raise NotImplementedError(f"{lookup_style} is not supported by hk.Embed.")

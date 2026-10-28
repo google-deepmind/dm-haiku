@@ -289,14 +289,16 @@ class Orthogonal(hk.initializers.Initializer):  # pyrefly: ignore[invalid-inheri
     n_cols = np.prod(shape) // n_rows
     matrix_shape = (n_rows, n_cols) if n_rows > n_cols else (n_cols, n_rows)
     norm_dst = jax.random.normal(hk.next_rng_key(), matrix_shape, dtype)  # pyrefly: ignore[bad-argument-type]
-    q_mat, r_mat = jnp.linalg.qr(norm_dst)
+    # QR does not support low precision inputs.
+    qr_dtype = jnp.result_type(norm_dst.dtype, jnp.float32)
+    q_mat, r_mat = jnp.linalg.qr(norm_dst.astype(qr_dtype))
     # Enforce Q is uniformly distributed
     q_mat *= jnp.sign(jnp.diag(r_mat))
     if n_rows < n_cols:
       q_mat = q_mat.T
     q_mat = jnp.reshape(q_mat, (n_rows,) + tuple(np.delete(shape, self.axis)))
     q_mat = jnp.moveaxis(q_mat, 0, self.axis)
-    return jax.lax.convert_element_type(self.scale, dtype) * q_mat
+    return jax.lax.convert_element_type(self.scale, dtype) * q_mat.astype(dtype)
 
 
 class Identity(hk.initializers.Initializer):  # pyrefly: ignore[invalid-inheritance]

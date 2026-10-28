@@ -18,11 +18,15 @@ import itertools as it
 
 from absl.testing import absltest
 from absl.testing import parameterized
+from haiku._src import basic
 from haiku._src import initializers
+from haiku._src import mixed_precision
 from haiku._src import test_utils
+from haiku._src import transform
 import jax
 from jax import config
 import jax.numpy as jnp
+import jmp
 import numpy as np
 
 
@@ -125,6 +129,83 @@ class InitializersTest(parameterized.TestCase):
     generated = init(shape, jnp.float32)
     self.assertEqual(generated.shape, shape)
     self.assertEqual(generated.dtype, jnp.float32)
+
+  def assertOrthogonal(self, generated, dtype, axis=-1, scale=1.5):
+    """Checks the Gram matrix along the requested axis in float64 NumPy."""
+    self.assertEqual(generated.dtype, dtype)
+    matrix = np.moveaxis(np.asarray(generated, np.float64), axis, 0)
+    matrix = matrix.reshape((matrix.shape[0], -1))
+    gram = matrix @ matrix.T if matrix.shape[0] < matrix.shape[1] else (
+        matrix.T @ matrix)
+    tolerance = {
+        jnp.float16: 3e-3,
+        jnp.bfloat16: 3e-2,
+        jnp.float32: 2e-6,
+        jnp.float64: 1e-12,
+    }[dtype]
+    np.testing.assert_allclose(
+        gram, scale ** 2 * np.eye(gram.shape[0]),
+        rtol=tolerance, atol=tolerance)
+
+  @parameterized.named_parameters(*[
+      (f"{dtype.__name__}_{name}", dtype, shape, axis)
+      for dtype, (name, shape, axis) in it.product(
+          [jnp.float16, jnp.bfloat16, jnp.float32, jnp.float64],
+          [("square", (3, 3), -1), ("tall", (4, 3), -1),
+           ("wide", (3, 4), -1), ("tensor_axis", (2, 3, 4), 1),
+           ("tensor_negative_axis", (2, 3, 4), -2)])
+  ])
+  def test_orthogonal_dtypes(self, dtype, shape, axis):
+    with jax.enable_x64(dtype == jnp.float64):
+      f = transform.transform(
+          lambda: initializers.Orthogonal(scale=1.5, axis=axis)(shape, dtype))
+      key = jax.random.PRNGKey(42)
+      for apply_fn in (f.apply, jax.jit(f.apply)):
+        generated = apply_fn({}, key)
+        self.assertEqual(generated.shape, shape)
+        self.assertTrue(jnp.all(jnp.isfinite(generated)))
+        self.assertOrthogonal(generated, dtype, axis)
+
+  @parameterized.parameters(jnp.float16, jnp.bfloat16, jnp.float32)
+  def test_orthogonal_linear(self, dtype):
+    def forward(x):
+      return basic.Linear(
+          4, with_bias=False, w_init=initializers.Orthogonal(1.5))(x)
+
+    f = transform.transform(forward)
+    x = jnp.array([[1, -2, 3], [2, 0, -1]], dtype)
+    key = jax.random.PRNGKey(42)
+    for init_fn, apply_fn in ((f.init, f.apply),
+                             (jax.jit(f.init), jax.jit(f.apply))):
+      params = init_fn(key, x)
+      weight = params["linear"]["w"]
+      self.assertEqual(weight.shape, (3, 4))
+      self.assertOrthogonal(weight, dtype)
+      actual = apply_fn(params, None, x)
+      self.assertEqual(actual.dtype, dtype)
+      expected = np.asarray(x, np.float64) @ np.asarray(weight, np.float64)
+      np.testing.assert_allclose(actual, expected, rtol=1e-2, atol=1e-2)
+
+  @parameterized.parameters((jnp.float16, "p=f16,c=f32,o=f32"),
+                            (jnp.bfloat16, "p=bf16,c=f32,o=f32"))
+  def test_orthogonal_linear_policy(self, dtype, policy):
+    def forward(x):
+      return basic.Linear(
+          4, with_bias=False, w_init=initializers.Orthogonal(1.5))(x)
+
+    with mixed_precision.push_policy(basic.Linear, jmp.get_policy(policy)):
+      f = transform.transform(forward)
+      x = jnp.array([[1, -2, 3], [2, 0, -1]], jnp.float32)
+      key = jax.random.PRNGKey(42)
+      for init_fn, apply_fn in ((f.init, f.apply),
+                               (jax.jit(f.init), jax.jit(f.apply))):
+        params = init_fn(key, x)
+        weight = params["linear"]["w"]
+        self.assertOrthogonal(weight, dtype)
+        actual = apply_fn(params, None, x)
+        self.assertEqual(actual.dtype, jnp.float32)
+        expected = np.asarray(x, np.float64) @ np.asarray(weight, np.float64)
+        np.testing.assert_allclose(actual, expected, rtol=2e-6, atol=2e-6)
 
   @test_utils.transform_and_run
   def test_identity_identity(self):

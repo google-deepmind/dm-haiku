@@ -16,9 +16,11 @@
 
 from absl.testing import absltest
 from absl.testing import parameterized
+import haiku as hk
 from haiku._src import group_norm
 from haiku._src import initializers
 from haiku._src import test_utils
+import jax
 import jax.numpy as jnp
 import numpy as np
 
@@ -28,6 +30,46 @@ def constant(fill_value, *, shape):
 
 
 class GroupNormTest(parameterized.TestCase):
+
+  @parameterized.product(
+      data_format=("NHWC", "NCHW"),
+      axis=((-3, -2, -1), -2, (-3, -1)),
+      affine=(False, True),
+      compiled=(False, True),
+  )
+  def test_negative_axes_match_positive_axes(
+      self, data_format, axis, affine, compiled):
+    inputs = jnp.sin(jnp.arange(2 * 3 * 4 * 8, dtype=jnp.float32))
+    inputs = inputs.reshape((2, 3, 4, 8))
+    if data_format == "NCHW":
+      inputs = jnp.moveaxis(inputs, -1, 1)
+    negative_axes = (axis,) if isinstance(axis, int) else axis
+    positive_axes = tuple(a + inputs.ndim for a in negative_axes)
+
+    def forward(x, axes):
+      return group_norm.GroupNorm(
+          groups=2, axis=axes, data_format=data_format,
+          create_scale=affine, create_offset=affine)(x)
+
+    negative = hk.without_apply_rng(hk.transform(
+        lambda x: forward(x, axis)))
+    positive = hk.without_apply_rng(hk.transform(
+        lambda x: forward(x, positive_axes)))
+    params = positive.init(jax.random.PRNGKey(42), inputs)
+    apply_negative = negative.apply
+    apply_positive = positive.apply
+    if compiled:
+      apply_negative = jax.jit(apply_negative)
+      apply_positive = jax.jit(apply_positive)
+
+    self.assertAllClose(
+        apply_negative(params, inputs), apply_positive(params, inputs))
+    weights = jnp.cos(jnp.arange(inputs.size)).reshape(inputs.shape)
+    negative_grad = jax.grad(
+        lambda x: jnp.sum(apply_negative(params, x) * weights))(inputs)
+    positive_grad = jax.grad(
+        lambda x: jnp.sum(apply_positive(params, x) * weights))(inputs)
+    self.assertAllClose(negative_grad, positive_grad)
 
   @test_utils.transform_and_run
   def test_simple_case(self):

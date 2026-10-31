@@ -88,7 +88,8 @@ class GroupNorm(hk.Module):
         must be divisible by this.
       axis: ``int``, ``slice`` or sequence of ints representing the axes which
         should be normalized across. By default this is all but the first
-        dimension. For time series data use `slice(2, None)` to average over the
+        dimension. Negative axes are relative to the input rank. For time series
+        data use `slice(2, None)` to average over the
         none Batch and Time data.
       create_scale: whether to create a trainable scale per channel applied
         after the normalization.
@@ -224,6 +225,8 @@ class GroupNorm(hk.Module):
     if isinstance(self.axis, slice):
       axes = tuple(range(self.rank))
       self.axis = axes[self.axis]
+    else:
+      self.axis = tuple(a + self.rank if a < 0 else a for a in self.axis)
 
     if self.channel_index == -1:
       self.axis = tuple(a if a != self.rank - 1 else a + 1 for a in self.axis)

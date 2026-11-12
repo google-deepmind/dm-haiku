@@ -582,6 +582,42 @@ class StatefulTest(parameterized.TestCase):
     self.assertEqual(y, jnp.square(upper - 1))
     self.assertEqual(m.count, upper - lower)
 
+  @parameterized.product(
+      lower=[0, 3],
+      length=[-2, 0, 1, 3],
+      execution=["eager", "jit_static", "jit_dynamic"],
+  )
+  def test_fori_initialization_carry(self, lower, length, execution):
+    def f(lower, upper):
+      def body(i, carry):
+        step = base.get_parameter("step", (), init=initializers.Constant(1.0))
+        return {"value": carry["value"] + step, "index": (i,)}
+
+      carry = stateful.fori_loop(
+          lower, upper, body,
+          {"value": jnp.array(5.0), "index": (jnp.array(-1),)})
+      base.get_parameter("result", (), init=lambda shape, dtype: carry["value"])
+      return carry
+
+    f = transform.transform(f)
+    init, apply = f.init, f.apply
+    if execution == "jit_static":
+      init = jax.jit(init, static_argnums=(1, 2))
+      apply = jax.jit(apply, static_argnums=(2, 3))
+    elif execution == "jit_dynamic":
+      init, apply = jax.jit(init), jax.jit(apply)
+    upper = lower + length
+    params = init(None, lower, upper)
+    # The body still needs to create parameters for later nonempty calls.
+    self.assertEqual(params["~"]["step"], 1.0)
+    self.assertEqual(params["~"]["result"], 5.0 + max(length, 0))
+    out = apply(params, None, lower, upper)
+    self.assertEqual(out["value"], params["~"]["result"])
+    self.assertEqual(out["index"][0], upper - 1 if length > 0 else -1)
+    out = apply(params, None, lower, lower + 2)
+    self.assertEqual(out["value"], 7.0)
+    self.assertEqual(out["index"][0], lower + 1)
+
   @test_utils.transform_and_run
   def test_fori_traced_length(self):
     m = CountingModule()

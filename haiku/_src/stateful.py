@@ -681,14 +681,18 @@ def fori_loop(lower, upper, body_fun, init_val):
   if not base.params_frozen():
     # During init we need to unwind one step of the loop to ensure the Haiku
     # state before and after the body has the same structure.
+    original_init_val = init_val
     init_val = body_fun(lower, init_val)
-    lower += 1
     try:
-      if upper - lower == 0:
+      if upper <= lower:
+        return original_init_val
+      if upper - lower == 1:
         return init_val
     except jax.errors.ConcretizationTypeError:
-      # upper or lower might be tracers, which jax.lax.fori_loop can handle.
-      pass
+      # Initialize parameters even for empty loops, but preserve their carry.
+      init_val = jax.lax.cond(
+          upper > lower, lambda: init_val, lambda: original_init_val)
+    lower += 1
 
   reserve_up_to_full_rng_block()
   state = internal_state()

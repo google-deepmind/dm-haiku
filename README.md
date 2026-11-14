@@ -23,7 +23,7 @@
 > [more active](https://github.com/google/flax/activity) development team and
 > more adoption with users outside of Alphabet. [Flax] has
 > [more extensive documentation](https://flax.readthedocs.io/),
-> [examples](https://github.com/huggingface/transformers/tree/main/examples/flax)
+> examples
 > and an [active community](https://huggingface.co/flax-community) creating end
 > to end examples.
 >
